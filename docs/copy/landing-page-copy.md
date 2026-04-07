@@ -73,6 +73,8 @@ ISSA Capital est la holding patrimoniale de la famille Issa — famille libanais
 
 Pas un fonds. Pas une structure à terme. Une holding indépendante, dont la famille est le seul actionnaire, et dont l'horizon est intergénérationnel.
 
+Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — une famille libanaise qui a appris à construire, à tenir, et à transmettre.
+
 ### CTA secondaire
 Lire notre mission →  [lien vers /mission]
 

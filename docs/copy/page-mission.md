@@ -206,21 +206,23 @@ Deux façons de continuer.
 ## Test persona — validation
 
 **Test Marc** (journaliste, 5 minutes) :
-Marc cherche une histoire. Il trouve : famille libanaise établie en France, refus du modèle fonds, horizon intergénérationnel, filtres de décision non négociables. La section "Famille libanaise. Enracinée en France." lui donne l'angle différenciant (dimension culturelle + financière). Les filtres éthiques sont présentés sans vernis marketing — crédibles. Il note le contact email pour un entretien. Verdict : page suffisamment dense pour constituer la base d'un article ou d'une mention.
+Marc cherche une histoire. Il la trouve dès la Section 1 : un Libanais né à Dakar, passé par IBM et l'équipe fondatrice de Lexmark, qui a transmis son sens du patrimoine à son fils. Ce n'est plus "holding jeune de 2026" — c'est une trajectoire sur trois décennies. La section "Famille libanaise. Enracinée en France." lui donne l'angle différenciant (dimension culturelle + financière + intergénérationnelle). Les filtres éthiques sont présentés sans vernis marketing — crédibles. Il note le contact email pour un entretien. Verdict : la filiation Jean-Pierre → Thomas fait de cette page un vrai matériau éditorial — angle human interest + angle patrimoine familial + angle entrepreneurial.
 
 **Test Karim** (entrepreneur, 2 minutes) :
-Karim lit la page Mission pour confirmer ses intuitions du hero. "Ne pas confier le patrimoine familial à des logiques qui lui sont étrangères" — c'est exactement ce qu'il ressent face à son CGP. La vision à 30 ans lui parle (il a des enfants). La clarté des filtres le rassure : Thomas a un point de vue, pas des platitudes. Verdict : la page convertit la curiosité en confiance, Karim est prêt à aller sur /accompagnement.
+Karim lit la page Mission pour confirmer ses intuitions du hero. "Ne pas confier le patrimoine familial à des logiques qui lui sont étrangères" — c'est exactement ce qu'il ressent face à son CGP. La Section 1 lui dit quelque chose d'important : Thomas n'a pas appris le patrimoine dans un master spécialisé, il l'a appris de son père qui l'a fait chez IBM et Lexmark. La vision à 30 ans — les trois enfants de Thomas — lui parle directement (il pense à ses propres enfants). La clarté des filtres le rassure : Thomas a un point de vue, pas des platitudes. Verdict : la page convertit la curiosité en confiance, Karim est prêt à aller sur /accompagnement.
 
 ---
 
 ## Auto-évaluation gates copy
 
-- G5 PASS — Marc et Karim nommés dans le test persona
+- G5 PASS — Marc et Karim nommés dans le test persona, frustrations adressées
 - G10 PASS — zéro langage vague ("envisager", "pourrait")
-- G13 PASS — aucun chiffre inventé, aucune donnée fabriquée
+- G13 PASS — aucun chiffre inventé, aucune donnée fabriquée. Jean-Pierre Issa : données factuelles fournies par Thomas. Lexmark : scission IBM 1991 est un fait historique public. Enfants de Thomas : formulation générique ("trois enfants") — prénoms non publiés, conformité RGPD art. 8 maintenue
 - G15 PASS — zéro placeholder
-- G16 PASS — "ISSA Capital" cité 9 fois
+- G16 PASS — "ISSA Capital" cité 10+ fois
 - G17 PASS — Marc cité 2 fois, Karim cité 2 fois dans le test persona
-- G19 PASS — identité libanaise spécifique, mission verrouillée par Thomas, non copiable
-- G24 PASS — vouvoiement uniforme
+- G19 PASS — filiation Jean-Pierre Issa spécifique, identité libanaise, parcours IBM/Lexmark, enfants de Thomas — non copiable pour un concurrent
+- G24 PASS — vouvoiement uniforme dans les sections adressées au lecteur
 - Anti-L.411-1 PASS — page éditoriale sans mention financière, aucun mot interdit
+- RGPD mineurs PASS — prénoms des enfants non publiés, formulation générique "trois enfants de Thomas" conformément aux recommandations CLAUDE
+- ⚠️ À VALIDER THOMAS : publication du nom Jean-Pierre Issa + mention IBM/Lexmark — présumé OK (info fournie spontanément) mais validation explicite recommandée avant mise en ligne

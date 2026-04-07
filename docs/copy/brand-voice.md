@@ -107,6 +107,28 @@
 - Mauvais : "Thomas est disponible pour échanger avec vous sur votre projet. N'hésitez pas à le solliciter."
 - ISSA : "Un échange avec Thomas — pas un formulaire de qualification de 10 champs. Si le périmètre correspond, il répond."
 
+**Pair bonus — Récit générationnel (contexte page Mission)**
+- Mauvais : "ISSA Capital a été fondée en 2026 par Thomas Issa avec une vision long terme."
+- ISSA : "ISSA Capital n'a pas commencé en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — une famille libanaise qui a appris à construire, à tenir, et à transmettre."
+
+---
+
+## Arc narratif générationnel (colonne vertébrale éditoriale)
+
+**Règle** : l'histoire d'ISSA Capital s'étire sur trois générations. Toute évocation de la raison d'être de la holding PEUT (et souvent DOIT) s'appuyer sur cet arc. Ce n'est pas un ornement — c'est le différenciant éditorial principal.
+
+**Arc complet** : Jean-Pierre Issa (famille libanaise, Dakar 1958, IBM, Lexmark early team EMEA) → Thomas Issa (Paris, fondateur ISSA Capital 2026) → les enfants de Thomas (destinataires de la transmission)
+
+**Usage** :
+- Page Mission : arc complet, raconté en texte long — colonne vertébrale narrative
+- Page Accompagnement : argument de crédibilité pour Thomas ("il ne conseille pas en théorie — il a appris d'un père qui l'a fait chez IBM et Lexmark")
+- Page Participations : "patrimoine immobilier familial historique en France et au Liban" pour distinguer les actifs de Jean-Pierre des acquisitions récentes de Thomas
+- Landing page hero : une ligne d'ancrage ("l'aboutissement de trois décennies") — pas l'arc complet
+
+**Règle RGPD enfants** : ne jamais citer les prénoms des enfants de Thomas ni leurs dates de naissance sur le site sans validation explicite de Thomas. Formulations acceptées : "les enfants de Thomas", "les trois enfants de la famille", "la génération à venir", "ses trois enfants". L'arc générationnel se raconte sans nommer les enfants.
+
+**Règle données Jean-Pierre** : le nom "Jean-Pierre Issa" et les mentions IBM/Lexmark sont présumés publiables (fournis spontanément par Thomas). À valider avant mise en ligne.
+
 ---
 
 ## Règle anti-L.411-1 CMF (non négociable)
