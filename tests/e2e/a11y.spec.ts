@@ -26,23 +26,18 @@ const pages = [
 ];
 
 /**
- * BUG CONNU @fullstack — color-contrast levant-600 sur fond crème/blanc.
- * Le token `levant-600` (#a87340) ne respecte PAS le ratio WCAG AA 4.5:1
- * (mesuré entre 3.56 et 4.04 sur fond #f5f0e8 / #faf7f2 / #ffffff).
- * Bug bloquant pour le déploiement — voir docs/qa/a11y-audit.md.
- *
- * En attendant le fix, on EXCLUT temporairement la règle color-contrast et on
- * vérifie qu'aucune AUTRE violation A/AA n'apparaît. Quand le fix sera livré,
- * retirer le `.disableRules(['color-contrast'])`.
+ * Fix livré (Phase 2b) : `levant-600` remplacé par `levant-700` (#8B5E2A) pour
+ * tous les usages de texte sur fond clair. Ratios mesurés ≥ 5:1 sur crème et
+ * blanc — conforme WCAG AA. La règle color-contrast est désormais réintégrée à
+ * l'audit. Voir docs/qa/a11y-audit.md (bug A1) + orchestration-plan.md décision #8.
  */
 for (const path of pages) {
-  test(`axe — ${path} : aucune violation WCAG 2.1 A/AA (hors color-contrast — bug @fullstack connu)`, async ({
+  test(`axe — ${path} : aucune violation WCAG 2.1 A/AA`, async ({
     page,
   }) => {
     await page.goto(path);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .disableRules(['color-contrast'])
       .analyze();
     if (results.violations.length > 0) {
       console.log(
@@ -63,10 +58,10 @@ for (const path of pages) {
   });
 }
 
-// Ce test échoue volontairement tant que le bug levant-600 n'est pas corrigé
-// par @fullstack. Il sert de "regression sentinel" : quand il passera, on saura
-// que le fix a été livré et on pourra retirer le `.disableRules` ci-dessus.
-test.fixme('REGRESSION sentinel — color-contrast levant-600 sur fond crème (BUG @fullstack)', async ({
+// Sentinel color-contrast — vérifie spécifiquement la règle sur la home après
+// le fix levant-700. Si ce test échoue, c'est qu'une nouvelle régression de
+// contraste a été introduite quelque part.
+test('REGRESSION sentinel — color-contrast respecté sur la home', async ({
   page,
 }) => {
   await page.goto('/');

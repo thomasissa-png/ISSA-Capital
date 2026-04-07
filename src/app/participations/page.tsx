@@ -177,7 +177,7 @@ export default function ParticipationsPage(): JSX.Element {
                       href={f.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-sm text-sm text-levant-600 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+                      className="inline-flex items-center gap-sm text-sm text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
                     >
                       Visiter le site
                       <ExternalLink size={14} aria-hidden="true" />
@@ -234,13 +234,13 @@ export default function ParticipationsPage(): JSX.Element {
           <div className="mt-2xl flex flex-wrap gap-lg">
             <Link
               href="/opportunites"
-              className="inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
               Proposer une opportunité →
             </Link>
             <Link
               href="/accompagnement"
-              className="inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
               Travailler avec Thomas Issa →
             </Link>

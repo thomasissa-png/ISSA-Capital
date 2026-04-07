@@ -27,7 +27,7 @@
   --color-text-muted: #6b6b6b;
   --color-text-on-inverse: #f5f0e8;
   --color-text-on-inverse-muted: #adadad;
-  --color-text-accent-normal: #a87340; /* levant-600 — texte accent <18px */
+  --color-text-accent-normal: #8B5E2A; /* levant-700 — texte accent <18px (WCAG AA ≥ 4.5:1 sur crème/blanc) */
   --color-accent-primary: #c4935a; /* levant-500 — interactif */
   --color-border-default: #d1d1d1;
   --color-border-subtle: #e8e8e8;

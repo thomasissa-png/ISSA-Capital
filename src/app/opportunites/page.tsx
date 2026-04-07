@@ -86,7 +86,7 @@ export default function OpportunitesPage(): JSX.Element {
               </h3>
               <div className="mt-lg space-y-md text-sm text-ink-700">
                 <div>
-                  <p className="overline text-levant-600">Ce que nous étudions</p>
+                  <p className="overline text-levant-700">Ce que nous étudions</p>
                   <p className="mt-sm">
                     Acquisitions résidentielles en Île-de-France. Immeubles de rapport,
                     biens à rénover, lots multiples. Horizon de détention long terme —
@@ -94,7 +94,7 @@ export default function OpportunitesPage(): JSX.Element {
                   </p>
                 </div>
                 <div>
-                  <p className="overline text-levant-600">Ticket minimum</p>
+                  <p className="overline text-levant-700">Ticket minimum</p>
                   <p className="mt-sm font-heading text-h4 text-ink-950">200 000 €</p>
                 </div>
                 <div>
@@ -115,7 +115,7 @@ export default function OpportunitesPage(): JSX.Element {
               </h3>
               <div className="mt-lg space-y-md text-sm text-ink-700">
                 <div>
-                  <p className="overline text-levant-600">Ce que nous étudions</p>
+                  <p className="overline text-levant-700">Ce que nous étudions</p>
                   <p className="mt-sm">
                     Prises de participation minoritaires dans des entreprises
                     opérationnelles — tech, services aux professionnels, immobilier,
@@ -180,7 +180,7 @@ export default function OpportunitesPage(): JSX.Element {
               },
             ].map((step) => (
               <li key={step.n} className="border-t-2 border-levant-500 pt-md">
-                <p className="font-heading text-h2 text-levant-600">{step.n}</p>
+                <p className="font-heading text-h2 text-levant-700">{step.n}</p>
                 <h3 className="mt-sm font-heading text-h4 text-ink-950">{step.title}</h3>
                 <p className="mt-sm text-sm text-ink-700">{step.desc}</p>
               </li>

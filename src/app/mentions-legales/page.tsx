@@ -66,7 +66,7 @@ export default function LegalPage(): JSX.Element {
               Contact :{' '}
               <a
                 href={`mailto:${siteConfig.email}`}
-                className="text-levant-600 underline"
+                className="text-levant-700 underline"
               >
                 {siteConfig.email}
               </a>
@@ -146,7 +146,7 @@ export default function LegalPage(): JSX.Element {
               Email :{' '}
               <a
                 href={`mailto:${siteConfig.email}`}
-                className="text-levant-600 underline"
+                className="text-levant-700 underline"
               >
                 {siteConfig.email}
               </a>
@@ -220,7 +220,7 @@ export default function LegalPage(): JSX.Element {
               Pour exercer vos droits, contactez :{' '}
               <a
                 href={`mailto:${siteConfig.email}`}
-                className="text-levant-600 underline"
+                className="text-levant-700 underline"
               >
                 {siteConfig.email}
               </a>
@@ -246,7 +246,7 @@ export default function LegalPage(): JSX.Element {
                 href="https://www.cnil.fr/fr/plaintes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-levant-600 underline"
+                className="text-levant-700 underline"
               >
                 https://www.cnil.fr/fr/plaintes
               </a>

@@ -9,14 +9,15 @@ type OverlineProps = {
 
 /**
  * Overline — petit label avant un titre de section.
- * Respecte WCAG : levant-600 sur fond clair, levant-500 sur fond sombre.
+ * Respecte WCAG AA : levant-700 sur fond clair (ratio ≥ 4.5:1 sur crème/blanc),
+ * levant-500 sur fond sombre. Voir docs/qa/a11y-audit.md (bug A1).
  */
 export function Overline({ children, tone = 'dark', className }: OverlineProps): JSX.Element {
   return (
     <p
       className={cn(
         'font-body text-xs font-semibold uppercase tracking-[0.12em]',
-        tone === 'dark' ? 'text-levant-600' : 'text-levant-500',
+        tone === 'dark' ? 'text-levant-700' : 'text-levant-500',
         className,
       )}
     >

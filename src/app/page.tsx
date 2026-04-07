@@ -71,7 +71,7 @@ export default function HomePage(): JSX.Element {
           </div>
           <Link
             href="/mission"
-            className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-600 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+            className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
           >
             Lire notre mission
             <ArrowRight size={18} aria-hidden="true" />
@@ -116,7 +116,7 @@ export default function HomePage(): JSX.Element {
           </div>
           <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
             <article className="border border-ink-200 bg-white p-xl md:p-2xl">
-              <p className="overline text-levant-600">Pour les dirigeants</p>
+              <p className="overline text-levant-700">Pour les dirigeants</p>
               <h3 className="mt-md font-heading text-h3 text-ink-950">
                 Structurer votre patrimoine avec quelqu&apos;un qui l&apos;a fait.
               </h3>
@@ -128,14 +128,14 @@ export default function HomePage(): JSX.Element {
               </p>
               <Link
                 href="/accompagnement"
-                className="mt-lg inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+                className="mt-lg inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
               >
                 Découvrir l&apos;accompagnement
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
             </article>
             <article className="border border-ink-200 bg-white p-xl md:p-2xl">
-              <p className="overline text-levant-600">Pour les apporteurs d&apos;affaires</p>
+              <p className="overline text-levant-700">Pour les apporteurs d&apos;affaires</p>
               <h3 className="mt-md font-heading text-h3 text-ink-950">
                 Proposer un deal à une holding qui décide vite.
               </h3>
@@ -146,7 +146,7 @@ export default function HomePage(): JSX.Element {
               </p>
               <Link
                 href="/opportunites"
-                className="mt-lg inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+                className="mt-lg inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
               >
                 Consulter nos critères
                 <ArrowRight size={18} aria-hidden="true" />
@@ -196,7 +196,7 @@ export default function HomePage(): JSX.Element {
                 key={p.name}
                 className="border border-ink-200 bg-white p-xl transition-colors hover:border-levant-500"
               >
-                <p className="overline text-levant-600">{p.sector}</p>
+                <p className="overline text-levant-700">{p.sector}</p>
                 <h3 className="mt-sm font-heading text-h4 text-ink-950">{p.name}</h3>
                 <p className="mt-sm text-sm text-ink-600">{p.desc}</p>
               </article>

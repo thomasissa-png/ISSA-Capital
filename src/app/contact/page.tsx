@@ -51,7 +51,7 @@ export default function ContactPage(): JSX.Element {
             la{' '}
             <Link
               href="/opportunites"
-              className="text-levant-600 underline underline-offset-2 hover:text-levant-700"
+              className="text-levant-700 underline underline-offset-2 hover:text-levant-700"
             >
               page Opportunités d&apos;affaires
             </Link>{' '}
@@ -72,7 +72,7 @@ export default function ContactPage(): JSX.Element {
           <p className="mt-md text-base text-ink-700">Ou écrivez-nous directement :</p>
           <a
             href={`mailto:${siteConfig.email}`}
-            className="mt-sm inline-block font-heading text-h3 text-levant-600 hover:text-levant-700"
+            className="mt-sm inline-block font-heading text-h3 text-levant-700 hover:text-levant-700"
           >
             {siteConfig.email}
           </a>

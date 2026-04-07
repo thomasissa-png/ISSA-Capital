@@ -86,15 +86,17 @@ export default function AccompagnementPage(): JSX.Element {
       {/* Citation */}
       <Section tone="elevated">
         <Container width="editorial">
-          <blockquote className="border-l-2 border-levant-500 pl-lg">
-            <p className="font-heading text-h2 italic text-ink-950">
-              « J&apos;ai besoin de quelqu&apos;un qui l&apos;a fait, pas de quelqu&apos;un
-              qui m&apos;explique. »
-            </p>
-            <footer className="mt-md text-sm text-ink-500">
+          <figure className="border-l-2 border-levant-500 pl-lg">
+            <blockquote>
+              <p className="font-heading text-h2 italic text-ink-950">
+                « J&apos;ai besoin de quelqu&apos;un qui l&apos;a fait, pas de quelqu&apos;un
+                qui m&apos;explique. »
+              </p>
+            </blockquote>
+            <figcaption className="mt-md text-sm text-ink-500">
               — Verbatim entrepreneur accompagné
-            </footer>
-          </blockquote>
+            </figcaption>
+          </figure>
         </Container>
       </Section>
 
@@ -221,7 +223,7 @@ export default function AccompagnementPage(): JSX.Element {
                 'Véhicules spéculatifs court-terme.',
               ].map((item) => (
                 <li key={item} className="flex gap-md">
-                  <span className="text-levant-600" aria-hidden="true">
+                  <span className="text-levant-700" aria-hidden="true">
                     —
                   </span>
                   <span>{item}</span>

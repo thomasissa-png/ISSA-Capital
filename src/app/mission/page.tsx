@@ -290,13 +290,13 @@ export default function MissionPage(): JSX.Element {
           <div className="mt-2xl flex flex-wrap gap-lg">
             <Link
               href="/participations"
-              className="inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
               Découvrir nos participations →
             </Link>
             <Link
               href="/accompagnement"
-              className="inline-flex items-center gap-sm text-base text-levant-600 hover:text-levant-700"
+              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
               Travailler avec Thomas Issa →
             </Link>
