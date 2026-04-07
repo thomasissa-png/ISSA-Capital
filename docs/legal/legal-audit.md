@@ -346,16 +346,330 @@ ISSA Capital (SAS, SIREN 102 356 094, NAF 6630Z) est exempte des obligations AMF
 
 ---
 
-## Hypothèses à valider
+## Hypothèses à valider — Mises à jour Phase 3
 
-| # | Hypothèse | Type | Validé par |
-|---|---|---|---|
-| H-L1 | Capital social = [DONNÉE À OBTENIR DE THOMAS] | Donnée manquante BLOQUANTE | Thomas |
-| H-L2 | Directeur de publication = Thomas Issa, qualité Président | À confirmer avec Thomas | Thomas |
-| H-L3 | ISSA Capital non assujettie TVA (pas de numéro attribué) | À vérifier avec expert-comptable | Thomas |
-| H-L4 | Adresse email de contact privacy = privacy@issa-capital.com | Proposition — à valider | Thomas |
-| H-L5 | Prestataire d'envoi email = Resend (confirmé dans product-vision.md) | PROVISOIRE — confirmé p.vision | @fullstack |
+Les hypothèses H-L1, H-L2, H-L3, H-L4 ont été validées par Thomas (2026-04-07) et implémentées dans le code :
+- H-L1 CLÔTURÉE : capital social = 1 047 562,00 € — intégré dans siteConfig + mentions légales
+- H-L2 CLÔTURÉE : Directeur de publication = Thomas Issa, Président — intégré
+- H-L3 CLÔTURÉE : assujettie TVA, n° FR50102356094 — intégré
+- H-L4 CLÔTURÉE : email unique contact@issa-capital.com — décision Thomas
+- H-L5 CONFIRMÉE : Resend utilisé — intégré dans politique de confidentialité
 
 ---
 
-*Ce document est un draft de référence. Il ne constitue pas un avis juridique formel. Recommandation : validation par un avocat pour la clause de non-démarchage financier (section 4) avant mise en ligne, compte tenu des enjeux réglementaires CMF.*
+## Phase 3 — Audit final pages /accompagnement, /participations, /mission
+
+> @legal — 2026-04-07 — Session 3, Phase 3, Étape 2
+> Fichiers audités : src/app/accompagnement/page.tsx, src/app/participations/page.tsx, src/app/mission/page.tsx, src/components/ui/ContactForm.tsx, src/app/mentions-legales/page.tsx
+> Base légale : art. L.411-1 CMF, art. L.341-1 CMF, art. 13 RGPD, art. 6 III LCEN
+
+---
+
+### Résumé exécutif Phase 3
+
+**VERDICT GLOBAL : GO CONDITIONNEL**
+
+Aucune formulation à risque CRITIQUE identifiée sur les trois pages. Le copy est globalement bien maîtrisé, le positionnement "investisseur privé" est tenu. Deux points nécessitent une correction mineure avant mise en ligne, et deux points méritent une vérification avec un avocat.
+
+| Page | Verdict | Niveau de risque résiduel |
+|---|---|---|
+| /accompagnement | GO CONDITIONNEL | 1 point à corriger — terminologie CIF |
+| /participations | GO CONDITIONNEL | 1 point à corriger — "Versi Invest / conseil en acquisition" |
+| /mission | GO | Aucun risque identifié |
+| ContactForm (RGPD) | GO | Conformité RGPD excellente |
+| /mentions-legales | GO | Conforme LCEN + CMF + RGPD |
+
+---
+
+### Audit page /accompagnement
+
+#### Analyse ligne par ligne — éléments à risque
+
+**Élément 1 — Metadata description (ligne 21, fichier page.tsx)**
+
+Citation exacte :
+```
+"Thomas Issa accompagne fondateurs et investisseurs en structuration patrimoniale, holding, immo en direct et participations. 15 ans Sony, co-fondateur TEOS."
+```
+
+Verdict : **PASS**. La metadata n'est pas du copy client-facing au sens strict. Elle décrit un parcours, pas un service financier. Pas de promesse de rendement, pas de produit financier. Le terme "structuration patrimoniale" dans ce contexte (accompagnement d'entrepreneurs) ne constitue pas du conseil en investissement réglementé (CIF) au sens de l'art. L.321-1 CMF, car il ne porte pas sur des instruments financiers spécifiques.
+
+**Élément 2 — Body copy section "Ce que Thomas fait" (lignes 119-129)**
+
+Citation exacte :
+```
+"Thomas Issa n'est pas un cabinet de gestion de patrimoine. Il ne vend pas de produits financiers, pas de fonds, pas d'assurance-vie."
+```
+
+Verdict : **PASS RENFORCÉ**. Cette formulation est une désambiguïsation explicite et proactive. Elle sécurise juridiquement la page en établissant que Thomas ne fournit pas de services d'investissement réglementés. À conserver impérativement.
+
+**Élément 3 — Domaine patrimonial, titre de bloc (ligne 37)**
+
+Citation exacte :
+```
+"Structuration de holding et écosystème patrimonial"
+```
+
+Verdict : **PASS**. La "structuration de holding" est une activité de conseil en organisation juridique et corporate, non réglementée AMF. Elle ne porte pas sur la recommandation d'instruments financiers à des tiers.
+
+**Élément 4 — Domaine patrimonial, description (lignes 38-40)**
+
+Citation exacte :
+```
+"ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars."
+```
+
+Verdict : **PASS**. Le copy positionne Thomas comme un pair (co-fondateur), pas comme un conseiller en investissement qui recommande des instruments financiers. "Architecture patrimoniale" dans ce contexte désigne l'organisation juridique de structures, pas la gestion de portefeuille au sens AMF.
+
+**Élément 5 — Domaine patrimonial, "participations minoritaires" (lignes 41-43)**
+
+Citation exacte :
+```
+"Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale."
+```
+
+Verdict : **PASS**. Thomas se positionne comme co-investisseur (il met son propre argent), pas comme gestionnaire de fonds tiers. Le fait d'accompagner un fondateur à "intégrer l'immo dans sa stratégie patrimoniale" peut théoriquement toucher à du conseil en investissement. Toutefois, le contexte est celui d'un échange entre pairs, pas d'une prestation standardisée. Risque faible.
+
+**Élément 6 — ROI "6000% la première année" (ligne 148, section Parcours)**
+
+Citation exacte :
+```
+"un ROI de 6000% la première année"
+```
+
+Verdict : **À VÉRIFIER avec un avocat — risque faible mais non nul**. Ce chiffre est présenté comme une référence historique de performance professionnelle chez Sony (TEOS), pas comme une promesse de rendement pour les services d'accompagnement. Il ne constitue pas une promesse de rendement financier au sens de l'art. L.341-1 CMF. Toutefois, dans un contexte de page d'accompagnement commercial, un chiffre de performance aussi spectaculaire pourrait être requalifié comme argument de démarchage. Recommandation : le conserver dans le contexte de parcours biographique, mais ne pas en faire un argument de vente primaire. Le contexte actuel (section "Parcours" avec cadrage Sony/TEOS) est acceptable.
+
+**Élément 7 — Format "Advisoring" (lignes 294-300)**
+
+Citation exacte :
+```
+"Un rôle d'advisor récurrent auprès du fondateur ou du dirigeant — conseil stratégique régulier, sparring partner long terme, présence informelle au board possible."
+```
+
+Verdict : **À CORRIGER — risque modéré**. Le terme "conseil stratégique" dans ce contexte est ambigu. Si Thomas accompagne des fondateurs sur leurs décisions d'investissement (structuration patrimoniale, prises de participation), une activité récurrente et rémunérée d'"advisor" pourrait être qualifiée de conseil en investissement (CIF) au sens de l'article L.321-1, 4° du CMF, qui inclut "le conseil en investissement" défini comme "la fourniture de recommandations personnalisées à un client, soit à sa demande soit à l'initiative du prestataire, concernant une ou plusieurs transactions portant sur des instruments financiers".
+
+La qualification CIF n'est applicable que si le conseil porte sur des instruments financiers au sens du CMF. Si le conseil de Thomas porte exclusivement sur la stratégie business (go-to-market, positionnement, organisation) et non sur des instruments financiers (actions, obligations, parts de fonds), il n'est pas soumis à agrément CIF.
+
+**Correction recommandée :** ajouter une précision dans la description du format "Advisoring" pour lever l'ambiguïté :
+
+Texte actuel (ligne 295-299) :
+```
+"Un rôle d'advisor récurrent auprès du fondateur ou du dirigeant — conseil stratégique régulier, sparring partner long terme, présence informelle au board possible."
+```
+
+Texte corrigé proposé :
+```
+"Un rôle d'advisor récurrent auprès du fondateur ou du dirigeant — stratégie, go-to-market, organisation, développement international. Sparring partner de fond, présence informelle au board possible. Hors périmètre : conseil en instruments financiers."
+```
+
+La phrase "Hors périmètre : conseil en instruments financiers" désambiguïse explicitement sans être péjorative, et couvre le risque CIF.
+
+#### Verdict /accompagnement
+
+**GO CONDITIONNEL** — 1 correction mineure requise (Élément 7, format Advisoring). 1 point à vérifier avec un avocat (Élément 6, chiffre ROI Sony — faible risque). Aucune formulation de la liste noire L.411-1 identifiée.
+
+---
+
+### Audit page /participations
+
+#### Analyse ligne par ligne — éléments à risque
+
+**Élément 1 — Titre et intro hero (lignes 83-90)**
+
+Citation exacte :
+```
+"Un écosystème construit décision après décision."
+"ISSA Capital gère un portefeuille de participations cohérent, structuré autour de deux pôles — l'immobilier et la technologie au service de l'immobilier."
+```
+
+Verdict : **PASS**. La formulation décrit l'activité réelle d'une holding. "Gère un portefeuille de participations" est le vocabulaire normal d'une holding investissant son propre patrimoine. Il n'y a aucune sollicitation à apporter des capitaux.
+
+**Élément 2 — Badge "Participation directe — 50%" (ligne 108)**
+
+Citation exacte :
+```
+<span>Participation directe — 50%</span>
+```
+
+Verdict : **PASS**. L'affichage du pourcentage de détention (50%) est une information factuelle sur la structure capitalistique de la holding. Il ne constitue pas une offre de titres. On est dans la description d'un actif existant, pas une sollicitation.
+
+**Élément 3 — Filiale "Versi Invest" (lignes 46-50)**
+
+Citation exacte :
+```
+name: 'Versi Invest',
+activity: 'Club deal et conseil en acquisition immobilière',
+role: 'Co-gérant (via Gradient One)',
+```
+
+Verdict : **À CORRIGER — risque modéré**. La description "Club deal et conseil en acquisition immobilière" est problématique à deux titres :
+
+(a) "Club deal" : un club deal désigne en droit financier français un regroupement d'investisseurs (généralement institutionnels ou HNWI) qui co-investissent dans un actif. Si Versi Invest organise des clubs deals en faisant appel à des investisseurs tiers (pas uniquement ISSA Capital et son co-gérant), cela peut constituer une activité de démarchage financier ou un appel public à l'épargne selon le nombre de participants et la nature de la sollicitation (art. L.411-1 CMF, seuil de 150 personnes ou offre supérieure à 8 M€).
+
+(b) "Conseil en acquisition immobilière" : si Versi Invest conseille des tiers sur leurs acquisitions immobilières à titre onéreux, elle peut être soumise à la loi Hoguet (loi n° 70-9 du 2 janvier 1970) ou à la réglementation des CIACM (Conseillers en Investissements Immobiliers) selon la nature exacte de l'activité.
+
+**Correction recommandée :** la description de Versi Invest sur la page /participations doit être reformulée pour ne pas exposer ISSA Capital à une lecture "offre de service financier". Deux options :
+
+Option A (description neutre de l'activité) :
+```
+activity: 'Acquisitions immobilières et accompagnement — marché résidentiel et professionnel',
+```
+
+Option B (précision du périmètre) :
+```
+activity: 'Investissement immobilier — acquisitions propres et accompagnement de partenaires sélectionnés',
+```
+
+Note : la clarification définitive de l'activité réelle de Versi Invest (club deal ouvert ou co-investissement entre associés connus) relève de Thomas et doit être vérifiée avec un avocat avant mise en ligne si Versi Invest ouvre ses club deals à des tiers non-associés.
+
+**Élément 4 — Section "Patrimoine immobilier en direct" (lignes 205-210)**
+
+Citation exacte :
+```
+"ISSA Capital gère en direct un patrimoine résidentiel en Île-de-France. Constitution patrimoniale et revenus locatifs — gestion directe, horizon long terme."
+```
+
+Verdict : **PASS**. Description factuelle d'une activité de gestion de patrimoine propre. Aucune sollicitation extérieure. La mention "revenus locatifs" décrit une source de revenus réelle de la holding, pas une promesse de rendement à un tiers.
+
+**Élément 5 — CTA final "Proposer une opportunité" (ligne 238)**
+
+Citation exacte :
+```
+"Proposer une opportunité →"
+```
+
+Verdict : **PASS**. Lien sortant vers /opportunites. Ce CTA sollicite des propositions entrantes (ISSA Capital reçoit des offres), pas des apports de capitaux. Conforme à la structure validée en Phase 2c.
+
+#### Verdict /participations
+
+**GO CONDITIONNEL** — 1 correction requise (Élément 3, description Versi Invest). La formulation "Club deal" expose à un risque modéré de requalification si lue hors contexte ou si Versi Invest est effectivement ouverte à des investisseurs tiers. Nécessite validation avocat sur l'activité réelle de Versi Invest.
+
+---
+
+### Audit page /mission
+
+#### Analyse ligne par ligne — éléments à risque
+
+**Élément 1 — Section "La décision fondatrice" — mention "fonds" et "souscripteurs" (lignes 144-147)**
+
+Citation exacte :
+```
+"Pas à un fonds dont l'horizon est contraint par ses propres engagements envers ses souscripteurs."
+```
+
+Verdict : **PASS RENFORCÉ**. Le copy cite les fonds et les souscripteurs pour s'en distinguer explicitement. Cette formulation renforce la qualification "holding privée non-fonds" et est sécurisante du point de vue CMF. À conserver.
+
+**Élément 2 — Section "Ce que nous refusons" — mention "ne gère pas de capitaux tiers" (ligne 280)**
+
+Citation exacte :
+```
+"ISSA Capital n'est pas un fonds d'investissement — elle ne gère pas de capitaux tiers et n'a pas d'engagements de liquidité envers des souscripteurs."
+```
+
+Verdict : **PASS RENFORCÉ**. Identique à l'analyse précédente — formulation d'auto-délimitation sécurisante. Elle reproduit en substance la clause de non-sollicitation de la section 4 du legal-audit initial. À conserver.
+
+**Élément 3 — Filtres d'investissement — "créer de la valeur sur vingt ou trente ans" (ligne 240)**
+
+Citation exacte :
+```
+"Un investissement est évalué sur sa capacité à créer de la valeur sur vingt ou trente ans — pas sur son potentiel de plus-value à horizon de sortie."
+```
+
+Verdict : **PASS**. Ce passage décrit une philosophie d'investissement, pas une promesse de rendement à un tiers. Il n'y a aucun chiffre de performance, aucune promesse. "Créer de la valeur" est un terme intentionnellement vague qui ne constitue pas une promesse de rendement au sens CMF.
+
+**Élément 4 — Aucun chiffre de rendement, aucune performance chiffrée**
+
+Vérification systématique de la page /mission : aucun pourcentage de rendement, aucun TRI, aucun "X% par an", aucune valorisation. La page est entièrement narrative et philosophique.
+
+Verdict : **PASS**. Page à risque nul sur ce point.
+
+#### Verdict /mission
+
+**GO** — Aucune correction requise. La page /mission est la plus sécurisée des trois : elle décrit une philosophie familiale et patrimoniale sans aucune formulation pouvant être qualifiée d'offre au public, de démarchage ou de promesse de rendement. Les formulations de délimitation explicite ("pas un fonds", "pas de capitaux tiers", "pas de souscripteurs") renforcent positivement la conformité CMF.
+
+---
+
+### Audit transversal — ContactForm et mentions légales
+
+#### ContactForm (src/components/ui/ContactForm.tsx)
+
+**Consentement RGPD :** PASS. Le formulaire inclut :
+- Une notice d'information RGPD complète avant le bouton de soumission (lignes 35-51) : finalité, responsable du traitement, durée de conservation, droits, lien politique de confidentialité
+- Une case à cocher de consentement explicite obligatoire (lignes 366-385)
+- Le lien vers /mentions-legales#confidentialite est présent et fonctionnel
+
+Cette implémentation est conforme à l'art. 13 RGPD et aux recommandations CNIL sur les formulaires de contact.
+
+**Base légale consentement :** PASS. La base légale "consentement" (art. 6.1.a RGPD) est cohérente avec l'interface : la case à cocher est requise et non pré-cochée, ce qui constitue un consentement positif et libre au sens de l'art. 7 RGPD.
+
+**Données collectées vs déclarées :** PASS. Le formulaire variant "accompagnement" collecte Nom/Email/Message — cohérent avec la déclaration dans la politique de confidentialité. Le variant "opportunite" collecte des champs supplémentaires (type, localisation, ticket, source) — ceux-ci sont couverts par la mention "Informations relatives à la proposition transmise" dans la politique. Recommandation mineure : envisager de lister explicitement "taille indicative du ticket, localisation" dans la politique de confidentialité pour une conformité maximale — non bloquant.
+
+#### Page /mentions-legales
+
+**Mentions légales LCEN :** PASS COMPLET. La page implémente l'intégralité des champs obligatoires :
+- Dénomination, forme juridique, capital social (via siteConfig.capital)
+- Siège social, RCS, numéro TVA (via siteConfig)
+- Directeur de publication (Thomas Issa, Président)
+- Coordonnées hébergeur (Replit, San Francisco)
+
+**Clause de non-sollicitation financière L.341-1 CMF :** PASS. La clause est présente, complète et correctement rédigée (lignes 109-117). Elle couvre l'absence d'offre de titres, l'absence d'agrément AMF, l'absence d'appel public à l'épargne, et la nature entrante des contacts.
+
+**Politique de confidentialité RGPD :** PASS. Les 8 sections requises (responsable, données/finalités, base légale, destinataires, durée, droits, CNIL, cookies) sont présentes et complètes. Mention Plausible Analytics conforme à la position CNIL sur les outils cookieless.
+
+---
+
+### Tableau récapitulatif des findings Phase 3
+
+| # | Page | Fichier (ligne) | Formulation | Verdict | Action |
+|---|---|---|---|---|---|
+| F1 | /accompagnement | page.tsx, l.294-299 | "conseil stratégique régulier" dans format Advisoring | À CORRIGER | Ajouter "Hors périmètre : conseil en instruments financiers" |
+| F2 | /accompagnement | page.tsx, l.148 | "ROI de 6000% la première année" | À VÉRIFIER avocat | Risque faible — contexte biographique Sony/TEOS acceptable |
+| F3 | /participations | page.tsx, l.47 | "Club deal et conseil en acquisition immobilière" | À CORRIGER | Reformuler en "Acquisitions immobilières et accompagnement" ou précision du périmètre |
+| F4 | /participations | page.tsx, l.47 | Activité Versi Invest — ouverture à des tiers ? | À VÉRIFIER avocat | Clarifier si les club deals sont ouverts à des investisseurs tiers non-associés |
+| F5 | /mission | — | Aucune formulation à risque | PASS | Aucune action |
+| F6 | ContactForm | ContactForm.tsx, l.35-51 | Notice RGPD + checkbox consentement | PASS | Recommandation mineure : lister "ticket, localisation" dans politique |
+| F7 | /mentions-legales | page.tsx | Mentions légales LCEN + clause CMF + RGPD | PASS COMPLET | Aucune action |
+
+---
+
+### Corrections prioritaires avant mise en ligne
+
+**CORRECTION 1 — Obligatoire (risque modéré — CIF)**
+
+Fichier : `src/app/accompagnement/page.tsx`, section "Formats", article "Advisoring"
+
+Texte actuel (vers ligne 295) :
+```
+conseil stratégique régulier, sparring partner long terme, présence informelle au board possible.
+```
+
+Texte à substituer :
+```
+stratégie, développement, organisation. Sparring partner de fond, présence informelle au board possible. Hors périmètre : conseil en instruments financiers réglementés.
+```
+
+**CORRECTION 2 — Obligatoire (risque modéré — club deal)**
+
+Fichier : `src/app/participations/page.tsx`, objet `filiales`, entrée "Versi Invest"
+
+Texte actuel (ligne 47) :
+```
+activity: 'Club deal et conseil en acquisition immobilière',
+```
+
+Texte à substituer (option A — neutre) :
+```
+activity: 'Acquisitions immobilières et accompagnement de partenaires',
+```
+
+---
+
+### Points nécessitant validation par un avocat
+
+1. **Activité Versi Invest** : si Versi Invest organise des clubs deals ouverts à des investisseurs tiers (hors associés), vérifier avec un avocat spécialisé CMF si l'activité nécessite un statut CIAM, PSI ou autre agrément. La simple description sur le site ISSA Capital peut rester neutre, mais l'activité sous-jacente de Versi Invest doit être vérifiée.
+
+2. **Chiffre ROI Sony "6000%"** : dans la description du parcours, ce chiffre est présenté comme un fait biographique. Il ne constitue pas une promesse de rendement. Un avocat peut confirmer que le contexte de présentation (parcours Sony, pas de service d'accompagnement) exclut la qualification de démarchage.
+
+---
+
+*Ce document est un draft de référence. Il ne constitue pas un avis juridique formel. Recommandation : validation par un avocat pour les deux points listés ci-dessus avant mise en ligne.*
