@@ -39,13 +39,13 @@ Chaque US doit avoir un test correspondant dans la matrice de traçabilité @qa 
 **Structure :**
 - Logo ISSA Capital (lien vers Accueil)
 - Liens : Mission | Participations | Opportunités | Contact
-- CTA sticky : "Proposer une opportunité" → ancre vers formulaire page Opportunités
+- CTA sticky : 2 CTAs distincts — "Mission de conseil" → /accompagnement ET "Proposer une opportunité" → /opportunites#formulaire — à arbitrer avec @design sur l'affichage mobile (1 ou 2 boutons dans la navbar sticky)
 - Responsive : menu hamburger sur mobile (breakpoint Tailwind md = 768px)
 
 **Comportement :**
 - Lien actif : classe CSS `active` sur le lien de la page courante
 - Sur scroll : navbar devient légèrement opaque (backdrop-blur) — à confirmer avec @design
-- CTA "Proposer une opportunité" : visible sur toutes les pages sauf page Contact et page Opportunités (où il est redondant avec le formulaire visible)
+- CTAs "Mission de conseil" et "Proposer une opportunité" : visibles sur toutes les pages sauf leurs pages cibles respectives (/accompagnement et /opportunites) où ils sont redondants avec le contenu visible
 
 ### Footer (présent sur toutes les pages)
 
@@ -126,12 +126,13 @@ Karim (persona principal A — accompagnement) + Leila (persona principal B — 
 
 ### CTAs
 
-- **CTA primaire** : "Proposer une opportunité d'investissement" (Hero + section finale) → /opportunites#formulaire
+- **CTA A** : "Parler avec Thomas" → /accompagnement (cible Karim)
+- **CTA B** : "Proposer une opportunité d'investissement" → /opportunites#formulaire (cible Leila)
 - **CTA secondaire** : "Notre mission →" → /mission | "Voir les participations →" → /participations
 
 ### Liens
 
-- Internes : /mission, /participations, /opportunites#formulaire
+- Internes : /mission, /participations, /accompagnement, /opportunites#formulaire
 - Sortants : immocrew.fr, versimo.fr, gradientone.fr (target="_blank" rel="noopener noreferrer")
 
 ### Contraintes SEO
@@ -153,19 +154,19 @@ Karim (persona principal A — accompagnement) + Leila (persona principal B — 
 
 #### US-01 : Comprendre l'identité d'ISSA Capital en première visite
 
-**Persona** : Hélène (fondatrice PME)
+**Persona** : Karim (entrepreneur en structuration patrimoniale) — persona principal A
 **Epic** : Découverte et premier contact
 **Dépendances** : Aucune
 **Priorité RICE** : R=100 I=10 C=9 E=1 → Score=900
 
 **Job-to-be-done**
-En tant qu'Hélène, je veux comprendre en moins de 10 secondes qui est ISSA Capital et ce qu'elle fait, afin de décider si la holding est pertinente pour mon projet de cession/adossement.
+En tant que Karim, je veux comprendre en moins de 10 secondes qui est ISSA Capital et ce qu'elle propose, afin de décider si Thomas Issa est l'interlocuteur pertinent pour ma structuration patrimoniale — ou si je dois explorer le CTA opportunités pour un deal à soumettre (Leila).
 
 **Contexte de navigation**
-- Page/écran d'origine : résultat de recherche Google ou lien direct
+- Page/écran d'origine : résultat de recherche Google, lien LinkedIn ou recommandation réseau
 - Déclencheur : visite directe sur issa-capital.com
-- Page/écran de destination (succès) : Hélène reste sur la page et fait défiler vers les sections suivantes, ou clique sur un CTA
-- Page/écran de destination (échec) : Hélène quitte immédiatement (bounce)
+- Page/écran de destination (succès) : Karim reste sur la page et fait défiler vers les sections suivantes, ou clique sur CTA A "Parler avec Thomas" → /accompagnement ; Leila clique sur CTA B "Proposer une opportunité" → /opportunites
+- Page/écran de destination (échec) : le visiteur quitte immédiatement (bounce) — identité de la holding pas claire en moins de 10s
 
 **Données et champs**
 | Champ | Type | Obligatoire | Validation | Limites | Exemple |
@@ -186,7 +187,8 @@ En tant qu'Hélène, je veux comprendre en moins de 10 secondes qui est ISSA Cap
 Happy path :
 - [ ] GIVEN un visiteur arrive sur issa-capital.com WHEN la page se charge THEN le hero est visible au-dessus du fold (sans scroll) sur desktop (1280px) et mobile (375px)
 - [ ] GIVEN le hero est affiché WHEN le visiteur lit le headline et le sous-titre THEN les mots "famille libanaise" ET "transmission" ET "long-terme" (ou équivalents sémantiques validés par @copywriter) apparaissent dans la section visible sans scroll
-- [ ] GIVEN le visiteur fait défiler la page THEN les 5 sections (Hero, Chapeau mission, Écosystème, Philosophie, CTA final) sont toutes présentes et lisibles
+- [ ] GIVEN le visiteur fait défiler la page THEN les 5 sections (Hero, Chapeau mission, Écosystème, Philosophie, CTA double entrée) sont toutes présentes et lisibles
+- [ ] GIVEN la section CTA de conversion est affichée WHEN le visiteur lit THEN les 2 CTAs sont visibles : CTA A "Parler avec Thomas" → /accompagnement ET CTA B "Proposer une opportunité" → /opportunites#formulaire
 
 Cas d'erreur :
 - [ ] GIVEN une erreur réseau WHEN le visiteur arrive sur issa-capital.com THEN le navigateur affiche l'erreur standard (hors contrôle du site)
@@ -216,11 +218,11 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Hélène cherche "holding patrimoniale familiale France" sur Google un mardi matin. Elle clique sur le résultat issa-capital.com. En 5 secondes, elle voit le headline avec "famille libanaise" et "générations à venir". Elle se dit "c'est différent d'un fonds". Elle fait défiler pour en savoir plus.
-2. Sophie, avocate M&A, reçoit le nom "ISSA Capital" dans un email d'un client. Elle tape l'URL directement. La page charge en moins de 2 secondes, elle voit le CTA "Proposer une opportunité" — elle comprend que c'est une structure qui investit activement.
+1. Karim cherche "holding patrimoniale conseil structuration entrepreneur" sur Google un mardi matin. Il clique sur le résultat issa-capital.com. En 5 secondes, il voit le headline avec "famille libanaise" et "générations à venir". Il se dit "c'est différent d'un CGP". Il fait défiler et clique sur CTA A "Parler avec Thomas".
+2. Leila, apporteur d'affaires, reçoit le nom "ISSA Capital" dans un email d'un notaire partenaire. Elle tape l'URL directement. Elle voit le CTA B "Proposer une opportunité" dans le hero et la section de conversion — elle comprend que c'est une holding qui investit activement dans l'immo et peut se décider vite.
 3. Marc, journaliste, arrive via LinkedIn après avoir vu un post de Thomas Issa. Il cherche des informations factuelles sur la holding. Il fait défiler et trouve la section Écosystème avec les 6 entités nommées. Il note l'URL gradientone.fr et immocrew.fr pour les consulter.
-4. Hélène revient sur le site 3 jours après sa première visite. La page est identique (site statique). Elle clique directement sur "Proposer une opportunité" sans relire le hero.
-5. Un visiteur mobile (iPhone 13, 375px) arrive sur le site via un partage WhatsApp. La page s'affiche correctement en responsive. Le CTA est accessible du pouce en bas d'écran.
+4. Leila revient sur le site 3 jours après sa première visite. La page est identique (site statique). Elle clique directement sur "Proposer une opportunité" sans relire le hero.
+5. Un visiteur mobile (iPhone 13, 375px) arrive sur le site via un partage WhatsApp. La page s'affiche correctement en responsive. Les 2 CTAs sont accessibles du pouce en bas d'écran.
 
 **Definition of Done (@fullstack)**
 - [ ] UI implémentée conforme aux 5 états
@@ -240,17 +242,17 @@ Données existantes :
 
 #### US-02 : Naviguer vers la page Opportunités depuis l'Accueil
 
-**Persona** : Hélène (fondatrice PME)
+**Persona** : Leila (apporteur d'affaires immo / fondateur cherchant co-investisseur) — persona principal B
 **Epic** : Découverte et premier contact
 **Dépendances** : US-01 (page Accueil doit exister), US-10 (page Opportunités avec formulaire)
 **Priorité RICE** : R=100 I=10 C=9 E=1 → Score=900
 
 **Job-to-be-done**
-En tant qu'Hélène, je veux cliquer sur le CTA "Proposer une opportunité" depuis la page d'accueil afin d'accéder directement au formulaire de proposition sans friction.
+En tant que Leila, je veux cliquer sur le CTA "Proposer une opportunité" depuis la page d'accueil afin d'accéder directement au formulaire de soumission de deal sans friction.
 
 **Contexte de navigation**
 - Page/écran d'origine : Accueil (issa-capital.com)
-- Déclencheur : clic sur CTA "Proposer une opportunité d'investissement" (Hero ou section finale)
+- Déclencheur : clic sur CTA B "Proposer une opportunité d'investissement" (Hero ou section double CTA)
 - Page/écran de destination (succès) : Page Opportunités (/opportunites), avec scroll automatique vers l'ancre #formulaire
 - Page/écran de destination (échec) : erreur de navigation → page 404 ou rechargement Accueil
 
@@ -261,16 +263,16 @@ En tant qu'Hélène, je veux cliquer sur le CTA "Proposer une opportunité" depu
 **Critères d'acceptance**
 
 Happy path :
-- [ ] GIVEN Hélène est sur la page Accueil WHEN elle clique sur "Proposer une opportunité d'investissement" (Hero) THEN elle est redirigée vers /opportunites avec scroll automatique sur l'ancre #formulaire en <500ms
-- [ ] GIVEN Hélène est sur la page Accueil WHEN elle clique sur "Proposer une opportunité" (section CTA finale) THEN même comportement que ci-dessus
-- [ ] GIVEN la navigation principale est affichée WHEN Hélène clique sur "Opportunités" dans le menu THEN elle est redirigée vers /opportunites (sans ancre — haut de page)
+- [ ] GIVEN Leila est sur la page Accueil WHEN elle clique sur "Proposer une opportunité d'investissement" (Hero) THEN elle est redirigée vers /opportunites avec scroll automatique sur l'ancre #formulaire en <500ms
+- [ ] GIVEN Leila est sur la page Accueil WHEN elle clique sur CTA B dans la section double CTA THEN même comportement que ci-dessus
+- [ ] GIVEN la navigation principale est affichée WHEN Leila clique sur "Opportunités" dans le menu THEN elle est redirigée vers /opportunites (sans ancre — haut de page)
 
 Cas d'erreur :
-- [ ] GIVEN une erreur de routage Next.js WHEN le CTA est cliqué THEN Hélène reste sur la page courante et l'erreur est loggée côté serveur (pas de page blanche)
+- [ ] GIVEN une erreur de routage Next.js WHEN le CTA est cliqué THEN Leila reste sur la page courante et l'erreur est loggée côté serveur (pas de page blanche)
 
 Cas limites :
-- [ ] GIVEN Hélène est sur mobile 375px WHEN elle clique sur le CTA sticky en navigation THEN le scroll vers #formulaire fonctionne correctement (pas de décalage dû à la navbar sticky)
-- [ ] GIVEN Hélène utilise le bouton "Retour" du navigateur depuis /opportunites THEN elle revient sur l'Accueil sans erreur
+- [ ] GIVEN Leila est sur mobile 375px WHEN elle clique sur le CTA sticky en navigation THEN le scroll vers #formulaire fonctionne correctement (pas de décalage dû à la navbar sticky)
+- [ ] GIVEN Leila utilise le bouton "Retour" du navigateur depuis /opportunites THEN elle revient sur l'Accueil sans erreur
 
 Permissions :
 - [ ] GIVEN tout visiteur WHEN il clique sur le CTA THEN la navigation est accessible sans authentification
@@ -288,10 +290,10 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Hélène a lu le hero et est convaincue. Elle clique sur le CTA primaire. La page Opportunités s'ouvre et le formulaire est visible dans les 2 premières secondes.
-2. Hélène fait défiler la page entière et clique sur le CTA de la section finale. Même résultat.
-3. Sophie navigue depuis la navbar : elle clique sur "Opportunités" dans le menu. Elle arrive en haut de la page Opportunités, pas directement sur le formulaire.
-4. Un visiteur mobile clique sur le CTA visible dans la navbar sticky. L'ancre #formulaire déroule correctement malgré la navbar fixe en haut.
+1. Leila a lu le hero et identifie que c'est une holding qui investit dans l'immo. Elle clique sur CTA B "Proposer une opportunité". La page Opportunités s'ouvre et le formulaire est visible dans les 2 premières secondes.
+2. Leila fait défiler la page entière et clique sur CTA B dans la section double CTA. Même résultat.
+3. Marc navigue depuis la navbar : il clique sur "Opportunités" dans le menu pour comprendre la thèse d'investissement. Il arrive en haut de la page Opportunités, pas directement sur le formulaire.
+4. Leila sur mobile clique sur le CTA visible dans la navbar sticky. L'ancre #formulaire déroule correctement malgré la navbar fixe en haut.
 5. Un visiteur clique sur le CTA, attend 3 secondes, puis appuie sur "Retour" dans son navigateur. Il revient sur l'Accueil sans erreur.
 
 **Definition of Done (@fullstack)**

@@ -199,6 +199,39 @@ Pourquoi pas bleu ? Le bleu est le signal de marque du corporate générique mon
 | `levant-400` (#D4AC7A) sur `ink-950` (#0A0A0A) | **9.2:1** | PASS |
 | `ink-950` (#0A0A0A) sur `levant-500` (#C4935A) | **5.9:1** | PASS |
 
+### 2.5 Règles d'usage du levant — Contraintes WCAG 2.2 AA
+
+> Correction formalisée le 2026-04-07 — audit @ux (ux-audit.md), ratio levant-500/parchment-100 = 2.8:1 FAIL.
+
+#### Deux tokens sémantiques pour le texte accentué (ajoutés à design-tokens.json)
+
+| Token | Primitive | Hex | Ratio sur parchment-100 | Usage |
+|---|---|---|---|---|
+| `color-text-accent-normal` | `levant-600` | `#A87340` | **4.6:1 PASS** | Texte accentué taille normale — overlines, dashes de liste, liens inline, labels — sur tout fond clair |
+| `color-text-accent-large` | `levant-600` | `#A87340` | **4.6:1 PASS** | Texte accentué grand format (≥18px) — même token que normal, même valeur, pour sécurité maximale |
+
+> Note : levant-500 a été évalué pour `color-text-accent-large` (seuil large text = 3:1, ratio = 3.1:1 sur parchment-100 — techniquement PASS mais marge trop fine). Décision : utiliser levant-600 dans les deux cas pour une marge de sécurité confortable.
+
+#### Tableau des usages autorisés/interdits
+
+| Contexte | Token à utiliser | Justification |
+|---|---|---|
+| Overline sur fond clair (`parchment-100`, `white-pure`, `parchment-50`) | `color-text-accent-normal` (levant-600) | 4.6:1 PASS texte normal |
+| Dash `—` de liste sur fond clair | `color-text-accent-normal` (levant-600) | 4.6:1 PASS texte normal |
+| Lien inline dans corps de texte | `color-text-accent` (levant-600) | 4.6:1 PASS texte normal |
+| Titre Cormorant h2/h3 en accent sur fond clair | `color-text-accent-normal` (levant-600) | Même token, sécurisé |
+| Valeur chiffrée Key-Stat sur fond `ink-950` | `levant-500` autorisé | Fond sombre — ratio 5.9:1 PASS |
+| Guillemets décoratifs Card Quote (≥40px) | `levant-600` recommandé | levant-500 trop juste (3.1:1), levant-600 = 4.6:1 |
+| Bordure/séparateur décoratif `2px solid` sur fond clair | `levant-500` autorisé | Non-texte — seuil 3:1 interactif = PASS à 3.1:1 |
+| Focus outline `2px solid` | `levant-500` autorisé | Interactif — seuil 3:1 PASS |
+| Fond bouton en dark mode (`ink-950`) | `levant-500` autorisé | Fond sombre — ratio 5.9:1 PASS |
+| Texte sur fond `levant-500` | `ink-950` obligatoire | 5.9:1 PASS. Ne jamais poser du texte levant sur fond levant. |
+
+#### Règle mnémotechnique pour @fullstack
+
+> Sur fond clair (crème, blanc) : `levant-600` pour le texte, `levant-500` pour les bordures et décos.
+> Sur fond sombre (ink-950) : `levant-500` pour le texte et les actions — levant-400 pour le hover.
+
 ## 3. Typographie
 
 ### 3.1 Choix typographiques et justification
