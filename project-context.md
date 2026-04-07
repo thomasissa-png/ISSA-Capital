@@ -2,7 +2,7 @@
 
 > Ce fichier est lu par tous les agents avant toute action.
 > Repo PRIVÉ obligatoire (informations stratégiques sur la holding et son écosystème).
-> Dernière mise à jour : 2026-04-07
+> Dernière mise à jour : 2026-04-07 (validation Phase 0 hypothèses + identité libanaise verrouillée)
 
 ---
 
