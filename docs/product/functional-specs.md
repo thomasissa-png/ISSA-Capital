@@ -362,12 +362,13 @@ Karim (persona principal A) — il a vu l'accroche sur l'Accueil, il veut creuse
 
 ### CTAs
 
-- **CTA primaire** : "Proposer une opportunité d'investissement" → /opportunites#formulaire
-- **CTA secondaire** : "Voir nos participations →" → /participations
+- **CTA A** : "Parler avec Thomas" → /accompagnement (cible Karim)
+- **CTA B** : "Proposer une opportunité d'investissement" → /opportunites#formulaire (cible Leila)
+- **CTA tertiaire** : "Voir nos participations →" → /participations
 
 ### Liens
 
-- Internes : /participations, /opportunites#formulaire
+- Internes : /participations, /accompagnement, /opportunites#formulaire
 - Pas de liens sortants sur cette page
 
 ### Contraintes SEO
@@ -387,19 +388,19 @@ Karim (persona principal A) — il a vu l'accroche sur l'Accueil, il veut creuse
 
 #### US-03 : Comprendre la mission et l'identité familiale d'ISSA Capital
 
-**Persona** : Hélène (fondatrice PME)
+**Persona** : Karim (entrepreneur en structuration patrimoniale) — persona principal A
 **Epic** : Découverte et crédibilité institutionnelle
 **Dépendances** : US-01 (visite Accueil)
 **Priorité RICE** : R=90 I=9 C=8 E=1 → Score=648
 
 **Job-to-be-done**
-En tant qu'Hélène, je veux lire la mission et l'histoire d'ISSA Capital afin de vérifier que leurs valeurs sont alignées avec ce que je cherche pour mon entreprise (partenaire long-terme, pas fonds court-termiste).
+En tant que Karim, je veux lire la mission et l'histoire d'ISSA Capital afin de vérifier que Thomas a un vrai point de vue et une logique d'investissement cohérente — pas des platitudes corporatives — et décider si c'est le bon interlocuteur pour ma structuration patrimoniale.
 
 **Contexte de navigation**
 - Page/écran d'origine : Accueil (clic "Notre mission →")
 - Déclencheur : clic sur lien "Notre mission →" depuis la page Accueil ou clic "Mission" dans la navigation
-- Page/écran de destination (succès) : Hélène fait défiler la page entière et clique sur "Proposer une opportunité"
-- Page/écran de destination (échec) : Hélène quitte (bounce) si le contenu ne la convainc pas
+- Page/écran de destination (succès) : Karim fait défiler la page entière et clique sur CTA A "Parler avec Thomas"
+- Page/écran de destination (échec) : Karim quitte (bounce) si le contenu semble vague ou trop institutionnel
 
 **Données et champs** : N/A — page de consultation pure
 
@@ -415,15 +416,16 @@ En tant qu'Hélène, je veux lire la mission et l'histoire d'ISSA Capital afin d
 **Critères d'acceptance**
 
 Happy path :
-- [ ] GIVEN Hélène clique sur "Notre mission →" depuis l'Accueil WHEN la page se charge THEN /mission s'affiche avec le titre h1 visible sans scroll
-- [ ] GIVEN la page Mission est chargée WHEN Hélène lit la section "Histoire et identité" THEN le texte mentionne explicitement "famille libanaise" (jamais "famille française")
-- [ ] GIVEN la page Mission est chargée WHEN Hélène lit la section "Filtres de décision" THEN les 3 filtres (patrimoine long-terme, éthique humaine, environnement) sont présentés comme critères de SÉLECTION et non comme finalité de la holding
+- [ ] GIVEN Karim clique sur "Notre mission →" depuis l'Accueil WHEN la page se charge THEN /mission s'affiche avec le titre h1 visible sans scroll
+- [ ] GIVEN la page Mission est chargée WHEN Karim lit la section "Histoire et identité" THEN le texte mentionne explicitement "famille libanaise" (jamais "famille française")
+- [ ] GIVEN la page Mission est chargée WHEN Karim lit la section "Filtres de décision" THEN les 3 filtres (patrimoine long-terme, éthique humaine, environnement) sont présentés comme critères de SÉLECTION et non comme finalité de la holding
+- [ ] GIVEN Karim fait défiler jusqu'au CTA de sortie WHEN il le voit THEN les 2 CTAs sont présents : CTA A "Parler avec Thomas" → /accompagnement ET CTA B "Proposer une opportunité" → /opportunites#formulaire
 
 Cas d'erreur :
 - [ ] GIVEN une URL /mission invalide ou indisponible WHEN le visiteur arrive THEN une page 404 s'affiche avec lien retour Accueil
 
 Cas limites :
-- [ ] GIVEN Hélène utilise un lecteur d'écran WHEN elle navigue sur la page THEN les sections sont correctement balisées h1/h2/h3 pour la navigation par titres (accessibilité WCAG 2.2)
+- [ ] GIVEN Karim utilise un lecteur d'écran WHEN il navigue sur la page THEN les sections sont correctement balisées h1/h2/h3 pour la navigation par titres (accessibilité WCAG 2.2)
 - [ ] GIVEN le contenu biographique de Thomas n'est pas encore disponible WHEN la page est mise en ligne THEN un texte sobre institutionnel est présent (aucun placeholder visible)
 
 Permissions :
@@ -443,11 +445,11 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Hélène a vu le hero sur l'Accueil et clique sur "Notre mission". Elle lit la section Histoire : elle comprend que c'est une famille libanaise établie en France, qui a créé une holding pour transmettre son patrimoine. Elle se dit "ce n'est pas un fonds d'investissement classique".
-2. Sophie (avocate) arrive directement sur /mission via un lien partagé. Elle lit les filtres de décision en diagonale en 2 minutes pour évaluer si ISSA Capital peut intéresser son client.
-3. Hélène lit la section "Filtres de décision" et voit que la holding n'investit jamais dans ce qui va à l'encontre de l'humanité. Elle se reconnaît dans ces valeurs.
+1. Karim a vu le hero sur l'Accueil et clique sur "Notre mission". Il lit la section Histoire : il comprend que c'est une famille libanaise établie en France, qui a construit des sociétés réelles avant de créer une holding. Il se dit "Thomas a fait le chemin avant moi, c'est ce que je cherchais".
+2. Leila arrive directement sur /mission via un lien partagé. Elle lit les filtres de décision en diagonale en 2 minutes pour valider que son deal immobilier entre dans la logique d'investissement d'ISSA Capital.
+3. Karim lit la section "Filtres de décision" et voit l'horizon intergénérationnel — pas de revente à 5-7 ans. Il se reconnaît dans cette logique de construction patrimoniale.
 4. Marc (journaliste) arrive sur /mission et lit le chapeau pour citer la mission officielle dans son article.
-5. Hélène fait défiler jusqu'au CTA "Proposer une opportunité" et clique. Elle est redirigée vers le formulaire.
+5. Karim fait défiler jusqu'au CTA de sortie et clique sur CTA A "Parler avec Thomas". Il est redirigé vers /accompagnement.
 
 **Definition of Done (@fullstack)**
 - [ ] Page statique /mission avec toutes les sections
@@ -470,7 +472,7 @@ Présenter l'écosystème de 6 entités de manière structurée et crédible pou
 
 ### Audience prioritaire
 
-Sophie (partenaire B2B) cherchant à évaluer l'écosystème en 5 minutes + Hélène qui veut comprendre dans quels secteurs la holding investit déjà.
+Leila (persona principal B) qui veut évaluer si l'écosystème ISSA Capital prouve que la holding investit vraiment dans l'immo et les participations + Karim qui cherche la preuve par l'exemple que Thomas a construit ce qu'il décrit + Marc qui collecte des éléments factuels pour son article.
 
 ### Sections obligatoires
 
@@ -538,19 +540,19 @@ Sophie (partenaire B2B) cherchant à évaluer l'écosystème en 5 minutes + Hél
 
 #### US-04 : Explorer l'écosystème de participations d'ISSA Capital
 
-**Persona** : Sophie (partenaire B2B — avocate d'affaires)
+**Persona** : Leila (apporteur d'affaires immo / fondateur cherchant co-investisseur) — persona principal B
 **Epic** : Crédibilité institutionnelle
 **Dépendances** : US-01
 **Priorité RICE** : R=80 I=8 C=8 E=1 → Score=512
 
 **Job-to-be-done**
-En tant que Sophie, je veux voir toutes les participations d'ISSA Capital en un coup d'oeil afin d'évaluer en 5 minutes la solidité et la diversification de l'écosystème avant de présenter la holding à un client.
+En tant que Leila, je veux voir toutes les participations d'ISSA Capital en un coup d'oeil afin d'évaluer en 5 minutes que la holding investit vraiment dans l'immo et des projets réels — preuve qu'elle peut suivre sur mon deal — avant de soumettre une opportunité.
 
 **Contexte de navigation**
 - Page/écran d'origine : Accueil (clic "Voir les participations →") ou navigation directe
 - Déclencheur : clic sur lien Participations dans la nav ou le CTA Accueil
-- Page/écran de destination (succès) : Sophie visualise les 6 cartes et note les URLs à consulter
-- Page/écran de destination (échec) : cartes incomplètes → Sophie quitte sans conviction
+- Page/écran de destination (succès) : Leila visualise les 6 cartes, confirme que l'immo et les participations sont dans le scope, clique sur CTA B "Proposer une opportunité"
+- Page/écran de destination (échec) : cartes incomplètes ou trop vagues → Leila quitte sans conviction sur la capacité d'investissement réelle
 
 **Données et champs** : N/A — consultation pure
 
@@ -566,17 +568,17 @@ En tant que Sophie, je veux voir toutes les participations d'ISSA Capital en un 
 **Critères d'acceptance**
 
 Happy path :
-- [ ] GIVEN Sophie accède à /participations WHEN la page se charge THEN les 6 entités (Gradient One, Versi Immobilier, Versi Invest, Immocrew, Versimo, Immobilier en direct) sont toutes visibles
-- [ ] GIVEN la grille est affichée WHEN Sophie clique sur "Voir le site" d'Immocrew THEN immocrew.fr s'ouvre dans un nouvel onglet (target="_blank")
-- [ ] GIVEN la grille est affichée WHEN Sophie clique sur "Voir le site" de Versimo THEN versimo.fr s'ouvre dans un nouvel onglet
+- [ ] GIVEN Leila accède à /participations WHEN la page se charge THEN les 6 entités (Gradient One, Versi Immobilier, Versi Invest, Immocrew, Versimo, Immobilier en direct) sont toutes visibles
+- [ ] GIVEN la grille est affichée WHEN Leila clique sur "Voir le site" d'Immocrew THEN immocrew.fr s'ouvre dans un nouvel onglet (target="_blank")
+- [ ] GIVEN la grille est affichée WHEN Leila clique sur "Voir le site" de Versimo THEN versimo.fr s'ouvre dans un nouvel onglet
 - [ ] GIVEN une entité n'a pas de site public (Versi Immobilier, Versi Invest) WHEN la carte est affichée THEN le bouton "Voir le site" est absent (pas de lien mort)
 
 Cas d'erreur :
-- [ ] GIVEN un lien externe (immocrew.fr) est temporairement inaccessible WHEN Sophie clique dessus THEN le navigateur affiche l'erreur de l'onglet externe (hors contrôle du site ISSA)
+- [ ] GIVEN un lien externe (immocrew.fr) est temporairement inaccessible WHEN Leila clique dessus THEN le navigateur affiche l'erreur de l'onglet externe (hors contrôle du site ISSA)
 
 Cas limites :
 - [ ] GIVEN les descriptions de Gradient One et Versi Immobilier ne sont pas encore disponibles WHEN la page est mise en ligne THEN les cartes affichent un texte institutionnel sobre (pas de placeholder "[À COMPLÉTER]" visible côté utilisateur)
-- [ ] GIVEN Sophie utilise un iPad (768px) WHEN la grille est affichée THEN les cartes sont affichées en 2 colonnes (responsive)
+- [ ] GIVEN Leila utilise un iPad (768px) WHEN la grille est affichée THEN les cartes sont affichées en 2 colonnes (responsive)
 
 Permissions :
 - [ ] GIVEN tout visiteur WHEN il accède à /participations THEN la page est accessible sans authentification
@@ -595,11 +597,11 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Sophie reçoit le nom ISSA Capital dans un email. Elle va sur /participations. En 2 minutes elle identifie Immocrew (PropTech) et Versimo (IA immobilière). Elle note les deux URLs pour consulter. Elle clique sur "Voir le site" d'Immocrew.
-2. Hélène (PME manufacturing) consulte les participations pour vérifier qu'ISSA investit aussi hors tech. Elle voit "Immobilier en direct" et "Versi Immobilier". Elle est rassurée sur la diversification.
+1. Leila reçoit le nom ISSA Capital dans un email d'un notaire. Elle va sur /participations. En 2 minutes elle identifie "Versi Immobilier", "Immobilier en direct" et "Versimo" (PropTech immo). Elle confirme qu'ISSA Capital investit vraiment dans l'immo. Elle clique sur CTA B "Proposer une opportunité".
+2. Karim consulte les participations pour vérifier la cohérence de l'écosystème. Il voit Gradient One (tech), Immocrew (services mandataires), des actifs immo directs. Il comprend que Thomas a construit plusieurs structures, pas juste une holding coquille.
 3. Marc (journaliste) arrive sur /participations pour lister les entités dans son article. Il note les 6 noms et les secteurs.
 4. Un visiteur mobile fait défiler les cartes sur iPhone. Les cartes sont en colonne unique, lisibles sans zoom.
-5. Sophie revient sur le site 1 semaine plus tard. Les données sont identiques (statiques). Elle retrouve les informations sans surprise.
+5. Leila revient sur le site 1 semaine plus tard pour montrer les participations à un associé. Les données sont identiques (statiques). Elle retrouve les informations sans surprise.
 
 **Definition of Done (@fullstack)**
 - [ ] Grille 6 cartes implémentée depuis participations.ts
@@ -618,11 +620,11 @@ Données existantes :
 
 ### Objectif
 
-Expliquer les critères d'investissement d'ISSA Capital et collecter des propositions qualifiées via le formulaire principal du site. C'est la pièce maîtresse du site — celle qui convertit Hélène en lead qualifié.
+Expliquer les critères d'investissement d'ISSA Capital (immobilier, participations) et collecter des opportunités qualifiées via le formulaire 7 champs. C'est la pièce maîtresse du site — celle qui convertit Leila en lead qualifié et nourrit le KPI North Star (pipeline d'opportunités).
 
 ### Audience prioritaire
 
-Hélène (persona principal) — elle est convaincue, elle veut proposer son entreprise. Cette page doit réduire la friction au minimum tout en qualifiant sa candidature.
+Leila (persona principal B) — elle a un deal, elle a lu les critères, elle veut soumettre vite. Cette page doit lui permettre de qualifier son deal en 90 secondes et soumettre le formulaire en moins de 5 minutes. L'architecture de la page est autonome : /opportunites est une page distincte (pas une ancre de la page Accueil).
 
 ### Sections obligatoires
 
@@ -636,9 +638,10 @@ Hélène (persona principal) — elle est convaincue, elle veut proposer son ent
 ### Contenu attendu par section
 
 **Ce qu'ISSA recherche :**
-- Secteurs cibles : à préciser [HYPOTHÈSE : Thomas à confirmer les secteurs prioritaires. En attendant : tech/SaaS, immobilier, services B2B, industrie légère — cohérent avec l'écosystème existant]
+- Secteurs cibles : à préciser [HYPOTHÈSE : Thomas à confirmer les secteurs prioritaires. En attendant : immobilier résidentiel/commercial IDF et régions, participations dans des PME et structures opérationnelles — cohérent avec l'écosystème existant]
+- Tailles de tickets : à confirmer [HYPOTHÈSE : 200 K€ à 2 M€ pour l'immo, 300 K€ à 1,5 M€ pour les participations — basé sur le profil Leila dans personas.md]
 - Horizon : partenariat long-terme, pas de revente à horizon fixe
-- Profils recherchés : fondateurs souhaitant un adossement patrimonial avec un partenaire stable, non une cession pure
+- Profils recherchés : apporteurs d'affaires immobiliers (Leila) ou fondateurs cherchant un co-investisseur ou actionnaire minoritaire long-terme
 - Critères de filtre : projets compatibles avec les 3 filtres (patrimoine long-terme, éthique humaine, environnement)
 
 **Ce qu'ISSA ne fait pas :**
@@ -648,8 +651,8 @@ Hélène (persona principal) — elle est convaincue, elle veut proposer son ent
 
 **Le processus de contact :**
 - Étape 1 : soumission du formulaire
-- Étape 2 : Thomas Issa lit personnellement chaque proposition (réassurance)
-- Étape 3 : réponse dans les 7 jours ouvrés [HYPOTHÈSE — délai à confirmer par Thomas]
+- Étape 2 : Thomas Issa lit personnellement chaque opportunité qualifiée (réassurance)
+- Étape 3 : réponse dans la journée (délai verrouillé par Thomas — signal clé de réactivité pour Leila)
 
 **Formulaire de proposition (ancre #formulaire) :**
 - Champs : voir tableau Données et champs US-10
@@ -692,15 +695,15 @@ Hélène (persona principal) — elle est convaincue, elle veut proposer son ent
 
 ### User Stories — Page Opportunités
 
-#### US-10 : Soumettre une proposition d'opportunité d'investissement
+#### US-10 : Soumettre une opportunité d'investissement
 
-**Persona** : Hélène (fondatrice PME)
-**Epic** : Conversion — génération de leads qualifiés
+**Persona** : Leila (apporteur d'affaires immo / fondateur cherchant co-investisseur) — persona principal B
+**Epic** : Conversion — génération de leads qualifiés (KPI North Star)
 **Dépendances** : US-01, US-02 (navigation depuis Accueil) ; infrastructure Resend (ou équivalent) pour l'envoi d'email
 **Priorité RICE** : R=100 I=10 C=9 E=2 → Score=450
 
 **Job-to-be-done**
-En tant qu'Hélène, je veux remplir et soumettre un formulaire de proposition d'investissement afin qu'ISSA Capital reçoive les informations essentielles sur mon projet et me contacte.
+En tant que Leila, je veux remplir et soumettre un formulaire de soumission de deal (7 champs qualifiants) afin qu'ISSA Capital reçoive les informations essentielles sur mon opportunité et me réponde dans la journée.
 
 **Contexte de navigation**
 - Page/écran d'origine : Accueil (CTA Hero), Mission (CTA sortie), Participations (CTA sortie), navigation directe
@@ -708,23 +711,23 @@ En tant qu'Hélène, je veux remplir et soumettre un formulaire de proposition d
 - Page/écran de destination (succès) : le formulaire est remplacé par un message de confirmation
 - Page/écran de destination (échec) : le formulaire reste visible avec les erreurs inline, aucune donnée perdue
 
-**Données et champs**
+**Données et champs (7 champs qualifiants CTA B — formulaire Leila)**
 | Champ | Type | Obligatoire | Validation | Limites | Exemple |
 |---|---|---|---|---|---|
-| prenom_nom | string | Oui | Non vide, pas de chiffres | 2-100 caractères | "Hélène Dubois" |
-| email | email | Oui | Format RFC 5322 (regex email standard) | 5-254 caractères | "helene@maboite.fr" |
-| entreprise | string | Oui | Non vide | 2-200 caractères | "Dubois Mécanique SAS" |
-| secteur | enum | Oui | Valeur parmi la liste | — | "Industrie / Manufacturing" |
-| taille_entreprise | enum | Oui | Valeur parmi la liste | — | "10-49 salariés" |
-| description_projet | string (textarea) | Oui | Non vide, min 50 caractères | 50-2000 caractères | "Nous cherchons un adossement patrimonial..." |
-| telephone | string | Non | Format FR optionnel (validation souple) | 0-20 caractères | "06 12 34 56 78" |
+| prenom_nom | string | Oui | Non vide, pas de chiffres | 2-100 caractères | "Leila Mansouri" |
+| email | email | Oui | Format RFC 5322 (regex email standard) | 5-254 caractères | "leila@apportaffaires.fr" |
+| telephone | string | Oui | Format FR (validation souple) | 6-20 caractères | "06 12 34 56 78" |
+| type_opportunite | enum | Oui | Valeur parmi la liste | — | "Immobilier résidentiel" |
+| localisation | string | Oui | Non vide | 2-200 caractères | "Montreuil (93) — Île-de-France" |
+| ticket_estime | enum | Oui | Valeur parmi la liste | — | "500 K€ — 1 M€" |
+| description_opportunite | string (textarea) | Oui | Non vide, min 50 caractères | 50-2000 caractères | "Immeuble de rapport 8 lots, rendement brut 6,2%..." |
 | consentement_rgpd | boolean | Oui | Doit être coché pour soumettre | — | true |
 
-**Valeurs enum secteur :**
-Technologies / SaaS | Immobilier | Industrie / Manufacturing | Services B2B | Commerce / Distribution | Santé | Autre
+**Valeurs enum type_opportunite :**
+Immobilier résidentiel | Immobilier commercial | Participation dans une société | Projet de développement immobilier | Autre
 
-**Valeurs enum taille_entreprise :**
-1-9 salariés | 10-49 salariés | 50-249 salariés | 250+ salariés
+**Valeurs enum ticket_estime :**
+< 200 K€ | 200 K€ — 500 K€ | 500 K€ — 1 M€ | 1 M€ — 2 M€ | > 2 M€
 
 **5 états UI**
 | État | Comportement | Message/Affichage |
@@ -733,28 +736,28 @@ Technologies / SaaS | Immobilier | Industrie / Manufacturing | Services B2B | Co
 | Loading | Soumission en cours (appel API Resend) | Bouton désactivé, libellé "Envoi en cours...", spinner inline — max 5 secondes |
 | Vide | N/A — formulaire toujours présent | N/A |
 | Erreur | Erreur de validation (client) ou erreur API (serveur) | Erreur inline sous chaque champ invalide (rouge, texte explicite). Si erreur serveur : message global "Une erreur est survenue. Veuillez réessayer ou nous contacter directement à [email ISSA Capital]." |
-| Succès | Email envoyé via Resend | Formulaire remplacé par bloc : "Merci [prénom]. Votre proposition a bien été reçue. Thomas Issa vous répondra dans les 7 jours ouvrés." — CTA secondaire "Revenir à l'accueil" |
+| Succès | Email envoyé via Resend | Formulaire remplacé par bloc : "Merci [prénom]. Votre opportunité a bien été reçue. Thomas Issa vous répondra dans la journée." — CTA secondaire "Revenir à l'accueil" |
 
 **Critères d'acceptance**
 
 Happy path :
-- [ ] GIVEN Hélène arrive sur /opportunites#formulaire WHEN elle voit le formulaire THEN tous les champs obligatoires sont visibles et le bouton "Envoyer ma proposition" est présent
-- [ ] GIVEN Hélène remplit tous les champs obligatoires avec des données valides WHEN elle clique sur "Envoyer ma proposition" THEN le bouton passe en état Loading (désactivé + "Envoi en cours...")
-- [ ] GIVEN le formulaire est en état Loading WHEN Resend envoie l'email avec succès THEN le formulaire est remplacé par le message de confirmation avec le prénom d'Hélène
-- [ ] GIVEN le formulaire est soumis avec succès WHEN Thomas consulte sa boîte email THEN il reçoit un email formaté avec tous les champs remplis par Hélène (nom, email, entreprise, secteur, taille, description, téléphone si fourni)
+- [ ] GIVEN Leila arrive sur /opportunites#formulaire WHEN elle voit le formulaire THEN les 7 champs obligatoires sont visibles et le bouton "Soumettre mon opportunité" est présent
+- [ ] GIVEN Leila remplit tous les champs obligatoires avec des données valides WHEN elle clique sur "Soumettre mon opportunité" THEN le bouton passe en état Loading (désactivé + "Envoi en cours...")
+- [ ] GIVEN le formulaire est en état Loading WHEN Resend envoie l'email avec succès THEN le formulaire est remplacé par le message de confirmation avec le prénom de Leila
+- [ ] GIVEN le formulaire est soumis avec succès WHEN Thomas consulte sa boîte email THEN il reçoit un email formaté avec tous les champs remplis par Leila (nom, email, téléphone, type d'opportunité, localisation, ticket estimé, description)
 
 Cas d'erreur :
-- [ ] GIVEN Hélène soumet le formulaire avec l'email vide WHEN elle clique "Envoyer" THEN un message d'erreur "L'email est obligatoire" s'affiche sous le champ email, la soumission est bloquée
-- [ ] GIVEN Hélène saisit "helene@" (email invalide) WHEN elle clique "Envoyer" THEN un message "Format d'email invalide" s'affiche sous le champ email
-- [ ] GIVEN Hélène soumet le formulaire sans cocher le consentement RGPD WHEN elle clique "Envoyer" THEN un message "Vous devez accepter la politique de confidentialité pour continuer" s'affiche et la soumission est bloquée
+- [ ] GIVEN Leila soumet le formulaire avec l'email vide WHEN elle clique "Soumettre" THEN un message d'erreur "L'email est obligatoire" s'affiche sous le champ email, la soumission est bloquée
+- [ ] GIVEN Leila saisit "leila@" (email invalide) WHEN elle clique "Soumettre" THEN un message "Format d'email invalide" s'affiche sous le champ email
+- [ ] GIVEN Leila soumet le formulaire sans cocher le consentement RGPD WHEN elle clique "Soumettre" THEN un message "Vous devez accepter la politique de confidentialité pour continuer" s'affiche et la soumission est bloquée
 - [ ] GIVEN Resend retourne une erreur 5xx WHEN le formulaire est soumis THEN le message global d'erreur serveur s'affiche, le formulaire reste rempli (données non perdues), le bouton redevient actif pour réessayer
 - [ ] GIVEN une erreur réseau (timeout) WHEN la soumission est en cours depuis plus de 5 secondes THEN le loading s'arrête, le message d'erreur réseau s'affiche avec l'option de réessayer
 
 Cas limites :
-- [ ] GIVEN Hélène double-clique sur "Envoyer ma proposition" WHEN la première soumission est en cours THEN le deuxième clic est ignoré (bouton désactivé pendant le loading)
-- [ ] GIVEN Hélène saisit 2001 caractères dans le champ description WHEN elle tape le 2001ème caractère THEN le champ est bloqué à 2000 caractères avec un compteur visible "2000/2000"
-- [ ] GIVEN Hélène utilise le bouton "Retour" du navigateur depuis la page de confirmation WHEN elle revient sur le formulaire THEN le formulaire est vide (pas de pré-remplissage des données précédentes)
-- [ ] GIVEN Hélène a une session expirée (si jamais auth ajoutée en V2) THEN N/A en V1 — pas d'authentification
+- [ ] GIVEN Leila double-clique sur "Soumettre mon opportunité" WHEN la première soumission est en cours THEN le deuxième clic est ignoré (bouton désactivé pendant le loading)
+- [ ] GIVEN Leila saisit 2001 caractères dans le champ description WHEN elle tape le 2001ème caractère THEN le champ est bloqué à 2000 caractères avec un compteur visible "2000/2000"
+- [ ] GIVEN Leila utilise le bouton "Retour" du navigateur depuis la page de confirmation WHEN elle revient sur le formulaire THEN le formulaire est vide (pas de pré-remplissage des données précédentes)
+- [ ] GIVEN Leila a une session expirée (si jamais auth ajoutée en V2) THEN N/A en V1 — pas d'authentification
 
 Permissions :
 - [ ] GIVEN tout visiteur non authentifié WHEN il soumet le formulaire THEN la soumission est acceptée (pas d'auth requise)
@@ -772,11 +775,11 @@ Données existantes :
 {
   "prenom_nom": "string (2-100 chars)",
   "email": "string (email valide)",
-  "entreprise": "string (2-200 chars)",
-  "secteur": "enum Technologies|Immobilier|Industrie|ServicesB2B|Commerce|Santé|Autre",
-  "taille_entreprise": "enum 1-9|10-49|50-249|250+",
-  "description_projet": "string (50-2000 chars)",
-  "telephone": "string (0-20 chars, optionnel)",
+  "telephone": "string (6-20 chars)",
+  "type_opportunite": "enum ImmobilierResidentiel|ImmobilierCommercial|ParticipationSociete|DeveloppementImmobilier|Autre",
+  "localisation": "string (2-200 chars)",
+  "ticket_estime": "enum <200K|200K-500K|500K-1M|1M-2M|>2M",
+  "description_opportunite": "string (50-2000 chars)",
   "consentement_rgpd": "boolean (doit être true)"
 }
 ```
@@ -796,11 +799,11 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Hélène arrive depuis la page Accueil (CTA Hero). Elle voit le formulaire après la section des critères. Elle remplit les 6 champs obligatoires en 3 minutes. Elle coche le consentement RGPD et clique "Envoyer". Confirmation visible : "Merci Hélène. Votre proposition a bien été reçue."
-2. Hélène oublie de remplir le champ "Secteur". Elle clique "Envoyer". Un message rouge s'affiche sous le select secteur : "Veuillez sélectionner un secteur". Elle corrige et soumet.
-3. Hélène rédige une description de 10 caractères. Elle essaie de soumettre. Message : "La description doit contenir au moins 50 caractères". Elle détaille.
-4. Resend est temporairement indisponible quand Hélène soumet. Elle voit "Une erreur est survenue. Veuillez réessayer". Elle patiente 30 secondes et réessaie avec succès.
-5. Sophie (avocate) veut juste tester le formulaire pour voir sa qualité. Elle remplit avec des données fictives et soumet. Thomas reçoit l'email et voit que c'est un test (secteur "Autre", description vague).
+1. Leila arrive depuis la page Accueil (CTA B Hero). Elle lit les critères d'investissement — son deal immobilier à Montreuil entre dans la grille. Elle voit le formulaire, remplit les 7 champs en 3 minutes. Elle coche le consentement RGPD et clique "Soumettre mon opportunité". Confirmation visible : "Merci Leila. Votre opportunité a bien été reçue. Thomas Issa vous répondra dans la journée."
+2. Leila oublie de remplir le champ "Localisation". Elle clique "Soumettre". Un message rouge s'affiche sous le champ : "La localisation est obligatoire". Elle corrige et soumet.
+3. Leila rédige une description de 10 caractères. Elle essaie de soumettre. Message : "La description doit contenir au moins 50 caractères". Elle détaille son deal.
+4. Resend est temporairement indisponible quand Leila soumet. Elle voit "Une erreur est survenue. Veuillez réessayer". Elle patiente 30 secondes et réessaie avec succès. Elle a 24h avant que son deal parte à un concurrent — le retry rapide est critique.
+5. Marc (journaliste) veut comprendre le processus. Il ouvre le formulaire et lit les champs sans les remplir. Il comprend que la holding demande une localisation et un ticket estimé — signe d'une thèse d'investissement structurée.
 
 **Definition of Done (@fullstack)**
 - [ ] UI formulaire implémentée conforme aux 5 états
@@ -817,7 +820,7 @@ Données existantes :
 
 **Notes @ux** : le formulaire doit être conçu pour qualifier sans intimider. Labels clairs au-dessus des champs (pas de placeholders seuls). Messages d'erreur bienveillants ("Format d'email invalide" pas "Erreur champ email"). Lien vers politique de confidentialité visible et cliquable depuis la checkbox RGPD.
 
-**Notes @fullstack** : utiliser React Hook Form + Zod pour la validation côté client. API route Next.js avec validation serveur indépendante (ne pas faire confiance au client seul). Resend comme service d'envoi email. Variables d'environnement : RESEND_API_KEY, EMAIL_DESTINATION (email Thomas). Ne PAS logguer les données personnelles dans les logs serveur.
+**Notes @fullstack** : utiliser React Hook Form + Zod pour la validation côté client. API route Next.js avec validation serveur indépendante (ne pas faire confiance au client seul). Resend comme service d'envoi email. Variables d'environnement : RESEND_API_KEY, EMAIL_DESTINATION (email Thomas). Ne PAS logguer les données personnelles dans les logs serveur. L'email envoyé à Thomas doit taguer `[OPPORTUNITE]` dans le sujet pour distinguer des messages de contact génériques.
 
 ---
 
@@ -865,7 +868,7 @@ Données existantes : N/A
 
 1. Un bot remplit le champ honeypot caché. L'API répond 200 silencieusement mais n'envoie pas l'email. Thomas ne reçoit rien.
 2. Une IP tente 10 soumissions en 30 secondes. Dès la 6ème, l'API répond 429. Les suivantes sont bloquées pendant 1 minute.
-3. Hélène soumet une fois. Elle ne voit aucun comportement différent (rate limit non atteint).
+3. Leila soumet une fois. Elle ne voit aucun comportement différent (rate limit non atteint).
 
 **Definition of Done (@fullstack)**
 - [ ] Honeypot field implémenté (caché en CSS, jamais rempli par les humains)
@@ -879,15 +882,263 @@ Données existantes : N/A
 
 ---
 
+## Page /accompagnement — Mission de conseil & accompagnement (CTA A — Karim)
+
+### Objectif
+
+Présenter l'expertise de Thomas Issa dans ses 6 catégories d'intervention et permettre à Karim d'ouvrir une conversation via un formulaire court 4 champs. Page distincte de /opportunites (Thomas a validé 2 pages séparées).
+
+### Audience prioritaire
+
+Karim (persona principal A) — entrepreneur de 40 ans en structuration patrimoniale, cherche un pair qui a fait le chemin avant lui, pas un prestataire.
+
+### Sections obligatoires
+
+1. **Titre de page + chapeau** — qui est Thomas Issa et pour qui il intervient (2-3 lignes directes, sans langue de bois)
+2. **6 domaines d'intervention** — liste des thématiques [HYPOTHÈSE : à valider par Thomas — voir personas.md section "Expertise Thomas attendue par Karim"]
+3. **Ce que n'est pas cette mission** — différenciation vs CGP, expert-comptable, formation en ligne
+4. **Formulaire de prise de contact 4 champs** (CTA A) — ancré sur #contact-accompagnement
+5. **Réassurance** — "Premier échange sans engagement"
+
+### Contenu attendu par section
+
+**Formulaire CTA A (4 champs) :**
+- prenom_nom, email, sujet (texte libre — "ma situation en 1 ligne"), message (contexte et question)
+- Pas de champs qualifiants lourds — Karim veut une conversation, pas un formulaire de candidature
+- Consentement RGPD : même checkbox standard
+
+**Réassurance :**
+- Délai de réponse : [HYPOTHÈSE — à confirmer par Thomas, ex : "Réponse sous 48h"]
+- Ton : direct, sans formulaire de surface ("Pas de pitch commercial. Juste une conversation entre gens qui ont les mêmes questions.")
+
+### États UI
+
+| État | Comportement | Message/Affichage |
+|---|---|---|
+| Défaut | Page statique + formulaire vide | Sections visibles, formulaire accessible |
+| Loading | Soumission en cours | Bouton désactivé + "Envoi en cours..." |
+| Vide | N/A | N/A |
+| Erreur | Validation ou erreur API | Messages d'erreur inline |
+| Succès | Email envoyé | Formulaire remplacé par confirmation |
+
+### CTAs
+
+- **CTA primaire** : bouton "Démarrer la conversation" dans le formulaire → POST /api/contact (type=accompagnement)
+- **CTA secondaire** : "Voir nos participations →" → /participations (preuve par l'exemple)
+
+### Contraintes RGPD
+
+- Même traitement que le formulaire /opportunites (consentement, mention responsable de traitement, Resend comme processeur)
+
+### Contraintes SEO
+
+- `<title>` : "Mission de conseil — ISSA Capital | Accompagnement patrimonial entrepreneur"
+- `<meta name="description">` : "Thomas Issa accompagne les entrepreneurs en structuration patrimoniale. Holding, immo direct, participations — premier échange sans engagement."
+- `<h1>` : "Mission de conseil & accompagnement" ou équivalent validé par @copywriter
+
+---
+
+### User Stories — Page /accompagnement
+
+#### US-A1 : Comprendre en 30 secondes si Thomas peut aider pour ma structuration patrimoniale
+
+**Persona** : Karim (entrepreneur en structuration patrimoniale) — persona principal A
+**Epic** : Acquisition CTA A — Mission de conseil
+**Dépendances** : US-01 (visite Accueil, clic CTA A)
+**Priorité RICE** : R=100 I=10 C=8 E=1 → Score=800
+
+#### Job-to-be-done
+En tant que Karim, je veux lire en 30 secondes ce que Thomas Issa propose concrètement comme mission de conseil, afin de décider si son profil est pertinent pour ma situation avant d'ouvrir une conversation.
+
+#### Contexte de navigation
+- **Page/écran d'origine** : Accueil (clic CTA A "Parler avec Thomas") ou navigation directe
+- **Déclencheur** : clic sur CTA A dans la nav, le hero, ou la section double CTA
+- **Page/écran de destination (succès)** : Karim lit les domaines d'intervention, se reconnaît dans au moins un, fait défiler vers le formulaire
+- **Page/écran de destination (échec)** : Karim quitte si le contenu semble trop vague ou trop institutionnel
+
+#### Données et champs
+| Champ | Type | Obligatoire | Validation | Limites | Exemple |
+|---|---|---|---|---|---|
+| N/A — page de consultation | — | — | — | — | — |
+
+#### 5 états UI
+| État | Comportement | Message/Affichage |
+|---|---|---|
+| Défaut | Page statique, titre et chapeau visibles sans scroll | Titre h1 + liste des 6 domaines above the fold (desktop) |
+| Loading | N/A — statique | N/A |
+| Vide | N/A | N/A |
+| Erreur | URL invalide | Page 404 avec lien retour Accueil |
+| Succès | N/A — consultation pure | N/A |
+
+#### Critères d'acceptance (format Given/When/Then)
+
+**Happy path :**
+- [ ] GIVEN Karim clique sur CTA A depuis l'Accueil WHEN la page /accompagnement se charge THEN le titre h1 et le chapeau sont visibles sans scroll sur desktop (1280px) et mobile (375px)
+- [ ] GIVEN la page est chargée WHEN Karim lit les domaines d'intervention THEN au moins 6 thématiques concrètes sont listées (ex: holding patrimoniale, immo direct, participations — [HYPOTHÈSE : Thomas valide la liste])
+- [ ] GIVEN la page est chargée WHEN Karim fait défiler THEN la section "Ce que n'est pas cette mission" est présente et distingue Thomas d'un CGP
+
+**Cas d'erreur :**
+- [ ] GIVEN l'URL /accompagnement est invalide WHEN le visiteur arrive THEN page 404 avec lien retour Accueil
+- [ ] GIVEN le contenu biographique de Thomas n'est pas finalisé WHEN la page est mise en ligne THEN un texte sobre est présent (aucun placeholder visible)
+
+**Cas limites :**
+- [ ] GIVEN Karim utilise un lecteur d'écran WHEN il navigue THEN les sections sont balisées h1/h2/h3 (WCAG 2.2)
+- [ ] GIVEN Karim est sur mobile 375px WHEN il fait défiler THEN le formulaire 4 champs est accessible sans zoom (touch targets >= 44x44px)
+
+**Permissions :**
+- [ ] GIVEN tout visiteur WHEN il accède à /accompagnement THEN la page est accessible sans authentification
+
+**Données existantes :**
+- [ ] GIVEN que Thomas ajoute ou supprime un domaine d'intervention WHEN le fichier de contenu est mis à jour THEN la liste sur la page reflète les nouveaux domaines
+
+#### Payload API : N/A — page de consultation pure
+
+#### Events analytics
+| Event | Trigger | Propriétés | Funnel |
+|---|---|---|---|
+| page_view | Chargement /accompagnement | referrer, device_type | acquisition |
+| scroll_depth | Scroll 50% et 100% | scroll_pct=50/100 | activation |
+| form_start | Premier focus sur un champ formulaire | — | activation |
+
+#### Scénarios persona concrets
+
+1. Karim clique sur CTA A depuis le hero de l'Accueil. Il arrive sur /accompagnement. En 20 secondes, il voit "structuration de holding patrimoniale" dans la liste des domaines. Il se dit "c'est exactement ce que je cherche". Il fait défiler vers le formulaire.
+2. Karim lit la section "Ce que n'est pas cette mission". Il voit la distinction avec un CGP. Il pense à ses deux mauvaises expériences passées et se dit "Thomas n'est pas dans ce moule-là".
+3. Marc (journaliste) arrive sur /accompagnement pour comprendre le positionnement conseil de Thomas. Il lit le chapeau et les 6 domaines pour son article.
+4. Karim sur mobile (iPhone, 375px) arrive via un lien LinkedIn. La page charge en moins de 2 secondes, les domaines d'intervention sont lisibles sans zoom.
+5. Karim revient sur la page 3 jours plus tard. Le contenu est identique (statique). Il clique directement sur le formulaire pour ouvrir la conversation.
+
+#### Definition of Done (@fullstack)
+- [ ] Page /accompagnement avec toutes les sections
+- [ ] Liste des domaines d'intervention depuis fichier de config (facilite les mises à jour Thomas)
+- [ ] CTA secondaire "/participations" fonctionnel
+- [ ] Responsive validé 375px / 768px / 1280px
+- [ ] Screenshot conforme au design
+
+**Notes @qa** : vérifier que la page /accompagnement existe et n'est pas une ancre de l'Accueil. Vérifier l'absence de placeholders visibles. Tester le balisage sémantique.
+**Notes @copywriter** : Karim cherche un pair, pas un prestataire. Le chapeau doit être écrit à la première personne de Thomas, direct, sans verbe "accompagner" ni "optimiser" — ces mots sentent le CGP. Verbatim clé Karim : "J'ai besoin de quelqu'un qui l'a fait".
+**Notes @fullstack** : contenu des domaines d'intervention dans src/data/expertise.ts. Typer l'interface ExpertiseDomain : { titre, description }. Facilite les mises à jour sans modifier les composants.
+
+---
+
+#### US-A2 : Ouvrir une conversation avec Thomas via un formulaire court sans friction
+
+**Persona** : Karim (entrepreneur en structuration patrimoniale) — persona principal A
+**Epic** : Acquisition CTA A — Mission de conseil
+**Dépendances** : US-A1 (page /accompagnement doit exister) ; infrastructure Resend
+**Priorité RICE** : R=100 I=10 C=8 E=1 → Score=800
+
+#### Job-to-be-done
+En tant que Karim, je veux envoyer un message court en 4 champs (sans formulaire de candidature lourd) afin d'ouvrir une première conversation avec Thomas Issa sans engagement.
+
+#### Contexte de navigation
+- **Page/écran d'origine** : page /accompagnement
+- **Déclencheur** : clic sur ancre interne → scroll vers #contact-accompagnement
+- **Page/écran de destination (succès)** : formulaire remplacé par message de confirmation, Karim sait qu'il aura une réponse
+- **Page/écran de destination (échec)** : formulaire reste visible avec erreurs inline
+
+#### Données et champs (4 champs CTA A — formulaire Karim)
+| Champ | Type | Obligatoire | Validation | Limites | Exemple |
+|---|---|---|---|---|---|
+| prenom_nom | string | Oui | Non vide | 2-100 caractères | "Karim Benali" |
+| email | email | Oui | Format RFC 5322 | 5-254 caractères | "karim@benali-holding.fr" |
+| sujet | string | Oui | Non vide | 3-200 caractères | "Structuration holding IS après cession partielle" |
+| message | string (textarea) | Oui | Non vide, min 30 caractères | 30-1500 caractères | "J'ai 800 K€ à réinvestir après une sortie immo..." |
+| consentement_rgpd | boolean | Oui | Doit être coché | — | true |
+
+#### 5 états UI
+| État | Comportement | Message/Affichage |
+|---|---|---|
+| Défaut | Formulaire 4 champs vide | Labels visibles, bouton "Démarrer la conversation" actif |
+| Loading | Soumission en cours | Bouton désactivé, "Envoi en cours...", spinner |
+| Vide | N/A — formulaire toujours présent | N/A |
+| Erreur | Validation client ou erreur API | Messages d'erreur inline par champ + message global si erreur serveur |
+| Succès | Email envoyé | Formulaire remplacé par : "Merci [prénom]. Thomas vous lira et répondra dans les meilleurs délais. Premier échange sans engagement." |
+
+#### Critères d'acceptance (format Given/When/Then)
+
+**Happy path :**
+- [ ] GIVEN Karim arrive sur #contact-accompagnement WHEN il voit le formulaire THEN les 4 champs et le bouton "Démarrer la conversation" sont visibles
+- [ ] GIVEN Karim remplit les 4 champs valides et coche le consentement WHEN il clique "Démarrer la conversation" THEN le bouton passe en Loading
+- [ ] GIVEN le formulaire est en Loading WHEN Resend envoie l'email THEN le formulaire est remplacé par le message de confirmation avec le prénom de Karim
+- [ ] GIVEN le formulaire est soumis WHEN Thomas consulte sa boîte THEN il reçoit un email tagué `[ACCOMPAGNEMENT]` avec les 4 champs
+
+**Cas d'erreur :**
+- [ ] GIVEN Karim soumet avec email vide WHEN il clique THEN message "L'email est obligatoire" sous le champ
+- [ ] GIVEN Karim saisit "karim@" WHEN il clique THEN message "Format d'email invalide"
+- [ ] GIVEN Karim ne coche pas le consentement RGPD WHEN il clique THEN message "Vous devez accepter la politique de confidentialité pour continuer"
+- [ ] GIVEN Resend retourne une erreur 5xx WHEN Karim soumet THEN message d'erreur serveur global, formulaire reste rempli, bouton redevient actif
+
+**Cas limites :**
+- [ ] GIVEN Karim double-clique sur "Démarrer la conversation" WHEN la première soumission est en cours THEN le deuxième clic est ignoré
+- [ ] GIVEN Karim saisit 1501 caractères dans le champ message WHEN il tape le 1501ème THEN le champ est bloqué à 1500 avec compteur "1500/1500"
+- [ ] GIVEN Karim retourne en arrière depuis la confirmation WHEN il revient sur /accompagnement THEN le formulaire est vide
+
+**Permissions :**
+- [ ] GIVEN tout visiteur WHEN il soumet le formulaire /accompagnement THEN la soumission est acceptée sans authentification
+
+**Données existantes :**
+- [ ] GIVEN la même adresse email soumet 2 fois WHEN la deuxième soumission arrive THEN les deux emails sont envoyés à Thomas (pas de déduplication en V1)
+
+#### Payload API
+- **Endpoint** : POST /api/contact
+- **Authentification** : publique
+- **Rate limit** : 5 requêtes/min par IP (identique US-10, US-11)
+- **Request body** :
+```json
+{
+  "type": "accompagnement",
+  "prenom_nom": "string (2-100 chars)",
+  "email": "string (email valide)",
+  "sujet": "string (3-200 chars)",
+  "message": "string (30-1500 chars)",
+  "consentement_rgpd": "boolean (doit être true)",
+  "_hp": ""
+}
+```
+- **Response succès** : `{ "success": true, "message": "Message envoyé" }` — HTTP 200
+- **Response erreur validation** : `{ "success": false, "errors": { "champ": "message" } }` — HTTP 422
+- **Response erreur serveur** : `{ "success": false, "message": "Erreur serveur" }` — HTTP 500
+
+#### Events analytics
+| Event | Trigger | Propriétés | Funnel |
+|---|---|---|---|
+| form_start | Premier focus sur un champ | type=accompagnement | activation |
+| form_submit_attempt | Clic "Démarrer la conversation" | — | activation |
+| form_submit_success | Réponse API 200 | type=accompagnement | revenue |
+| form_submit_error | Réponse API non-200 | error_type | activation |
+
+#### Scénarios persona concrets
+
+1. Karim a lu les 6 domaines, se reconnaît dans "structuration de holding patrimoniale". Il fait défiler, voit le formulaire 4 champs. Il remplit en 90 secondes. Il clique "Démarrer la conversation". Confirmation "Merci Karim."
+2. Karim oublie le sujet. Il clique. Message rouge : "Le sujet est obligatoire". Il corrige et soumet.
+3. Karim écrit 20 caractères dans le message. Message "Le message doit contenir au moins 30 caractères". Il développe sa situation.
+4. Resend est indisponible. Karim voit l'erreur serveur. Il note l'email de Thomas dans les mentions légales pour contacter directement si le problème persiste.
+5. Karim soumet et revient sur la page via le bouton retour. Le formulaire est vide — pas de risque de double soumission.
+
+#### Definition of Done (@fullstack)
+- [ ] Formulaire 4 champs /accompagnement implémenté et fonctionnel
+- [ ] API route POST /api/contact avec type=accompagnement
+- [ ] Email tagué [ACCOMPAGNEMENT] reçu par Thomas
+- [ ] Validation côté client (React Hook Form + Zod) et serveur
+- [ ] Rate limiting et honeypot identiques à US-10
+- [ ] Test E2E : remplissage → soumission → confirmation
+
+**Notes @qa** : vérifier le tag [ACCOMPAGNEMENT] dans l'email reçu. Tester la séparation entre le formulaire /accompagnement et le formulaire /opportunites (2 soumissions dans la même session → 2 emails distincts à Thomas). Tester honeypot et rate limiting.
+**Notes @ux** : 4 champs = formulaire volontairement court. Labels clairs. Pas de liste déroulante. Le champ "sujet" est un input texte libre (pas un enum) — Karim doit pouvoir exprimer sa situation en ses propres mots.
+**Notes @fullstack** : réutiliser le composant ContactForm avec prop `variant="accompagnement"`. Même logique de soumission que US-10, même endpoint /api/contact avec le paramètre type.
+
+---
+
 ## Page 5 — Contact
 
 ### Objectif
 
-Offrir un second point d'entrée de contact pour les visiteurs qui ne souhaitent pas soumettre une opportunité d'investissement (partenaires B2B, journalistes, demandes diverses). Éviter le cul-de-sac pour Sophie ou Marc.
+Offrir un second point d'entrée de contact pour les visiteurs qui ne souhaitent pas soumettre une opportunité d'investissement (médias, partenaires, demandes diverses). Éviter le cul-de-sac pour Marc ou tout visiteur dont le besoin ne correspond pas aux 2 CTAs principaux.
 
 ### Audience prioritaire
 
-Sophie (partenaire B2B) et Marc (journaliste) — pour qui le formulaire Opportunités avec champs "entreprise / secteur / taille" ne correspond pas à leur contexte.
+Marc (persona secondaire — journaliste/analyste) et tout visiteur avec un besoin de contact générique (partenariats, presse, demandes diverses) — le formulaire Contact est volontairement allégé (4 champs) par opposition au formulaire Opportunités (7 champs qualifiants).
 
 ### Sections obligatoires
 
@@ -941,13 +1192,13 @@ Identiques au formulaire Opportunités (US-10) — même composant réutilisé a
 
 #### US-12 : Envoyer un message de contact générique
 
-**Persona** : Sophie (partenaire B2B)
+**Persona** : Marc (journaliste / analyste) — persona secondaire
 **Epic** : Contact et partenariat
 **Dépendances** : US-10 (même endpoint API, même logique formulaire)
 **Priorité RICE** : R=70 I=7 C=8 E=1 → Score=392
 
 **Job-to-be-done**
-En tant que Sophie, je veux envoyer un message à ISSA Capital afin de me présenter en tant que partenaire potentiel ou d'orienter un client sans passer par le formulaire d'opportunité d'investissement (trop spécifique).
+En tant que Marc, je veux envoyer un message à ISSA Capital afin de solliciter une interview ou obtenir des informations supplémentaires sans passer par le formulaire d'opportunité d'investissement (trop spécifique à mon contexte).
 
 **Contexte de navigation**
 - Page/écran d'origine : navigation depuis n'importe quelle page (lien "Contact" dans la nav)
@@ -955,13 +1206,13 @@ En tant que Sophie, je veux envoyer un message à ISSA Capital afin de me prése
 - Page/écran de destination (succès) : message de confirmation après soumission
 - Page/écran de destination (échec) : formulaire avec erreurs inline
 
-**Données et champs**
+**Données et champs (4 champs formulaire Contact CTA générique)**
 | Champ | Type | Obligatoire | Validation | Limites | Exemple |
 |---|---|---|---|---|---|
-| prenom_nom | string | Oui | Non vide | 2-100 caractères | "Sophie Martin" |
-| email | email | Oui | Format RFC 5322 | 5-254 caractères | "sophie@cabinet-martin.fr" |
-| sujet | string | Oui | Non vide | 3-200 caractères | "Partenariat avocat d'affaires" |
-| message | string (textarea) | Oui | Non vide, min 20 caractères | 20-2000 caractères | "Bonjour, je représente..." |
+| prenom_nom | string | Oui | Non vide | 2-100 caractères | "Marc Leblanc" |
+| email | email | Oui | Format RFC 5322 | 5-254 caractères | "marc@lesechos.fr" |
+| sujet | string | Oui | Non vide | 3-200 caractères | "Demande d'interview — article holdings familiales" |
+| message | string (textarea) | Oui | Non vide, min 20 caractères | 20-2000 caractères | "Bonjour, je prépare un article sur..." |
 | consentement_rgpd | boolean | Oui | Doit être coché | — | true |
 
 **5 états UI** : Identiques à US-10 (même composant)
@@ -976,15 +1227,15 @@ En tant que Sophie, je veux envoyer un message à ISSA Capital afin de me prése
 **Critères d'acceptance**
 
 Happy path :
-- [ ] GIVEN Sophie remplit les 4 champs obligatoires et coche le consentement WHEN elle soumet THEN Thomas reçoit l'email avec le tag `[CONTACT]` dans le sujet (pour distinguer des opportunités)
-- [ ] GIVEN la page Contact s'affiche WHEN Sophie voit le formulaire THEN un lien "Proposer une opportunité d'investissement →" est visible au-dessus du formulaire
+- [ ] GIVEN Marc remplit les 4 champs obligatoires et coche le consentement WHEN il soumet THEN Thomas reçoit l'email avec le tag `[CONTACT]` dans le sujet (pour distinguer des opportunités)
+- [ ] GIVEN la page Contact s'affiche WHEN Marc voit le formulaire THEN un lien "Proposer une opportunité d'investissement →" est visible au-dessus du formulaire (pour rediriger Leila vers le bon formulaire si elle arrive ici par erreur)
 
 Cas d'erreur :
-- [ ] GIVEN Sophie soumet avec le champ message vide WHEN elle clique "Envoyer" THEN un message "Le message est obligatoire" s'affiche sous le champ
-- [ ] GIVEN Resend retourne une erreur WHEN Sophie soumet THEN le message d'erreur serveur s'affiche (identique à US-10)
+- [ ] GIVEN Marc soumet avec le champ message vide WHEN il clique "Envoyer" THEN un message "Le message est obligatoire" s'affiche sous le champ
+- [ ] GIVEN Resend retourne une erreur WHEN Marc soumet THEN le message d'erreur serveur s'affiche (identique à US-10)
 
 Cas limites :
-- [ ] GIVEN Sophie saisit 19 caractères dans le champ message WHEN elle soumet THEN erreur "Le message doit contenir au moins 20 caractères"
+- [ ] GIVEN Marc saisit 19 caractères dans le champ message WHEN il soumet THEN erreur "Le message doit contenir au moins 20 caractères"
 - [ ] GIVEN le même visiteur soumet le formulaire Contact puis le formulaire Opportunités dans la même session THEN les deux emails arrivent à Thomas correctement
 
 Permissions :
@@ -1006,10 +1257,10 @@ Données existantes :
 
 **Scénarios persona concrets**
 
-1. Sophie arrive sur le site, lit les participations, et veut contacter ISSA Capital pour un dossier client. Elle clique "Contact" dans la nav. Elle remplit 4 champs en 1 minute. Elle soumet. Confirmation "Merci Sophie."
-2. Marc (journaliste) cherche à interviewer Thomas Issa. Il va sur Contact, remplit le formulaire avec sujet "Demande d'interview — article holding familiale". Il soumet.
-3. Hélène arrive sur /contact par erreur (cherchait le formulaire Opportunités). Elle voit le lien "Proposer une opportunité d'investissement →" et est redirigée vers le bon formulaire.
-4. Sophie utilise un mobile. Le formulaire est scrollable et les champs accessibles sans zoom.
+1. Marc prépare un article sur les holdings familiales françaises. Il trouve le site ISSA Capital via LinkedIn, veut interviewer Thomas. Il va sur /contact, remplit 4 champs en 1 minute avec sujet "Demande d'interview — article holdings familiales indépendantes". Il soumet. Confirmation "Merci Marc."
+2. Karim a déjà rempli le formulaire /accompagnement mais veut aussi envoyer un document complémentaire. Il passe par /contact pour un message libre.
+3. Leila arrive sur /contact par erreur (cherchait le formulaire Opportunités). Elle voit le lien "Proposer une opportunité d'investissement →" et est redirigée vers /opportunites#formulaire.
+4. Marc utilise un mobile. Le formulaire est scrollable et les champs accessibles sans zoom.
 5. Un visiteur soumet le formulaire Contact 7 fois en 1 minute. La 6ème est bloquée par le rate limiting (même règle que US-11).
 
 **Definition of Done (@fullstack)**
@@ -1158,7 +1409,8 @@ Données existantes :
 - [x] Configuration initiale du compte : N/A — pas de compte utilisateur
 
 **Usage principal (core loop) :**
-- [x] Actions du job-to-be-done principal (Hélène propose une opportunité) : US-01 → US-02 → US-10
+- [x] Actions du job-to-be-done principal (Leila soumet une opportunité) : US-01 → US-02 → US-10
+- [x] Actions du job-to-be-done secondaire (Karim prend contact pour accompagnement) : US-01 → US-A1 → US-A2
 - [x] Navigation entre les pages : composant Navigation transversal
 - [x] Recherche / filtrage : N/A — site vitrine statique
 - [x] CRUD : US-10 (Create — soumission formulaire). Lecture (US-01, US-03, US-04). Pas de modification ni suppression côté visiteur.
