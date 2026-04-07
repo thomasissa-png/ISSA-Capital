@@ -297,7 +297,7 @@ export default function HomePage(): JSX.Element {
           <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
             {/* Porte 1 — Dirigeants / Karim → /accompagnement */}
             <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
-              <p className="overline text-levant-500">Pour les dirigeants</p>
+              <Overline tone="light">Pour les dirigeants</Overline>
               <h3 className="mt-md font-heading text-h3 text-parchment-100">
                 Travailler avec Thomas Issa.
               </h3>
@@ -314,7 +314,7 @@ export default function HomePage(): JSX.Element {
 
             {/* Porte 2 — Apporteurs d'affaires / Leila → /opportunites */}
             <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
-              <p className="overline text-levant-500">Pour les apporteurs d&apos;affaires</p>
+              <Overline tone="light">Pour les apporteurs d&apos;affaires</Overline>
               <h3 className="mt-md font-heading text-h3 text-parchment-100">
                 Présenter une opportunité.
               </h3>
