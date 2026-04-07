@@ -1,7 +1,7 @@
 # Functional Specs — ISSA Capital
 > @product-manager — 2026-04-07
 > Source : project-context.md (Phase 0 validée) + product-vision.md
-> [PROVISOIRE — à enrichir quand brand-platform.md et personas.md seront disponibles]
+> Révisé le 2026-04-07 : personas alignés sur Karim (A), Leila (B), Marc (secondaire) — Hélène et Sophie supprimés. Architecture 2 CTAs + 2 pages distinctes validée. Source personas : docs/strategy/personas.md.
 
 ---
 
@@ -88,7 +88,9 @@ Karim (persona principal A — accompagnement) + Leila (persona principal B — 
 **Section Hero :**
 - Headline : à rédiger par @copywriter — doit intégrer les mots Famille / Transmission / Long-terme et l'identité libanaise
 - Sous-titre : reformulation de la promesse officielle "La holding patrimoniale d'une famille libanaise qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
-- CTA primaire : "Proposer une opportunité d'investissement" → /opportunites#formulaire
+- CTA A (cible Karim) : "Parler avec Thomas" → /accompagnement
+- CTA B (cible Leila) : "Proposer une opportunité d'investissement" → /opportunites#formulaire
+- Note @copywriter : CTA A et CTA B coexistent dans le hero — le copy doit différencier clairement les deux entrées sans que le hero soit chargé. Voir wireframes.md @ux pour le traitement visuel.
 - Image/visuel : aucune photo de famille (vie privée). Illustration ou image libre premium symbolisant transmission/architecture/pérennité — à sélectionner par @design
 
 **Section Chapeau mission :**
@@ -686,10 +688,10 @@ Leila (persona principal B) — elle a un deal, elle a lu les critères, elle ve
 
 ### Contraintes RGPD
 
-- Formulaire de contact : collecte nom, email, entreprise, secteur, message
-- Politique de confidentialité liée depuis le formulaire (checkbox consentement OU lien visible sous le bouton)
-- Données transmises par email via Resend (ou équivalent) — pas de stockage en base de données en V1
-- Conformité art. 13 RGPD : informer sur le responsable du traitement (ISSA Capital SAS), finalité (traitement de la demande), durée de conservation (@legal valide)
+- Formulaire CTA B (/opportunites) : collecte nom, email, téléphone, type d'opportunité, localisation, ticket estimé, description + consentement RGPD
+- Politique de confidentialité liée depuis le formulaire (lien visible sous le bouton "Soumettre mon opportunité")
+- Données transmises par email via Resend — pas de stockage en base de données en V1
+- Conformité art. 13 RGPD : informer sur le responsable du traitement (ISSA Capital SAS), finalité (traitement de la demande d'investissement), durée de conservation (@legal valide)
 
 ---
 
@@ -879,6 +881,86 @@ Données existantes : N/A
 **Notes @qa** : tester le honeypot avec un champ rempli manuellement via DevTools. Tester le rate limiting avec curl en rafale.
 
 **Notes @fullstack** : rate limiting via middleware Next.js ou librairie upstash/ratelimit. Honeypot : champ `<input name="_hp" tabindex="-1" autocomplete="off" style="display:none">`. Si rempli côté serveur → retourner 200 mais ne pas appeler Resend.
+
+---
+
+### User Stories complémentaires — Page Opportunités (CTA B — Leila)
+
+#### US-B1 : Lire les critères d'investissement d'ISSA Capital pour qualifier son deal
+
+**Persona** : Leila (apporteur d'affaires immo / fondateur cherchant co-investisseur) — persona principal B
+**Epic** : Acquisition CTA B — Soumission d'opportunités
+**Dépendances** : US-01 (visite Accueil, clic CTA B)
+**Priorité RICE** : R=100 I=10 C=9 E=1 → Score=900
+
+#### Job-to-be-done
+En tant que Leila, je veux lire les critères d'investissement d'ISSA Capital en moins de 90 secondes, afin de qualifier si mon deal entre dans la grille avant de prendre 5 minutes pour remplir le formulaire.
+
+#### Contexte de navigation
+- **Page/écran d'origine** : Accueil (clic CTA B) ou navigation directe
+- **Déclencheur** : clic sur CTA B "Proposer une opportunité" → arrivée sur /opportunites (haut de page, avant le formulaire)
+- **Page/écran de destination (succès)** : Leila lit les critères, valide que son deal entre dans la grille, fait défiler vers le formulaire
+- **Page/écran de destination (échec)** : Leila lit les critères et comprend que son deal n'entre pas dans la grille — elle quitte sans friction (pas de formulaire forcé)
+
+#### Données et champs
+| Champ | Type | Obligatoire | Validation | Limites | Exemple |
+|---|---|---|---|---|---|
+| N/A — page de consultation | — | — | — | — | — |
+
+#### 5 états UI
+| État | Comportement | Message/Affichage |
+|---|---|---|
+| Défaut | Page statique, section critères visible | Secteurs, tailles de tickets, horizon, exclusions listés |
+| Loading | N/A — statique | N/A |
+| Vide | N/A | N/A |
+| Erreur | URL invalide | Page 404 |
+| Succès | N/A — consultation | N/A |
+
+#### Critères d'acceptance (format Given/When/Then)
+
+**Happy path :**
+- [ ] GIVEN Leila arrive sur /opportunites WHEN elle lit la section "Ce qu'ISSA recherche" THEN les secteurs cibles, les tailles de tickets et l'horizon d'investissement sont explicitement listés
+- [ ] GIVEN la section critères est affichée WHEN Leila lit THEN un délai de réponse annoncé "dans la journée" est visible dans la section processus de contact
+- [ ] GIVEN Leila a validé les critères WHEN elle fait défiler THEN l'ancre #formulaire est accessible et le formulaire US-10 est visible
+
+**Cas d'erreur :**
+- [ ] GIVEN l'URL /opportunites est invalide WHEN Leila arrive THEN page 404 avec lien retour Accueil
+
+**Cas limites :**
+- [ ] GIVEN les critères d'investissement ne sont pas encore finalisés par Thomas WHEN la page est mise en ligne THEN un texte sobre basé sur les [HYPOTHÈSE]s documentées est présent (jamais de placeholder visible)
+- [ ] GIVEN Leila est sur mobile WHEN elle lit les critères THEN le texte est lisible sans zoom sur 375px
+
+**Permissions :**
+- [ ] GIVEN tout visiteur WHEN il accède à /opportunites THEN la page est accessible sans authentification
+
+**Données existantes :**
+- [ ] GIVEN que Thomas met à jour les critères d'investissement WHEN le fichier de contenu est mis à jour THEN la page reflète les nouveaux critères sans régression sur les sections suivantes
+
+#### Payload API : N/A — page de consultation
+
+#### Events analytics
+| Event | Trigger | Propriétés | Funnel |
+|---|---|---|---|
+| page_view | Chargement /opportunites | referrer, device_type | acquisition |
+| scroll_depth | Scroll 50% (section critères lues) | scroll_pct=50 | activation |
+| scroll_to_form | Scroll jusqu'à #formulaire | — | activation |
+
+#### Scénarios persona concrets
+
+1. Leila arrive depuis l'Accueil (CTA B). Elle lit d'abord les critères avant de toucher le formulaire : immobilier IDF, tickets 200 K€ — 2 M€, horizon long. Son deal à Montreuil (980 K€) entre dans la grille. Elle fait défiler vers le formulaire.
+2. Leila lit la section "Ce qu'ISSA ne fait pas" — pas d'investissement spéculatif court-terme. Elle confirme que sa proposition de co-investissement long-terme est dans la cible.
+3. Leila lit le délai de réponse annoncé "dans la journée". C'est le signal clé qui la convainc de prendre 5 minutes pour remplir — ses deals n'attendent pas.
+4. Marc (journaliste) arrive sur /opportunites pour comprendre la thèse d'investissement. Il lit les critères et note les secteurs cibles pour son article.
+5. Un apporteur d'affaires avec un deal commercial (secteur exclus) lit les critères et comprend que son deal ne correspond pas — il quitte sans frustration (critères clairs).
+
+#### Definition of Done (@fullstack)
+- [ ] Section critères présente sur /opportunites avant l'ancre #formulaire
+- [ ] Délai de réponse "dans la journée" visible dans la section processus
+- [ ] Contenu depuis fichier de config (facilite les mises à jour Thomas)
+- [ ] Screenshot conforme au design
+
+**Notes @qa** : vérifier que le délai "dans la journée" apparaît bien sur la page (grep). Vérifier l'ordre des sections (critères AVANT formulaire). Tester le scroll vers #formulaire depuis le haut de page.
+**Notes @copywriter** : le délai "dans la journée" est verrouillé par Thomas — ne pas atténuer avec "environ" ou "généralement". C'est le différenciateur clé vs family offices lents.
 
 ---
 
@@ -1447,35 +1529,43 @@ Données existantes :
 
 ## Matrice de traçabilité User Stories → Tests (Gate G27)
 
-| US | Titre | Page | Agent test (@qa) | Test E2E |
-|---|---|---|---|---|
-| US-01 | Comprendre l'identité ISSA Capital | Accueil | À dériver par @qa | test-accueil-hero.spec.ts |
-| US-02 | Naviguer vers Opportunités depuis Accueil | Accueil → Opportunités | À dériver par @qa | test-navigation-cta.spec.ts |
-| US-03 | Comprendre la mission et l'identité familiale | Mission | À dériver par @qa | test-mission.spec.ts |
-| US-04 | Explorer les participations | Participations | À dériver par @qa | test-participations.spec.ts |
-| US-10 | Soumettre une proposition d'investissement | Opportunités | À dériver par @qa | test-formulaire-opportunite.spec.ts |
-| US-11 | Protection anti-spam | API | À dériver par @qa | test-antispam.spec.ts |
-| US-12 | Envoyer un message de contact générique | Contact | À dériver par @qa | test-formulaire-contact.spec.ts |
-| US-13 | Consulter les mentions légales | Mentions légales | À dériver par @qa | test-mentions-legales.spec.ts |
+| US | Titre | Persona | Page | Agent test (@qa) | Test E2E |
+|---|---|---|---|---|---|
+| US-01 | Comprendre l'identité ISSA Capital | Karim | Accueil | À dériver par @qa | test-accueil-hero.spec.ts |
+| US-02 | Naviguer vers Opportunités depuis Accueil | Leila | Accueil → /opportunites | À dériver par @qa | test-navigation-cta-leila.spec.ts |
+| US-03 | Comprendre la mission et l'identité familiale | Karim | /mission | À dériver par @qa | test-mission.spec.ts |
+| US-04 | Explorer les participations | Leila | /participations | À dériver par @qa | test-participations.spec.ts |
+| US-B1 | Lire les critères d'investissement | Leila | /opportunites | À dériver par @qa | test-criteres-opportunites.spec.ts |
+| US-10 | Soumettre une opportunité (formulaire 7 champs) | Leila | /opportunites | À dériver par @qa | test-formulaire-opportunite.spec.ts |
+| US-11 | Protection anti-spam | N/A (système) | API | À dériver par @qa | test-antispam.spec.ts |
+| US-A1 | Comprendre l'offre d'accompagnement en 30s | Karim | /accompagnement | À dériver par @qa | test-accompagnement-contenu.spec.ts |
+| US-A2 | Ouvrir une conversation via formulaire 4 champs | Karim | /accompagnement | À dériver par @qa | test-formulaire-accompagnement.spec.ts |
+| US-12 | Envoyer un message de contact générique | Marc | /contact | À dériver par @qa | test-formulaire-contact.spec.ts |
+| US-13 | Consulter les mentions légales | N/A (tout visiteur) | /mentions-legales | À dériver par @qa | test-mentions-legales.spec.ts |
 
-[NOTE @qa : cette matrice est le point de départ. Chaque US doit avoir au moins 1 test E2E Playwright correspondant dans TESTING.md. Les scénarios persona concrets de chaque US sont la source de vérité pour dériver les cas de test.]
+[NOTE @qa : cette matrice est le point de départ. Chaque US doit avoir au moins 1 test E2E Playwright correspondant dans TESTING.md. Les scénarios persona concrets de chaque US sont la source de vérité pour dériver les cas de test. Révision 2026-04-07 : personas Hélène et Sophie supprimés — remplacés par Karim (A), Leila (B), Marc (secondaire). Nouvelles US : US-B1, US-A1, US-A2.]
 
 ---
 
-**Handoff → @ux + @design + @copywriter (en parallèle)**
-- Fichiers produits : `docs/product/functional-specs.md`
+**Handoff → @fullstack**
+- Fichiers produits : `docs/product/functional-specs.md` (révision personas 2026-04-07)
 - Décisions prises :
-  - 8 user stories (US-01 à US-13 avec gaps sur US-05 à US-09 intentionnellement non utilisés — numérotation réservée aux stories @ux si nécessaires)
-  - Formulaire Opportunités = 7 champs (dont 1 optionnel) + consentement RGPD
-  - Composant formulaire réutilisable entre /opportunites et /contact
-  - Page Mentions légales : noindex, 3 sections
-  - Données participations : fichier config participations.ts (statique)
-  - Données partiellement inconnues (Gradient One, Versi Immo, Versi Invest) — @copywriter prépare des textes sobres institutionnels en attente
+  - Personas alignés : Karim (A — accompagnement), Leila (B — opportunités), Marc (secondaire). Hélène et Sophie supprimés.
+  - Architecture 2 CTAs distincts, 2 pages distinctes : /accompagnement (CTA A — Karim) + /opportunites (CTA B — Leila) — validé Thomas
+  - Formulaire CTA A (/accompagnement) = 4 champs (Karim — conversation ouverte)
+  - Formulaire CTA B (/opportunites) = 7 champs qualifiants (Leila — dossier deal immobilier/participation)
+  - Délai de réponse opportunités = "dans la journée" (verrouillé Thomas)
+  - 11 user stories : US-01, US-02, US-03, US-04, US-B1, US-10, US-11, US-A1, US-A2, US-12, US-13
+  - Composant ContactForm réutilisable avec prop variant="accompagnement" | "opportunite" | "contact"
+  - Email tagué : [ACCOMPAGNEMENT] / [OPPORTUNITE] / [CONTACT] selon le formulaire source
+  - Données participations et expertise : fichiers config participations.ts + expertise.ts
 - Points d'attention :
-  - US-10 est la story critique. @ux doit soigner la conception du formulaire (qualifier sans intimider Hélène)
+  - US-10 et US-A2 sont les stories critiques (les 2 formulaires). @fullstack implémente les 2 variants du composant ContactForm
+  - US-B1 : section critères d'investissement DOIT être visible AVANT le formulaire sur /opportunites
   - L'identité libanaise DOIT apparaître dans la page Mission (US-03) — vérification @qa obligatoire
-  - @legal valide la page Mentions légales avant lancement (durée conservation, mention Resend comme processeur)
-  - [HYPOTHÈSE A1] contenu 4 participations non documentées → @copywriter prépare textes sobres, Thomas valide avant Phase 2
+  - @legal valide la page Mentions légales avant lancement (durée conservation, mention Resend comme processeur art. 28 RGPD)
+  - [HYPOTHÈSE A1] contenu 4 participations non documentées → @copywriter prépare textes sobres, Thomas valide
+  - [HYPOTHÈSE A2] 6 domaines d'expertise Thomas (/accompagnement) → Thomas doit valider avant @copywriter rédige la page
 
 
 
