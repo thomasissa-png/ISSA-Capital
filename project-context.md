@@ -171,7 +171,7 @@ Thomas a **créé une agence de communication** à partir de **1 500 € de fond
 
 **Pricing** : [DÉCISION Thomas en attente — proposition orchestrator à arbitrer : "sur devis" pour mission ponctuelle + "advisor equity ou retainer mensuel" pour advisoring. À trancher avant @copywriter en Phase 1]
 
-### Anti-persona — recommandation orchestrator (à valider par Thomas)
+### Anti-persona (VALIDÉS par Thomas 2026-04-07)
 Compte tenu du profil Thomas (15+ ans corporate premium Sony, co-founder TEOS à gros ROI, advisor startups triés sur le volet, holding patrimoniale famille libanaise, scope immo + participations financières, ton "caractère/fier/pas gnangnan"), recommandation :
 - **Pas de first-time founders en pre-seed** — Thomas est un advisor pour entrepreneurs qui ont déjà fait leurs preuves, pas un incubateur
 - **Pas de projets crypto / Web3 purs** — hors scope ISSA (immo + participations financières classiques)
@@ -180,7 +180,7 @@ Compte tenu du profil Thomas (15+ ans corporate premium Sony, co-founder TEOS à
 - **Pas de mission de conseil < 1 mois** — trop court pour apporter de la valeur réelle
 - **Pas de projets contrevenant à l'ADN éthique** — environnement, humanité (cf. ADN dur)
 - **Pas de sollicitation pour véhicules spéculatifs court-terme**
-→ **À VALIDER PAR THOMAS avant publication** — ces anti-personas donnent du caractère mais doivent être assumés publiquement
+→ **VALIDÉS en bloc par Thomas le 2026-04-07.** À assumer publiquement sur la page /accompagnement et /opportunites.
 
 ### Clients publiquement mentionnables (confirmé Thomas 2026-04-07)
 **Via Sony TEOS** : **Lego, Siemens, Netflix, Cap Gemini, Suzuki, Hilton, Mango**
