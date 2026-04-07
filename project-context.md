@@ -50,6 +50,18 @@
 - **Rôle dans ISSA Capital** : **figure fondatrice symbolique** (la holding est "l'aboutissement" de son parcours, pas sa création juridique — c'est Thomas qui a créé la SAS en mars 2026). À positionner dans le copy comme **source de légitimité patrimoniale** et **origine du savoir-faire familial**, sans faire de Jean-Pierre un dirigeant opérationnel d'ISSA Capital (il ne l'est pas).
 - **Usage copy** : la page Mission peut raconter la filiation Jean-Pierre → Thomas comme colonne vertébrale narrative. Page Participations peut mentionner l'immobilier Paris/Normandie/Liban comme ancrage historique. Page Accompagnement peut capitaliser sur "issu d'une famille qui a construit et transmis pendant des décennies" (lisibilité et crédibilité pour Karim).
 
+### Filiation fondatrice — Sonia Issa (mère de Thomas, ajout 2026-04-07)
+- **Nom** : **Sonia Issa**
+- **Née le** : **23 juillet 1959**
+- **Lieu de naissance** : **Le Caire (Égypte)** — d'une famille **libanaise** (l'ancrage libanais est commun aux deux parents)
+- **Parcours professionnel** : **architecte d'intérieur** (carrière complète dans la discipline)
+- **Rôle familial** : "a su prendre soin de ses deux enfants" (Thomas a donc un frère ou une sœur — **information à usage interne uniquement**, ne pas exposer publiquement sauf validation Thomas)
+- **Pertinence brand-story** :
+  - La double origine libanaise (Dakar pour Jean-Pierre, Le Caire pour Sonia) renforce la narration "**famille libanaise de la diaspora**" — pas une famille franco-libanaise récente, mais une famille dont les deux branches ont circulé dans le monde avant de s'ancrer en France. C'est profondément différenciant.
+  - Le métier de Sonia (**architecte d'intérieur**) est un **fil rouge inattendu** avec l'écosystème actuel : Versimo (home staging IA), Versi Immobilier (marchand de biens), Immocrew (marketing mandataires immo), immobilier direct. L'immobilier et l'esthétique de l'habitat sont une **tradition maternelle**, pas juste une stratégie d'investissement opportuniste. À exploiter dans le copy page Mission ET page Participations si Thomas valide.
+- **Usage copy recommandé** : la page Mission peut mentionner les deux parents (Jean-Pierre + Sonia) comme sources de savoir-faire complémentaires — stratégie internationale (IBM/Lexmark) côté père + esthétique/immobilier (architecture intérieure) côté mère. Ces deux héritages convergent dans ISSA Capital.
+- **⚠️ À valider avec Thomas** : accepte-t-il de citer Sonia par son nom sur le site ? Recommandation orchestrator : oui pour la page Mission (enrichit l'histoire), avec parcimonie (pas de date de naissance publique pour respect vie privée).
+
 ### Prochaine génération — les bénéficiaires de la transmission (Thomas 2026-04-07)
 **Les destinataires concrets de la transmission patrimoniale d'ISSA Capital sont les enfants de Thomas** :
 - **Antoine Issa** — né le **24 avril 2015**
