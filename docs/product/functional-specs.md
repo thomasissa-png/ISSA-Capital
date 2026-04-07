@@ -69,11 +69,11 @@ Voir US-10 et US-11 pour les specs détaillées. Le composant est identique sur 
 
 ### Objectif
 
-Poser l'identité d'ISSA Capital en moins de 10 secondes et orienter Hélène vers la page Opportunités.
+Poser l'identité d'ISSA Capital en moins de 10 secondes et orienter chaque visiteur vers le bon CTA : Karim vers /accompagnement, Leila vers /opportunites.
 
 ### Audience prioritaire
 
-Hélène (persona principal) + Sophie (persona secondaire) — première impression pour des visiteurs qui ne connaissent pas la holding.
+Karim (persona principal A — accompagnement) + Leila (persona principal B — opportunités) + Marc (persona secondaire — earned media) — première impression pour des visiteurs qui ne connaissent pas la holding.
 
 ### Sections obligatoires
 
@@ -107,10 +107,12 @@ Hélène (persona principal) + Sophie (persona secondaire) — première impress
 - Chaque bloc : icône ou chiffre + titre + 1-2 lignes explicatives
 - Pas de CTA — section de conviction pure
 
-**Section CTA de conversion :**
-- Titre : appel à action pour fondateurs de PME (à rédiger @copywriter)
-- Sous-titre : réassurance ("Nous lisons chaque proposition")
-- CTA : "Proposer une opportunité" → /opportunites#formulaire
+**Section CTA de conversion (double entrée) :**
+- CTA A : "Parler avec Thomas" → /accompagnement (cible Karim — entrepreneur cherchant conseil)
+- CTA B : "Proposer une opportunité" → /opportunites#formulaire (cible Leila — apporteur d'affaires avec un deal)
+- Sous-titre CTA A : réassurance ("Mission de conseil personnalisée — premier échange sans engagement")
+- Sous-titre CTA B : réassurance ("Nous répondons à chaque opportunité qualifiée dans la journée")
+- Note @copywriter : deux appels à action distincts sur la même section — Karim cherche un pair, Leila a un deal à soumettre. Le copy doit adresser les deux sans être schizophrène.
 
 ### États UI
 
