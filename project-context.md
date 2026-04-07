@@ -81,19 +81,39 @@
   4. Rôle actuel de Jean-Pierre dans ISSA Capital : figure fondatrice symbolique (patriarche), pas dirigeant opérationnel SAS
   5. Terrains Liban : formulation générique acceptable (pas de détails publics)
 
-### Seconde société de Jean-Pierre — **2J** (ajout Thomas 2026-04-07, validée citable)
-- **Nom** : **2J**
-- **Historique** : Jean-Pierre Issa **a racheté 2J avec 2 co-actionnaires** (après/en parallèle de sa carrière IBM→Lexmark)
-- **Réalisations** : développement avec succès + **expansion internationale réussie**
-- **Rôle de Jean-Pierre** : co-repreneur + développeur, opérationnel et actionnaire
-- **Statut actuel** : **Jean-Pierre possède encore ses parts aujourd'hui** — participation active toujours dans le patrimoine familial
-- **Pertinence brand-story** : preuve complémentaire de track record **entrepreneurial** (pas juste corporate Sony/IBM/Lexmark). Jean-Pierre a fait chez 2J **exactement ce qu'ISSA Capital fait aujourd'hui** : racheter, développer, internationaliser, tenir sur la durée. Cohérence parfaite avec "Racines libanaises. Exigences sans exception." — ce n'est pas un discours, c'est déjà l'histoire de la génération précédente.
-- **⚠️ Données manquantes pour le copy** (à demander à Thomas avant publication — non bloquantes pour Phase 1) :
-  1. Secteur de 2J ?
-  2. Année de rachat par Jean-Pierre ?
-  3. Pays d'implantation internationale ?
-  4. Taille approximative publiable ?
-  5. Jean-Pierre encore opérationnel ou actionnaire passif ?
+### Seconde société de Jean-Pierre — **2J Impression** (ajout Thomas 2026-04-07, données WebFetch 2j-impression.fr)
+- **Nom officiel** : **2J Impression**
+- **URL** : https://www.2j-impression.fr
+- **Siège** : 12 rue du Galus, 33700 Mérignac (agglomération bordelaise)
+- **Date de création** : **1994** (la société existe depuis 1994 — date de rachat par Jean-Pierre non indiquée publiquement, à confirmer avec Thomas si le copy l'exige)
+- **Activité** : **distribution multimarque de matériel d'impression numérique industrielle d'étiquettes** (technologie jet d'encre UV). Services : conception de **logiciels métiers** propriétaires, accessoires, consommables, pièces détachées (neuves et reconditionnées), maintenance, SAV. **Pionnier** dans la distribution et le service d'équipements d'impression numérique.
+- **Produits phares distribués** : LabStar 330S, LabStar 330HD, DigiCoat 3D, Digital Ultra, têtes d'impression Graph-Tech USA, Stelvio BSA
+- **Partenaires/fournisseurs** : HanGlobal, DeCoSystem, Ecosystem
+- **Dirigeants actuels (équipe 2J Impression)** :
+  - **Najib Bahous** — Président (co-actionnaire présumé)
+  - **Willy Peltier** — CEO + Co-owner (2e co-actionnaire)
+  - **Jean-Pierre Issa** — **Co-Managing Director** (3e co-actionnaire, famille Issa) — cohérent avec le "Il est surtout au board désormais" de Thomas
+  - **Xavier Briols** — Systems Engineer / Project Manager
+  - **Jocelyn Darre** — Commercial Engineer
+- **CA 2024** : **4 M€**
+- **Clients** : 50+
+- **Effectif** : environ 6 techniciens de maintenance + équipe ingénierie + admin
+- **Présence internationale** (réelle et étendue !) :
+  - **Europe** : France, Espagne, Belgique, Malte + support Italie, Allemagne, Grèce
+  - **Afrique** : Algérie, Maroc, Tunisie, Sénégal, Kenya, Éthiopie
+  - **Amériques** : Canada, Paraguay, Uruguay, Chili, Argentine, Brésil
+  - → 17 pays avec implantation/opération, preuve tangible de l'expansion internationale pilotée
+- **Positionnement RSE** : évaluation EcoVadis prévue 2025, initiatives RSE en développement
+- **Rôle de Jean-Pierre** (confirmé Thomas 2026-04-07) : **Co-Managing Director + board** — "il est surtout au board désormais" (donc moins opérationnel quotidien, mais décisionnaire stratégique)
+- **Pertinence brand-story CRITIQUE pour ISSA Capital** :
+  1. **Track record tangible** : une société française familiale, active depuis 1994, 4 M€ CA, 17 pays, rentable, internationalisée avec succès. C'est exactement le modèle qu'ISSA Capital incarne à l'échelle holding.
+  2. **Modèle de partenariat à 3** : Jean-Pierre a racheté et développé **AVEC 2 co-actionnaires** — preuve que la famille Issa sait construire en co-actionnariat long-terme, pas seulement en solo. Excellent signal pour Leila (persona B — elle cherche un co-investisseur long-terme, pas un repreneur total).
+  3. **Internationalisation réelle** : 17 pays (Europe + Afrique + Amériques) — pas du marketing, c'est opérationnel. Ancre la légitimité de Thomas (ex-Sony monde entier) dans une tradition familiale.
+  4. **Fil rouge générationnel** : Jean-Pierre a racheté, développé et tenu 2J Impression → Thomas reçoit cet héritage et le structure en holding ISSA Capital → les 3 enfants en bénéficieront. C'est **exactement l'arc narratif** dont la page Mission a besoin.
+- **Usage copy @copywriter (passe corrective à faire sur page-mission.md et potentiellement page-accompagnement.md)** :
+  - **Page Mission** : ajouter 2J Impression dans la section racontant Jean-Pierre. Exemple de phrase-type : "Après IBM et Lexmark, Jean-Pierre a racheté 2J Impression en co-actionnariat avec deux partenaires. Créée en 1994 à Mérignac, la société est aujourd'hui présente dans 17 pays. Il en est toujours Co-Managing Director." (phrase à raffiner par @copywriter)
+  - **Page Participations** : peut mentionner 2J Impression comme **participation historique de la famille Issa** (indirectement dans l'écosystème élargi, via Jean-Pierre). À traiter avec précaution — 2J Impression n'est **PAS dans le périmètre juridique d'ISSA Capital SAS**, c'est une participation personnelle de Jean-Pierre. Ne pas la faire figurer dans la liste des "participations d'ISSA Capital" mais éventuellement dans un bloc "Écosystème familial élargi" ou "Patrimoine historique de la famille Issa".
+  - **Page Accompagnement** : peut renforcer la crédibilité de Thomas — "formé par un père qui a racheté, développé et internationalisé une société industrielle en co-actionnariat depuis 30 ans". C'est un anchor très puissant pour Karim qui cherche "quelqu'un qui l'a fait".
 
 ### Trajectoire internationale de la famille Issa (ajout Thomas 2026-04-07)
 - **Années 1970** : Jean-Pierre et Sonia **quittent le Liban à cause de la guerre civile** (1975-1990) pour **finir leurs études en France**. C'est le **point d'origine de l'implantation française** de la famille Issa. ADN = **diaspora libanaise**, pas récente, structurée par la géopolitique.

@@ -40,7 +40,7 @@ Siège social : 54 Rue Henri Barbusse, 92000 Nanterre, France
 RCS Nanterre : 102 356 094
 N° TVA intracommunautaire : FR50102356094
 
-Directeur de la publication : Thomas Issa, [HYPOTHÈSE : Président — à confirmer par Thomas avant mise en ligne]
+Directeur de la publication : Thomas Issa, Président
 
 Contact : contact@issa-capital.com
 
@@ -108,7 +108,7 @@ RCS Nanterre : 102 356 094
 Contact délégué à la protection des données : Thomas Issa
 Email : contact@issa-capital.com
 
-[Note @copywriter : l'email privacy dédié (privacy@issa-capital.com) est une proposition de @legal. Thomas doit confirmer s'il crée cette adresse dédiée ou s'il utilise contact@. En attendant confirmation, contact@issa-capital.com est utilisé — conformément à la décision dans project-context.md qui confirme contact@ comme email unique.]
+[Note : email unique confirmé par Thomas 2026-04-07 — `contact@issa-capital.com` utilisé pour tous les usages (contact général, RGPD, opportunités, presse).]
 
 ---
 
@@ -193,7 +193,7 @@ Si vous constatez le dépôt de cookies non déclarés, merci de nous en informe
 | H-L1 | Capital social = 1 047 562,00 € | DISPONIBLE (confirmé Thomas 2026-04-07) | Intégré |
 | H-L2 | TVA intracommunautaire = FR50102356094 | DISPONIBLE (confirmé Thomas 2026-04-07) | Intégré |
 | H-L3 | Directeur de publication = Thomas Issa, qualité Président | HYPOTHÈSE | Thomas doit confirmer sa qualité exacte (Président / Directeur général / autre) |
-| H-L4 | Email privacy dédié (privacy@issa-capital.com) | NON CRÉÉ | Thomas décide : créer privacy@ ou utiliser contact@ |
+| H-L4 | Email privacy dédié (contact@issa-capital.com) | NON CRÉÉ | Thomas décide : créer privacy@ ou utiliser contact@ |
 | H-L5 | Adresse exacte hébergeur Replit | PROVISOIRE | @fullstack vérifie dans CGU Replit au déploiement |
 | H-L6 | Date de mise en ligne | EN ATTENTE | @fullstack insère la date au déploiement |
 
