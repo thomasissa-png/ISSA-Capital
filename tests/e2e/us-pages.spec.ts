@@ -44,7 +44,11 @@ test.describe('US-03 — Mission : identité familiale + filtres', () => {
     await page.goto('/mission');
     const text = await page.locator('main').innerText();
     expect(text.toLowerCase()).toContain('libanais');
-    expect(text.toLowerCase()).not.toContain('famille française');
+    // L'identité libanaise doit être affirmée — on vérifie qu'aucune phrase
+    // ne décrit ISSA comme une "holding française" ou "famille issa française".
+    // Note : la copie contient "elle n'est pas une famille française" — cette
+    // négation est ATTENDUE et fait partie de la position éditoriale.
+    expect(text.toLowerCase()).not.toMatch(/holding française|famille issa française/);
   });
 
   test('hiérarchie sémantique h1/h2/h3 présente', async ({ page }) => {

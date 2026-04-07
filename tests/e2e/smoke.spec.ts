@@ -22,8 +22,10 @@ for (const route of routes) {
     await expect(page.locator('h1').first()).toContainText(route.h1Contains);
     // Skip link présent
     await expect(page.locator('.skip-link')).toBeAttached();
-    // Footer présent
-    await expect(page.locator('footer')).toBeVisible();
+    // Footer global présent (role contentinfo — il existe un <footer> sémantique
+    // imbriqué dans /accompagnement pour une attribution de verbatim, donc on
+    // cible explicitement le footer racine via son role)
+    await expect(page.getByRole('contentinfo')).toBeVisible();
   });
 }
 
