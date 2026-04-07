@@ -30,8 +30,8 @@ Créer une première impression mémorable qui dit l'identité ISSA Capital en 1
 
 ```
 Title tag (58 car.) : ISSA Capital — Holding patrimoniale famille libanaise
-Meta description (153 car.) : ISSA Capital est la holding patrimoniale de la famille Issa, famille libanaise établie en France. Investissement immobilier, participations, conseil stratégique.
-OG title : ISSA Capital — Famille libanaise. Exigences sans exception.
+Meta description (153 car.) : ISSA Capital est la holding patrimoniale de la famille Issa, famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.
+OG title : ISSA Capital — Racines libanaises. Exigences sans exception.
 OG description : Holding patrimoniale familiale. Horizon intergénérationnel. Filtres de décision non négociables. Immobilier, participations, conseil.
 ```
 
@@ -48,7 +48,7 @@ OG description : Holding patrimoniale familiale. Horizon intergénérationnel. F
 [Note @legal : cette tagline ne contient aucun mot interdit L.411-1 CMF. Elle affiche une posture de décision autonome, pas une promesse de rendement.]
 
 ### Sous-titre (sous le H1)
-La holding patrimoniale d'une famille libanaise qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement.
+La holding patrimoniale d'une famille aux racines libanaises qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement.
 
 ### CTA principal (double entrée)
 - **CTA A** — texte : « Présenter une opportunité d'affaires » → /opportunites
@@ -57,7 +57,7 @@ La holding patrimoniale d'une famille libanaise qui investit pour les générati
 [Notes @design : deux CTAs de poids visuel différent — CTA A primaire (plein, fond sombre), CTA B secondaire (contour). Placement côte à côte sur desktop, empilés sur mobile.]
 
 ### Baseline (sous les CTAs)
-*Famille libanaise. Exigences sans exception.*
+*Racines libanaises. Exigences sans exception.*
 
 ---
 
@@ -69,7 +69,7 @@ La holding patrimoniale d'une famille libanaise qui investit pour les générati
 ISSA Capital, c'est une décision de famille.
 
 ### Corps
-ISSA Capital est la holding patrimoniale de la famille Issa — famille libanaise établie en France. Sa raison d'être est simple : faire fructifier le patrimoine familial dans la durée et organiser sa transmission entre les générations.
+ISSA Capital est la holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Sa raison d'être est simple : faire fructifier le patrimoine familial dans la durée et organiser sa transmission entre les générations.
 
 Pas un fonds. Pas une structure à terme. Une holding indépendante, dont la famille est le seul actionnaire, et dont l'horizon est intergénérationnel.
 
@@ -202,7 +202,7 @@ Soumettez votre opportunité d'affaires. Nous étudions chaque proposition quali
 ## Footer (présent sur toutes les pages)
 
 ISSA Capital — SAS — SIREN 102 356 094 — 54 Rue Henri Barbusse, 92000 Nanterre
-*Famille libanaise. Exigences sans exception.*
+*Racines libanaises. Exigences sans exception.*
 
 [Liens] : Mission | Participations | Opportunités | Accompagnement | Contact | Mentions légales | Politique de confidentialité
 

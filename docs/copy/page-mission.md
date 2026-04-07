@@ -29,9 +29,9 @@ Exposer la raison d'être d'ISSA Capital — famille, transmission, filtres de d
 
 ```
 Title tag (56 car.) : Mission ISSA Capital — Patrimoine, famille, transmission
-Meta description (148 car.) : La mission d'ISSA Capital : faire fructifier le patrimoine familial d'une famille libanaise et organiser sa transmission. Filtres de décision, philosophie, valeurs.
+Meta description (148 car.) : La mission d'ISSA Capital : faire fructifier le patrimoine familial d'une famille aux racines libanaises et organiser sa transmission. Filtres de décision, philosophie, valeurs.
 OG title : Mission & Philosophie — ISSA Capital
-OG description : Holding patrimoniale d'une famille libanaise établie en France. Sa raison d'être, ses valeurs, ses filtres de décision non négociables.
+OG description : Holding patrimoniale d'une famille aux racines libanaises, établie en France. Sa raison d'être, ses valeurs, ses filtres de décision non négociables.
 ```
 
 ---
@@ -75,7 +75,7 @@ ISSA Capital est née d'une décision simple et irréversible : ne pas confier l
 
 Pas à un fonds dont l'horizon est contraint par ses propres engagements envers ses souscripteurs. Pas à des véhicules conçus pour être revendus dans cinq ans. Pas à des structures qui mesurent leur succès en TRI plutôt qu'en durabilité.
 
-La famille Issa — famille libanaise établie en France — a préféré construire sa propre structure. Indépendante. Privée. Dont elle est le seul actionnaire. Et dont l'horizon est celui des générations à venir, pas des prochains résultats annuels.
+La famille Issa — famille aux racines libanaises, établie en France — a préféré construire sa propre structure. Indépendante. Privée. Dont elle est le seul actionnaire. Et dont l'horizon est celui des générations à venir, pas des prochains résultats annuels.
 
 ---
 
@@ -98,7 +98,7 @@ C'est tout. Pas une mission de bien public, pas une promesse de transformation s
 [Framework : StoryBrand — Character, identité affirmée]
 
 ### H2
-Famille libanaise. Enracinée en France.
+Racines libanaises. Enracinée en France.
 
 ### Corps
 La famille Issa est libanaise. ISSA Capital est une SAS française, domiciliée à Nanterre. Ces deux faits coexistent sans contradiction — ils se complètent.
@@ -206,7 +206,7 @@ Deux façons de continuer.
 ## Test persona — validation
 
 **Test Marc** (journaliste, 5 minutes) :
-Marc cherche une histoire. Il la trouve dès la Section 1 : un Libanais né à Dakar, passé par IBM et l'équipe fondatrice de Lexmark, qui a transmis son sens du patrimoine à son fils. Ce n'est plus "holding jeune de 2026" — c'est une trajectoire sur trois décennies. La section "Famille libanaise. Enracinée en France." lui donne l'angle différenciant (dimension culturelle + financière + intergénérationnelle). Les filtres éthiques sont présentés sans vernis marketing — crédibles. Il note le contact email pour un entretien. Verdict : la filiation Jean-Pierre → Thomas fait de cette page un vrai matériau éditorial — angle human interest + angle patrimoine familial + angle entrepreneurial.
+Marc cherche une histoire. Il la trouve dès la Section 1 : un Libanais né à Dakar, passé par IBM et l'équipe fondatrice de Lexmark, qui a transmis son sens du patrimoine à son fils. Ce n'est plus "holding jeune de 2026" — c'est une trajectoire sur trois décennies. La section "Racines libanaises. Enracinée en France." lui donne l'angle différenciant (dimension culturelle + financière + intergénérationnelle). Les filtres éthiques sont présentés sans vernis marketing — crédibles. Il note le contact email pour un entretien. Verdict : la filiation Jean-Pierre → Thomas fait de cette page un vrai matériau éditorial — angle human interest + angle patrimoine familial + angle entrepreneurial.
 
 **Test Karim** (entrepreneur, 2 minutes) :
 Karim lit la page Mission pour confirmer ses intuitions du hero. "Ne pas confier le patrimoine familial à des logiques qui lui sont étrangères" — c'est exactement ce qu'il ressent face à son CGP. La Section 1 lui dit quelque chose d'important : Thomas n'a pas appris le patrimoine dans un master spécialisé, il l'a appris de son père qui l'a fait chez IBM et Lexmark. La vision à 30 ans — les trois enfants de Thomas — lui parle directement (il pense à ses propres enfants). La clarté des filtres le rassure : Thomas a un point de vue, pas des platitudes. Verdict : la page convertit la curiosité en confiance, Karim est prêt à aller sur /accompagnement.

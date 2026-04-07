@@ -139,7 +139,7 @@ Six options, classées de la plus provocante à la plus sobre.
 ---
 
 **Option 4 — L'identitaire tranchante**
-> "Famille libanaise. Exigences sans exception."
+> "Racines libanaises. Exigences sans exception."
 
 *Justification* : deux propositions courtes en opposition de registre (identité / caractère). "Sans exception" est un mot fort — il dit que les filtres ne sont pas négociables. Le mot "exigences" (pluriel) est plus fort que "exigeant" (adjectif). Sobre mais pas mou.
 *Usage recommandé* : baseline sous le logo (version courte), ou titre de section sur la page Mission.
@@ -164,7 +164,7 @@ Six options, classées de la plus provocante à la plus sobre.
 
 ### Recommandation finale
 
-**Tagline baseline (sous le logo, partout)** : **Option 4 — "Famille libanaise. Exigences sans exception."**
+**Tagline baseline (sous le logo, partout)** : **Option 4 — "Racines libanaises. Exigences sans exception."**
 
 Pourquoi : elle remplit les deux fonctions d'une baseline — dire qui on est (identité libanaise, pilier différenciant) et dire comment on décide (exigences sans exception, pilier caractère). Elle est courte (5 mots), mémorable, et refusé du lyrisme. Elle fait fuir les mauvais interlocuteurs (ceux qui cherchent de la complaisance) et attire les bons (ceux qui comprennent que l'exigence est une valeur, pas une menace).
 
@@ -368,7 +368,7 @@ Règle de présentation sur le site : chaque participation est présentée avec 
 - Fichiers produits : `docs/strategy/brand-platform.md` (révision majeure 2026-04-07)
 - Décisions prises :
   - Archétype recalibré : Ruler/Outlaw remplace Ruler/Caregiver (Caregiver conservé dans les valeurs, pas dans le ton)
-  - 6 nouvelles taglines avec caractère — baseline recommandée : "Famille libanaise. Exigences sans exception." — hero recommandée : "On ne vend pas. On garde."
+  - 6 nouvelles taglines avec caractère — baseline recommandée : "Racines libanaises. Exigences sans exception." — hero recommandée : "On ne vend pas. On garde."
   - Vocabulaire enrichi : tranchant, assumé, exigence, indépendance, sans compromis, garder — mots interdits ajoutés : humblement, modeste, serein, "n'hésitez pas"
   - Trait de voix n°5 "Affirmé" ajouté
   - Messages par persona et funnel recalés sur les 2 CTAs (accompagnement / opportunités)

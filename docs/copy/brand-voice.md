@@ -9,7 +9,7 @@
 
 | Tagline | Usage | Règle |
 |---|---|---|
-| **« Famille libanaise. Exigences sans exception. »** | Baseline — sous le logo, footer, signature email, bas de chaque page | Toujours présente. Ne jamais modifier. |
+| **« Racines libanaises. Exigences sans exception. »** | Baseline — sous le logo, footer, signature email, bas de chaque page | Toujours présente. Ne jamais modifier. |
 | **« On décide. Pas un calendrier de fonds. »** | Hero — page Accueil uniquement, grand format | Validé avec réserves — à retester Phase 2c. Ne pas utiliser ailleurs. |
 | **« Patient par choix. Exigeant par principe. »** | Signature — page Mission de conseil & accompagnement uniquement | Clôture la page. Toujours en fin de section. |
 
