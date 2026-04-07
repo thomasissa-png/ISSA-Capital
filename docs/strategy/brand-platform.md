@@ -1,6 +1,7 @@
 # Brand Platform — ISSA Capital
 
 > Fichier de référence stratégique. Produit par @creative-strategy le 2026-04-07.
+> Révisé par @creative-strategy le 2026-04-07 — recalibrage ton (caractère, fierté, Ruler/Outlaw), nouvelles taglines, vocabulaire mis à jour, messages recalés sur les 2 CTAs distincts.
 > Lu obligatoirement par @copywriter, @design, @ux, @seo avant toute production.
 
 ---
@@ -87,32 +88,91 @@ ISSA Capital est la holding patrimoniale de la famille Issa. Sa raison d'être e
 
 ### Archétype Jungien
 
-**Archétype principal : Ruler (le Souverain)** — ISSA Capital incarne la maîtrise, la responsabilité, et la construction durable. Elle ne cherche pas à convaincre — elle pose son cadre et invite ceux qui partagent ses valeurs à en faire partie.
+**Décision de révision (2026-04-07)** : l'archétype initial Ruler/Caregiver était juste sur la structure mais trop doux sur le ton. Thomas a explicitement demandé du caractère, de la fierté, un "insolent qui refuse les règles du secteur". L'ajout de la facette Outlaw est assumé — pas pour transgresser les valeurs, mais pour refuser les conventions du secteur (l'opacité, la langue de bois financière, l'humilité de façade).
 
-**Archétype secondaire : Caregiver (le Gardien)** — la dimension familiale et la transmission intergénérationnelle font d'ISSA Capital une entité qui protège et préserve, pas uniquement qui développe.
+**Archétype principal : Ruler (le Souverain)** — ISSA Capital incarne la maîtrise et la construction durable. Elle ne cherche pas à convaincre — elle pose son cadre. Ceux qui ne correspondent pas passent leur chemin.
+
+**Archétype secondaire recalibré : Outlaw (l'Insolent)** — remplace Caregiver comme secondaire. ISSA Capital refuse les conventions du secteur : l'opacité des grandes holdings, la langue de bois financière, l'humilité de façade qui cache une ambition démesurée. Elle dit ce qu'elle fait, elle fait ce qu'elle dit, et elle n'a pas besoin de l'approbation du secteur pour exister. L'insolence n'est pas une posture marketing — c'est le refus de se conformer à un modèle qui ne correspond pas.
+
+**Ce que cela change dans le copy et le design** :
+- Le ton peut être tranchant là où les concurrents sont prudents
+- Les anti-promesses sont affirmées avec fierté, pas avec modestie
+- Le silence et la sobriété sont des postures de force, pas d'effacement
+- Les titres de page peuvent avoir de la vertèbre (ne pas systématiquement "adoucir" la formulation)
+
+**La facette Caregiver** est conservée dans les valeurs (transmission, famille, préservation) mais elle ne définit plus le ton de voix — elle informe le fond, pas la forme.
 
 ---
 
 ## 7. Signature / Tagline candidates
 
-Trois options. Toutes en français. Toutes compatibles avec le ton sobre et éditorial.
+> **Note de révision (2026-04-07)** : les 3 taglines initiales (Options A, B, C) sont écartées. Thomas a validé un brief ton explicite : caractère, fierté, un peu insolent sans être arrogant. Ton d'une holding libano-française qui sait ce qu'elle vaut. Les nouvelles taglines partent de ses propres formulations : *"On ne vend pas. On garde."* / *"Capital libanais, ancrage français, horizon illimité."*
+>
+> Critères de sélection : max 10 mots, mémorable, pas consensuelle, refus du "générations à venir" seul (trop doux), refus du "long-terme" seul (cliché secteur).
 
-**Option A — Sur la transmission**
-> "Ce que nous construisons aujourd'hui, nous le transmettons demain."
+Six options, classées de la plus provocante à la plus sobre.
 
-*Pourquoi* : ancre directement dans la promesse fondatrice. Long mais mémorable. Convient à la page Mission.
+---
 
-**Option B — Sur l'horizon**
-> "Investir pour les générations à venir."
+**Option 1 — La plus provocante (positionnement rupture)**
+> "On ne vend pas. On garde."
 
-*Pourquoi* : court, direct, intemporel. Fonctionne en baseline sous le logo. Proche de la promesse officielle.
+*Justification* : citation quasi-directe de Thomas. Sept mots. C'est une déclaration de guerre à la logique LBO sans la nommer. L'opposition "vendre / garder" est viscérale — tout le monde comprend, même sans connaitre le secteur. Risque assumé : certains trouveros ça trop court ou trop abrupt. C'est exactement ce qu'on cherche.
+*Usage recommandé* : hero Accueil (en grand, sous le nom ISSA Capital), ou citation ouvrant la page Mission.
 
-**Option C — Sur l'héritage et la fierté**
-> "Un patrimoine qu'on est fier de transmettre."
+---
 
-*Pourquoi* : reprend le mot "fier" de la promesse officielle. Ton légèrement plus chaleureux, moins institutionnel. Convient à la page Accueil.
+**Option 2 — L'insolente institutionnelle**
+> "Capital libanais. Ancrage français. Aucun compromis."
 
-**Recommandation** : Option B en baseline site, Option C en hero Accueil, Option A en ouverture de la page Mission.
+*Justification* : reprend la formulation de Thomas et la durcit sur le troisième membre de phrase. "Aucun compromis" est une déclaration de caractère — elle dit à la fois la solidité des filtres et la fierté de l'identité. Le point à la place de la virgule rend le rythme plus sec, plus assumé.
+*Usage recommandé* : baseline sous le logo (version longue), hero secondaire en page Mission.
+
+---
+
+**Option 3 — La souveraine**
+> "Nous choisissons. Nous gardons. Nous transmettons."
+
+*Justification* : trois verbes d'action à la première personne du pluriel. Rythme ternaire — structure qui a de l'autorité. "Nous choisissons" affirme la sélectivité. "Nous gardons" dit l'horizon. "Nous transmettons" dit la finalité. Pas doux — direct et hiérarchique.
+*Usage recommandé* : page Mission (corps du texte, ouverture de section), ou signature email institutionnelle.
+
+---
+
+**Option 4 — L'identitaire tranchante**
+> "Famille libanaise. Exigences sans exception."
+
+*Justification* : deux propositions courtes en opposition de registre (identité / caractère). "Sans exception" est un mot fort — il dit que les filtres ne sont pas négociables. Le mot "exigences" (pluriel) est plus fort que "exigeant" (adjectif). Sobre mais pas mou.
+*Usage recommandé* : baseline sous le logo (version courte), ou titre de section sur la page Mission.
+
+---
+
+**Option 5 — L'horizon sans condescendance**
+> "Vingt ans devant. Pas de sortie prévue."
+
+*Justification* : "Pas de sortie prévue" est le contre-pied exact du langage LBO/PE — qui parle toujours de "stratégie de sortie". C'est compréhensible par les initiés (Leila, professionnels du deal) et intrigant pour les non-initiés (Karim). "Vingt ans devant" ancre l'horizon sans lyrisme.
+*Usage recommandé* : page Opportunités (sous le titre, comme signal aux apporteurs), ou hero secondaire Accueil.
+
+---
+
+**Option 6 — La plus sobre (institutionnelle avec vertèbre)**
+> "Patrimoine familial. Horizon sans limite."
+
+*Justification* : reprend les deux mots fondateurs du projet (patrimoine, famille) et les associe à un horizon illimité — reformulation de "horizon illimité" de Thomas, sans la connotation géographique du mot "capital libanais". C'est la plus sobre des six, mais elle dit quelque chose de réel. Peut fonctionner en baseline si Thomas préfère un registre moins direct.
+*Usage recommandé* : baseline sous le logo (si Option 2 trop longue), footer site, bios presse.
+
+---
+
+### Recommandation finale
+
+**Tagline baseline (sous le logo, partout)** : **Option 4 — "Famille libanaise. Exigences sans exception."**
+
+Pourquoi : elle remplit les deux fonctions d'une baseline — dire qui on est (identité libanaise, pilier différenciant) et dire comment on décide (exigences sans exception, pilier caractère). Elle est courte (5 mots), mémorable, et refusé du lyrisme. Elle fait fuir les mauvais interlocuteurs (ceux qui cherchent de la complaisance) et attire les bons (ceux qui comprennent que l'exigence est une valeur, pas une menace).
+
+**Tagline hero (grand format, page Accueil)** : **Option 1 — "On ne vend pas. On garde."**
+
+Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle dit l'essentiel en 7 mots. Elle n'a pas besoin d'être expliquée — elle se comprend immédiatement et elle provoque une réaction. Pour Leila, c'est un signal immédiat sur l'horizon de détention. Pour Karim, c'est un signal sur la philosophie du partenaire. Pour Marc, c'est un angle d'article. Elle fonctionne en complément de la baseline : la baseline dit l'identité, le hero dit la posture.
+
+**Pourquoi les deux fonctionnent ensemble** : la baseline pose l'identité (qui nous sommes), le hero pose la posture (comment nous agissons). Elles ne se répètent pas — elles se complètent. L'identité libanaise + les exigences sans exception (baseline) expliquent POURQUOI on ne vend pas et on garde (hero).
 
 ---
 

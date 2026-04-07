@@ -109,6 +109,77 @@
 
 ---
 
+## Expertise fondateur Thomas Issa (verrouillée 2026-04-07 — source : CV LinkedIn PDF fourni par Thomas)
+
+> **Utilisation** : fonde la légitimité du CTA "Mission de conseil & accompagnement" et alimente tout le copy de la page correspondante. À lire obligatoirement par @creative-strategy, @copywriter, @seo, @ux, @design.
+
+### Parcours en 3 lignes
+Thomas Issa est un **intrapreneur et conseiller stratégique** avec 15+ ans d'expérience en stratégie, marketing et développement international. Il a **co-fondé TEOS** (solution de workplace management) chez Sony Europe en 2017, qu'il a bâtie from scratch en 6 mois à partir d'un deck de 10 slides, générant **6000 % de ROI en 1 an** et déployée dans 7 régions mondiales (Europe, USA, Moyen-Orient, LatAm, Inde, Chine, Australie). En parallèle, il est **Strategy & Marketing Executive Adviser** en solo depuis 2018, accompagnant jusqu'à 5 startups par an.
+
+### Expériences clés
+- **Sony Professional Solutions Europe** (14 ans 11 mois, 2011 → aujourd'hui)
+  - **Co-Founder TEOS** (sept 2017 →) : workplace management solution, clients déployés incluant **Lego, Siemens, Netflix, Cap Gemini, Suzuki, Hilton, Mango**. 6000% ROI 1 an, expansion globale 7 régions.
+  - **Corporate & Education Solutions Manager Europe** (avril 2018 →) : BRAVIA Professional displays **+500 % de croissance depuis 2013**, leadership équipes France/UK.
+  - **Product Manager Europe** (oct 2013 – mars 2018) : 2 business lines simultanées. Home Theater Projectors B2C → +55 % growth, **75 % de part de marché haut-de-gamme**. Professional Displays & Digital Signage B2B → +420 % growth, 35 % de part de marché sur un marché concurrentiel, launch du premier 4K Sony. Relations HQ Japon (2 visites/an). **Prix Best Sony Europe 2014** + **Exceptional Contribution Award 4K**.
+  - **Trade Marketing Manager** (juin 2011 – oct 2013) : Home theater projectors premium **2 % → 35 % de part de marché en 2 ans** sur le marché français. Partenariats Fnac, Darty, Rue du Commerce, Boulanger, Vente-Privée.
+- **Self-employed — Strategy & Marketing Executive Adviser** (juin 2018 → aujourd'hui, 7 ans 11 mois) : conseil stratégique aux startups sur sales development, market positioning, launch Europe, branding. Jusqu'à 5 projets/an.
+- **Gartner** (2009-2010) — Marketing Analyst : market research, media trends, team lead de 3 analystes.
+- **Altran Technologies** (2008-2009) — Strategic Marketing Analyst : analyses pays européens, secteurs Aerospace/Défense/Automotive/Énergie/Santé/Telecom, intelligence concurrentielle Global Accounts.
+
+### Formation
+- **HEC School of Management** — Intelligence Marketing (2010-2011)
+- **University of California, Irvine** — International Marketing (2010)
+- **IMT Atlantique** — Business Engineering, Banking, Finance, Business Law (2006-2010)
+- **Classe prépa Sainte-Geneviève** — Maths Physique (2004-2006)
+- **Institut Florimont (Genève)** — Baccalauréat S, Maths Physique (2002-2004)
+
+### Distinctions
+- **Major de promotion × 3** (Liste du Président + 2 Majors de promotion)
+- **Exceptional Contribution Award × 2** (Sony)
+- **Best Sony Europe Performance Award 2014** (Home Cinema)
+
+### Langues
+- Français (natif)
+- Anglais (natif / bilingue)
+- Allemand (pro limité)
+- Arabe (élémentaire) — **cohérent avec l'identité libanaise de la famille**
+
+### Domaines d'expertise — ce sur quoi Thomas accompagne (déductible du parcours)
+1. **Stratégie & go-to-market Europe/international** — 15+ ans, déploiement TEOS dans 7 régions
+2. **Intrapreneuriat & zéro-à-un dans un corporate** — TEOS from 10-slide deck to 6000 % ROI en 1 an
+3. **Product management premium B2B/B2C** — 2 business lines Sony menées simultanément, leaderships de parts de marché
+4. **Stratégie marketing & trade marketing** — 2 % → 35 % de part de marché en 2 ans sur segment premium
+5. **Positionnement & branding** — accompagnement startups sur positioning, Europe launching, branding
+6. **Relations corporate internationales** — HQ Japon Sony, partenariats européens, clients Fortune 500
+7. **Structuration de holding & écosystème patrimonial** — co-fondation Gradient One 2020 + construction écosystème Versi / Immocrew / Versimo + immobilier direct IDF
+
+### Clients/références activables sur le site (prestige)
+Via Sony TEOS : **Lego, Siemens, Netflix, Cap Gemini, Suzuki, Hilton, Mango**. À valider par Thomas avant publication (certaines mentions peuvent nécessiter autorisation contractuelle Sony).
+
+### ⚠️ Asset de crédibilité CONFIDENTIEL — NON publiable au lancement
+Thomas a **créé une agence de communication** à partir de **1 500 € de fonds propres**, atteint **3,4 M€ de CA**, et **revendue pour 2 M€**.
+- **Statut** : **CONFIDENTIEL** — Thomas n'a pas encore le droit d'en parler publiquement (NDA / clause de non-concurrence / obligation post-cession — raison précise à confirmer)
+- **Interdiction absolue** : cette information NE DOIT PAS apparaître sur le site ISSA Capital, dans le copy public, les mentions presse, les réseaux sociaux, ni aucun livrable externe tant que Thomas n'a pas levé la restriction
+- **Usage interne autorisé** : les agents peuvent l'utiliser pour calibrer le ton (Thomas est un VRAI entrepreneur with skin in the game, pas un consultant théorique), mais ne peuvent pas la citer
+- **Déclencheur de republication** : quand Thomas signale que la restriction est levée, @copywriter et @seo DOIVENT l'intégrer en priorité sur la page Mission de conseil — c'est un asset de crédibilité majeur (exit à 2 M€ from 1 500 €, bootstrap pur, track record chiffré)
+- **Recommandation framework** (à ajouter dans lessons-learned.md) : ajouter un système de "assets différés" dans project-context.md — informations connues à usage interne uniquement jusqu'à déverrouillage par le fondateur
+
+### Format d'accompagnement — [À CONFIRMER par Thomas]
+Options à proposer par @copywriter en Phase 1 (Thomas arbitrera) :
+- Mission ponctuelle (stratégie, positionnement, launch Europe)
+- Conseil stratégique récurrent (abonnement ou retainer mensuel)
+- Conseil board / advisor equity
+- Session one-shot (audit + recos)
+- **Pricing** : [À CONFIRMER par Thomas — proposition @copywriter : "sur devis" par défaut, pricing explicite en option]
+
+### Anti-persona — à qui Thomas ne veut PAS parler — [À COMPLÉTER par Thomas]
+Important pour le ton "caractère". À demander à Thomas avant publication.
+
+### Phrase obligatoire / phrase interdite — [À COMPLÉTER par Thomas]
+Pour encadrer @copywriter.
+
+---
+
 ## Cible
 - **Persona principal** : [HYPOTHÈSE — à valider en checkpoint Phase 0 par @creative-strategy] — 3 personas plausibles à arbitrer :
   1. **Hélène, 54 ans, fondatrice de PME française** cherchant à céder ou être adossée à une holding patrimoniale long-terme (vs fonds LBO court-termiste). Frustration : "Je ne veux pas que mon entreprise soit dépecée par un fonds qui revend dans 5 ans."

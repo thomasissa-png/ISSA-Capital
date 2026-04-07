@@ -1,82 +1,177 @@
 # Personas — ISSA Capital
 
 > Fichier de référence personas. Produit par @creative-strategy le 2026-04-07.
-> Source : project-context.md (hypothèses H1 validées par Thomas 2026-04-07).
+> Révisé par @creative-strategy le 2026-04-07 — recalibrage majeur suite aux décisions Thomas (nouveau scope business + 2 CTAs distincts + brief ton caractère).
+> Source : project-context.md + directives Thomas 2026-04-07.
 > Lu obligatoirement par @copywriter, @ux, @design avant toute production.
+
+---
+
+## Note de révision (2026-04-07)
+
+**Personas supprimés :**
+- **Hélène** (fondatrice PME services cherchant adossement/cession) — supprimée car ISSA Capital n'est PAS dans la cession de PME services B2B. Le scope business est exclusivement immobilier + participations financières. Hélène promettait quelque chose qu'ISSA ne fait pas → erreur de positionnement corrigée.
+- **Sophie** (partenaire M&A mid-cap) — supprimée pour la même raison : son rôle de prescripteur M&A cession PME n'est plus pertinent dans le scope réel.
+
+**Nouveaux personas créés :**
+- **Persona A — Karim** : cible du CTA "Mission de conseil & accompagnement" — Thomas Issa propose son expertise personnelle aux fondateurs/investisseurs/dirigeants
+- **Persona B — Leila** : cible du CTA "Proposer une opportunité d'affaires" — apporteur d'affaires immobilier ou fondateur d'une opportunité financière cherchant un partenaire capitalistique
+
+**Conservé :** Marc (journaliste/analyste) — toujours pertinent pour l'earned media et la crédibilité institutionnelle.
 
 ---
 
 ## Résumé exécutif
 
-- **Objectif** : documenter les trois profils d'interlocuteurs du site ISSA Capital et cartographier leurs attentes sur les 6 pages V1
-- **Décisions clés** : Hélène (fondatrice PME) = persona principal ; Marc (journaliste/analyste) = persona secondaire 1 ; Sophie (partenaire B2B) = persona secondaire 2
-- **Justification de l'ordre** : validé par Thomas en hypothèse H1 — Hélène est le persona décideur le plus stratégique pour l'objectif "pipeline d'opportunités qualifiées"
+- **Objectif** : documenter les trois profils d'interlocuteurs du site ISSA Capital et cartographier leurs attentes sur les 2 CTAs principaux + 6 pages V1
+- **Décisions clés** : Karim (conseil & accompagnement) = persona principal A ; Leila (opportunité d'affaires) = persona principal B ; Marc (journaliste/analyste) = persona secondaire
+- **Justification** : ISSA Capital propose deux services distincts avec deux points d'entrée distincts — un seul persona principal ne suffit plus
 
 ---
 
-## Persona 1 — Hélène (Principal)
-
-### Fiche d'identité
-
-- **Prénom** : Hélène
-- **Âge** : 54 ans
-- **Métier exact** : fondatrice et dirigeante d'une PME de services B2B (ex : cabinet de conseil en organisation, entreprise de formation professionnelle, ou société de services aux collectivités — secteur à préciser par Thomas si un vertical est prioritaire)
-- **Situation professionnelle** : dirige son entreprise depuis 18 ans, 40 salariés, CA entre 5 et 15 M€ [HYPOTHÈSE : ordre de grandeur — à valider avec Thomas si un segment spécifique est ciblé]
-- **Situation familiale** : mariée, deux enfants adultes qui ne reprendront pas l'entreprise
-- **Niveau de patrimoine** : patrimoine pro concentré dans son entreprise, peu diversifié — l'entreprise représente 80-90% de sa valeur nette
-
-### Contexte d'usage
-
-Hélène est à un moment charnière. Elle a construit quelque chose de solide, mais elle approche de la soixantaine et se pose des questions sur la suite. Elle ne veut pas vendre à un fonds — elle a vu ce que ça donne autour d'elle. Elle cherche un "bon père de famille" pour son entreprise, quelqu'un qui ne va pas dépecer ce qu'elle a mis des années à construire. Elle a entendu parler de holdings familiales en France — Mulliez, Peugeot — mais ces structures ne regardent pas des boîtes de sa taille.
-
-Elle ne cherche pas activement sur Google. Elle arrive sur le site ISSA Capital via une recommandation (un avocat d'affaires, un expert-comptable, un partenaire de son réseau). Elle prend 3 minutes pour comprendre qui est ISSA Capital avant de décider si ça vaut la peine d'aller plus loin.
-
-### Scène de vie (frustration concrète)
-
-Hélène est dans son bureau, un soir. Elle vient de raccrocher avec son conseiller M&A qui lui propose une mise en vente classique. Elle a regardé les noms dans sa liste de contacts potentiels : deux fonds LBO qu'elle n'a pas rappelés depuis la réunion de présentation il y a six mois, et un family office dont le site ne répond pas. Elle ouvre son ordinateur et cherche "holding familiale indépendante France transmission PME". Elle tombe sur quelques résultats, des sites génériques et peu lisibles. Elle pense : *"Il doit exister des gens comme moi qui veulent investir pour garder et développer, pas pour revendre — mais je ne sais pas comment les trouver."* Elle ferme l'onglet, frustrée.
-
-### Alternative actuelle
-
-- Fonds LBO de taille intermédiaire (son repoussoir principal — elle les connaît, elle ne veut pas)
-- Cession directe à un concurrent ou repreneur industriel (envisagée mais émotionnellement difficile)
-- Transmission familiale (non disponible — ses enfants ne reprennent pas)
-- Autres family offices ou holdings familiales (opaque, peu de présence web claire, accès difficile sans réseau)
-
-### Trois objections probables vis-à-vis d'ISSA Capital
-
-1. **"Je ne les connais pas — sont-ils sérieux ?"** — ISSA Capital est jeune (créée 2026) et peu connue. Hélène va chercher des signaux de crédibilité : structure juridique, équipe, participations existantes, ton du site. Si le site est vague ou trop "startup", elle fermera l'onglet.
-2. **"Leur écosystème tech/immo n'a rien à voir avec mon secteur"** — Hélène opère dans les services B2B. Elle ne comprend pas immédiatement pourquoi une holding qui a des participations immobilières et tech s'intéresserait à elle. Il faut lui expliquer la logique patrimoniale (diversification, pas spécialisation sectorielle).
-3. **"Ils sont trop petits pour m'accompagner vraiment"** — ISSA Capital est une holding familiale qui débute sa présence publique. Hélène a besoin de sentir que son interlocuteur a la capacité financière et humaine de s'engager.
-
-### Ce qui la ferait passer à l'action sur le site
-
-- Voir des critères d'investissement clairs et lisibles (page Opportunités)
-- Lire une formulation qui dit explicitement "nous n'avons pas d'horizon de sortie contraint" ou équivalent
-- Trouver un formulaire de contact simple, sans friction excessive
-- Percevoir un ton institutionnel sérieux, pas commercial — elle n'a pas besoin d'être "vendue", elle cherche un partenaire
-
-### Trois verbatims exacts
-
-1. *"Je ne veux pas que mon entreprise soit dépecée par un fonds qui revend dans 5 ans."*
-2. *"J'ai construit ça en 18 ans. Je cherche quelqu'un qui comprend ce que ça représente et qui va le traiter avec respect."*
-3. *"S'ils ont des critères clairs et qu'ils sont honnêtes sur ce qu'ils font, je peux leur parler."*
-
-### Personas de ses clients (clients de notre persona)
-
-Hélène dirige une PME de services B2B. Ses clients directs sont des entreprises ou des organismes qui achètent ses prestations (DRH de grandes entreprises, directeurs de collectivités, acheteurs de services professionnels). Dans le contexte d'une cession à ISSA Capital, les "clients" indirects les plus pertinents sont :
-
-- **Les salariés d'Hélène** (40 personnes) : ils ne sont pas des "clients" mais leur confiance dans le repreneur est une condition implicite que tout acquéreur doit satisfaire. Ils évalueront ISSA Capital sur : la stabilité de l'emploi, la continuité du projet d'entreprise, la qualité humaine perçue du repreneur.
-- **Les clients actuels de l'entreprise d'Hélène** (DRH / acheteurs B2B) : ils voudront savoir si le changement d'actionnaire affecte la qualité de service et la relation commerciale.
-
-*Note pour @agent-factory* : recommandation de création d'un agent testeur-persona "Hélène" qui évalue chaque livrable (landing page, copy, formulaire) du point de vue d'une fondatrice PME en réflexion de cession. Voir section "Agents spécialisés recommandés" en fin de fichier.
-
----
-
-## Persona 2 — Marc (Secondaire 1 — Journaliste / Analyste)
+## Persona Principal A — Karim (Cible CTA "Mission de conseil & accompagnement")
 
 ### Justification du choix
 
-Marc est retenu comme persona secondaire 1 parce que les médias et analystes sont un canal de légitimité critique pour une holding familiale naissante. Un article dans Les Échos, Capital, ou un rapport d'un analyste M&A peut générer plus de crédibilité institutionnelle en un jour que six mois de présence web. Le site doit donc être lisible pour Marc, pas uniquement pour Hélène.
+Karim est le persona principal A parce qu'il cible le CTA "Mission de conseil & accompagnement" — le service le plus différenciant d'ISSA Capital, celui qui met en avant l'expertise personnelle de Thomas Issa. C'est un décideur pragmatique, pas un chercheur d'approbation : il reconnaît la valeur d'un pair expérimenté et n'a pas besoin d'être convaincu, il a besoin d'être rassuré sur la pertinence de l'interlocuteur.
+
+### Fiche d'identité
+
+- **Prénom** : Karim
+- **Âge** : 42 ans
+- **Métier exact** : entrepreneur en phase de structuration — soit il a fait une première sortie (revente partielle ou totale d'une société) et cherche à réinvestir intelligemment, soit il est en train de monter sa holding personnelle et a besoin d'un retour d'expérience concret
+- **Situation professionnelle** : a levé ou investi entre 500 K€ et 3 M€ de capital propre, gère 1 à 3 structures simultanément, n'a pas de CFO ni de conseiller patrimonial attitré — il décide seul
+- **Situation familiale** : en couple, enfants jeunes, Paris ou grande métropole française
+- **Niveau de patrimoine** : en construction — entre 1 M€ et 5 M€ de patrimoine brut consolidé entre immo, titres et liquidités. Assez pour sentir le besoin de structurer, pas assez pour avoir un family office à lui seul
+
+### Contexte d'usage
+
+Karim a déjà fait des choses. Il n'est pas en recherche de validation, il est en recherche d'un pair qui a fait le chemin un peu avant lui. Il sait que ses décisions des deux prochaines années vont soit consolider son patrimoine, soit l'éparpiller. Il cherche quelqu'un qui a structuré une holding, qui investit dans l'immo et dans des participations, qui comprend les arbitrages fiscaux et opérationnels sans qu'il faille tout expliquer.
+
+Il arrive sur le site ISSA Capital via LinkedIn (post de Thomas ou recommandation dans son réseau), ou via une recherche sur "holding familiale conseil structuration patrimoine entrepreneur". Il prend 2 minutes. Si Thomas lui semble crédible — pas juste riche, mais compétent et accessible — il clique sur le CTA accompagnement.
+
+### Scène de vie (frustration concrète)
+
+Karim vient de sortir une ligne immobilière avec une belle plus-value. Il a 800 K€ sur un compte. Il sait qu'il ne veut pas tout réinvestir en SCPI. Il a pris rendez-vous avec son expert-comptable, qui lui a parlé de holding IS, et avec un CGP, qui lui a proposé des fonds structurés. Aucun des deux n'a vraiment compris ce qu'il cherchait à construire — un patrimoine cohérent, avec de l'immo en direct, des participations dans des boîtes qu'il comprend, et une logique qui tient sur 15 ans. Il pense : *"J'ai besoin de quelqu'un qui l'a fait, pas de quelqu'un qui me vend un produit."*
+
+### Alternative actuelle
+
+- Cabinets de gestion de patrimoine classiques (CGP) — trop orientés produits, pas assez opérationnels
+- Experts-comptables — compétents sur la forme juridique, pas sur la stratégie de construction patrimoniale
+- Pairs du réseau (groupe WhatsApp d'entrepreneurs) — utile mais non structuré, pas de responsabilité
+- Podcasts / newsletters / formations "investir comme un pro" — consommé mais insuffisant pour passer à l'acte
+
+### Trois objections probables vis-à-vis d'ISSA Capital
+
+1. **"C'est quoi la différence avec un CGP ?"** — Karim a déjà vu des gens se présenter comme "conseillers patrimoniaux". Il doit comprendre immédiatement que Thomas Issa n'est pas un vendeur de produits financiers mais un opérateur qui a lui-même construit ce qu'il décrit.
+2. **"Est-ce que son expérience s'applique à ma situation ?"** — Karim a son propre contexte (secteur, structure juridique, situation familiale). Il a besoin de voir que Thomas a traité des sujets similaires — holding, immo direct, participations — pas juste de la théorie.
+3. **"Combien ça coûte et est-ce que ça vaut le coup ?"** — Karim est pragmatique sur le ROI. Une mission de conseil doit lui faire gagner plus qu'elle ne lui coûte — soit en évitant une erreur coûteuse, soit en structurant une opportunité qu'il aurait ratée seul.
+
+### Ce qui le ferait passer à l'action sur le site
+
+- Voir le parcours réel de Thomas, concret : ce qu'il a co-fondé, ce dans quoi il a investi, les décisions difficiles qu'il a prises
+- Lire des cas ou des thématiques d'intervention claires : "holding patrimoniale", "structuration immo en direct", "investissement participatif minoritaire"
+- Trouver un CTA d'entrée sans friction — pas un formulaire de 10 champs, un moyen de prendre un premier échange rapide
+- Percevoir que Thomas est un pair, pas un prestataire — le ton doit être direct, sans bullshit, sans langue de bois corporative
+
+### Trois verbatims exacts
+
+1. *"J'ai besoin de quelqu'un qui l'a fait, pas de quelqu'un qui me vend un produit."*
+2. *"Mon expert-comptable me dit comment structurer. Moi je veux savoir quoi mettre dedans."*
+3. *"Si j'ai l'impression de parler à quelqu'un qui a eu les mêmes questions que moi, je signe."*
+
+### Expertise Thomas attendue par Karim — STRUCTURE HYPOTHÉTIQUE
+
+> [DONNÉE À OBTENIR DE THOMAS — LinkedIn bloqué, Thomas doit valider ou corriger ces 6 catégories. Ce sont des hypothèses de travail construites à partir des informations connues : co-fondateur Gradient One, écosystème Versi immo, Immocrew, Versimo, 15 lots IDF.]
+
+Les 6 catégories hypothétiques sur lesquelles Thomas peut accompagner Karim (à valider/corriger par Thomas) :
+
+1. **Structuration de holding patrimoniale** — création d'une SAS holding IS, optimisation fiscale dividendes/PFU, articulation avec le patrimoine personnel
+2. **Investissement immobilier en direct** — sélection d'actifs résidentiels IDF, gestion locative optimisée, arbitrages rendement/valorisation
+3. **Constitution d'un écosystème de participations** — comment co-fonder ou prendre des participations minoritaires dans des sociétés opérationnelles, critères de sélection
+4. **Accompagnement de fondateurs / co-construction** — comment s'associer à des entrepreneurs pour co-développer des projets (modèle Gradient One)
+5. **Levée de capitaux en cercle familial ou proche** — structuration juridique et financière pour investir avec la famille sans conflits futurs
+6. **Transmission intergénérationnelle anticipée** — premières décisions patrimoniales qui préparent la transmission à horizon 15-20 ans, sans attendre la retraite
+
+### Personas de ses interlocuteurs (clients/partenaires de notre persona)
+
+Karim travaille avec : experts-comptables, notaires, avocats fiscalistes, et parfois des co-fondateurs ou partenaires d'investissement. Dans le cadre d'une mission de conseil avec Thomas :
+
+- **Son expert-comptable** : évaluera si les recommandations de Thomas sont compatibles avec la structure juridique existante. Critère : faisabilité opérationnelle et conformité fiscale. Vocabulaire : IS/IR, comptes courants d'associés, distribution de dividendes, SCI, SAS.
+- **Son notaire** (pour les acquisitions immo) : évaluera si la structuration recommandée est cohérente avec les actes à passer. Critère : sécurité juridique des montages.
+- **Ses co-investisseurs éventuels** (famille, amis entrepreneurs) : évalueront la clarté et la solidité du projet avant d'y mettre de l'argent. Critère : confiance dans le porteur de projet + clarté du business case.
+
+*Note pour @agent-factory* : recommandation de création d'un agent testeur-persona "Karim" qui évalue le CTA accompagnement, la page /accompagnement, et le parcours de prise de contact du point de vue d'un entrepreneur de 40 ans en structuration patrimoniale.
+
+---
+
+## Persona Principal B — Leila (Cible CTA "Proposer une opportunité d'affaires")
+
+### Justification du choix
+
+Leila est le persona principal B parce qu'elle cible le CTA "Proposer une opportunité d'affaires" — formulaire de soumission d'opportunités d'investissement (immobilier, participations financières). C'est le pipeline entrant d'ISSA Capital, son KPI North Star. Leila est soit un apporteur d'affaires immobilier avec un deal à soumettre, soit un fondateur cherchant un partenaire capitalistique minoritaire long-terme. Elle n'est pas là pour chercher — elle a quelque chose à proposer.
+
+### Fiche d'identité
+
+- **Prénom** : Leila
+- **Âge** : 38 ans
+- **Métier exact** : apporteur d'affaires immobilier (agent, marchand de biens, mandataire, chasseur) OU fondateur d'une PME ou d'un projet immobilier cherchant un co-investisseur ou un actionnaire minoritaire long-terme
+- **Situation professionnelle** : opère sur des tickets entre 200 K€ et 2 M€ (immo résidentiel/commercial IDF ou régions) ou pilote une structure en croissance avec besoin de capitaux propres additionnels (300 K€ à 1,5 M€)
+- **Situation familiale** : active, mobile, Paris ou grande métropole — célibataire ou en couple, pas d'enfants ou enfants jeunes
+- **Profil** : pragmatique, deal-oriented. Elle ne lit pas les manifestes. Elle lit les critères, elle évalue si son deal passe, elle soumet ou elle passe à la suite
+
+### Contexte d'usage
+
+Leila a un deal. Ou une opportunité. Elle cherche un partenaire qui peut se décider vite, qui a un horizon long, et qui ne la noiera pas sous des conditions de sortie ou des clauses de liquidité préférentielle compliquées. Elle connaît les fonds — trop lents, trop exigeants sur la gouvernance, trop courts sur l'horizon. Elle cherche une holding familiale avec du capital propre et une vraie capacité de décision.
+
+Elle arrive sur le site ISSA Capital via LinkedIn (réseau professionnel), via une recommandation (notaire, courtier, autre apporteur), ou via une recherche directe "holding familiale immobilier Paris partenariat". Elle lit la page Opportunités en 90 secondes. Si les critères sont clairs et que son deal entre dans la grille, elle remplit le formulaire.
+
+### Scène de vie (frustration concrète)
+
+Leila a sous la main une opportunité d'immeuble de rapport à Montreuil — 8 lots, rendement brut 6,2%, prix demandé 980 K€. Elle a fait le tour de ses contacts habituels : un family office qui ne répond pas avant 3 semaines, un marchand de biens qui veut la totalité du capital, et un ami investisseur dont la capacité est insuffisante. Elle cherche quelqu'un qui a le capital, qui comprend l'immo francilien, et qui peut se positionner en 10 jours. Elle pense : *"Je perds du temps à chercher le bon partenaire. Si j'avais une liste de holdings qui me ressemblent, je pourrais qualifier en 30 minutes."*
+
+### Alternative actuelle
+
+- Réseau personnel (famille, proches entrepreneurs) — limité en capacité
+- Plateformes de crowdfunding immobilier — trop lentes, trop publiques, frais élevés
+- Family offices parisiens — peu accessibles, délais de réponse longs, seuils de ticket souvent élevés
+- Marchands de biens concurrents — pas des partenaires, des acheteurs directs qui veulent le deal entier
+
+### Trois objections probables vis-à-vis d'ISSA Capital
+
+1. **"Quelle est leur capacité réelle d'investissement ?"** — Leila a besoin de savoir si ISSA Capital peut suivre sur son ticket. Si le capital social est lisible (1 047 562€ déclaré), elle peut calibrer. Si les critères ne mentionnent pas de fourchette de tickets, elle ne sait pas si son dossier est dans le bon ordre de grandeur.
+2. **"Délai de décision ?"** — dans l'immo, les deals n'attendent pas. Si ISSA Capital met 6 semaines à répondre, le deal est parti. Leila a besoin d'un signal sur la réactivité.
+3. **"Quel type de partenariat proposent-ils ?"** — co-investissement, actionnariat minoritaire, participation en capital ? Leila doit comprendre la structure de partenariat avant de soummettre un dossier complet.
+
+### Ce qui la ferait passer à l'action sur le site
+
+- Des critères d'investissement explicites et lisibles : secteurs, géographies, tailles de tickets, posture (minoritaire/majoritaire), durée de détention cible
+- Un formulaire court et qualifiant — elle n'a pas besoin de 10 questions, elle a besoin de savoir que sa soumission sera lue par Thomas ou un décideur
+- Un signal de sérieux : structure juridique visible, participations existantes (preuve que la holding investit vraiment), ton direct sans langue de bois
+- Un délai de réponse annoncé — même indicatif. "Nous répondons à chaque opportunité qualifiée sous X jours ouvrés" vaut mieux que le silence
+
+### Trois verbatims exacts
+
+1. *"J'ai le deal, j'ai les chiffres. Je cherche juste quelqu'un qui peut se positionner vite et qui ne revend pas dans 2 ans."*
+2. *"Si leurs critères sont clairs et que mon dossier rentre dedans, je prends 5 minutes pour remplir le formulaire."*
+3. *"Ce qui me tue avec les family offices, c'est le flou. Dis-moi ce que tu cherches, je te dis si j'ai ce qu'il faut."*
+
+### Personas de ses interlocuteurs (clients/partenaires de notre persona)
+
+Leila travaille avec des vendeurs de biens (particuliers, marchands, notaires) et des acheteurs/co-investisseurs (dont potentiellement ISSA Capital). Dans le cadre d'une soumission d'opportunité à ISSA Capital :
+
+- **Le vendeur du bien ou de la participation** : évaluera si ISSA Capital est un acquéreur sérieux — solvable, réactif, sans conditions suspensives excessives. Critère : capacité de financement visible, rapidité de décision, solidité juridique de la structure.
+- **Le notaire ou l'avocat** de Leila : évaluera la structure juridique d'ISSA Capital et la clarté des conditions de partenariat. Critère : lisibilité de la SAS, sérieux des dirigeants, absence d'anomalies légales.
+
+*Note pour @agent-factory* : recommandation de création d'un agent testeur-persona "Leila" qui évalue la page /opportunites, le formulaire de soumission, et les critères d'investissement du point de vue d'un apporteur d'affaires immobilier avec un deal à soumettre sous contrainte de temps.
+
+---
+
+## Persona Secondaire — Marc (Journaliste / Analyste)
+
+### Justification du choix
+
+Marc est retenu comme persona secondaire parce que les médias et analystes sont un canal de légitimité critique pour une holding familiale naissante. Un article dans Les Échos, Capital, ou un rapport d'un analyste M&A peut générer plus de crédibilité institutionnelle en un jour que six mois de présence web. Le site doit donc être lisible pour Marc, pas uniquement pour Karim ou Leila.
 
 ### Fiche d'identité
 
@@ -160,40 +255,44 @@ Sophie a un mandat : une fondatrice de PME de services qui veut être adossée �
 
 ### Trois objections probables vis-à-vis d'ISSA Capital
 
-1. **"Je ne sais pas s'ils ont la capacité financière pour ce dossier"** — Sophie a besoin de comprendre la taille des tickets qu'ISSA Capital peut traiter. Si c'est flou, elle ne prend pas le risque de recommander.
-2. **"Structure récente — ont-ils déjà clôturé des opérations ?"** — Sophie a besoin de track record, ou au moins de signaux de sérieux.
-3. **"Leurs critères d'investissement excluent peut-être mon dossier sans que je le sache"** — si les filtres ne sont pas explicitement documentés sur le site, Sophie perd du temps à appeler pour rien.
+1. **"Je ne sais pas s'ils ont la capacité financière pour ce dossier"** — Marc cherche une holding identifiable, avec une structure réelle et un interlocuteur nommé. Si le site est vague ou ne présente pas de parcours crédible de Thomas, Marc n'a pas assez de matière.
+2. **"Aucun track record visible"** — holding créée en 2026, peu d'historique. Marc cherche des réalisations, des participations concrètes, des citations directes.
+3. **"Pas de contact facilement accessible"** — si Marc ne trouve pas une adresse ou un formulaire en 30 secondes, il passe à autre chose.
 
-### Ce qui la ferait passer à l'action sur le site
+### Ce qui le ferait passer à l'action sur le site
 
-- Une page Opportunités d'investissement avec des critères clairs (secteurs, tailles de tickets, posture d'actionnaire)
-- Un formulaire de contact ou une adresse directe accessible sans friction
-- Un ton institutionnel sérieux qui inspire confiance à un professionnel du M&A
+- Une page Mission & Philosophie dense, éditoriale, qui dit quelque chose de vrai sur la famille et ses convictions
+- Une page Participations avec des éléments concrets sur l'écosystème
+- Un formulaire de contact ou une adresse email directe accessible sans friction
+- Un ton qui a de la personnalité — un site sans caractère ne donne pas envie d'écrire dessus
 
 ### Trois verbatims exacts
 
-1. *"J'ai besoin de comprendre leurs critères avant d'envoyer un dossier — sinon c'est du temps perdu pour tout le monde."*
-2. *"Un bon site de holding me dit qui ils sont, ce qu'ils cherchent, et comment les contacter. C'est tout ce dont j'ai besoin."*
-3. *"Si leur site est professionnel et que leurs critères correspondent, je les appelle dans la semaine."*
+1. *"Je cherche des holdings familiales avec une histoire, une identité — pas juste une coquille vide."*
+2. *"Si le site m'explique clairement leur thèse d'investissement et leur écosystème, c'est un bon signe."*
+3. *"Je contacte directement si le fondateur a quelque chose à dire — sinon, je passe."*
 
-### Personas de ses clients (clients de notre persona)
+### Personas de ses interlocuteurs
 
-Sophie travaille pour des fondateurs de PME comme Hélène. Ses "clients" sont des cédants ou des entrepreneurs en recherche de partenaires capitalistiques. Ces clients évaluent Sophie sur : la qualité des acquéreurs qu'elle leur présente, la pertinence des profils, la rapidité d'accès aux décideurs. Pour ISSA Capital, l'enjeu est que Sophie soit en mesure de "vendre" ISSA Capital à ses propres clients — donc que le site lui donne des arguments clairs et crédibles.
+Marc écrit pour des lecteurs (abonnés presse économique, décideurs financiers, directeurs de family offices). Ces lecteurs évalueront son article sur la précision des informations, la pertinence de l'angle, la nouveauté du sujet. Pour ISSA Capital, l'enjeu est que Marc dispose d'informations suffisamment précises pour produire un contenu exact et valorisant.
 
-*Note pour @agent-factory* : recommandation de création d'un agent testeur "Sophie" qui simule un partenaire B2B évaluant ISSA Capital comme acquéreur potentiel pour ses mandants.
+*Note* : les lecteurs de Marc ne sont pas des interlocuteurs directs d'ISSA Capital — pas de recommandation d'agent testeur-client-du-persona dans ce cas (B2C indirect, audience diffuse).
 
 ---
 
-## Matrice "Ce que chaque persona cherche sur le site" → 6 pages V1
+## Matrice "Ce que chaque persona cherche sur le site" → 2 CTAs + 6 pages V1
 
-| Page | Hélène (principale) | Marc (secondaire 1) | Sophie (secondaire 2) |
+> Architecture à valider par @ux : ISSA Capital propose deux entrées distinctes — /accompagnement (CTA A — Karim) et /opportunites (CTA B — Leila). Marc peut entrer par n'importe quelle page. La matrice ci-dessous reflète cette bifurcation.
+
+| Page / CTA | Karim (principal A — accompagnement) | Leila (principal B — opportunités) | Marc (secondaire — earned media) |
 |---|---|---|---|
-| **1. Accueil** | Comprendre en 30s si ISSA Capital est une vraie holding long-terme, pas un fonds | Comprendre l'identité et l'écosystème global | Évaluer la crédibilité institutionnelle en 30s |
-| **2. Mission & Philosophie** | Lire les valeurs réelles — est-ce qu'ils sont vraiment différents des fonds ? | Trouver la thèse d'investissement et l'histoire de la famille | Comprendre la philosophie d'actionnaire |
-| **3. Participations** | Comprendre dans quels secteurs ISSA Capital investit et si ça inclut les services B2B | Avoir des éléments concrets sur l'écosystème pour son article | Évaluer la diversité sectorielle et la cohérence du portefeuille |
-| **4. Opportunités d'investissement** | **Page critique** : lire les critères, comprendre si son entreprise pourrait correspondre, trouver le formulaire | Comprendre la thèse d'investissement explicitée | **Page critique** : vérifier que les critères correspondent à son mandat actuel |
-| **5. Contact** | Envoyer une première prise de contact informelle | Trouver un contact direct pour solliciter Thomas | Envoyer un premier email pour qualifier |
-| **6. Mentions légales / RGPD** | Confirmer la structure juridique réelle (SIREN, siège) | Récupérer les informations légales pour son article | Confirmer la structure juridique et le siège social |
+| **CTA A — /accompagnement** | **Page critique** : comprendre l'expertise de Thomas, les thématiques d'intervention, le mode de travail, trouver le formulaire de prise de contact | N/A — pas sa cible | Comprendre la dimension conseil de Thomas Issa |
+| **CTA B — /opportunites** | N/A — pas sa cible | **Page critique** : lire les critères d'investissement, valider que son deal entre dans la grille, soumettre le formulaire | Comprendre la thèse d'investissement explicitée |
+| **1. Accueil** | Comprendre en 30s que Thomas Issa est un opérateur expérimenté qui accompagne des décideurs comme lui | Comprendre en 30s qu'ISSA Capital investit dans l'immo et des participations — et qu'on peut leur soumettre un deal | Comprendre l'identité globale et les deux axes business |
+| **2. Mission & Philosophie** | Trouver la conviction et le caractère — est-ce que Thomas a un vrai point de vue, pas des platitudes ? | Comprendre les filtres d'investissement : ce qu'ISSA accepte et refuse | Trouver la thèse d'investissement et l'histoire de la famille Issa |
+| **3. Participations** | Voir la preuve par l'exemple : Thomas a construit et investi lui-même dans ces structures | Évaluer la cohérence de l'écosystème — preuve qu'ISSA investit vraiment | Avoir des éléments concrets sur l'écosystème pour son article |
+| **4. Contact** | Prendre un premier échange avec Thomas sans formulaire de 10 champs | Envoyer un dossier ou une prise de contact rapide post-formulaire | Trouver un contact direct pour solliciter Thomas |
+| **5. Mentions légales / RGPD** | Confirmer la structure juridique sérieuse | Confirmer la capacité financière (capital social visible) + structure juridique | Récupérer les informations légales pour son article |
 
 ---
 
@@ -201,32 +300,37 @@ Sophie travaille pour des fondateurs de PME comme Hélène. Ses "clients" sont d
 
 | Agent proposé | Type | Rôle | Justification | Priorité |
 |---|---|---|---|---|
-| @testeur-helene | Testeur persona | Incarne Hélène et évalue chaque livrable du site (landing, copy, formulaire) du point de vue d'une fondatrice PME en réflexion de cession | Sans cet agent, les livrables risquent d'être trop institutionnels et pas assez accessibles pour une non-spécialiste du M&A | Haute |
-| @testeur-sophie | Testeur persona | Incarne Sophie et évalue le site du point de vue d'un partenaire B2B prescripteur | Sophie est le relais clé entre les Hélène et ISSA Capital — si le site ne la convainc pas, les prescripteurs ne recommanderont pas ISSA Capital | Haute |
-| @expert-holding-familiale | Expert métier | Valide le vocabulaire, les pratiques et les standards du secteur des holdings familiales françaises | Risque d'erreurs factuelles ou de formulations inadaptées sur des notions clés (pacte d'actionnaires, horizon de détention, posture d'actionnaire) si aucun expert métier ne relit | Moyenne |
+| @testeur-karim | Testeur persona | Incarne Karim et évalue le CTA accompagnement, la page /accompagnement, le parcours de prise de contact — du point de vue d'un entrepreneur de 40 ans en structuration patrimoniale | Sans cet agent, le copy de la page accompagnement risque d'être trop institutionnel et pas assez direct/pair-à-pair | Haute |
+| @testeur-leila | Testeur persona | Incarne Leila et évalue la page /opportunites, les critères d'investissement, le formulaire de soumission — avec la contrainte temps d'un deal immobilier | Sans cet agent, le formulaire et les critères risquent d'être trop vagues pour un apporteur d'affaires deal-driven | Haute |
+| @expert-holding-familiale | Expert métier | Valide le vocabulaire, les pratiques et les standards du secteur des holdings familiales françaises | Risque d'erreurs factuelles ou de formulations inadaptées sur des notions clés (holding IS, pacte d'actionnaires, posture d'actionnaire, critères d'investissement) | Moyenne |
 
 ### Specs complémentaires pour @agent-factory
 
-**@testeur-helene**
-- Inputs : tous les livrables @copywriter, @ux, @design concernant les pages Accueil, Mission, Opportunités et Contact
-- Outputs : évaluation GP1-GP10 (gates testeur-persona) + 3-5 retours qualitatifs par page
-- Critère de succès : GP1 (compréhension immédiate), GP4 (parcours fluide), GP7 (conviction à s'inscrire/soumettre) tous PASS
+**@testeur-karim**
+- Inputs : page /accompagnement, copy de la section "Expertise Thomas", CTA A sur la page Accueil, formulaire de prise de contact
+- Outputs : évaluation GP1-GP10 (gates testeur-persona) + 3-5 retours qualitatifs par section
+- Critère de succès : GP1 (compréhension immédiate de ce que Thomas propose), GP3 (crédibilité perçue — Thomas est un pair, pas un prestataire), GP7 (conviction à prendre contact)
 
-**@testeur-sophie**
-- Inputs : page Opportunités d'investissement et formulaire de contact
-- Outputs : évaluation du point de vue prescripteur — est-ce que Sophie peut qualifier ISSA Capital comme acquéreur potentiel pour ses mandants ?
-- Critère de succès : Sophie trouve les critères, comprend la capacité d'investissement (même approximative), et soumet un dossier test
+**@testeur-leila**
+- Inputs : page /opportunites, critères d'investissement, formulaire de soumission, signaux de réactivité (délai de réponse annoncé)
+- Outputs : évaluation GP1-GP10 + simulation de soumission d'un deal immobilier fictif de 800 K€
+- Critère de succès : Leila comprend les critères en moins de 2 minutes, identifie si son deal est dans la grille, soumet le formulaire sans friction
 
-→ Handoff @agent-factory : créer ces agents à partir des specs ci-dessus et du brand-platform produit.
+→ Handoff @agent-factory : créer @testeur-karim et @testeur-leila en priorité haute à partir des specs ci-dessus et du brand-platform produit. Remplacer les anciens @testeur-helene et @testeur-sophie qui correspondent à un scope business invalidé.
 
 ---
 
-**Handoff → @copywriter, @ux, @design, @agent-factory**
-- Fichiers produits : `docs/strategy/personas.md`
-- Décisions prises : Hélène = principal (fondatrice PME, cherche adossement long-terme) ; Marc = secondaire 1 (journaliste/analyste) ; Sophie = secondaire 2 (partenaire B2B prescripteur)
+**Handoff → @ux, @copywriter, @design, @agent-factory**
+- Fichiers produits : `docs/strategy/personas.md` (révision majeure 2026-04-07)
+- Décisions prises :
+  - Hélène et Sophie supprimées — scope business invalide (ISSA ne fait pas de cession PME)
+  - Karim = persona principal A (CTA accompagnement) — entrepreneur 42 ans en structuration patrimoniale
+  - Leila = persona principal B (CTA opportunités) — apporteur d'affaires / fondateur cherchant co-investisseur
+  - Marc conservé en secondaire (earned media)
+  - Expertise Thomas : 6 catégories hypothétiques documentées, Thomas doit valider
 - Points d'attention pour la suite :
-  - @copywriter : les verbatims des personas (sections 1.7, 2.7, 3.7) doivent inspirer le registre de chaque page — Hélène parle de "dépecé", de "respect", pas de "rendement" ni de "ROI"
-  - @ux : la matrice page × persona (section finale) est le document de référence pour prioriser les informations par page
-  - @design : Hélène et Sophie sont des professionnels exigeants — un design vague ou "startup" brise immédiatement la crédibilité
-  - @agent-factory : créer @testeur-helene et @testeur-sophie en priorité haute (specs ci-dessus)
-  - Données manquantes : participations Gradient One, Versi Immobilier, Versi Invest, immobilier direct — Thomas doit compléter project-context.md avant que @copywriter puisse rédiger la page Participations
+  - @ux : l'architecture des 2 CTAs distincts (/accompagnement et /opportunites) est la décision structurante — arbitrer avec Thomas si ce sont 2 pages séparées ou 1 page avec 2 points d'entrée
+  - @copywriter : Karim parle de "quelqu'un qui l'a fait", Leila parle de "critères clairs et délai de réponse" — ces verbatims définissent le registre de chaque page
+  - @design : Karim attend un ton "pair direct sans bullshit", Leila attend un ton "deal-oriented lisible" — deux registres dans la même holding. Le design doit tenir les deux sans schizophrénie
+  - @agent-factory : créer @testeur-karim et @testeur-leila en remplacement de @testeur-helene et @testeur-sophie
+  - Thomas doit valider les 6 catégories hypothétiques d'expertise (section "Expertise Thomas attendue par Karim") avant que @copywriter rédigé la page /accompagnement
