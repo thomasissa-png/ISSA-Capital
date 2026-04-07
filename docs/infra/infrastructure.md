@@ -257,6 +257,54 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
 ---
 
+## Déploiement Replit production (Phase 3, Étape 3 phase 2)
+
+> Section ajoutée par @infrastructure le 2026-04-07 (session 3, phase 2 du déploiement).
+
+La procédure de déploiement complète step-by-step destinée à Thomas (utilisateur non-technique) est documentée dans **`/REPLIT_ACTIONS.md`** à la racine du repo. Ce fichier est la **source de vérité opérationnelle** pour le jour J du déploiement.
+
+**Vue d'ensemble en 9 étapes** :
+1. **Configuration des Secrets Replit** — 7 variables obligatoires (Resend, NEXT_PUBLIC_SITE_URL, Plausible, rate limit) + 2 optionnelles (Turnstile)
+2. **Configuration `.replit`** — `run = "npm run start"`, build `npm run build`, `deploymentTarget = "autoscale"`
+3. **Premier déploiement preview** sur URL `*.replit.app` (filet de sécurité)
+4. **Smoke tests sur preview** : navigation, formulaire bout-en-bout (2 variants), honeypot, rate limit, SEO files, Lighthouse mobile
+5. **Activation production** : statut Live, auto-deploy on push `main`
+6. **Configuration domaine custom `issa-capital.com`** : A record apex + CNAME www + TXT verify, propagation DNS, certificat Let's Encrypt
+7. **Smoke tests post-domaine** : URLs canoniques alignées, sitemap, JSON-LD, Resend depuis le vrai domaine
+8. **Soumission moteurs** : Google Search Console + Bing Webmaster + validation OG (LinkedIn/Facebook/X)
+9. **Monitoring post-deploy** : UptimeRobot 5 min, Plausible Goals, logs Replit J+0/J+1, Lighthouse J+3
+
+**Critères de rollback** : 8 conditions binaires (R1-R8) reprises de `docs/reviews/go-nogo-checklist.md` Section 5. Procédure rollback Replit en 1 clic via Deployments → History.
+
+**Variables d'environnement runtime** (récap — détail dans REPLIT_ACTIONS.md Annexe A) :
+
+| Nom | Type | Obligatoire |
+|---|---|---|
+| `RESEND_API_KEY` | server secret | Oui |
+| `RESEND_FROM_EMAIL` | server secret | Oui |
+| `RESEND_TO_EMAIL` | server secret | Oui |
+| `NEXT_PUBLIC_SITE_URL` | public | Oui |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | public | Oui |
+| `RATE_LIMIT_MAX` | server | Oui |
+| `RATE_LIMIT_WINDOW_MS` | server | Oui |
+| `TURNSTILE_SECRET_KEY` | server secret | Non |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | public | Non |
+
+**Limites Replit Autoscale connues** :
+- **Cold starts** possibles après inactivité (~1-3s sur le premier hit) — acceptable pour un site institutionnel
+- **Storage éphémère** : aucun fichier persistant côté serveur — non bloquant car le site n'a pas de DB ni d'upload
+- **Pas de cron natif** : non bloquant car aucune tâche planifiée requise
+- **Coût variable** selon trafic : surveiller le dashboard Usage la première semaine
+
+**Documents liés** :
+- `/REPLIT_ACTIONS.md` — procédure linéaire pour Thomas (source de vérité opérationnelle)
+- `docs/reviews/go-nogo-checklist.md` — checklist Section 1 à valider AVANT Deploy + Section 5 critères rollback
+- `docs/infra/deployment-replit.md` — version courte historique (kept for reference)
+- `docs/infra/security-checklist.md` — vérifications headers post-deploy
+- `docs/infra/performance-audit.md` — seuils Lighthouse cibles
+
+---
+
 ## Handoff → @fullstack, @qa
 
 **@fullstack** :
