@@ -65,12 +65,9 @@ export default function HomePage(): JSX.Element {
             La holding patrimoniale d&apos;une famille libanaise, établie en France.
             Patrimoine, participations, transmission.
           </p>
-          <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row">
+          <div className="mt-2xl flex justify-center">
             <Button href="/opportunites" variant="primary-inverse" size="lg">
               Présenter une opportunité d&apos;affaires
-            </Button>
-            <Button href="/accompagnement" variant="ghost" size="lg" className="text-parchment-100 hover:bg-ink-800">
-              Travailler avec Thomas Issa
             </Button>
           </div>
         </Container>
@@ -93,11 +90,6 @@ export default function HomePage(): JSX.Element {
             <p>
               Une holding indépendante, dont la famille Issa est le seul actionnaire, et
               dont l&apos;horizon est intergénérationnel.
-            </p>
-            <p>
-              Cette holding n&apos;est pas née en 2026. Elle est l&apos;aboutissement de
-              trois décennies de construction patrimoniale — une famille libanaise qui a
-              appris à construire, à tenir, et à transmettre.
             </p>
           </div>
           <Link
@@ -273,7 +265,7 @@ export default function HomePage(): JSX.Element {
             <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
               <Overline tone="light">Pour les dirigeants</Overline>
               <h3 className="mt-md font-heading text-h3 text-parchment-100">
-                Travailler avec Thomas Issa.
+                Accompagnement de dirigeants.
               </h3>
               <p className="mt-md flex-1 text-base text-ink-300">
                 Une mission ponctuelle ou un rôle d&apos;advisor récurrent. Pour les

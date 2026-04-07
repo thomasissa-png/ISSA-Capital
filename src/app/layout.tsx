@@ -69,13 +69,10 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
-  },
+  // Favicons : gérés par la convention file-based Next.js App Router
+  // (src/app/favicon.ico, src/app/icon.svg, src/app/apple-icon.png).
+  // Cette convention génère automatiquement les <link> dans le <head>
+  // et prend priorité sur metadata.icons. Plus fiable qu'une déclaration manuelle.
   manifest: '/site.webmanifest',
   alternates: {
     canonical: siteConfig.url,

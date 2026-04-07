@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     "Thomas Issa accompagne fondateurs et investisseurs en structuration patrimoniale, holding, immo en direct et participations. 15 ans Sony, co-fondateur TEOS.",
   alternates: { canonical: `${siteConfig.url}/accompagnement` },
   openGraph: {
-    title: 'Travailler avec Thomas Issa — ISSA Capital',
+    title: 'Conseil & accompagnement — ISSA Capital',
     description:
       'Stratège, co-fondateur, opérateur immo. Thomas Issa accompagne les décideurs qui cherchent un pair — pas un prestataire.',
     url: `${siteConfig.url}/accompagnement`,

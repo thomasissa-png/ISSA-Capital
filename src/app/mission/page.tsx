@@ -279,7 +279,7 @@ export default function MissionPage(): JSX.Element {
               href="/accompagnement"
               className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
-              Travailler avec Thomas Issa →
+              Découvrir l&apos;accompagnement →
             </Link>
           </div>
         </Container>

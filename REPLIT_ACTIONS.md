@@ -3,7 +3,7 @@
 > **Pour qui ?** Thomas (fondateur, non-technique).
 > **Objectif** : déployer issa-capital.com en confiance, sans surprise, avec un plan de retour arrière clair.
 > **Durée estimée** : 1h30 à 2h30 le jour J (hors propagation DNS qui peut prendre jusqu'à 24h).
-> **Branche source** : `claude/issa-phase3-qa-7odSp` (commit `42b3075`) — à merger sur `main` AVANT déploiement.
+> **Branche source** : `claude/issa-session-4-reprise-9oB9r` (commit `42b3075`) — à merger sur `main` AVANT déploiement.
 > **Dernière mise à jour** : 2026-04-07 — @infrastructure (Phase 3, Étape 3 phase 2).
 
 ---
@@ -25,7 +25,7 @@ Si une étape échoue, va voir l'**Annexe Troubleshooting** en bas du document.
 
 - [ ] **Compte Replit actif** avec un plan permettant les **Replit Deployments** (plan **Core** minimum recommandé — environ 20 $/mois — qui inclut Autoscale Deployments et domaines custom). [À VÉRIFIER : tarif exact à confirmer sur https://replit.com/pricing au jour J]
 - [ ] **Repo GitHub `thomasissa-png/issa-capital` accessible** depuis le compte Replit (autorisation OAuth GitHub validée)
-- [ ] **Branche `main` à jour** : la branche `claude/issa-phase3-qa-7odSp` doit être **mergée vers `main`** via Pull Request avant tout déploiement. Si ce n'est pas fait, demander à @orchestrator de procéder au merge
+- [ ] **Branche `main` à jour** : la branche `claude/issa-session-4-reprise-9oB9r` doit être **mergée vers `main`** via Pull Request avant tout déploiement. Si ce n'est pas fait, demander à @orchestrator de procéder au merge
 - [ ] **Domaine `issa-capital.com` acheté et accessible** chez le registrar (OVH, Gandi, Cloudflare, ou autre). Tu dois pouvoir te connecter au panneau DNS du registrar
 - [ ] **Compte Resend actif** : domaine `issa-capital.com` ajouté, **DKIM/SPF/DMARC vérifiés** (statut "Verified" dans le dashboard Resend), API Key production générée et copiée dans un endroit sûr
 - [ ] **DPA Resend signé** (obligation RGPD article 28 — voir `docs/legal/legal-audit.md`)
@@ -532,7 +532,7 @@ Voir B4. C'est le même problème (certificat non généré).
   2. DPA Resend signé
   3. Domaine `issa-capital.com` vérifié dans Resend (DKIM/SPF/DMARC)
   4. Accès au panneau DNS du registrar
-  5. Branche `claude/issa-phase3-qa-7odSp` mergée sur `main`
+  5. Branche `claude/issa-session-4-reprise-9oB9r` mergée sur `main`
 - **Ce qui peut être automatisé en futur (V2)** :
   1. **GitHub Actions auto-deploy → Replit** : webhook GitHub déclenchant un redeploy Replit automatique sur push `main` (existe déjà nativement dans certains plans Replit, sinon API Replit)
   2. **Health check endpoint `/api/health`** : créer un endpoint qui vérifie Resend + autres dépendances → branché à UptimeRobot
