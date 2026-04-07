@@ -1,0 +1,25 @@
+{
+  "name": "ISSA Capital",
+  "short_name": "ISSA",
+  "description": "La holding patrimoniale d'une famille aux racines libanaises qui investit pour les générations à venir",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F0E8",
+  "theme_color": "#0A0A0A",
+  "lang": "fr",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
