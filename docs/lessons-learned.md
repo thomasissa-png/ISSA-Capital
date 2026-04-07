@@ -3,6 +3,29 @@
 > Mémoire organisationnelle du projet. Format v2 (11 colonnes) — voir CLAUDE.md section "Mémoire organisationnelle".
 > Règle : un learning P0/P1 doit être propagé avant clôture de session (ou documenté dans le mémo de reprise).
 
+## 🛑 État propagation en clôture session 1 (2026-04-07)
+
+**4 learnings P0/P1 ont statut propagation = `non-propagé`** à la clôture de cette session :
+
+1. **P0 — Mission vs Valeurs sur holding familiale** → à propager vers `.claude/agents/creative-strategy.md` + `docs/founder-preferences.md` (repo Agent-Team)
+2. **P1 — Orchestrator n'a pas WebFetch** → `n/a` (documentation uniquement, pas de propagation bloquante)
+3. **P0 — Identité libanaise ISSA Capital + règle générique double identité** → à propager vers `.claude/agents/creative-strategy.md` + `.claude/agents/copywriter.md` + `.claude/agents/design.md` + `docs/founder-preferences.md`
+4. **P0 — Tagline fausse promesse "On ne vend pas. On garde."** → à propager vers `.claude/agents/creative-strategy.md` + `.claude/agents/_base-agent-protocol.md`
+5. **P0 — VITRINE pas CONVERSION (site institutionnel vs funnel)** → à propager vers `.claude/agents/orchestrator.md` + `.claude/agents/creative-strategy.md` + `.claude/agents/copywriter.md` + `.claude/agents/ux.md` + `.claude/agents/growth.md` + `docs/founder-preferences.md`
+
+### ⚠️ Pourquoi la propagation est DIFFÉRÉE
+Ces propagations concernent des fichiers du **framework Gradient Agents** (repo Agent-Team, branche `claude/extract-project-context-PK8iz`), PAS du projet ISSA Capital. Les fichiers `.claude/agents/*.md` dans ce repo ISSA Capital sont une copie locale installée ici — les modifier ici ne propage pas les learnings vers les autres projets Gradient Agents. La propagation "vraie" doit se faire dans le repo Agent-Team source.
+
+**Action à effectuer par Thomas (ou en meta-maintenance framework) en dehors de cette session** :
+- Ouvrir le repo `thomasissa-png/Agent-Team`
+- Modifier les fichiers agents listés ci-dessus avec les règles documentées
+- Mettre à jour `docs/founder-preferences.md` du repo Agent-Team avec les préférences Thomas (VITRINE, double identité, mission vs valeurs, tagline factualité)
+
+### Alternative : propagation locale dans le repo ISSA Capital
+Si on accepte que ces règles s'appliquent uniquement à ISSA Capital (pas cross-projets), on peut mettre à jour les fichiers `.claude/agents/*.md` locaux de ce repo. Cela protège les futurs lancements d'agents **sur ce projet** (sessions 2, 3, etc.) mais ne contribue pas à la mémoire framework globale.
+
+**Décision orchestrator** : propagation locale à faire en début de session 2 (5 minutes de Edit), ET notification à Thomas pour propager vers le repo Agent-Team source à sa convenance.
+
 ## Session 2026-04-07 — ISSA Capital (cadrage initial)
 
 | Session | Date | Catégorie | Sévérité | Description | Correction appliquée | Recommandation framework | Cible propagation | Fichiers impactés | Statut correction | Statut propagation |
