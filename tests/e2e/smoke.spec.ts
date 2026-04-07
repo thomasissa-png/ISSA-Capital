@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 
 const routes = [
-  { path: '/', h1Contains: 'On décide' },
+  { path: '/', h1Contains: 'Racines libanaises' },
   { path: '/mission', h1Contains: 'Famille libanaise' },
   { path: '/accompagnement', h1Contains: 'Thomas Issa' },
   { path: '/opportunites', h1Contains: 'Vous avez un dossier' },

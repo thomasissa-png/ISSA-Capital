@@ -9,7 +9,7 @@
 ## Résumé exécutif
 
 - **Objectif** : poser les fondations visuelles d'ISSA Capital — holding patrimoniale d'une famille libanaise — en incarnant l'archétype Ruler/Outlaw dans un registre éditorial sobre et tranchant
-- **Décisions clés** : palette noir-crème-ocre (identité libano-française, zéro bleu corporate) ; Cormorant Garamond (headings, haute noblesse) + Inter (corps, clarté maximale) ; espacement généreux ; tokens 3 tiers strict ; zéro ombre, angles nets, un radius assumé minimal
+- **Décisions clés** : palette noir-crème-ocre (identité libano-française, zéro bleu corporate) ; EB Garamond (headings, décision Thomas post-deploy 2026-04-07 — même filiation Garamond que EB Garamond mais contraste plein/délié réduit, confort visuel amélioré) + Inter (corps, clarté maximale) ; espacement généreux ; tokens 3 tiers strict ; zéro ombre, angles nets, un radius assumé minimal
 - **Dépendances** : design-tokens.json (implémentation Tailwind), component-library.md (composants), page-compositions.md (layouts)
 
 ---
@@ -32,7 +32,7 @@ La sobriété éditoriale rencontre l'identité libanaise **non pas par le folkl
 
 4. **Un seul acte de couleur par page.** L'ocre levantin (#C4935A) n'intervient que pour les actions primaires, les séparateurs structurants, et les accents éditoriaux. Il ne se répète jamais deux fois de suite dans une même zone de lecture.
 
-5. **La typographie a de la vertèbre.** Cormorant Garamond en display (grands titres) installe une présence aristocratique sans condescendance. Inter en corps assure la lisibilité maximale sur écran. La tension entre ces deux polices EST l'identité visuelle.
+5. **La typographie a de la vertèbre.** EB Garamond Garamond en display (grands titres) installe une présence aristocratique sans condescendance. Inter en corps assure la lisibilité maximale sur écran. La tension entre ces deux polices EST l'identité visuelle.
 
 ### Mood board textuel
 
@@ -219,7 +219,7 @@ Pourquoi pas bleu ? Le bleu est le signal de marque du corporate générique mon
 | Overline sur fond clair (`parchment-100`, `white-pure`, `parchment-50`) | `color-text-accent-normal` (levant-600) | 4.6:1 PASS texte normal |
 | Dash `—` de liste sur fond clair | `color-text-accent-normal` (levant-600) | 4.6:1 PASS texte normal |
 | Lien inline dans corps de texte | `color-text-accent` (levant-600) | 4.6:1 PASS texte normal |
-| Titre Cormorant h2/h3 en accent sur fond clair | `color-text-accent-normal` (levant-600) | Même token, sécurisé |
+| Titre EB Garamond h2/h3 en accent sur fond clair | `color-text-accent-normal` (levant-600) | Même token, sécurisé |
 | Valeur chiffrée Key-Stat sur fond `ink-950` | `levant-500` autorisé | Fond sombre — ratio 5.9:1 PASS |
 | Guillemets décoratifs Card Quote (≥40px) | `levant-600` recommandé | levant-500 trop juste (3.1:1), levant-600 = 4.6:1 |
 | Bordure/séparateur décoratif `2px solid` sur fond clair | `levant-500` autorisé | Non-texte — seuil 3:1 interactif = PASS à 3.1:1 |
@@ -236,19 +236,21 @@ Pourquoi pas bleu ? Le bleu est le signal de marque du corporate générique mon
 
 ### 3.1 Choix typographiques et justification
 
-#### Headings : Cormorant Garamond
+#### Headings : EB Garamond *(basculé depuis EB Garamond Garamond — décision Thomas post-deploy 2026-04-07)*
 
-**Pourquoi Cormorant Garamond** : police sérif haute noblesse, contraste de graisse extrême (fines et grasses très marqués), inspiration Garamond du XVIe siècle. Elle incarne la durée, l'héritage, la permanence. Son caractère aristocratique correspond exactement à l'archétype Ruler d'ISSA Capital. Ses formes calligraphiques ont une parenté avec les traditions d'écriture du bassin méditerranéen — subtil lien avec l'identité libanaise sans être illustratif.
+**Contexte du changement** : EB Garamond Garamond présentait un contraste plein/délié extrême (famille didone, déliés proches de 1px à l'écran) créant une fatigue visuelle. Thomas a demandé de "baisser le volume" sans changer la filiation visuelle. Voir `docs/design/typography-alternatives.md` pour l'analyse complète.
 
-**Disponibilité** : police libre (Open Font License), auto-hébergement possible via fichiers WOFF2 en local — **aucun appel Google Fonts CDN** (conformité RGPD confirmée par @legal).
+**Pourquoi EB Garamond** : police sérif old-style, fidèle aux poinçons de Garamond originaux (spécimen Berner, 1592) — là même source dont EB Garamond est une relecture radicalisée. EB Garamond conserve la noblesse institutionnelle et les italiques élancés sans le contraste de graisse extrême. Elle incarne la même durée et le même héritage avec plus de sérénité. Son ancrage dans la tradition humaniste de la Renaissance est cohérent avec l'identité levantine d'ISSA Capital.
 
-**Utilisation** : uniquement pour les titres display, h1, h2, h3. **Jamais** pour le corps de texte (contraste de graisse trop fort pour la lecture longue sur écran).
+**Disponibilité** : SIL Open Font License 1.1, auto-hébergement WOFF2 autorisé — **aucun appel Google Fonts CDN** (conformité RGPD). Fichiers WOFF2 à placer dans `public/fonts/eb-garamond/` — voir le README dans ce dossier pour les commandes de téléchargement.
 
-**Variantes utilisées** : Regular (400), Medium (500), SemiBold (600), Bold (700) — italic pour les citations.
+**Utilisation** : uniquement pour les titres display, h1, h2. Pour h3 à 24px, envisager Inter Medium selon le contexte (EB Garamond a une x-height légèrement plus basse qu'Inter — voir note dans typography-alternatives.md).
+
+**Variantes utilisées** : Regular (400) + italic, Medium (500), SemiBold (600) + italic — 3 poids maximum.
 
 #### Corps : Inter
 
-**Pourquoi Inter** : police sans-serif conçue spécifiquement pour la lisibilité sur écran (Rasmus Andersson, 2017). Metriques optimisées pour les densités d'affichage modernes, lettres parfaitement distinctes à petite taille (1/I/l bien différenciés), neutralité qui laisse les headings Cormorant dominer.
+**Pourquoi Inter** : police sans-serif conçue spécifiquement pour la lisibilité sur écran (Rasmus Andersson, 2017). Metriques optimisées pour les densités d'affichage modernes, lettres parfaitement distinctes à petite taille (1/I/l bien différenciés), neutralité qui laisse les headings EB Garamond dominer.
 
 **Disponibilité** : police libre, auto-hébergement WOFF2 local — pas de CDN Google.
 
@@ -270,11 +272,11 @@ Cohérence avec le corps. Les labels de navigation restent en Inter pour la lisi
 
 | Token | Taille rem | Px équivalent | Line-height | Letter-spacing | Font | Weight | Usage |
 |---|---|---|---|---|---|---|---|
-| `text-display` | 4.5rem | 72px | 1.1 (80px) | -0.03em | Cormorant | 400 | Hero principal |
-| `text-h1` | 3.5rem | 56px | 1.15 (64px) | -0.025em | Cormorant | 400 | Titre de page |
-| `text-h2` | 2.5rem | 40px | 1.2 (48px) | -0.02em | Cormorant | 500 | Titre de section |
-| `text-h3` | 1.875rem | 30px | 1.33 (40px) | -0.015em | Cormorant | 600 | Sous-section |
-| `text-h4` | 1.375rem | 22px | 1.45 (32px) | -0.01em | Cormorant | 600 | Titre composant |
+| `text-display` | 4.5rem | 72px | 1.1 (80px) | -0.03em | EB Garamond | 400 | Hero principal |
+| `text-h1` | 3.5rem | 56px | 1.15 (64px) | -0.025em | EB Garamond | 400 | Titre de page |
+| `text-h2` | 2.5rem | 40px | 1.2 (48px) | -0.02em | EB Garamond | 500 | Titre de section |
+| `text-h3` | 1.875rem | 30px | 1.33 (40px) | -0.015em | EB Garamond | 600 | Sous-section |
+| `text-h4` | 1.375rem | 22px | 1.45 (32px) | -0.01em | EB Garamond | 600 | Titre composant |
 | `text-lead` | 1.25rem | 20px | 1.6 (32px) | -0.005em | Inter | 400 | Chapeau, intro |
 | `text-body` | 1rem | 16px | 1.75 (28px) | 0em | Inter | 400 | Corps de texte |
 | `text-body-sm` | 0.875rem | 14px | 1.7 (24px) | 0.01em | Inter | 400 | Texte secondaire |
@@ -331,7 +333,7 @@ const inter = localFont({
 ```
 
 **Sources de téléchargement** :
-- Cormorant Garamond : https://github.com/google/fonts/tree/main/ofl/cormorantgaramond (fichiers WOFF2)
+- EB Garamond Garamond : https://github.com/google/fonts/tree/main/ofl/cormorantgaramond (fichiers WOFF2)
 - Inter : https://github.com/rsms/inter/releases (fichiers WOFF2)
 
 ## 4. Espacements
@@ -479,7 +481,7 @@ Le design system privilégie les **séparateurs horizontaux typographiques** (un
 
 Budget photo/vidéo = 0€ est une **contrainte qui devient une identité**. La stratégie repose sur trois piliers :
 
-**Pilier 1 : Typographie as hero.** Les grandes sections utilisent la typographie Cormorant Garamond en grand format comme élément visuel principal. Un titre h1 en Cormorant 72px sur fond `parchment-100` est plus impactant qu'une photo de stock générique.
+**Pilier 1 : Typographie as hero.** Les grandes sections utilisent la typographie EB Garamond Garamond en grand format comme élément visuel principal. Un titre h1 en EB Garamond 72px sur fond `parchment-100` est plus impactant qu'une photo de stock générique.
 
 **Pilier 2 : Contraste de fonds.** Les alternances `parchment-100` / `white-pure` / `ink-950` créent une respiration visuelle sans besoin d'images.
 
@@ -665,8 +667,8 @@ Le dark mode s'active automatiquement via `prefers-color-scheme: dark`. Pas de t
   - `/home/user/ISSA-Capital/docs/design/page-compositions.md`
 - Décisions prises :
   - Palette : noir (`ink-950` = #0A0A0A) + crème (`parchment-100` = #F5F0E8) + ocre levantin (`levant-500` = #C4935A). Zéro bleu.
-  - Typographie : Cormorant Garamond (headings) + Inter (corps) — **auto-hébergement local obligatoire** via `next/font/local`, zéro CDN Google (RGPD)
-  - Fichiers WOFF2 à télécharger : Cormorant (5 variantes) + Inter (3 variantes) → `/public/fonts/`
+  - Typographie : EB Garamond Garamond (headings) + Inter (corps) — **auto-hébergement local obligatoire** via `next/font/local`, zéro CDN Google (RGPD)
+  - Fichiers WOFF2 à télécharger : EB Garamond (5 variantes) + Inter (3 variantes) → `/public/fonts/`
   - Radius : uniquement `radius-md` (4px) sur les boutons. Tout le reste = `radius-none`.
   - Ombres : `shadow-none` partout. Dark mode : borders `ink-700` remplacent les ombres.
   - Focus-visible : `outline 2px solid levant-500 / levant-400 (dark), offset 2px` — jamais `outline: none` sans alternative

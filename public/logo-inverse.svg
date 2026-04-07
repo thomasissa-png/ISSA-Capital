@@ -2,55 +2,78 @@
   <title>ISSA Capital</title>
   <!--
     Logo ISSA Capital — version inverse (fond sombre, crème sur ink-950)
-    Palette : parchment-100 #F5F0E8 sur fond transparent (pour usage sur ink-950 #0A0A0A)
+    Monogramme "IC" à gauche + wordmark "ISSA CAPITAL" à droite
+    Palette : parchment-100 #F5F0E8 sur fond transparent (usage sur ink-950 #0A0A0A)
+    Direction A validée par Thomas (post-deploy 2026-04-07)
   -->
 
-  <!-- Séparateur vertical ocre levantin -->
-  <rect x="72" y="14" width="1" height="36" fill="#C4935A"/>
+  <!-- ===== MONOGRAMME IC — zone gauche ===== -->
 
-  <!-- Lettre I -->
-  <rect x="8" y="16" width="2.5" height="32" fill="#F5F0E8"/>
-  <rect x="4" y="16" width="10.5" height="2" fill="#F5F0E8"/>
-  <rect x="4" y="46" width="10.5" height="2" fill="#F5F0E8"/>
+  <!-- Lettre I — fût + empattements serif -->
+  <rect x="4" y="12" width="3.5" height="40" fill="#F5F0E8"/>
+  <!-- Empattement haut I -->
+  <rect x="1" y="12" width="9.5" height="3" fill="#F5F0E8"/>
+  <!-- Empattement bas I -->
+  <rect x="1" y="49" width="9.5" height="3" fill="#F5F0E8"/>
+
+  <!-- Lettre C — courbe ouverte serif -->
+  <!-- Barre supérieure C -->
+  <rect x="16" y="12" width="18" height="4" fill="#F5F0E8"/>
+  <!-- Fût gauche C -->
+  <rect x="16" y="12" width="3.5" height="40" fill="#F5F0E8"/>
+  <!-- Barre inférieure C -->
+  <rect x="16" y="48" width="18" height="4" fill="#F5F0E8"/>
+
+  <!-- Séparateur vertical ocre levantin -->
+  <rect x="42" y="12" width="1" height="40" fill="#C4935A"/>
+
+  <!-- ===== WORDMARK "ISSA" — glyphes crème ===== -->
+
+  <!-- Lettre I du wordmark -->
+  <rect x="50" y="16" width="2.5" height="32" fill="#F5F0E8"/>
+  <rect x="46.5" y="16" width="9.5" height="2" fill="#F5F0E8"/>
+  <rect x="46.5" y="46" width="9.5" height="2" fill="#F5F0E8"/>
 
   <!-- Lettre S (première) -->
-  <path d="M22 18 Q22 16 24 16 L34 16 Q36 16 36 18 L36 19.5 Q36 21 34 21 L24 21 Q22 21 22 23 L22 31 Q22 33 24 33 L34 33 Q36 33 36 35 L36 45.5 Q36 48 34 48 L22 48 Q20 48 20 46 L20 44.5" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+  <path d="M64 18 Q64 16 66 16 L74 16 Q76 16 76 18 L76 19.5 Q76 21 74 21 L66 21 Q64 21 64 23 L64 31 Q64 33 66 33 L74 33 Q76 33 76 35 L76 45.5 Q76 48 74 48 L62 48 Q60 48 60 46 L60 44.5" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
 
   <!-- Lettre S (seconde) -->
-  <path d="M44 18 Q44 16 46 16 L56 16 Q58 16 58 18 L58 19.5 Q58 21 56 21 L46 21 Q44 21 44 23 L44 31 Q44 33 46 33 L56 33 Q58 33 58 35 L58 45.5 Q58 48 56 48 L44 48 Q42 48 42 46 L42 44.5" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+  <path d="M84 18 Q84 16 86 16 L94 16 Q96 16 96 18 L96 19.5 Q96 21 94 21 L86 21 Q84 21 84 23 L84 31 Q84 33 86 33 L94 33 Q96 33 96 35 L96 45.5 Q96 48 94 48 L82 48 Q80 48 80 46 L80 44.5" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
 
   <!-- Lettre A -->
-  <path d="M60 48 L68 16 L76 48" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
-  <line x1="62.5" y1="37" x2="73.5" y2="37" stroke="#F5F0E8" stroke-width="2"/>
+  <path d="M100 48 L108 16 L116 48" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  <line x1="102.5" y1="37" x2="113.5" y2="37" stroke="#F5F0E8" stroke-width="2"/>
+
+  <!-- ===== WORDMARK "CAPITAL" — glyphes crème ===== -->
 
   <!-- C -->
-  <path d="M86 30 Q86 16 96 16 L104 16 L104 19 L96 19 Q89 19 89 30 L89 34 Q89 45 96 45 L104 45 L104 48 L96 48 Q86 48 86 34 Z" fill="#F5F0E8"/>
+  <path d="M122 33 Q122 20 130 20 L138 20 L138 23 L130 23 Q125 23 125 33 L125 37 Q125 47 130 47 L138 47 L138 50 L130 50 Q122 50 122 37 Z" fill="#F5F0E8"/>
 
   <!-- A -->
-  <path d="M108 48 L115 16 L122 48" stroke="#F5F0E8" stroke-width="2" fill="none" stroke-linecap="square"/>
-  <line x1="110" y1="37" x2="120" y2="37" stroke="#F5F0E8" stroke-width="1.5"/>
+  <path d="M142 50 L148 20 L154 50" stroke="#F5F0E8" stroke-width="2" fill="none" stroke-linecap="square"/>
+  <line x1="144" y1="40" x2="152" y2="40" stroke="#F5F0E8" stroke-width="1.5"/>
 
   <!-- P -->
-  <rect x="126" y="16" width="2.5" height="32" fill="#F5F0E8"/>
-  <path d="M128.5 16 L136 16 Q143 16 143 25 Q143 34 136 34 L128.5 34" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+  <rect x="158" y="20" width="2.5" height="30" fill="#F5F0E8"/>
+  <path d="M160.5 20 L167 20 Q173 20 173 29 Q173 38 167 38 L160.5 38" stroke="#F5F0E8" stroke-width="2.5" fill="none" stroke-linecap="square"/>
 
   <!-- I -->
-  <rect x="148" y="16" width="2.5" height="32" fill="#F5F0E8"/>
-  <rect x="144.5" y="16" width="9.5" height="2" fill="#F5F0E8"/>
-  <rect x="144.5" y="46" width="9.5" height="2" fill="#F5F0E8"/>
+  <rect x="178" y="20" width="2.5" height="30" fill="#F5F0E8"/>
+  <rect x="174.5" y="20" width="9.5" height="2" fill="#F5F0E8"/>
+  <rect x="174.5" y="48" width="9.5" height="2" fill="#F5F0E8"/>
 
   <!-- T -->
-  <rect x="158" y="16" width="14" height="2" fill="#F5F0E8"/>
-  <rect x="164.5" y="18" width="2.5" height="30" fill="#F5F0E8"/>
+  <rect x="188" y="20" width="14" height="2" fill="#F5F0E8"/>
+  <rect x="194.5" y="22" width="2.5" height="28" fill="#F5F0E8"/>
 
   <!-- A -->
-  <path d="M182 48 L189 16 L196 48" stroke="#F5F0E8" stroke-width="2" fill="none" stroke-linecap="square"/>
-  <line x1="184" y1="37" x2="194" y2="37" stroke="#F5F0E8" stroke-width="1.5"/>
+  <path d="M212 50 L218 20 L224 50" stroke="#F5F0E8" stroke-width="2" fill="none" stroke-linecap="square"/>
+  <line x1="214" y1="40" x2="222" y2="40" stroke="#F5F0E8" stroke-width="1.5"/>
 
   <!-- L -->
-  <rect x="200" y="16" width="2.5" height="32" fill="#F5F0E8"/>
-  <rect x="200" y="46" width="12" height="2" fill="#F5F0E8"/>
+  <rect x="228" y="20" width="2.5" height="30" fill="#F5F0E8"/>
+  <rect x="228" y="48" width="12" height="2" fill="#F5F0E8"/>
 
-  <!-- Filet accent ocre -->
-  <rect x="86" y="52" width="126" height="1" fill="#C4935A"/>
+  <!-- Filet accent ocre sous "CAPITAL" -->
+  <rect x="122" y="54" width="118" height="1" fill="#C4935A"/>
 </svg>

@@ -2,19 +2,31 @@
   <title>ISSA Capital</title>
   <!--
     Source SVG pour android-chrome-192x192.png
-    Voir docs/design/assets-handoff.md pour conversion en PNG 192×192
+    Fond plein ink-950 — monogramme IC crème avec accent ocre
+    Direction A validée par Thomas (post-deploy 2026-04-07)
   -->
 
   <!-- Fond -->
   <rect width="192" height="192" fill="#0A0A0A"/>
 
-  <!-- Fût vertical du I -->
-  <rect x="85" y="40" width="22" height="112" fill="#F5F0E8"/>
-  <!-- Empattement haut -->
-  <rect x="56" y="40" width="80" height="13" fill="#F5F0E8"/>
-  <!-- Empattement bas -->
-  <rect x="56" y="139" width="80" height="13" fill="#F5F0E8"/>
+  <!-- ===== Lettre I — zone gauche ===== -->
+  <!-- Fût vertical I -->
+  <rect x="24" y="40" width="17" height="112" fill="#F5F0E8"/>
+  <!-- Empattement haut I -->
+  <rect x="13" y="40" width="39" height="12" fill="#F5F0E8"/>
+  <!-- Empattement bas I -->
+  <rect x="13" y="140" width="39" height="12" fill="#F5F0E8"/>
 
-  <!-- Accent ocre -->
-  <rect x="66" y="158" width="60" height="5" fill="#C4935A"/>
+  <!-- ===== Lettre C — zone droite, courbe ouverte ===== -->
+  <!-- Barre supérieure C -->
+  <rect x="74" y="40" width="88" height="16" fill="#F5F0E8"/>
+  <!-- Fût gauche C -->
+  <rect x="74" y="40" width="17" height="112" fill="#F5F0E8"/>
+  <!-- Barre inférieure C -->
+  <rect x="74" y="136" width="88" height="16" fill="#F5F0E8"/>
+  <!-- Creusement intérieur C -->
+  <rect x="91" y="56" width="71" height="80" fill="#0A0A0A"/>
+
+  <!-- Filet ocre levantin -->
+  <rect x="13" y="163" width="149" height="7" fill="#C4935A"/>
 </svg>

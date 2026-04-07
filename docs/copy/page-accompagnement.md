@@ -41,7 +41,9 @@ OG description : Stratège, co-fondateur, opérateur immo. Thomas Issa accompagn
 [Notes @design : H1 sobre, pas de sur-stylisation. Cette page est centrée sur Thomas — un visuel sobre (portrait en buste fond neutre ou illustration architecturale) peut renforcer la crédibilité. Si photo Thomas disponible : l'utiliser. Sinon : fond épuré, texte seul.]
 
 ### H1
-Thomas Issa accompagne les décideurs qui cherchent un pair — pas un prestataire.
+Thomas Issa accompagne fondateurs et dirigeants sur ce qu'il a lui-même construit.
+
+[Note @copywriter — simplification Phase 4 : ancien H1 "accompagne les décideurs qui cherchent un pair — pas un prestataire" — antithèse défensive remplacée par une affirmation directe.]
 
 ---
 
@@ -61,9 +63,10 @@ Thomas Issa accompagne les décideurs qui cherchent un pair — pas un prestatai
 ## Section 2 — La proposition en 3 lignes
 
 [Framework : BAB — Bridge, la promesse]
+[Note @copywriter — simplification Phase 4 : H2 "Ce que Thomas fait — et ce qu'il ne fait pas" → "Ce que Thomas fait". L'overline "Ce que Thomas fait" et le H2 étaient identiques, doublon supprimé.]
 
 ### H2
-Ce que Thomas fait — et ce qu'il ne fait pas.
+Ce que Thomas fait.
 
 ### Corps
 Thomas Issa n'est pas un cabinet de gestion de patrimoine. Il ne vend pas de produits financiers, pas de fonds, pas d'assurance-vie. Il accompagne des fondateurs et des investisseurs sur des sujets où il a lui-même pris des décisions difficiles : structurer une holding, investir dans l'immobilier en direct, co-fonder des participations, déployer une stratégie internationale depuis zéro.
@@ -113,10 +116,10 @@ Quadrilingue : français, anglais, allemand, arabe.
 [Notes @design : 7 domaines — présentation sobre en paragraphes ou liste structurée. Pas d'icônes commerciales. Typographie propre.]
 
 ### H2
-Les sujets sur lesquels Thomas intervient.
+Sept domaines.
 
 ### Intro
-Ces domaines sont déduits de son parcours réel — pas d'une offre construite pour le marché.
+Deux familles : patrimoniale et corporate.
 
 [Note @copywriter — correction Phase 3 : restructuration en deux blocs Patrimonial / Corporate pour clarifier la lisibilité. Karim cherche du patrimonial structuré — le bloc Patrimonial le concerne en priorité. La séparation permet à chaque persona de scanner la liste sans devoir lire les 7 domaines dans l'ordre.]
 
@@ -173,7 +176,9 @@ Ce ne sont pas des précautions — ce sont des critères. Ils permettent à Tho
 [Notes @design : deux colonnes ou deux blocs — propres, sans sur-stylisation]
 
 ### H2
-Deux formats. Pas de troisième option.
+Deux formats.
+
+[Note @copywriter — simplification Phase 4 : "Pas de troisième option" supprimé — antithèse inutile, le lecteur ne cherchait pas une troisième option.]
 
 **Mission ponctuelle**
 Une intervention délimitée avec un objectif clair : structuration patrimoniale, positionnement, stratégie internationale, go-to-market, audit stratégique. Durée minimum : un mois. Livrables définis en amont.

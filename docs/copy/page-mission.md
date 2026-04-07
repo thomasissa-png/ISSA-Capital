@@ -68,16 +68,15 @@ Ce n'est pas l'histoire d'un entrepreneur tech qui crée une holding pour divers
 ## Section 2 — La décision fondatrice
 
 [Framework : StoryBrand — Problem / Guide]
+[Note @copywriter — simplification Phase 4 : anaphore défensive "Pas à un fonds... Pas à des véhicules... Pas à des structures..." remplacée par une formulation directe plus sobre.]
 
 ### H2
-Une holding naît d'un refus.
+Une décision simple.
 
 ### Corps
-ISSA Capital est née d'une décision simple et irréversible : ne pas confier le patrimoine familial à des logiques qui lui sont étrangères.
+Ne pas confier le patrimoine familial à des logiques qui lui sont étrangères. Pas à un fonds à calendrier contraint, pas à des structures conçues pour être revendues.
 
-Pas à un fonds dont l'horizon est contraint par ses propres engagements envers ses souscripteurs. Pas à des véhicules conçus pour être revendus dans cinq ans. Pas à des structures qui mesurent leur succès en TRI plutôt qu'en durabilité.
-
-La famille Issa — famille aux racines libanaises, établie en France — a préféré construire sa propre structure. Indépendante. Privée. Dont elle est le seul actionnaire. Et dont l'horizon est celui des générations à venir, pas des prochains résultats annuels.
+La famille Issa a construit sa propre structure — indépendante, privée, dont elle est le seul actionnaire. L'horizon est celui des générations à venir.
 
 ---
 
@@ -98,18 +97,15 @@ C'est tout. Pas une mission de bien public, pas une promesse de transformation s
 ## Section 5 — L'identité
 
 [Framework : StoryBrand — Character, identité affirmée]
+[Note @copywriter — simplification Phase 4 : paragraphe démonstratif "L'héritage libanais apporte quelque chose que beaucoup de holdings françaises n'ont pas..." raccourci. On dit, on ne démontre pas.]
 
 ### H2
-Racines libanaises. Enracinée en France.
+Racines libanaises. Ancrée en France.
 
 ### Corps
-La famille Issa est libanaise. ISSA Capital est une SAS française, domiciliée à Nanterre. Ces deux faits coexistent sans contradiction — ils se complètent.
+La famille Issa est d'origine libanaise. ISSA Capital est une SAS française, domiciliée à Nanterre. Ces deux faits coexistent — ils se complètent.
 
-L'héritage libanais apporte quelque chose que beaucoup de holdings françaises n'ont pas : une conception du patrimoine transmise de génération en génération, une culture de la durée qui précède les structures juridiques, et un rapport à la famille comme fondement légitime de toute décision économique.
-
-L'ancrage français apporte la structure, la lisibilité réglementaire, l'accès à un marché immobilier et financier solide.
-
-Les deux ensemble forment quelque chose d'assez rare dans le paysage des holdings familiales françaises — une holding dont l'identité est revendiquée, pas effacée.
+L'héritage libanais apporte une conception du patrimoine transmise de génération en génération — une culture de la durée qui précède les structures juridiques. L'ancrage français apporte la structure et l'accès à un marché immobilier solide.
 
 ---
 
@@ -167,20 +163,19 @@ ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce f
 
 ---
 
-## Section 8 — Ce que nous ne sommes pas
+## Section 8 — Ce que nous sommes
 
-[Framework : StoryBrand — Failure avoided, anti-promesses]
+[Framework : StoryBrand — Character, affirmation directe]
+[Note @copywriter — simplification Phase 4 : section "Ce que nous refusons d'être" avec 5 antithèses en cascade remplacée par une description directe. Le registre d'antithèse défensive peuplait trop le site.]
 [Notes @design : section sobre, peut être traitée avec un fond légèrement différencié ou un filet typographique]
 
 ### H2
-Ce que nous refusons d'être.
+Une holding patrimoniale familiale.
 
 ### Corps
-Ces précisions ne sont pas de la modestie. Ce sont des délimitations.
+ISSA Capital gère son propre patrimoine familial — pas des capitaux tiers. Elle n'a pas d'horizon de sortie contraint, pas de logique de revente à cinq ans. Son écosystème est cohérent : immobilier, tech, services aux professionnels.
 
-ISSA Capital n'est pas un fonds d'investissement — elle ne gère pas de capitaux tiers et n'a pas d'engagements de liquidité envers des souscripteurs. Elle n'est pas une structure court-termiste — aucune logique de revente à cinq ans, aucun calendrier de liquidité imposé. Elle n'est pas opportuniste — elle refuse des investissements que ses filtres excluent, même rentables. Elle n'est pas généraliste — son écosystème est cohérent : tech, immobilier, services aux professionnels. Elle n'est pas une famille française — la famille fondatrice est libanaise, et cela compte.
-
-Ces refus sont aussi constitutifs de l'identité ISSA que ses engagements positifs.
+La famille fondatrice est libanaise. C'est une réalité qui compte dans chaque décision.
 
 ---
 

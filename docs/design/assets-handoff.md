@@ -266,8 +266,8 @@ Avant de considérer les assets comme "production-ready", vérifier point par po
 - [ ] `public/og-image.png` existe (1200×630)
 
 ### Vérification visuelle
-- [ ] Favicon visible dans l'onglet navigateur (fond noir, I crème, filet ocre)
-- [ ] Favicon lisible à 16px — formes simples, pas de détail perdu
+- [ ] Favicon visible dans l'onglet navigateur (fond noir, IC crème, filet ocre)
+- [ ] Favicon lisible à 16px — le "C" courbe distinctif du "I" vertical, forme reconnaissable
 - [ ] OG Image : vérifier sur https://www.opengraph.xyz ou https://metatags.io
 - [ ] Apple Touch Icon : ajouter en favori sur iPhone Safari, vérifier l'icône
 - [ ] Logo SVG rendu correctement sur fond crème ET fond noir (via browser DevTools)
@@ -292,16 +292,22 @@ Avant de considérer les assets comme "production-ready", vérifier point par po
 
 ## 7. Notes de design
 
-### Cohérence de marque
+### Cohérence de marque (mise à jour post-deploy 2026-04-07)
 - Tous les assets utilisent exclusivement la palette verrouillée : ink-950 `#0A0A0A`, parchment-100 `#F5F0E8`, levant-500 `#C4935A`
 - Zéro gradient, zéro shadow, zéro effet brillant — sobriété éditoriale
-- Le monogramme "I" avec empattements serif est la signature reconnaissable à toutes les tailles
-- L'accent ocre levantin (`#C4935A`) apparaît systématiquement comme filet sous l'empattement bas — c'est la signature graphique du système
+- **Monogramme mis à jour : "IC" (Direction A)** — le "I" empattements serif à gauche + le "C" courbe ouverte à droite. Décision Thomas post-deploy : le "I" seul manquait de silhouette distinctive à 16px. Le "C" apporte la forme reconnaissable. Voir `docs/design/logo-favicon-directions.md`.
+- L'accent ocre levantin (`#C4935A`) apparaît systématiquement comme filet horizontal sous les glyphes — signature graphique du système inchangée
 
 ### Logique OG Image
 - Fond ink-950 pour contraste maximal lors du partage sur fond blanc (LinkedIn, Twitter)
-- Baseline en Cormorant Garamond italic — si la police n'est pas embarquée dans le rendu SVG, elle sera substituée par Georgia (fallback serif) — acceptable pour l'OG
+- Baseline en EB Garamond italic (décision Thomas post-deploy) — si la police n'est pas embarquée dans le rendu SVG, elle sera substituée par Georgia (fallback serif) — acceptable pour l'OG
 - Pour un rendu typographique parfait, utiliser Puppeteer/playwright pour générer l'OG en screenshot HTML plutôt que SVG-vers-PNG
+
+### Statut WOFF2 EB Garamond
+- **TODO humain (Thomas)** : télécharger les WOFF2 EB Garamond et les placer dans `public/fonts/eb-garamond/`
+- Instructions détaillées dans `public/fonts/eb-garamond/README.md`
+- En attendant : le fallback Georgia serif est actif et le design est fonctionnel
+- Impact visuel du fallback : Georgia est une bonne approximation, légèrement moins raffinée qu'EB Garamond — acceptable pour la phase de développement
 
 ### Favicon ICO
 - Le `.ico` legacy est optionnel si `favicon.svg` est référencé en priorité dans les metadata Next.js

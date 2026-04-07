@@ -134,24 +134,18 @@ export default function MissionPage(): JSX.Element {
         <Container width="editorial">
           <Overline>La décision fondatrice</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Une holding naît d&apos;un refus.
+            Une décision simple.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              ISSA Capital est née d&apos;une décision simple et irréversible : ne pas
-              confier le patrimoine familial à des logiques qui lui sont étrangères.
+              Ne pas confier le patrimoine familial à des logiques qui lui sont
+              étrangères. Pas à un fonds à calendrier contraint, pas à des structures
+              conçues pour être revendues.
             </p>
             <p>
-              Pas à un fonds dont l&apos;horizon est contraint par ses propres engagements
-              envers ses souscripteurs. Pas à des véhicules conçus pour être revendus dans
-              cinq ans. Pas à des structures qui mesurent leur succès en TRI plutôt
-              qu&apos;en durabilité.
-            </p>
-            <p>
-              La famille Issa — famille aux racines libanaises, établie en France — a
-              préféré construire sa propre structure. Indépendante. Privée. Dont elle est
-              le seul actionnaire. Et dont l&apos;horizon est celui des générations à
-              venir, pas des prochains résultats annuels.
+              La famille Issa a construit sa propre structure — indépendante, privée,
+              dont elle est le seul actionnaire. L&apos;horizon est celui des générations
+              à venir.
             </p>
           </div>
         </Container>
@@ -162,29 +156,19 @@ export default function MissionPage(): JSX.Element {
         <Container width="editorial">
           <Overline>L&apos;identité</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Racines libanaises. Enracinée en France.
+            Racines libanaises. Ancrée en France.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              La famille Issa est libanaise. ISSA Capital est une SAS française,
-              domiciliée à Nanterre. Ces deux faits coexistent sans contradiction — ils se
+              La famille Issa est d&apos;origine libanaise. ISSA Capital est une SAS
+              française, domiciliée à Nanterre. Ces deux faits coexistent — ils se
               complètent.
             </p>
             <p>
-              L&apos;héritage libanais apporte quelque chose que beaucoup de holdings
-              françaises n&apos;ont pas : une conception du patrimoine transmise de
-              génération en génération, une culture de la durée qui précède les
-              structures juridiques, et un rapport à la famille comme fondement légitime
-              de toute décision économique.
-            </p>
-            <p>
-              L&apos;ancrage français apporte la structure, la lisibilité réglementaire,
-              l&apos;accès à un marché immobilier et financier solide.
-            </p>
-            <p>
-              Les deux ensemble forment quelque chose d&apos;assez rare dans le paysage
-              des holdings familiales françaises — une holding dont l&apos;identité est
-              revendiquée, pas effacée.
+              L&apos;héritage libanais apporte une conception du patrimoine transmise de
+              génération en génération — une culture de la durée qui précède les
+              structures juridiques. L&apos;ancrage français apporte la structure et
+              l&apos;accès à un marché immobilier solide.
             </p>
           </div>
         </Container>
@@ -265,27 +249,23 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Ce que nous refusons */}
+      {/* Ce que nous sommes */}
       <Section tone="default">
         <Container width="editorial">
-          <Overline>Ce que nous refusons</Overline>
+          <Overline>Ce que nous sommes</Overline>
           <h2 className="mt-md font-heading text-h3 text-ink-950">
-            Ce que nous refusons d&apos;être.
+            Une holding patrimoniale familiale.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Ces précisions ne sont pas de la modestie. Ce sont des délimitations.
+              ISSA Capital gère son propre patrimoine familial — pas des capitaux tiers.
+              Elle n&apos;a pas d&apos;horizon de sortie contraint, pas de logique de
+              revente à cinq ans. Son écosystème est cohérent : immobilier, tech,
+              services aux professionnels.
             </p>
             <p>
-              ISSA Capital n&apos;est pas un fonds d&apos;investissement — elle ne gère
-              pas de capitaux tiers et n&apos;a pas d&apos;engagements de liquidité envers
-              des souscripteurs. Elle n&apos;est pas une structure court-termiste — aucune
-              logique de revente à cinq ans, aucun calendrier de liquidité imposé. Elle
-              n&apos;est pas opportuniste — elle refuse des investissements que ses
-              filtres excluent, même rentables. Elle n&apos;est pas généraliste — son
-              écosystème est cohérent : tech, immobilier, services aux professionnels.
-              Elle n&apos;est pas une famille française — la famille fondatrice est
-              libanaise, et cela compte.
+              La famille fondatrice est libanaise. C&apos;est une réalité qui compte dans
+              chaque décision.
             </p>
           </div>
           <div className="mt-2xl flex flex-wrap gap-lg">

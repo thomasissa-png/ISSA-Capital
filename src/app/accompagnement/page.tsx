@@ -81,8 +81,8 @@ export default function AccompagnementPage(): JSX.Element {
           <div className="mt-lg max-w-[900px]">
             <Overline>Mission de conseil & accompagnement</Overline>
             <h1 className="mt-md font-heading text-h1 text-ink-950">
-              Thomas Issa accompagne les décideurs qui cherchent un pair — pas un
-              prestataire.
+              Thomas Issa accompagne fondateurs et dirigeants sur ce qu&apos;il a
+              lui-même construit.
             </h1>
           </div>
         </Container>
@@ -108,9 +108,9 @@ export default function AccompagnementPage(): JSX.Element {
       {/* Proposition */}
       <Section tone="default">
         <Container width="editorial">
-          <Overline>Ce que Thomas fait</Overline>
+          <Overline>La proposition</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Ce que Thomas fait — et ce qu&apos;il ne fait pas.
+            Ce que Thomas fait.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
@@ -187,11 +187,10 @@ export default function AccompagnementPage(): JSX.Element {
           <div className="mb-2xl max-w-editorial">
             <Overline>Les sujets sur lesquels Thomas intervient</Overline>
             <h2 className="mt-md font-heading text-h2 text-ink-950">
-              Sept domaines, déduits de son parcours réel.
+              Sept domaines.
             </h2>
             <p className="mt-md text-lead text-ink-700">
-              Pas une offre construite pour le marché. Deux familles : patrimoniale et
-              corporate.
+              Deux familles : patrimoniale et corporate.
             </p>
           </div>
 
@@ -278,7 +277,7 @@ export default function AccompagnementPage(): JSX.Element {
         <Container width="content">
           <Overline>Deux formats</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Deux formats. Pas de troisième option.
+            Deux formats.
           </h2>
           <div className="mt-xl grid grid-cols-1 gap-xl md:grid-cols-2">
             <article className="border border-ink-200 bg-white p-xl">

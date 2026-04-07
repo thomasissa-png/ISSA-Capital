@@ -57,14 +57,13 @@ export default function HomePage(): JSX.Element {
         <Container width="editorial" className="text-center">
           <Overline tone="light">Holding patrimoniale — famille libanaise</Overline>
           <h1 className="mt-lg font-heading text-display leading-[1.08] text-parchment-100">
-            On décide.
+            Racines libanaises.
             <br />
-            Pas un calendrier de fonds.
+            Exigences sans exception.
           </h1>
           <p className="mx-auto mt-xl max-w-[520px] font-body text-lead text-ink-300">
-            La holding patrimoniale d&apos;une famille aux racines libanaises qui investit
-            pour les générations à venir, dans des projets qu&apos;elle peut transmettre
-            fièrement.
+            La holding patrimoniale de la famille Issa — famille aux racines libanaises,
+            établie en France. Patrimoine, participations, transmission.
           </p>
           <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row">
             <Button href="/opportunites" variant="primary-inverse" size="lg">
@@ -74,9 +73,6 @@ export default function HomePage(): JSX.Element {
               Travailler avec Thomas Issa
             </Button>
           </div>
-          <p className="mt-2xl font-heading italic text-ink-400">
-            Racines libanaises. Exigences sans exception.
-          </p>
         </Container>
       </Section>
 
@@ -291,7 +287,7 @@ export default function HomePage(): JSX.Element {
           <div className="mb-2xl text-center">
             <Overline tone="light">Deux façons d&apos;entrer en relation</Overline>
             <h2 className="mt-md font-heading text-h2 text-parchment-100">
-              Deux portes. Une même exigence.
+              Deux raisons de prendre contact.
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-xl md:grid-cols-2">

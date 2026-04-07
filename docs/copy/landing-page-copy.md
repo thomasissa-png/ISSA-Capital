@@ -43,12 +43,13 @@ OG description : Holding patrimoniale familiale. Horizon intergénérationnel. F
 [Notes @design : traitement grand format — H1 en taille display (72-96px minimum desktop). Fond sobre, espace blanc dominant. Pas de photo de famille — illustration abstraite ou architecture sobre.]
 
 ### H1
-**On décide. Pas un calendrier de fonds.**
+**Racines libanaises. Exigences sans exception.**
 
-[Note @legal : cette tagline ne contient aucun mot interdit L.411-1 CMF. Elle affiche une posture de décision autonome, pas une promesse de rendement.]
+[Note @legal : la baseline canonique ne contient aucun mot interdit L.411-1 CMF.]
+[Note @copywriter — simplification Phase 4 : ancienne tagline "On décide. Pas un calendrier de fonds." retirée sur décision Thomas. Antithèse défensive remplacée par la baseline canonique, conformément à la décision verrouillée post-deploy.]
 
 ### Sous-titre (sous le H1)
-La holding patrimoniale d'une famille aux racines libanaises qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement.
+La holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Patrimoine, participations, transmission.
 
 ### CTA principal (double entrée)
 - **CTA A** — texte : « Présenter une opportunité d'affaires » → /opportunites
@@ -192,10 +193,9 @@ ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce f
 
 [Framework : AIDA — Action]
 [Notes @design : deux colonnes côte à côte sur desktop, empilées sur mobile. Fond sombre (ink-950 ou proche). Chaque bloc : titre H3, sous-titre court, CTA. Traitement visuel symétrique — poids équivalent pour les deux blocs. Ton éditorial, pas commercial agressif — Principe #0 VITRINE.]
-[Note @copywriter — correction Phase 3 : ancienne section asymétrique (centrée Leila uniquement) remplacée par une section à deux blocs équivalents. Friction P2 résolue — Karim avait un CTA invisible en section finale.]
 
 ### H2
-Deux raisons de prendre contact. La vôtre est l'une d'elles.
+Deux raisons de prendre contact.
 
 ---
 

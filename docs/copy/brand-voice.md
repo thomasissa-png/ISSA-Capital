@@ -1,7 +1,30 @@
 # Brand Voice — ISSA Capital
-> @copywriter — 2026-04-07
+> @copywriter — 2026-04-07 (mis à jour Phase 4 — simplification globale)
 > Guide de référence pour tout rédacteur travaillant sur ISSA Capital.
 > Sources : docs/strategy/brand-platform.md + docs/strategy/personas.md + docs/legal/legal-audit.md
+
+---
+
+## Règle fondamentale — Simplicité > Démonstration (ajout Phase 4, ordre Thomas)
+
+**Règle absolue** : ISSA Capital est une holding familiale simple. Elle a du caractère mais ne se prend pas pour qui elle n'est pas.
+
+**Hiérarchie** : Simple > Élégant > Démonstratif. Si une phrase peut être dite plus simplement sans perdre le sens : la simplifier.
+
+**Dire > Positionner** : les descriptions directes sont meilleures que les formulations qui cherchent à "installer une posture".
+
+**Aphorismes : 1 par page maximum.** Sur la homepage, les taglines verrouillées (baseline + signature) suffisent. Toute formulation aphoristique supplémentaire dilue les deux seules qui comptent.
+
+**Test de lecture à voix haute** : lis chaque phrase en imaginant Thomas (entrepreneur 40 ans, pragmatique, rebuté par le corporate). Si ça sonne "marketing" ou "pose" → reformuler.
+
+**Formulations proscrits (ajout Phase 4)** :
+- Les anaphores défensives en série : "Pas à un fonds... Pas à des véhicules... Pas à des structures..." (même sens, répété 3 fois)
+- Les listes "Ce que nous ne sommes pas" avec plus de 2 items consécutifs
+- Les antithèses de positionnement en fin de phrase : "pas un prestataire", "pas de troisième option", "pas une offre construite pour le marché" — si le sens est déjà dans la première partie, la deuxième est inutile
+- Les phrases démonstratifs : "apporte quelque chose que beaucoup de X n'ont pas"
+- Les formulations qui justifient l'identité au lieu de l'affirmer
+
+**Règle assouplie (Phase 4)** : la règle "éviter répétition mot pour mot" est assouplie pour la baseline canonique. Sur la homepage, "Racines libanaises. Exigences sans exception." apparaît en H1 ET en footer — répétition explicitement validée par Thomas.
 
 ---
 
@@ -24,7 +47,7 @@
 | Tagline | Usage | Règle |
 |---|---|---|
 | **« Racines libanaises. Exigences sans exception. »** | Baseline — sous le logo, footer, signature email, bas de chaque page | Toujours présente. Ne jamais modifier. |
-| **« On décide. Pas un calendrier de fonds. »** | Hero — page Accueil uniquement, grand format | Validé avec réserves — à retester Phase 2c. Ne pas utiliser ailleurs. |
+| ~~**« On décide. Pas un calendrier de fonds. »**~~ | ~~Hero — page Accueil uniquement~~| **RETIRÉE Phase 4** — Thomas a demandé la baseline canonique en H1. Antithèse défensive. Ne plus utiliser. |
 | **« Patient par choix. Exigeant par principe. »** | Signature — page Mission de conseil & accompagnement uniquement | Clôture la page. Toujours en fin de section. |
 
 ---
@@ -80,6 +103,10 @@
 | disruption | — supprimer |
 | synergies | — supprimer |
 | savoir-faire | — supprimer (cliché) |
+| manifeste | — supprimer (trop éditorial, trop positionnel) |
+| "nous refusons d'être" (en titre de section) | décrire ce qu'on est — pas ce qu'on n'est pas |
+| "apporte quelque chose que X n'a pas" | affirmer directement sans comparer |
+| anaphore "Pas à X. Pas à Y. Pas à Z." (3+ items) | reformuler en affirmation directe |
 
 ---
 

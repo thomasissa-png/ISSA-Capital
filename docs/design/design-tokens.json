@@ -63,7 +63,7 @@
     },
     "typography": {
       "font-family": {
-        "heading": { "value": "var(--font-cormorant), 'Georgia', serif" },
+        "heading": { "value": "var(--font-eb-garamond), 'EB Garamond', 'Georgia', serif", "note": "Basculé de Cormorant Garamond → EB Garamond post-deploy 2026-04-07. Décision Thomas : conserver la filiation Garamond historique en réduisant le contraste plein/délié (Cormorant = didone radicalisé, EB Garamond = poinçons originaux 1592). Voir docs/design/typography-alternatives.md." },
         "body":    { "value": "var(--font-inter), -apple-system, sans-serif" }
       },
       "font-size": {

@@ -50,7 +50,10 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ['var(--font-cormorant)', 'Georgia', 'serif'],
+        // EB Garamond — décision Thomas post-deploy 2026-04-07
+        // Bascule depuis Cormorant Garamond. --font-cormorant est aliasé vers
+        // --font-eb-garamond dans globals.css pour rétrocompatibilité des composants.
+        heading: ['var(--font-eb-garamond)', 'EB Garamond', 'Georgia', 'serif'],
         body: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       fontSize: {

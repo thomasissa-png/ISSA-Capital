@@ -2,21 +2,37 @@
   <title>ISSA Capital</title>
   <!--
     Favicon vectoriel ISSA Capital — 32×32 viewBox
+    Monogramme "IC" — Direction A validée par Thomas (post-deploy 2026-04-07)
     Fond : ink-950 #0A0A0A
-    Monogramme : "I" crème #F5F0E8 avec accent ocre levant-500 #C4935A
-    Rendu net aux petites tailles — formes simples, pas de sous-pixel
+    Glyphes : parchment-100 #F5F0E8
+    Accent : levant-500 #C4935A
+    Le "C" ouvert contraste avec la verticalité du "I" — silhouette distincte à 16px
   -->
 
   <!-- Fond -->
   <rect width="32" height="32" fill="#0A0A0A"/>
 
-  <!-- Fût vertical du I -->
-  <rect x="14" y="7" width="4" height="18" fill="#F5F0E8"/>
-  <!-- Empattement haut -->
-  <rect x="9" y="7" width="14" height="2.5" fill="#F5F0E8"/>
-  <!-- Empattement bas -->
-  <rect x="9" y="22.5" width="14" height="2.5" fill="#F5F0E8"/>
+  <!-- ===== Lettre I — empattements serif, zone gauche ===== -->
+  <!-- Fût vertical I -->
+  <rect x="5" y="7" width="3" height="18" fill="#F5F0E8"/>
+  <!-- Empattement haut I -->
+  <rect x="3" y="7" width="7" height="2" fill="#F5F0E8"/>
+  <!-- Empattement bas I -->
+  <rect x="3" y="23" width="7" height="2" fill="#F5F0E8"/>
 
-  <!-- Accent ocre — filet sous l'empattement bas -->
-  <rect x="11" y="27" width="10" height="1.5" fill="#C4935A"/>
+  <!-- ===== Lettre C — courbe ouverte, zone droite ===== -->
+  <!-- Arc C : tracé ouvert vers la droite -->
+  <!-- Barre supérieure horizontale -->
+  <rect x="14" y="7" width="9" height="2.5" fill="#F5F0E8"/>
+  <!-- Fût gauche du C (vertical) -->
+  <rect x="14" y="7" width="2.5" height="18" fill="#F5F0E8"/>
+  <!-- Barre inférieure horizontale -->
+  <rect x="14" y="22.5" width="9" height="2.5" fill="#F5F0E8"/>
+  <!-- Encoche intérieure haut droite pour lire la courbe ouverte (retire le coin) -->
+  <rect x="20" y="7" width="3" height="2.5" fill="#0A0A0A"/>
+  <!-- Encoche intérieure bas droite -->
+  <rect x="20" y="22.5" width="3" height="2.5" fill="#0A0A0A"/>
+
+  <!-- Filet ocre levantin — sous les deux glyphes -->
+  <rect x="3" y="27" width="20" height="1.5" fill="#C4935A"/>
 </svg>
