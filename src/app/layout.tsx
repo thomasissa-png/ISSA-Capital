@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
 import PlausibleProvider from 'next-plausible';
 import Script from 'next/script';
 import { siteConfig } from '@/config/site';
@@ -8,24 +7,15 @@ import { Footer } from '@/components/layout/Footer';
 import './globals.css';
 
 /**
- * next/font/google — polices bundled et servies depuis le domaine propre au build.
- * Conformément au brief : pas de CDN Google Fonts runtime (next/font copie les fichiers
- * dans le bundle et les sert en self-host au build — conforme CSP font-src 'self').
+ * Fonts — configurées dans globals.css via @font-face avec fallbacks système.
+ *
+ * TODO (Phase 2b post-network) : remplacer par next/font/local dès que les
+ * fichiers .woff2 de Cormorant Garamond + Inter sont placés dans public/fonts/.
+ * L'environnement de build actuel n'a pas d'accès réseau, donc next/font/google
+ * échoue. Les CSS variables --font-cormorant et --font-inter sont définies dans
+ * globals.css avec des stacks système (Georgia serif, system-ui sans-serif).
+ * Voir docs/dev-decisions.md pour le contexte complet.
  */
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  style: ['normal', 'italic'],
-  variable: '--font-cormorant',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -132,7 +122,7 @@ export default function RootLayout({
   const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
   return (
-    <html lang="fr" className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang="fr">
       <head>
         {plausibleDomain ? (
           <PlausibleProvider domain={plausibleDomain} trackOutboundLinks />
