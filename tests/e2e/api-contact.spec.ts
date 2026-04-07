@@ -1,4 +1,20 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+
+/**
+ * NOTE rate-limit : le rate-limiter du serveur est in-memory et partagé entre
+ * tous les workers Playwright (3 projets × parallélisme). Pour éviter qu'un
+ * test fasse échouer un autre test à cause d'un compteur saturé, on injecte
+ * une IP unique par test via le header `x-forwarded-for`.
+ */
+let ipCounter = 0;
+function freshIp(): string {
+  ipCounter += 1;
+  return `192.0.2.${(ipCounter % 250) + 1}`;
+}
+
+function ctxOpts(): { extraHTTPHeaders: Record<string, string> } {
+  return { extraHTTPHeaders: { 'x-forwarded-for': freshIp() } };
+}
 
 /**
  * Tests E2E API /api/contact — couvrent US-11 (anti-spam) + contrats Zod.
@@ -18,16 +34,19 @@ import { test, expect, request } from '@playwright/test';
 const API = '/api/contact';
 
 test.describe('POST /api/contact — validation et anti-spam', () => {
-  test('400 sur payload sans variant', async ({ request }) => {
-    const res = await request.post(API, { data: { name: 'X', email: 'x@y.z' } });
+  test('400 sur payload sans variant', async ({ playwright }) => {
+    const ctx = await playwright.request.newContext(ctxOpts());
+    const res = await ctx.post(API, { data: { name: 'X', email: 'x@y.z' } });
     expect(res.status()).toBe(400);
     const body = await res.json();
     expect(body.success).toBe(false);
     expect(body.error).toBe('validation');
+    await ctx.dispose();
   });
 
-  test('400 sur email invalide', async ({ request }) => {
-    const res = await request.post(API, {
+  test('400 sur email invalide', async ({ playwright }) => {
+    const ctx = await playwright.request.newContext(ctxOpts());
+    const res = await ctx.post(API, {
       data: {
         variant: 'contact',
         name: 'Marc Dupont',
@@ -40,10 +59,12 @@ test.describe('POST /api/contact — validation et anti-spam', () => {
     expect(res.status()).toBe(400);
     const body = await res.json();
     expect(body.fields?.email).toBeTruthy();
+    await ctx.dispose();
   });
 
-  test('400 sur consent absent', async ({ request }) => {
-    const res = await request.post(API, {
+  test('400 sur consent absent', async ({ playwright }) => {
+    const ctx = await playwright.request.newContext(ctxOpts());
+    const res = await ctx.post(API, {
       data: {
         variant: 'accompagnement',
         name: 'Karim',
@@ -53,10 +74,12 @@ test.describe('POST /api/contact — validation et anti-spam', () => {
       },
     });
     expect(res.status()).toBe(400);
+    await ctx.dispose();
   });
 
-  test('400 sur message trop court (variant accompagnement)', async ({ request }) => {
-    const res = await request.post(API, {
+  test('400 sur message trop court (variant accompagnement)', async ({ playwright }) => {
+    const ctx = await playwright.request.newContext(ctxOpts());
+    const res = await ctx.post(API, {
       data: {
         variant: 'accompagnement',
         name: 'Karim Bensaid',
@@ -66,14 +89,17 @@ test.describe('POST /api/contact — validation et anti-spam', () => {
       },
     });
     expect(res.status()).toBe(400);
+    await ctx.dispose();
   });
 
-  test('400 sur JSON malformé', async ({ request }) => {
-    const res = await request.post(API, {
+  test('400 sur JSON malformé', async ({ playwright }) => {
+    const ctx = await playwright.request.newContext(ctxOpts());
+    const res = await ctx.post(API, {
       data: '{not-json',
       headers: { 'Content-Type': 'application/json' },
     });
     expect([400, 500]).toContain(res.status());
+    await ctx.dispose();
   });
 
   test('honeypot rempli → bot rejeté (400 par Zod OU 200 silencieux par route)', async ({

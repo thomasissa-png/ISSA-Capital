@@ -15,11 +15,13 @@ test.describe('US-01 — Accueil : identité ISSA en première visite', () => {
     // Mots-clés identité famille libanaise / transmission / long-terme (au moins une variante)
     const body = await page.locator('body').innerText();
     expect(body.toLowerCase()).toMatch(/libanais/);
-    // CTAs double entrée présents (accompagnement + opportunites)
-    await expect(page.locator('a[href="/accompagnement"]').first()).toBeVisible();
-    await expect(page.locator('a[href*="/opportunites"]').first()).toBeVisible();
-    // Footer présent
-    await expect(page.locator('footer')).toBeVisible();
+    // CTAs double entrée présents : au moins un lien vers chaque destination
+    // doit être visible (sur mobile, les liens nav sont cachés derrière le menu
+    // hamburger — on cible donc les CTAs hero/sections visibles à l'écran).
+    expect(await page.locator('a[href="/accompagnement"]:visible').count()).toBeGreaterThan(0);
+    expect(await page.locator('a[href*="/opportunites"]:visible').count()).toBeGreaterThan(0);
+    // Footer global présent (role contentinfo pour éviter conflit avec footers internes)
+    await expect(page.getByRole('contentinfo')).toBeVisible();
   });
 
   test('5 sections principales présentes', async ({ page }) => {
@@ -32,7 +34,8 @@ test.describe('US-01 — Accueil : identité ISSA en première visite', () => {
 test.describe('US-02 — Navigation Accueil → Opportunités', () => {
   test('clic CTA "Proposer une opportunité" mène à /opportunites', async ({ page }) => {
     await page.goto('/');
-    const cta = page.locator('a[href*="/opportunites"]').first();
+    // Cible le PREMIER CTA visible (pas un lien caché derrière le menu hamburger mobile)
+    const cta = page.locator('a[href*="/opportunites"]:visible').first();
     await expect(cta).toBeVisible();
     await cta.click();
     await expect(page).toHaveURL(/\/opportunites/);
