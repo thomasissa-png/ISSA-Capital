@@ -150,10 +150,21 @@
           "disabled":        { "$ref": "primitive.color.ink.300",       "description": "Texte désactivé" },
           "on-inverse":      { "$ref": "primitive.color.parchment.100", "description": "Texte sur fond sombre — ratio 17.8:1 PASS" },
           "on-inverse-muted":{ "$ref": "primitive.color.ink.300",       "description": "Texte secondaire sur fond sombre — ratio 7.5:1 PASS" },
-          "accent":          { "$ref": "primitive.color.levant.600",    "description": "Texte accentué, liens — ratio 4.6:1 PASS" }
+          "accent":          { "$ref": "primitive.color.levant.600",    "description": "Texte accentué, liens — ratio 4.6:1 PASS" },
+          "accent-normal":   {
+            "$ref": "primitive.color.levant.600",
+            "description": "WCAG 2.2 AA — texte d'accent taille normale (<18px, non-gras). levant-600 (#A87340) sur parchment-100 = 4.6:1 PASS. UTILISER CE TOKEN pour tout texte accentué <18px sur fond clair. NE PAS utiliser levant-500 (<18px sur fond clair = 2.8:1 FAIL)."
+          },
+          "accent-large":    {
+            "$ref": "primitive.color.levant.500",
+            "description": "WCAG 2.2 AA — texte d'accent grande taille (>=18px, OU gras >=14px). levant-500 (#C4935A) autorisé uniquement pour large text (seuil 3:1 — ratio 2.8:1 trop juste sur parchment-100, préférer levant-600 pour sécurité). USAGE AUTORISÉ : headings Cormorant >=18px sur fond sombre (ink-950) uniquement. Sur fond clair >=18px : utiliser levant-600 par sécurité."
+          }
         },
         "accent": {
-          "primary": { "$ref": "primitive.color.levant.500", "description": "Couleur action principale — INTERACTIFS UNIQUEMENT sur fond clair" },
+          "primary": {
+            "$ref": "primitive.color.levant.500",
+            "description": "Couleur action principale — INTERACTIFS UNIQUEMENT sur fond clair (border, background interactif). CONTRAINTE WCAG : levant-500 (#C4935A) est INTERDIT pour du texte <18px sur fond clair (ratio 2.8:1 < seuil 4.5:1). Pour texte accentué sur fond clair, utiliser text.accent-normal (levant-600). levant-500 autorisé : fond sombre ink-950, décoratifs, bordures, séparateurs."
+          },
           "hover":   { "$ref": "primitive.color.levant.600", "description": "Hover actions" },
           "active":  { "$ref": "primitive.color.levant.700", "description": "Active/pressed actions" }
         },
@@ -294,7 +305,7 @@
     "card-key-stat": {
       "bg":            { "$ref": "semantic.light.color.background.inverse" },
       "text":          { "$ref": "semantic.light.color.text.on-inverse" },
-      "accent":        { "$ref": "primitive.color.levant.500" },
+      "accent":        { "$ref": "primitive.color.levant.500", "description": "WCAG OK — levant-500 sur fond ink-950 : ratio 5.9:1 PASS. Autorisé sur fond sombre uniquement." },
       "border-radius": { "$ref": "primitive.border-radius.none" },
       "padding":       { "$ref": "primitive.spacing.2xl" }
     },

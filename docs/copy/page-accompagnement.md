@@ -91,6 +91,8 @@ Depuis 2018, il accompagne des startups en tant qu'advisor stratégique — jusq
 
 Depuis 2020, il co-fonde et développe l'écosystème ISSA Capital : holding patrimoniale, participations dans l'immobilier tech et les services aux professionnels, 15 lots résidentiels en gestion directe en Île-de-France.
 
+Ce parcours corporate ne dit pas tout. Thomas n'est pas conseiller par option de carrière — il est conseiller parce qu'il a grandi en voyant son père racheter, développer et internationaliser une société en co-actionnariat : 2J Impression, fondée en 1994 à Mérignac, aujourd'hui présente dans dix-sept pays, dont Jean-Pierre Issa est toujours Co-Managing Director. Rachat, développement long terme, internationalisation réelle, conservation des parts dans la durée : ce n'est pas un discours sur la stratégie patrimoniale — c'est l'école dans laquelle Thomas a appris.
+
 ### Formation (sobre, une ligne chacune)
 HEC School of Management — Intelligence Marketing
 University of California, Irvine — International Marketing

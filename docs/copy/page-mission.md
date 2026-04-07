@@ -57,6 +57,8 @@ Ce qui précède la holding.
 ### Corps
 ISSA Capital n'a pas commencé en mars 2026. Elle a commencé bien avant — avec Jean-Pierre Issa, né à Dakar en 1958 dans une famille libanaise, qui a appris le monde dans les salles de réunion d'IBM et fait partie de l'équipe qui a lancé Lexmark en Europe dans les années 1990. Directeur de filiales dans plusieurs pays. Directeur Marketing EMEA. Un homme qui a construit un patrimoine — immobilier à Paris, en Normandie, au Liban — décision après décision, continent après continent.
 
+Puis, en co-actionnariat avec deux partenaires, Jean-Pierre rachète 2J Impression — une société française fondée en 1994 à Mérignac, spécialisée dans l'impression numérique industrielle d'étiquettes. En trente ans, il la développe jusqu'à la présence dans dix-sept pays, de l'Europe au Brésil en passant par l'Afrique. Il en est toujours Co-Managing Director. Ce n'est pas une parenthèse dans son parcours — c'est le modèle opérationnel concret que Thomas a regardé fonctionner : rachat, co-actionnariat, développement long terme, internationalisation réelle, conservation des parts dans la durée.
+
 Thomas Issa est son fils. C'est de lui qu'il a tout appris sur la valeur des actifs réels, la patience, et la transmission comme horizon naturel de toute décision économique. ISSA Capital est la formalisation juridique de ce legs — une SAS créée en 2026 pour organiser ce qui existait déjà dans les convictions d'une famille.
 
 Ce n'est pas l'histoire d'un entrepreneur tech qui crée une holding pour diversifier ses revenus. C'est l'aboutissement de trois décennies de construction patrimoniale, transmis d'un père à son fils, destiné à passer à la génération suivante.

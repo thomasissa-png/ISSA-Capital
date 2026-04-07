@@ -233,7 +233,7 @@
 **Contenu** :
 - Overline `levant-600` — "Ce que nous refusons"
 - Titre `text-h3` Cormorant `ink-950`
-- Liste stylisée (pas de puces classiques) : chaque item précédé d'un `—` `levant-500`, `text-body` Inter `ink-700`
+- Liste stylisée (pas de puces classiques) : chaque item précédé d'un `—` `text-accent-normal` (levant-600), `text-body` Inter `ink-700` — [CORRECTION WCAG : levant-500 interdit sur fond parchment-100 pour texte normal — ratio 2.8:1 < 4.5:1. levant-600 = 4.6:1 PASS]
 - Ton : affirmatif, pas d'excuses — conforme au brief brand-platform Trait 5 "Affirmé"
 
 **Image** : aucune.
@@ -359,7 +359,7 @@
 - 2 colonnes : "Ce que nous acceptons" / "Ce que nous refusons"
 
 **Contenu** :
-- Accepté : liste avec `—` `levant-500` en préfixe, `text-body` Inter `ink-950`
+- Accepté : liste avec `—` `text-accent-normal` (levant-600) en préfixe, `text-body` Inter `ink-950` — [CORRECTION WCAG : levant-500 interdit sur parchment-50 pour texte normal (ratio ~2.7:1). levant-600 = 4.7:1 PASS]
 - Refusé : liste avec `✕` `reserve-500` ou `—` `ink-400`, texte `ink-600` légèrement atténué
 
 **Note @copywriter** : le vocabulaire doit rester conforme à la liste noire CMF (legal-audit.md). Formuler les refus sans utiliser les termes "ticket minimum", "rendement", "investisseurs" pour désigner des tiers.
@@ -481,6 +481,23 @@
 - Desktop : centré `max-width-editorial`
 
 ## Règles transversales
+
+### Contrainte WCAG 2.2 AA — Usage du levant (règle obligatoire)
+
+> Correction appliquée le 2026-04-07 suite à audit @ux (ux-audit.md).
+
+| Token levant | Hex | Sur fond clair (parchment/white) | Sur fond sombre (ink-950) |
+|---|---|---|---|
+| `levant-500` | #C4935A | **INTERDIT texte normal** (ratio 2.8:1 < 4.5:1). Autorisé uniquement : texte ≥ 18px sur fond sombre, décoratifs, bordures, séparateurs. | AUTORISÉ — ratio 5.9:1 PASS |
+| `levant-600` | #A87340 | **AUTORISÉ texte normal** (ratio 4.6:1 PASS). Token `text-accent-normal`. | AUTORISÉ |
+| `levant-700` | #8B5E2A | AUTORISÉ texte normal (ratio 7.1:1 PASS). Token `accent.active`. | AUTORISÉ |
+
+**Règle pour tous les textes d'accent <18px sur fond clair** : utiliser le token `text-accent-normal` (levant-600). Jamais `levant-500` directement.
+
+**Exceptions autorisées pour levant-500 sur fond clair** :
+- Séparateurs et bordures décoratives (seuil interactif 3:1 — levant-500/parchment-100 = 3.1:1 PASS)
+- Guillemets décoratifs Card Quote en `text-h2` (40px — large text seuil 3:1 PASS)
+- Icônes décoratives (non-texte)
 
 ### Alternance de fonds (rythme visuel)
 

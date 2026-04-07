@@ -119,7 +119,7 @@ Trois étapes. Pas de comité trimestriel.
 Vous remplissez le formulaire ci-dessous. Moins de 5 minutes. Aucune présentation complète requise à ce stade — deux lignes sur le projet suffisent pour une première évaluation.
 
 **Étape 2 — Analyse**
-Nous étudions chaque dossier soumis. Si votre opportunité correspond à nos critères, nous prenons contact pour un échange.
+Nous étudions chaque dossier soumis. Réponse dans la journée. Pas un comité trimestriel. Si votre opportunité correspond à nos critères, nous prenons contact pour un échange direct.
 
 **Étape 3 — Échange et décision**
 Un échange direct avec Thomas Issa. Pas de présentation formelle obligatoire. Si l'opportunité est retenue, nous structurons ensemble les modalités.
