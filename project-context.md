@@ -18,6 +18,22 @@
 
 ---
 
+## Identité familiale (verrouillée 2026-04-07 par Thomas)
+
+> **RÈGLE ABSOLUE — À LIRE PAR TOUS LES AGENTS** : la famille Issa est **LIBANAISE**. ISSA Capital est une SAS française (siège Nanterre 92), mais la famille fondatrice est libanaise. Cette double identité libano-française est un **asset différenciant** à valoriser, pas à masquer.
+
+- **Famille fondatrice** : famille **libanaise** (jamais "française")
+- **Holding** : SAS française, domiciliée à Nanterre (92)
+- **Pont culturel** : entre deux cultures (Liban / France), entre deux traditions patrimoniales
+- **Implication pour les agents** :
+  - @creative-strategy : intégrer l'identité libanaise dans le brand-platform, les références culturelles, les holdings de référence (inclure du Moyen-Orient / Liban si pertinent)
+  - @copywriter : ne JAMAIS écrire "famille française". Possible de jouer sur "famille libanaise enracinée en France", "héritage libanais, ancrage français", ou équivalent — à arbitrer
+  - @design : références visuelles peuvent inclure des codes esthétiques moyen-orientaux subtils (typographie, motifs, palettes) si cohérent avec le ton premium élégant
+  - @seo / @geo : potentiel de différenciation sur les requêtes "holding familiale libanaise France" / "famille libanaise patrimoine France"
+- **Anti-règle** : ne JAMAIS écrire "famille française", "famille issue de France", ou équivalent. C'est une erreur factuelle ET une perte d'asset différenciant.
+
+---
+
 ## Écosystème de participations (à présenter sur le site)
 - **Gradient One** (gradientone.fr) — non documenté publiquement (site bloqué aux bots) — [À COMPLÉTER en Phase 1 par Thomas]
 - **Versi Immobilier** — branche immobilière — [À COMPLÉTER en Phase 1]
@@ -49,12 +65,13 @@
 - **Mission (le QUOI / POURQUOI — finalité fondatrice)** : servir les intérêts de la famille Issa et organiser la transmission du patrimoine entre les générations de la famille. C'est la raison d'être unique de la holding.
 - **Valeurs (les FILTRES de décision — comment on décide)** : patrimoine long-terme, préservation de l'environnement, éthique humaine (n'investit JAMAIS dans ce qui va à l'encontre de l'humanité). Ces valeurs encadrent les décisions d'investissement, elles n'en sont pas la finalité.
 
-### Mission — 3 variantes proposées (à arbitrer par Thomas)
-- **Variante A (sobre / institutionnelle)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Sa raison d'être est de faire fructifier le patrimoine familial dans la durée et d'organiser sa transmission entre les générations."
-- **Variante B (engagée / multigénérationnelle)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Elle préserve et développe le patrimoine familial pour le transmettre intact aux générations suivantes."
-- **Variante C (active / bâtisseuse)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Elle bâtit, détient et transmet le patrimoine familial dans une perspective intergénérationnelle."
+### Mission — VERROUILLÉE 2026-04-07 (Thomas a tranché : variante A)
+- **Mission officielle** : "ISSA Capital est la holding patrimoniale de la famille Issa. Sa raison d'être est de **faire fructifier le patrimoine familial dans la durée et d'organiser sa transmission** entre les générations."
+- Variantes B et C écartées.
 
-- **Promesse unique** : [HYPOTHÈSE H3 — corrigée 2026-04-07] — la promesse parle aux interlocuteurs externes (fondateurs accueillis, partenaires) en restant honnête sur l'ADN familial. 3 variantes proposées (voir section Hypothèses, H3).
+### Promesse unique — VERROUILLÉE 2026-04-07 (Thomas a tranché : variante A reformulée libanaise)
+- **Promesse officielle** : "La holding patrimoniale d'une **famille libanaise** qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
+- Cette formulation intègre l'identité libanaise comme asset (voir section "Identité familiale"). Les variantes B et C de l'hypothèse H3 sont écartées.
 - **Ton de marque** : premium élégant, sobre, intemporel, éditorial. Pas de tape-à-l'œil. Référence : maisons de gestion patrimoniale haut de gamme, holdings familiales européennes type Agache / Artémis / Berkshire (texte minimaliste)
 - **3 mots qui DÉFINISSENT la marque** : Famille — Transmission — Long-terme
 - **3 mots qui ne DÉFINISSENT PAS la marque** : Spéculatif — Tape-à-l'œil — Court-termiste
@@ -149,6 +166,7 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 |-------|------|-----------------|----------------|----------------------------------|
 | orchestrator | 2026-04-07 | project-context.md (initialisation) | Cadrage initial, hypothèses posées sur persona/mission/KPI, ADN éthique verrouillé, stack validée, table rase confirmée | Thomas a délégué mission/persona/KPI à l'équipe → hypothèses documentées pour validation en checkpoint Phase 0 |
 | orchestrator | 2026-04-07 | project-context.md (correction Mission/Valeurs) | Hiérarchie verrouillée : Mission = intérêts famille + transmission (objectif fondateur) ; Valeurs = filtres de décision (éthique, environnement, patrimoine long-terme). H2 réordonnée avec 3 variantes famille-first. H3 réécrite avec 3 variantes (l'ancienne confondait promesse et valeurs). H4 reformulée. 3 mots de marque ajustés : Patrimoine/Long-terme/Éthique → Famille/Transmission/Long-terme | Arbitrage stratégique direct de Thomas : "L'objectif numéro 1 est les intérêts de la famille Issa et la transmission. L'éthique humaine fait partie des valeurs, pas de la promesse." Correction critique pour éviter de contaminer tout le brand-platform en aval |
+| orchestrator | 2026-04-07 | project-context.md (validation Phase 0 hypothèses + identité libanaise) | TOUTES les 12 hypothèses validées par Thomas. Mission verrouillée variante A. Promesse verrouillée variante A reformulée libanaise. CORRECTION CRITIQUE : famille libanaise (jamais française) — section "Identité familiale" ajoutée en haut du fichier. Phase 0 production débloquée | Thomas a tranché : "H2-A ok / H3-A mais attention famille libanaise on est / H4 essayons". L'identité libanaise est un asset différenciant à valoriser partout (brand, copy, design, SEO/GEO). Anti-règle absolue : ne jamais écrire "famille française" |
 
 ---
 
@@ -167,24 +185,26 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 
 ---
 
-## Hypothèses à valider (checkpoint Phase 0 obligatoire)
+## Hypothèses — TOUTES VALIDÉES par Thomas le 2026-04-07
 
-Toutes les hypothèses ci-dessous DOIVENT être arbitrées par Thomas avant la fin de Phase 0. L'orchestrateur ne lance PAS Phase 1 tant que ces hypothèses ne sont pas validées.
+Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phase 0 production peut maintenant être lancée.
 
-| # | Hypothèse | Source | À valider par | Statut |
-|---|---|---|---|---|
-| H1 | Persona principal = fondateur de PME (Hélène) plutôt que journaliste ou partenaire B2B | Thomas n'a pas tranché — orchestrator propose | Thomas + @creative-strategy | À valider |
-| H2 | Mission = servir les intérêts de la famille Issa + organiser la transmission patrimoniale entre générations (3 variantes A/B/C dans section Positionnement) | Corrigée 2026-04-07 par Thomas : la mission est l'objectif fondateur familial, PAS l'éthique | Thomas (choix variante A/B/C) | À valider |
-| H3 | Promesse unique — 3 variantes : (A) "La holding patrimoniale d'une famille française qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement." (B) "Capital patient, vision multigénérationnelle, choix d'investissement filtrés par une éthique non négociable." (C) "Une holding familiale qui accueille les fondateurs comme des partenaires de long terme, parce qu'on n'investit que dans ce qu'on serait fier de transmettre à nos enfants." | Corrigée 2026-04-07 — l'ancienne version confondait promesse et valeurs | Thomas (choix A/B/C ou variante 4) | À valider |
-| H4 | Différence clé : holding 100% familiale assumée + horizon intergénérationnel + filtres de décision non négociables (éthique humaine, environnement) + écosystème tech/immo intégré (Gradient, Versi, Immocrew, Versimo) | Reformulée 2026-04-07 pour aligner sur la hiérarchie famille > transmission > filtres | Thomas + @creative-strategy | À valider |
-| H5 | KPI North Star quanti = nombre de demandes de contact qualifiées / mois (seuil <2/mois = alerte) | Thomas a dit "pas de KPI spécifique" — orchestrator propose | Thomas + @data-analyst | À valider |
-| H6 | KPI qualitatif complémentaire = perception de crédibilité (3-5 retours partenaires post-lancement) | Hypothèse orchestrator | Thomas + @data-analyst | À valider |
-| H7 | Objectifs site = (a) crédibilité institutionnelle + (b) pipeline d'opportunités d'investissement entrantes | Thomas a dit "site vitrine" sans préciser — orchestrator propose les 2 objectifs | Thomas | À valider |
-| H8 | Pages V1 = Accueil + Mission + Participations + Opportunités + Contact + légal | Hypothèse orchestrator basée sur la nature holding patrimoniale | Thomas + @ux | À valider |
-| H9 | CTA principal = "Proposer une opportunité d'investissement" | Thomas a dit "prendre contact pour opportunités" — orchestrator concrétise | Thomas + @copywriter | À valider |
-| H10 | Analytics = Plausible (RGPD-friendly, cohérent avec ton premium) plutôt que GA4 | Hypothèse orchestrator | Thomas + @data-analyst | À valider |
-| H11 | Pas de blog / pas de contenu éditorial récurrent en V1 (site institutionnel statique) | Hypothèse orchestrator (cohérent avec mode "site vitrine") | Thomas + @seo | À valider |
-| H12 | Site monolingue français en V1 (anglais en V2 si besoin international) | Hypothèse orchestrator | Thomas | À valider |
+| # | Hypothèse | Décision Thomas | Statut |
+|---|---|---|---|
+| H1 | Persona principal = fondateur de PME (Hélène) plutôt que journaliste ou partenaire B2B | OK | **VALIDÉE** |
+| H2 | Mission — choix variante A : "faire fructifier le patrimoine familial dans la durée et organiser sa transmission" | A retenu | **VALIDÉE (A)** |
+| H3 | Promesse unique — variante A REFORMULÉE LIBANAISE : "La holding patrimoniale d'une famille libanaise qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement." | A retenu, reformulé libanais | **VALIDÉE (A reformulée)** |
+| H4 | Différence clé : holding 100% familiale assumée + horizon intergénérationnel + filtres non négociables + écosystème tech/immo | "essayons" (OK pour tester) | **VALIDÉE** |
+| H5 | KPI North Star quanti = demandes de contact qualifiées / mois | OK | **VALIDÉE** |
+| H6 | KPI qualitatif complémentaire = perception de crédibilité | OK | **VALIDÉE** |
+| H7 | Objectifs site = crédibilité institutionnelle + pipeline opportunités | OK | **VALIDÉE** |
+| H8 | Pages V1 = Accueil + Mission + Participations + Opportunités + Contact + légal | OK | **VALIDÉE** |
+| H9 | CTA principal = "Proposer une opportunité d'investissement" | OK | **VALIDÉE** |
+| H10 | Analytics = Plausible | OK | **VALIDÉE** |
+| H11 | Pas de blog en V1 | OK | **VALIDÉE** |
+| H12 | Site monolingue français en V1 | OK | **VALIDÉE** |
+
+**CORRECTION CRITIQUE intégrée** : la famille Issa est LIBANAISE (jamais "française"). Voir section "Identité familiale" en haut du document.
 
 ---
 
