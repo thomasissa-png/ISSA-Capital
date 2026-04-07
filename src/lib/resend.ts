@@ -1,16 +1,22 @@
-import { Resend } from 'resend';
+import type { Resend as ResendClient } from 'resend';
 import { getServerEnv } from '@/lib/env';
 import type { ContactRequest } from '@/lib/contactSchema';
 import { sanitizeString } from '@/lib/sanitize';
 
 /**
- * Client Resend — instancié à la première utilisation.
- * Évite de crasher au boot si la clé n'est pas présente (permet le build).
+ * Client Resend — instancié à la première utilisation via dynamic import.
+ * L'import dynamique garantit que le module `resend` n'est jamais chargé
+ * pendant la phase `Collecting page data` de `next build`, ce qui évite
+ * un crash sur Replit si la variable d'environnement n'est pas encore
+ * disponible au moment du build.
  */
-let client: Resend | null = null;
+let client: ResendClient | null = null;
 
-function getClient(apiKey: string): Resend {
-  if (!client) client = new Resend(apiKey);
+async function getClient(apiKey: string): Promise<ResendClient> {
+  if (!client) {
+    const { Resend } = await import('resend');
+    client = new Resend(apiKey);
+  }
   return client;
 }
 
@@ -98,7 +104,7 @@ export async function sendContactEmail(req: ContactRequest): Promise<SendResult>
   const subject = buildSubject(req);
 
   try {
-    const resend = getClient(env.RESEND_API_KEY);
+    const resend = await getClient(env.RESEND_API_KEY);
     const result = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: env.RESEND_TO_EMAIL,
