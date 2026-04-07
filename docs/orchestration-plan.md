@@ -99,7 +99,7 @@ Livrer le **site vitrine premium** d'ISSA Capital (holding patrimoniale famille 
 5. **Signature page Accompagnement** : "Patient par choix. Exigeant par principe."
 6. **Personas** : Karim (A — conseil) + Leila (B — opportunités) + Marc (secondaire — earned media)
 7. **Archétype** : Ruler/Outlaw modéré
-8. **Palette** : noir #0A0A0A + crème #F5F0E8 + ocre levantin (levant-600 pour texte <18px, levant-500 pour texte ≥18px/accent)
+8. **Palette** : noir #0A0A0A + crème #F5F0E8 + ocre levantin (**levant-700** #8B5E2A pour texte <18px sur fond clair — ratio ≥ 5:1 WCAG AA PASS, levant-500 pour texte ≥18px/accent et bordures interactives) — *révisé Phase 2b après mesure axe-core : levant-600 #A87340 mesuré 3.56-4.04:1, sous le seuil 4.5:1*
 9. **Typographie** : Cormorant Garamond (headings) + Inter (corps), self-hosted
 10. **Stack** : Next.js App Router + TypeScript + Tailwind + Replit
 11. **Email unique** : contact@issa-capital.com
