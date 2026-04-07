@@ -29,6 +29,45 @@
 - **Famille fondatrice** : famille **libanaise** (jamais "française")
 - **Holding** : SAS française, domiciliée à Nanterre (92)
 - **Pont culturel** : entre deux cultures (Liban / France), entre deux traditions patrimoniales
+
+### Filiation fondatrice — Jean-Pierre Issa (père de Thomas)
+> **À lire par @creative-strategy, @copywriter, @design.** Ajout Thomas 2026-04-07. **ISSA Capital est l'aboutissement du parcours de la famille Issa — pas une création ex nihilo.** Thomas cite son père comme "celui de qui j'ai tout appris". Le brand-platform et le copy DOIVENT intégrer cette filiation de manière visible mais sobre (pas de culte de la personnalité — juste la vérité généalogique du projet).
+
+- **Nom** : **Jean-Pierre Issa**
+- **Né le** : **7 janvier 1958**
+- **Lieu de naissance** : **Dakar (Sénégal)** — ses parents y habitaient
+- **Origine familiale** : **libanaise** (la famille est libanaise, pas sénégalaise — Dakar est le lieu de naissance, pas l'appartenance culturelle)
+- **Parcours professionnel** :
+  - Banque (début de carrière)
+  - **IBM** (position internationale)
+  - Départ d'IBM pour la **création de Lexmark dans les années 1990** (scission historique IBM → Lexmark en 1991 — Jean-Pierre Issa fait partie de l'équipe fondatrice / early de Lexmark, à confirmer positionnement exact)
+  - Chez Lexmark : **Directeur de filiales dans plusieurs pays** + **Directeur Marketing EMEA** + etc.
+- **Patrimoine personnel dans le scope ISSA** :
+  - **Terrains au Liban**
+  - **Immobilier à Paris**
+  - **Immobilier en Normandie**
+  - Ces actifs font partie du patrimoine familial élargi et **de l'héritage destiné aux enfants et petits-enfants** — raison d'être de la holding ISSA Capital
+- **Rôle dans ISSA Capital** : **figure fondatrice symbolique** (la holding est "l'aboutissement" de son parcours, pas sa création juridique — c'est Thomas qui a créé la SAS en mars 2026). À positionner dans le copy comme **source de légitimité patrimoniale** et **origine du savoir-faire familial**, sans faire de Jean-Pierre un dirigeant opérationnel d'ISSA Capital (il ne l'est pas).
+- **Usage copy** : la page Mission peut raconter la filiation Jean-Pierre → Thomas comme colonne vertébrale narrative. Page Participations peut mentionner l'immobilier Paris/Normandie/Liban comme ancrage historique. Page Accompagnement peut capitaliser sur "issu d'une famille qui a construit et transmis pendant des décennies" (lisibilité et crédibilité pour Karim).
+
+### Prochaine génération — les bénéficiaires de la transmission (Thomas 2026-04-07)
+**Les destinataires concrets de la transmission patrimoniale d'ISSA Capital sont les enfants de Thomas** :
+- **Antoine Issa** — né le **24 avril 2015**
+- **Noémie Issa** — née le **18 décembre 2018**
+- **Lucas Issa** — né le **5 mars 2023**
+
+**Arc générationnel complet de la holding** : Jean-Pierre Issa (1958, Dakar → Liban → IBM → Lexmark → patrimoine immo Paris/Normandie/Liban) **→** Thomas Issa (Paris, Sony/TEOS/advisor/agence com → création ISSA Capital 2026) **→** Antoine + Noémie + Lucas (2015, 2018, 2023 — bénéficiaires de la transmission).
+
+**⚠️ Usage copy — données personnelles mineures** :
+- **Narratif interne** : cette généalogie donne une colonne vertébrale puissante au brand story d'ISSA Capital. "Transmettre" n'est pas une abstraction corporate — ce sont 3 enfants concrets.
+- **Publication publique** : **À VALIDER EXPLICITEMENT AVEC THOMAS** avant de citer les enfants par leur nom et date de naissance sur le site. Considérations RGPD (données de mineurs, art. 8 RGPD), protection de la vie privée familiale, exposition médiatique indésirable. Recommandation orchestrator par défaut : **ne PAS citer les noms des enfants publiquement**. Utiliser une formulation générique type "trois enfants" ou "la génération à venir" dans le copy. L'arc générationnel peut être raconté à 3 niveaux (père, fondateur, enfants) sans donner les prénoms.
+- **Question à Thomas** : accepte-t-il que les prénoms + années de naissance (sans jour/mois) apparaissent sur le site, ou préfère-t-il rester sur "trois enfants" ?
+- **⚠️ Questions à clarifier avec Thomas avant publication** (non bloquantes pour Phase 1) :
+  1. Peut-on nommer Jean-Pierre Issa publiquement sur le site ? (OK présumé vu qu'il fournit l'info spontanément — à confirmer)
+  2. Peut-on mentionner explicitement IBM et Lexmark comme étapes de son parcours ? (présumé OK — ce sont des infos historiques publiques)
+  3. Positionnement exact chez Lexmark à l'époque de la création (1991) ? (pour éviter toute imprécision factuelle — hypothèse par défaut : "faisait partie de l'équipe qui a lancé Lexmark en France / EMEA")
+  4. Le rôle actuel de Jean-Pierre dans les décisions d'ISSA Capital ? (consultant familial, advisor symbolique, retraite active, patriarche ?)
+  5. Les terrains au Liban — région/nature (agricoles, urbains, résidentiels) ? Peut-on les mentionner dans le périmètre patrimonial de façon générique ?
 - **Implication pour les agents** :
   - @creative-strategy : intégrer l'identité libanaise dans le brand-platform, les références culturelles, les holdings de référence (inclure du Moyen-Orient / Liban si pertinent)
   - @copywriter : ne JAMAIS écrire "famille française". Possible de jouer sur "famille libanaise enracinée en France", "héritage libanais, ancrage français", ou équivalent — à arbitrer
