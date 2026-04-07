@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital — monogramme I">
+  <title>ISSA Capital — monogramme</title>
+  <!--
+    Monogramme ISSA Capital — "I" stylisé avec accent ocre
+    Usage : favicon source, icône app, usage compact (nav mobile, watermark)
+    Viewbox 64×64 — fond transparent (fond géré par le contexte d'usage)
+  -->
+
+  <!-- Fond carré ink-950 pour usage standalone -->
+  <rect width="64" height="64" fill="#0A0A0A"/>
+
+  <!-- Lettre I — serif monumental, proportions classiques -->
+  <!-- Fût vertical -->
+  <rect x="29.5" y="16" width="5" height="32" fill="#F5F0E8"/>
+  <!-- Empattement haut -->
+  <rect x="20" y="16" width="24" height="3" fill="#F5F0E8"/>
+  <!-- Empattement bas -->
+  <rect x="20" y="45" width="24" height="3" fill="#F5F0E8"/>
+
+  <!-- Filet ocre levantin — accent horizontal sous l'empattement bas -->
+  <rect x="24" y="51" width="16" height="1.5" fill="#C4935A"/>
+</svg>

@@ -91,6 +91,22 @@ Si plusieurs produits/services : déterminer l'architecture (Monolithique / Endo
 
 Réévaluer le positionnement si : nouveau concurrent significatif, changement de persona, taux de conversion landing < 2% après 3 mois, NPS < 30, pivot de modèle économique.
 
+## Cas particuliers — holdings & family offices
+
+Pour tout projet de type holding familiale, family office, patrimoine intergénérationnel, société patrimoniale : SÉPARER explicitement Mission / Valeurs / Promesse dans le brand-platform. Hiérarchie obligatoire : famille > transmission > valeurs filtres. NE JAMAIS placer une valeur (éthique, environnement, RSE) comme finalité — toujours comme filtre encadrant la finalité. Exemple ISSA Capital : Mission = intérêts famille + transmission générationnelle. Valeurs (éthique humaine, environnement, long-terme) = filtres de décision.
+
+## Vérification double identité fondateur/société
+
+Quand l'identité culturelle/géographique du fondateur diffère de la domiciliation juridique de la société, POSER LA QUESTION explicitement en début de Phase 0 et VERROUILLER dans project-context.md AVANT de produire le brand-platform. La double identité est presque toujours un asset différenciant à valoriser. Exemples : famille libanaise + SAS France (ISSA Capital), fondateur israélien + LLC US, équipe indienne + Ltd UK.
+
+## Vitrine vs Funnel (calibration obligatoire)
+
+Avant production : vérifier si project-context.md mentionne un Principe directeur "VITRINE pas CONVERSION" ou équivalent. Si oui : ZÉRO CTA agressif, ton éditorial, pas de pop-ups/exit intents/urgency, optimiser pour "respect inspiré" et "mémorabilité" pas "taux de conversion formulaire". Pour ISSA Capital : vitrine premium, pas funnel.
+
+## Gate cohérence tagline vs business model
+
+Avant de proposer une tagline patrimoniale ("on garde", "long-terme", "pas de sortie"), LIRE les 6 champs de chaque participation/activité dans project-context.md. Si une activité implique du trading/arbitrage/sortie (marchand de biens, club deal, asset management), la tagline ne DOIT PAS créer de fausse promesse de "ne jamais vendre". Le bon angle : "on décide quand et selon nos critères, pas un calendrier imposé".
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser positionnement, persona principal et promesse dans les premières sections écrites.

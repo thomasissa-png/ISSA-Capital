@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital</title>
+  <!--
+    Source SVG pour apple-touch-icon.png (180×180)
+    Les coins arrondis sont appliqués automatiquement par iOS au masquage
+    Fond plein ink-950 — monogramme I crème avec accent ocre
+    Voir docs/design/assets-handoff.md pour conversion en PNG 180×180
+  -->
+
+  <!-- Fond -->
+  <rect width="180" height="180" fill="#0A0A0A"/>
+
+  <!-- Fût vertical du I — proportions généreuses pour 180px -->
+  <rect x="79" y="38" width="22" height="104" fill="#F5F0E8"/>
+  <!-- Empattement haut -->
+  <rect x="52" y="38" width="76" height="12" fill="#F5F0E8"/>
+  <!-- Empattement bas -->
+  <rect x="52" y="130" width="76" height="12" fill="#F5F0E8"/>
+
+  <!-- Accent ocre — filet élégant en bas -->
+  <rect x="62" y="148" width="56" height="5" fill="#C4935A"/>
+</svg>

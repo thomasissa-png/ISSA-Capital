@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital</title>
+  <!--
+    Source SVG pour android-chrome-192x192.png
+    Voir docs/design/assets-handoff.md pour conversion en PNG 192×192
+  -->
+
+  <!-- Fond -->
+  <rect width="192" height="192" fill="#0A0A0A"/>
+
+  <!-- Fût vertical du I -->
+  <rect x="85" y="40" width="22" height="112" fill="#F5F0E8"/>
+  <!-- Empattement haut -->
+  <rect x="56" y="40" width="80" height="13" fill="#F5F0E8"/>
+  <!-- Empattement bas -->
+  <rect x="56" y="139" width="80" height="13" fill="#F5F0E8"/>
+
+  <!-- Accent ocre -->
+  <rect x="66" y="158" width="60" height="5" fill="#C4935A"/>
+</svg>

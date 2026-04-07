@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================================
+   Design tokens — ISSA Capital
+   3 tiers : primitive → semantic → component
+   Source de vérité : docs/design/design-tokens.json
+   Les variables primitives sont déjà exposées via tailwind.config.ts (couleurs).
+   On expose ici les tokens sémantiques qui n'ont pas d'équivalent direct
+   dans Tailwind (focus ring, motion), et on applique les défauts globaux.
+   ========================================================================= */
+
+:root {
+  --color-bg-default: #f5f0e8; /* parchment-100 */
+  --color-bg-subtle: #faf7f2; /* parchment-50 */
+  --color-bg-elevated: #ffffff;
+  --color-bg-inverse: #0a0a0a;
+  --color-text-default: #0a0a0a;
+  --color-text-secondary: #3d3d3d;
+  --color-text-muted: #6b6b6b;
+  --color-text-on-inverse: #f5f0e8;
+  --color-text-on-inverse-muted: #adadad;
+  --color-text-accent-normal: #a87340; /* levant-600 — texte accent <18px */
+  --color-accent-primary: #c4935a; /* levant-500 — interactif */
+  --color-border-default: #d1d1d1;
+  --color-border-subtle: #e8e8e8;
+  --color-border-strong: #6b6b6b;
+  --color-border-accent: #c4935a;
+  --color-focus-ring: #c4935a;
+
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Reset & defaults */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  background-color: var(--color-bg-default);
+  color: var(--color-text-default);
+  font-family: var(--font-inter), -apple-system, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings par défaut — Cormorant Garamond */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cormorant), 'Georgia', serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* Focus visible accessible WCAG 2.2 AA — appliqué globalement */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: #c4935a;
+  color: #0a0a0a;
+}
+
+/* Skip link — accessibilité */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #0a0a0a;
+  color: #f5f0e8;
+  padding: 8px 16px;
+  z-index: 100;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* Animations scroll-in-view — pattern par défaut */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+.fade-up.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    transform: none;
+  }
+}
+
+/* Utility : overline label */
+.overline {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* Long-form editorial prose — appliqué aux blocs de mission */
+.prose-editorial > p {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: #3d3d3d;
+  margin-bottom: 1.5rem;
+}
+.prose-editorial > p:first-of-type::first-letter {
+  font-family: var(--font-cormorant), serif;
+  font-size: 3.5rem;
+  line-height: 0.9;
+  float: left;
+  padding-right: 0.5rem;
+  padding-top: 0.3rem;
+  color: #a87340;
+}
