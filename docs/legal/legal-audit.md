@@ -673,3 +673,95 @@ activity: 'Acquisitions immobilières et accompagnement de partenaires',
 ---
 
 *Ce document est un draft de référence. Il ne constitue pas un avis juridique formel. Recommandation : validation par un avocat pour les deux points listés ci-dessus avant mise en ligne.*
+
+---
+
+## Verdict final Phase 3 — GO CONDITIONNEL
+
+**Synthèse des trois pages auditées :**
+
+Aucune formulation de la liste noire L.411-1 CMF n'a été identifiée sur les pages /accompagnement, /participations, /mission. Le Principe #0 VITRINE est tenu : le site ne sollicite pas d'investisseurs, ne promet pas de rendements, ne démarche pas activement le public. La structure "ISSA Capital reçoit des propositions, elle n'en fait pas" est maintenue de manière cohérente sur l'ensemble des pages.
+
+Deux corrections de copy sont requises avant mise en ligne :
+
+| # | Page | Correction | Urgence |
+|---|---|---|---|
+| C1 | /accompagnement | Section Advisoring : remplacer "conseil stratégique régulier" par formulation désambiguïsant l'exclusion du périmètre CIF | Obligatoire |
+| C2 | /participations | Versi Invest : remplacer "Club deal et conseil en acquisition immobilière" par formulation neutre | Obligatoire |
+
+Deux points requièrent une validation par un avocat (non bloquants pour la mise en ligne si les corrections C1/C2 sont faites, mais à régulariser dans les 60 jours) :
+
+| # | Sujet | Risque | Niveau |
+|---|---|---|---|
+| A1 | Activité réelle Versi Invest — club deals ouverts à des tiers ou réservés aux associés | Potentiellement PSI / CIAM si ouvert | Faible à modéré selon réalité opérationnelle |
+| A2 | Chiffre ROI 6000% Sony — contexte biographique acceptable mais à confirmer | Pas une promesse de rendement en l'état | Faible |
+
+**Mise à jour checklist de conformité — items déclenchés par la Phase 3 :**
+
+| # | Vérification | Statut après Phase 3 |
+|---|---|---|
+| C11 | Copy page /accompagnement relu selon règles section 4 | GO CONDITIONNEL — correction Advisoring requise |
+| C12 | Copy pages /participations, /mission, /accompagnement — 0 mot interdit liste noire L.411-1 | GO CONDITIONNEL — correction Versi Invest requise |
+
+**Verdict global du site ISSA Capital :**
+
+| Périmètre | Verdict |
+|---|---|
+| Mentions légales (LCEN) | GO — implémentées avec toutes les données H-L1 à H-L5 confirmées |
+| RGPD (formulaire de contact, politique de confidentialité) | GO — consentement positif, art. 13 conforme, Plausible cookieless |
+| Bannière cookies | GO — non requise avec Plausible (surveiller Google Fonts CDN) |
+| Risque AMF / appel public à l'épargne | GO CONDITIONNEL — 2 corrections copy + validation avocat Versi Invest |
+| Pages /opportunites (Phase 2c) | GO — validé session précédente, non revu ici |
+| Pages /accompagnement, /participations, /mission | GO CONDITIONNEL — 2 corrections copy requises |
+
+**Condition de passage en GO complet :** appliquer les corrections C1 et C2 via @copywriter (wording précis fourni ci-dessus dans "Corrections prioritaires avant mise en ligne").
+
+---
+
+## Handoff → @copywriter
+
+Fichiers produits :
+- `/home/user/ISSA-Capital/docs/legal/legal-audit.md` (audit complet — Phases 1, 2, 3)
+
+Décisions prises :
+- Aucune formulation de la liste noire L.411-1 CMF identifiée sur les 3 pages auditées
+- Deux corrections de copy obligatoires avant mise en ligne (détail et wording de remplacement fournis dans la section "Corrections prioritaires avant mise en ligne")
+- Conformité RGPD du ContactForm validée — consentement positif art. 7 RGPD conforme
+- Mentions légales LCEN conformes — données H-L1 à H-L5 toutes intégrées
+- Bannière cookies non requise avec Plausible Analytics (cookieless, serveurs UE)
+
+Points d'attention pour @copywriter :
+
+**CORRECTION 1 — À appliquer dans `src/app/accompagnement/page.tsx`, section Advisoring (vers ligne 295) :**
+
+Texte actuel :
+```
+conseil stratégique régulier, sparring partner long terme, présence informelle au board possible.
+```
+Texte à substituer :
+```
+stratégie, développement, organisation. Sparring partner de fond, présence informelle au board possible. Hors périmètre : conseil en instruments financiers réglementés.
+```
+
+**CORRECTION 2 — À appliquer dans `src/app/participations/page.tsx`, objet `filiales`, entrée "Versi Invest" (ligne 48) :**
+
+Texte actuel :
+```
+activity: 'Club deal et conseil en acquisition immobilière',
+```
+Texte à substituer :
+```
+activity: 'Acquisitions immobilières et accompagnement de partenaires',
+```
+
+Points nécessitant validation avocat (non bloquants, dans les 60 jours) :
+- Activité réelle Versi Invest : si les clubs deals sont ouverts à des tiers non-associés, consulter un avocat spécialisé CMF sur les obligations PSI/CIAM éventuelles
+- Chiffre ROI 6000% Sony : le contexte biographique est acceptable, une confirmation avocat est recommandée à titre conservatoire
+
+Implémentations techniques requises par @fullstack (rappel) :
+- C6 : page /mentions-legales accessible depuis le footer — statut à vérifier
+- C7 : page /politique-de-confidentialite accessible depuis le footer — statut à vérifier
+- C8 : lien politique de confidentialité dans le formulaire de contact — PASS (déjà implémenté, voir ContactForm.tsx l.35-51)
+- C14 : Google Fonts chargées en local (pas via CDN Google) — statut à vérifier
+
+---
