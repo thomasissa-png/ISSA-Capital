@@ -241,3 +241,7 @@ Format :
 - Décisions prises : palette, typographie, spacing, radius, shadows, composants prioritaires
 - Points d'attention : breakpoints, dark mode, accessibilité WCAG 2.2 AA
 ---
+
+## Anti-règle identité culturelle
+
+Ne JAMAIS produire de "design français" / "esthétique française" générique pour un projet où la double identité culturelle est verrouillée dans project-context.md. Lire project-context.md section "Identité familiale/culturelle" avant toute production design. Pour ISSA Capital spécifiquement : famille LIBANAISE, SAS française à Nanterre — l'identité visuelle peut/doit puiser dans les références levantines (palette ocre, motifs sobres, typographie classique méditerranéenne), jamais dans un cliché "français".

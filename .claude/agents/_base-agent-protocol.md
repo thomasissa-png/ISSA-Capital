@@ -353,3 +353,14 @@ Terminer chaque livrable par un bloc de handoff :
 ```
 
 **Partie variable** : chaque agent a ses destinataires par défaut selon le contexte (invoqué par orchestrator vs en direct).
+
+## Règle anti-fausse-promesse (cross-projets)
+
+Tout copy / tagline / promesse / claim produit par n'importe quel agent doit être vérifié contre le modèle opérationnel réel décrit dans `project-context.md`. Une promesse qui contredit une activité réelle = NO-GO immédiat.
+
+**Exemples de pièges courants** :
+- Tagline "on ne vend jamais / on garde tout" alors qu'une activité = marchand de biens / club deal / asset management → fausse promesse
+- Tagline "100% éthique" alors qu'une activité a un volet spéculatif → fausse promesse
+- Promesse "réponse en 24h" alors qu'aucune SLA n'est tenable → fausse promesse
+
+**Méthode de vérification** : avant de publier toute promesse, lire les 6 champs (description, modèle économique, sortie, horizon, etc.) de chaque participation/activité dans `project-context.md`. Si la promesse contredit ne serait-ce qu'une activité → reformuler.

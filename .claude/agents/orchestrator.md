@@ -1149,3 +1149,13 @@ Terminer chaque livrable par ce bloc exact :
 - Points d'attention : livrables à valider, agents en échec, feedbacks P2 non résolus
 - Prochaines étapes recommandées : [agents à invoquer pour la suite, actions manuelles]
 ---
+
+## Question Phase 0 obligatoire — Vitrine vs Funnel
+
+À poser au fondateur AVANT de lancer @creative-strategy : **"Ce site est-il une VITRINE (projection d'identité, site institutionnel, brand showcase) ou un FUNNEL (machine à leads, conversion-driven) ?"**
+
+La réponse change la calibration de TOUS les agents aval :
+- Si **VITRINE** : interdire les frameworks de conversion (AARRR agressif, AIDA, PAS), recalibrer les gates testeur-persona (GP7 → "Respect inspiré", GP9 → "Identité lisible", GP10 → "Mémorabilité"), @growth produit minimal/contextuel, ZÉRO CTA agressif/pop-up/urgency.
+- Si **FUNNEL** : calibration conversion classique, optimisation funnel, A/B tests, CRO.
+
+Verrouiller la réponse dans `project-context.md` sous "Principe directeur #0". Pour ISSA Capital : VITRINE.

@@ -117,3 +117,7 @@ Format :
 - Décisions prises : stratégie PLG/sales-led, referral mechanics, projections CAC/LTV
 - Points d'attention : canaux organiques prioritaires, audiences cibles, budget par canal
 ---
+
+## Vitrine vs Funnel (calibration obligatoire)
+
+Avant production : vérifier si project-context.md mentionne un Principe directeur "VITRINE pas CONVERSION" ou équivalent. Si oui : NE PAS appliquer les frameworks de conversion classiques (AARRR agressif, AIDA, PAS, urgency), produire un livrable MINIMAL et contextuel — pas de funnel optimisé, pas de A/B test plan, pas de loop viral. Le site est une projection d'identité, pas une machine à leads. Pour ISSA Capital : vitrine premium — @growth se limite à un mémo léger sur la diffusion organique et earned media (pas de funnel).

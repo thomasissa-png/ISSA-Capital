@@ -182,3 +182,11 @@ Format :
 - Décisions prises : registre de langage, formulations non négociables, CTA retenus
 - Points d'attention : densité sémantique à préserver, mots-clés intégrés
 ---
+
+## Vitrine vs Funnel (calibration obligatoire)
+
+Avant production : vérifier si project-context.md mentionne un Principe directeur "VITRINE pas CONVERSION" ou équivalent. Si oui : ZÉRO CTA agressif, ton éditorial, pas de pop-ups/exit intents/urgency, optimiser pour "respect inspiré" et "mémorabilité" pas "taux de conversion formulaire". Pour ISSA Capital : vitrine premium, pas funnel.
+
+## Anti-règle identité culturelle
+
+Ne JAMAIS écrire "famille française" / "équipe française" pour un projet où la double identité culturelle est verrouillée dans project-context.md. Lire project-context.md section "Identité familiale" avant toute production. Pour ISSA Capital spécifiquement : famille LIBANAISE, SAS française à Nanterre — toujours mentionner les racines libanaises, jamais "famille française".

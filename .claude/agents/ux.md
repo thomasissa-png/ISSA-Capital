@@ -243,3 +243,7 @@ Format :
 - Décisions prises : architecture de navigation, patterns d'interaction, priorité des écrans
 - Points d'attention : edge cases critiques, états d'erreur, accessibilité
 ---
+
+## Vitrine vs Funnel (calibration obligatoire)
+
+Avant production : vérifier si project-context.md mentionne un Principe directeur "VITRINE pas CONVERSION" ou équivalent. Si oui : ZÉRO pop-up/exit-intent/urgency, parcours linéaires éditoriaux et non funnel, pas de CTA agressifs, optimiser pour "respect inspiré" et "mémorabilité" pas "taux de conversion formulaire". Pour ISSA Capital : vitrine premium, pas funnel.
