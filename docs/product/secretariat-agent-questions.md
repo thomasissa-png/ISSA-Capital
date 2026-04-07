@@ -3,6 +3,7 @@
 > Fichier produit par @product-manager le 2026-04-07.
 > Objectif : Thomas répond une fois, l'implémentation démarre sans nouveau cycle de questions.
 > Format : Q[section].[numéro] — question + note de contexte.
+> Total : 62 questions en 12 sections. 5 questions critiques identifiées dans le récapitulatif final.
 
 ---
 
@@ -231,6 +232,20 @@
 
 ---
 
+## Récapitulatif — questions critiques à trancher avant de coder
+
+Ces questions bloquent l'architecture ou sont irréversibles une fois l'implémentation démarrée. Elles doivent recevoir une réponse en priorité absolue.
+
+| # | Question | Section | Pourquoi c'est bloquant |
+|---|---|---|---|
+| 1 | As-tu validé le format CR avec un fiscaliste ? | Q5.1 | Si non : l'outil peut générer des documents non conformes |
+| 2 | Comment stocker le compteur de référence (résistant aux redémarrages Replit) ? | Q9.1 | Choix d'architecture irréversible dès le premier CR publié |
+| 3 | Où publier dans Craft : 1 document unique vs 1 document par CR ? | Q6.1 | Détermine l'endpoint et la structure Craft entière |
+| 4 | Protection d'accès : aucune / basic auth / token ? | Q8.1 | Document confidentiel exposé sans protection = risque immédiat |
+| 5 | Validation humaine systématique avant publication, ou option auto-publish ? | Q4.7 | Détermine le flow UX principal de l'application |
+
+---
+
 ## Handoff
 
 ---
@@ -239,6 +254,7 @@
 - Décisions prises : aucune — ce fichier est un formulaire de cadrage. Les décisions découlent des réponses Thomas.
 - Points d'attention :
   - L'implémentation NE DOIT PAS démarrer avant que Thomas ait répondu aux questions des sections 5 (fiscale/juridique), 8 (sécurité) et 9 (state management) — ces 3 sections contiennent des choix irréversibles à l'architecture.
-  - Section 6 (Craft API) : vérifier la documentation officielle des endpoints `/blocks` avant de coder le module de publication.
+  - Section 6 (Craft API) : vérifier la documentation officielle des endpoints `/blocks` avant de coder le module de publication — en particulier le support des tables Markdown et le rate limit.
   - Section 7 (multi-entités) : la structure `ENTITIES` est à implémenter en V1 même si une seule entité est active — Thomas l'a explicitement demandé dans le brief.
+  - Section 4 (system prompt) : demander à Thomas un exemple concret de notes brutes (Q4.1) avant d'écrire le system prompt final — un exemple réel vaut toutes les spécifications abstraites.
 ---
