@@ -8,7 +8,8 @@
 ## Résumé exécutif
 
 - **Objectif** : Spécifications fonctionnelles des 6 pages V1 du site vitrine ISSA Capital
-- **Décisions clés** : CTA unique convergent vers formulaire Opportunités, parcours pensé pour Hélène (PME), conformité RGPD allégée (Plausible sans cookies)
+- **Décisions clés** : 2 CTAs distincts — CTA A "Mission de conseil & accompagnement" (cible Karim) + CTA B "Proposer une opportunité d'affaires" (cible Leila) — 2 pages distinctes /accompagnement + /opportunites, conformité RGPD allégée (Plausible sans cookies)
+- **Révision personas 2026-04-07** : Hélène (fondatrice PME) et Sophie (partenaire M&A) supprimées — scope business invalide. Karim (entrepreneur en structuration patrimoniale, 42 ans) = persona principal A, Leila (apporteur d'affaires immo / fondateur cherchant co-investisseur, 38 ans) = persona principal B, Marc (journaliste/analyste) conservé en secondaire.
 - **Dépendances** : @ux (wireframes depuis ces specs), @fullstack (implémentation), @qa (matrice de traçabilité US → tests)
 
 ---

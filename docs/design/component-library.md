@@ -413,14 +413,14 @@ Style : `text-xs` Inter, `ink-500`, checkbox de consentement `required`.
 
 **Variants** :
 
-| Variant | Fond | Usage |
-|---|---|---|
-| `light` | `parchment-100` ou `white-pure` | Sections sur fond clair |
-| `dark` | `ink-950` | Sections sur fond sombre |
-| `accent` | `levant-500` | Sections d'appel à l'action (usage exceptionnel) |
+| Variant | Fond | Usage | Contrainte WCAG |
+|---|---|---|---|
+| `light` | `parchment-100` ou `white-pure` | Sections sur fond clair | Overline = `levant-600` (text-accent-normal) obligatoire |
+| `dark` | `ink-950` | Sections sur fond sombre | Overline = `levant-500` autorisé (ratio 5.9:1 PASS) |
+| `accent` | `levant-500` | Sections d'appel à l'action (usage exceptionnel) | Texte sur fond levant-500 DOIT être `ink-950` ou `parchment-100` — ne jamais poser du texte levant sur fond levant |
 
 **Layout standard (variant `light`) :**
-- Overline optionnelle : `text-overline` Inter SemiBold `levant-600` uppercase, letter-spacing `0.12em`
+- Overline optionnelle : `text-overline` Inter SemiBold `levant-600` (token `text-accent-normal`) uppercase, letter-spacing `0.12em` — [WCAG : levant-600 requis, pas levant-500, sur fond clair]
 - Titre de section : `text-h2` Cormorant `ink-950`, max-width `640px`
 - Description optionnelle : `text-body` Inter `ink-600`, max-width `560px`, margin-top `spacing-md`
 - Séparateur bas : `2px solid levant-500` width `32px` — uniquement si pas de description
@@ -458,9 +458,9 @@ Style : `text-xs` Inter, `ink-500`, checkbox de consentement `required`.
 | `hero-quote` | Plein largeur centré sur fond `ink-950` — usage page Mission |
 
 **Variant editorial :**
-- Fond `parchment-50`, bordure gauche `3px solid levant-500`
+- Fond `parchment-50`, bordure gauche `3px solid levant-500` (décorative — seuil 3:1 interactif PASS)
 - Padding : `spacing-xl` vertical + `spacing-lg` horizontal
-- Guillemet ouvrant `"` : `text-h1` Cormorant `levant-500`, line-height `0`, position relative, margin-bottom `-spacing-sm`
+- Guillemet ouvrant `"` : `text-h1` Cormorant `levant-500`, line-height `0`, position relative, margin-bottom `-spacing-sm` — [WCAG OK : text-h1 = 56px desktop, large text ≥ 18px, seuil 3:1 — ratio 2.8:1 trop juste. Utiliser `levant-600` (#A87340) pour les guillemets — ratio 4.6:1 PASS même en large text. Plus sécurisé.]
 - Texte citation : `text-lead` Cormorant Garamond italic `ink-950`
 - Attribution : `text-label` Inter Medium `ink-500` — précédé de `—`
 - Guillemet fermant `"` : aligné à droite, même style que ouvrant
@@ -570,6 +570,7 @@ Tous les composants avec données dynamiques ont un état loading. Style standar
 - Fond `levant-100`, texte `levant-700`, radius `2px`, padding `2px 8px`
 - `text-caption` Inter Medium uppercase
 - Exemples : "En activité", "Lancement 2026", "Immobilier", "Tech"
+- [WCAG OK : levant-700 (#8B5E2A) sur levant-100 (#F5EDDE) = ratio ~5.8:1 PASS. Ne jamais remplacer levant-700 par levant-500 ou levant-600 sur fond levant-100.]
 
 ### Responsive — Règle générale
 
