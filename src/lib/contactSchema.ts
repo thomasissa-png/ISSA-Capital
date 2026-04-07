@@ -50,11 +50,36 @@ export const opportuniteSchema = baseSchema.extend({
     .optional(),
 });
 
-export const contactRequestSchema = z.discriminatedUnion('variant', [
+const contactDiscriminatedUnion = z.discriminatedUnion('variant', [
   contactSchema,
   accompagnementSchema,
   opportuniteSchema,
 ]);
+
+/**
+ * Schéma final exporté : la discriminated union + une règle conditionnelle
+ * pour le champ Localisation, requis UNIQUEMENT pour les opportunités
+ * immobilières. On applique la règle via superRefine sur l'union pour
+ * préserver l'exhaustiveness check côté consommateurs (resend.ts, etc.).
+ */
+export const contactRequestSchema = contactDiscriminatedUnion.superRefine(
+  (data, ctx) => {
+    if (
+      data.variant === 'opportunite' &&
+      data.opportunityType === 'immobilier_residentiel'
+    ) {
+      const value = (data.location ?? '').trim();
+      if (value.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['location'],
+          message:
+            'Localisation requise pour une opportunité immobilière (ville, arrondissement ou périmètre).',
+        });
+      }
+    }
+  },
+);
 
 export type ContactRequest = z.infer<typeof contactRequestSchema>;
 export type ContactVariant = ContactRequest['variant'];

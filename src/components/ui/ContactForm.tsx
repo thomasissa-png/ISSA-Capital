@@ -59,6 +59,10 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
   const [status, setStatus] = useState<FormStatus>('idle');
   const [serverError, setServerError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  // Type d'opportunité sélectionné — drive le caractère requis du champ Localisation.
+  const [opportunityType, setOpportunityType] = useState<string>('');
+  const locationRequired =
+    variant === 'opportunite' && opportunityType === 'immobilier_residentiel';
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -126,7 +130,7 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
         <p className="font-heading text-2xl text-ink-950">Message transmis.</p>
         <p className="mt-md text-base text-ink-700">
           {variant === 'opportunite'
-            ? 'Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées.'
+            ? 'Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées. Nous vous répondrons dans la journée.'
             : 'Votre message a été transmis. Nous répondons aux demandes qualifiées.'}
         </p>
       </div>
@@ -184,7 +188,8 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
 
         <div>
           <label htmlFor="email" className={labelClass}>
-            Email <span aria-hidden="true">*</span>
+            {variant === 'opportunite' ? 'Email professionnel' : 'Email'}{' '}
+            <span aria-hidden="true">*</span>
           </label>
           <input
             id="email"
@@ -232,7 +237,8 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
                 name="opportunityType"
                 required
                 className={inputClass}
-                defaultValue=""
+                value={opportunityType}
+                onChange={(e) => setOpportunityType(e.target.value)}
               >
                 <option value="" disabled>
                   Choisir un type
@@ -246,14 +252,32 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
             <div>
               <label htmlFor="location" className={labelClass}>
                 Localisation / Périmètre géographique
+                {locationRequired ? (
+                  <>
+                    {' '}
+                    <span aria-hidden="true">*</span>
+                    <span className="ml-xs text-xs font-normal text-ink-500">
+                      (requis pour une opportunité immobilière)
+                    </span>
+                  </>
+                ) : null}
               </label>
               <input
                 id="location"
                 name="location"
                 type="text"
+                required={locationRequired}
+                aria-required={locationRequired}
                 placeholder="Ex. : Paris 11e, Montreuil, Île-de-France"
-                className={inputClass}
+                className={cn(inputClass, fieldErrors['location'] && 'border-reserve-500')}
+                aria-invalid={Boolean(fieldErrors['location'])}
+                aria-describedby={fieldErrors['location'] ? 'location-error' : undefined}
               />
+              {fieldErrors['location'] ? (
+                <p id="location-error" className={errorClass}>
+                  {fieldErrors['location'][0]}
+                </p>
+              ) : null}
             </div>
 
             <div>

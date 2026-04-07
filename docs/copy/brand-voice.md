@@ -5,6 +5,20 @@
 
 ---
 
+## Variantes de la baseline — usage multi-emplacement (ajout Phase 3)
+
+[Note @copywriter — correction Phase 3 : friction P3 résolue. La baseline "Racines libanaises. Exigences sans exception." reste la formulation canonique et non négociable. Les variantes ci-dessous permettent d'éviter la répétition littérale mot pour mot quand la baseline apparaît à la fois en hero ET en footer sur la même page ou dans des contextes visuels proches.]
+
+| Variante | Usage recommandé | Règle |
+|---|---|---|
+| **"Racines libanaises. Exigences sans exception."** | Footer de toutes les pages (référence canonique) | Toujours présente en footer. Ne pas modifier. |
+| **"Héritage libanais. Exigence sans exception."** | Hero page Mission ou page Accompagnement — quand la baseline canonique apparaît déjà en footer de la même page | Substitut de hero uniquement. Même sens, variation sur "héritage" vs "racines". |
+| **"Une famille libanaise. Des critères sans exception."** | Pages internes (Participations, Contact) — contexte factuel, non slogan | Contextualise l'identité sans le registre aphoristique. À utiliser quand le ton doit être plus descriptif que lapidaire. |
+
+**Règle d'usage** : la variante 1 (canonique) reste TOUJOURS en footer. Les variantes 2 et 3 ne remplacent la canonique qu'en hero ou contexte secondaire — jamais en footer. Sur une même page, deux occurrences de la même formulation exacte sont interdites.
+
+---
+
 ## Les 3 taglines et leur usage (non négociables)
 
 | Tagline | Usage | Règle |

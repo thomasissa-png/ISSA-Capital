@@ -38,6 +38,35 @@ describe('contactRequestSchema', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('rejette une opportunité immobiliere sans localisation', () => {
+    const parsed = contactRequestSchema.safeParse({
+      variant: 'opportunite',
+      name: 'Leila Benamar',
+      email: 'leila@example.com',
+      opportunityType: 'immobilier_residentiel',
+      location: '',
+      description: 'Immeuble de rapport 6 lots, opportunité rare.',
+      consent: true,
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      const fields = parsed.error.flatten().fieldErrors;
+      expect(fields.location).toBeDefined();
+    }
+  });
+
+  it('accepte une opportunité participation sans localisation', () => {
+    const parsed = contactRequestSchema.safeParse({
+      variant: 'opportunite',
+      name: 'Leila Benamar',
+      email: 'leila@example.com',
+      opportunityType: 'participation_entreprise',
+      description: 'Participation minoritaire dans une PME industrielle.',
+      consent: true,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
   it('accepte un payload opportunite valide', () => {
     const parsed = contactRequestSchema.safeParse({
       variant: 'opportunite',

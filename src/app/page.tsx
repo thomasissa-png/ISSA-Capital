@@ -88,6 +88,9 @@ export default function HomePage(): JSX.Element {
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Gradient One
               </p>
+              <p className="mt-xs font-body text-xs text-ink-400">
+                Holding intermédiaire — co-fondée en 2020
+              </p>
             </div>
             <div className="px-xl text-center md:text-left">
               <p className="font-heading text-[4rem] leading-none text-levant-500">2020</p>
@@ -247,22 +250,51 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 7 — CTA final */}
+      {/* Section 7 — Deux portes d'entrée symétriques (Karim ↔ Leila) */}
       <Section tone="inverse">
-        <Container width="editorial" className="text-center">
-          <h2 className="font-heading text-h2 text-parchment-100">
-            Votre dossier correspond à nos critères ?
-          </h2>
-          <p className="mx-auto mt-md max-w-[480px] text-lead text-ink-300">
-            Soumettez votre opportunité d&apos;affaires. Nous étudions chaque proposition
-            qualifiée.
-          </p>
-          <div className="mt-xl">
-            <Button href="/opportunites" variant="primary-inverse" size="lg">
-              Présenter une opportunité
-            </Button>
+        <Container width="content">
+          <div className="mb-2xl text-center">
+            <Overline tone="light">Deux façons d&apos;entrer en relation</Overline>
+            <h2 className="mt-md font-heading text-h2 text-parchment-100">
+              Deux portes. Une même exigence.
+            </h2>
           </div>
-          <p className="mt-lg text-xs text-ink-400">
+          <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
+            {/* Porte 1 — Dirigeants / Karim → /accompagnement */}
+            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
+              <p className="overline text-levant-500">Pour les dirigeants</p>
+              <h3 className="mt-md font-heading text-h3 text-parchment-100">
+                Travailler avec Thomas Issa.
+              </h3>
+              <p className="mt-md flex-1 text-base text-ink-300">
+                Une mission ponctuelle ou un rôle d&apos;advisor récurrent. Pour les
+                fondateurs et dirigeants qui cherchent un pair — pas un prestataire.
+              </p>
+              <div className="mt-lg">
+                <Button href="/accompagnement" variant="primary-inverse" size="lg">
+                  Découvrir l&apos;accompagnement
+                </Button>
+              </div>
+            </article>
+
+            {/* Porte 2 — Apporteurs d'affaires / Leila → /opportunites */}
+            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
+              <p className="overline text-levant-500">Pour les apporteurs d&apos;affaires</p>
+              <h3 className="mt-md font-heading text-h3 text-parchment-100">
+                Présenter une opportunité.
+              </h3>
+              <p className="mt-md flex-1 text-base text-ink-300">
+                Immobilier résidentiel ou participation minoritaire. Critères explicites,
+                horizon long, décision rapide. Nous étudions chaque dossier qualifié.
+              </p>
+              <div className="mt-lg">
+                <Button href="/opportunites" variant="primary-inverse" size="lg">
+                  Présenter une opportunité
+                </Button>
+              </div>
+            </article>
+          </div>
+          <p className="mt-2xl text-center text-xs text-ink-400">
             Ou contactez-nous directement : contact@issa-capital.com
           </p>
         </Container>

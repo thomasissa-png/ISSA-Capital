@@ -27,7 +27,20 @@ export const metadata: Metadata = {
   },
 };
 
-const domaines: ReadonlyArray<{ title: string; desc: string }> = [
+type Domaine = { title: string; desc: string };
+
+const domainesPatrimonial: ReadonlyArray<Domaine> = [
+  {
+    title: 'Structuration de holding et écosystème patrimonial',
+    desc: "ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars.",
+  },
+  {
+    title: 'Investissement immobilier en direct et participations minoritaires',
+    desc: "Patrimoine résidentiel en gestion directe en Île-de-France. Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale.",
+  },
+];
+
+const domainesCorporate: ReadonlyArray<Domaine> = [
   {
     title: 'Stratégie internationale et go-to-market Europe',
     desc: "Déploiement d'une solution dans 7 régions en moins d'un an. Partenariats, équipes locales, relations HQ Japon. Pour les fondateurs qui veulent étendre leur activité hors de France sans partir à l'aveugle.",
@@ -47,14 +60,6 @@ const domaines: ReadonlyArray<{ title: string; desc: string }> = [
   {
     title: 'Relations corporate internationales',
     desc: "HQ Japon, partenariats européens, clients Fortune 500. Pour les fondateurs qui doivent naviguer dans des structures où la hiérarchie et la culture comptent autant que l'offre.",
-  },
-  {
-    title: 'Structuration de holding et écosystème patrimonial',
-    desc: "ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars.",
-  },
-  {
-    title: 'Investissement immobilier en direct et participations minoritaires',
-    desc: "Patrimoine résidentiel en gestion directe en Île-de-France. Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale.",
   },
 ];
 
@@ -176,7 +181,7 @@ export default function AccompagnementPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Domaines */}
+      {/* Domaines — regroupés en deux familles : Patrimonial / Corporate */}
       <Section tone="subtle">
         <Container width="content">
           <div className="mb-2xl max-w-editorial">
@@ -185,16 +190,45 @@ export default function AccompagnementPage(): JSX.Element {
               Sept domaines, déduits de son parcours réel.
             </h2>
             <p className="mt-md text-lead text-ink-700">
-              Pas une offre construite pour le marché.
+              Pas une offre construite pour le marché. Deux familles : patrimoniale et
+              corporate.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-            {domaines.map((d) => (
-              <div key={d.title} className="border-l-2 border-levant-500 pl-lg">
-                <h3 className="font-heading text-h4 text-ink-950">{d.title}</h3>
-                <p className="mt-sm text-sm text-ink-700">{d.desc}</p>
+
+          <div className="space-y-2xl">
+            <div>
+              <div className="mb-xl flex items-baseline gap-md">
+                <Overline>Patrimonial</Overline>
+                <span className="text-xs text-ink-500" aria-hidden="true">
+                  — {domainesPatrimonial.length} domaines
+                </span>
               </div>
-            ))}
+              <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
+                {domainesPatrimonial.map((d) => (
+                  <div key={d.title} className="border-l-2 border-levant-500 pl-lg">
+                    <h3 className="font-heading text-h4 text-ink-950">{d.title}</h3>
+                    <p className="mt-sm text-sm text-ink-700">{d.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-xl flex items-baseline gap-md">
+                <Overline>Corporate</Overline>
+                <span className="text-xs text-ink-500" aria-hidden="true">
+                  — {domainesCorporate.length} domaines
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
+                {domainesCorporate.map((d) => (
+                  <div key={d.title} className="border-l-2 border-levant-500 pl-lg">
+                    <h3 className="font-heading text-h4 text-ink-950">{d.title}</h3>
+                    <p className="mt-sm text-sm text-ink-700">{d.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </Container>
       </Section>
@@ -271,6 +305,15 @@ export default function AccompagnementPage(): JSX.Element {
         </Container>
       </Section>
 
+      {/* Signature — placée AVANT le formulaire pour clore l'argumentaire éditorial */}
+      <Section tone="inverse" className="py-2xl">
+        <Container width="editorial" className="text-center">
+          <p className="font-heading text-h2 italic text-parchment-100">
+            Patient par choix. Exigeant par principe.
+          </p>
+        </Container>
+      </Section>
+
       {/* CTA + formulaire */}
       <Section tone="default" id="contact">
         <Container width="narrow">
@@ -288,15 +331,6 @@ export default function AccompagnementPage(): JSX.Element {
             variant="accompagnement"
             intro="Deux lignes sur ce que vous cherchez suffisent pour démarrer."
           />
-        </Container>
-      </Section>
-
-      {/* Signature */}
-      <Section tone="inverse" className="py-2xl">
-        <Container width="editorial" className="text-center">
-          <p className="font-heading text-h2 italic text-parchment-100">
-            Patient par choix. Exigeant par principe.
-          </p>
         </Container>
       </Section>
     </>

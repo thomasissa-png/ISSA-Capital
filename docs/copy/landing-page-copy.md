@@ -59,6 +59,8 @@ La holding patrimoniale d'une famille aux racines libanaises qui investit pour l
 ### Baseline (sous les CTAs)
 *Racines libanaises. Exigences sans exception.*
 
+[Note @copywriter — correction Phase 3 : cette occurrence hero est identique à la baseline footer. Sur la homepage, les deux occurrences sont séparées par le scroll entier de la page — répétition acceptable et cohérente avec l'identité de marque. Conserver les deux occurrences identiques sur la homepage uniquement. Sur les pages internes (Accompagnement, Mission) : utiliser la variante hero si la baseline canonique est déjà en footer — voir brand-voice.md section "Variantes de la baseline".]
+
 ---
 
 ## Section 2 — Mission (chapeau)
@@ -127,6 +129,14 @@ Participations directes et indirectes — immobilier, tech, services aux profess
 Holding intermédiaire co-fondée en 2020. Détient Versi Immobilier, Versi Invest, Immocrew et Versimo.
 [Pas de lien — pas de site public]
 
+[Note @copywriter — correction Phase 3 : ajout du wording pour contextualiser la stat "50%" — friction P2 résolue. Voir spécification ci-dessous.]
+
+**Stat "50%" — wording exact à implémenter (@fullstack)**
+- Chiffre affiché : **50%**
+- Sous-label obligatoire (sous le chiffre, typographie petite) : « Part d'ISSA Capital dans Gradient One — co-fondée en 2020 »
+- Tooltip au survol (optionnel, si composant tooltip disponible) : « Gradient One est la holding intermédiaire détenant Versi Immobilier, Versi Invest, Immocrew et Versimo. »
+- Sans ce sous-label, le "50%" est cryptique pour tout visiteur découvrant ISSA Capital.
+
 **Versi Immobilier**
 Marchand de biens. Marché secondaire résidentiel.
 [Lien conditionnel : versi-immobilier.fr — afficher uniquement si site live au lancement]
@@ -178,24 +188,36 @@ ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce f
 
 ---
 
-## Section 6 — CTA final (conversion)
+## Section 6 — CTA final (section symétrique Karim / Leila)
 
 [Framework : AIDA — Action]
-[Notes @design : bloc centré, fond sombre (ou pleine couleur selon la palette), texte clair. Espace blanc généreux. CTA bien visible.]
+[Notes @design : deux colonnes côte à côte sur desktop, empilées sur mobile. Fond sombre (ink-950 ou proche). Chaque bloc : titre H3, sous-titre court, CTA. Traitement visuel symétrique — poids équivalent pour les deux blocs. Ton éditorial, pas commercial agressif — Principe #0 VITRINE.]
+[Note @copywriter — correction Phase 3 : ancienne section asymétrique (centrée Leila uniquement) remplacée par une section à deux blocs équivalents. Friction P2 résolue — Karim avait un CTA invisible en section finale.]
 
 ### H2
-Votre dossier correspond à nos critères ?
+Deux raisons de prendre contact. La vôtre est l'une d'elles.
 
-### Sous-titre
-Soumettez votre opportunité d'affaires. Nous étudions chaque proposition qualifiée.
+---
 
-[Note @legal : "soumettez votre opportunité d'affaires" = CTA entrant, l'interlocuteur propose à ISSA — pas l'inverse. Formulation sécurisée L.411-1 CMF.]
+### Bloc A — Karim
 
-### CTA principal
-**« Présenter une opportunité »** →  [lien vers /opportunites#formulaire]
+**H3** : Vous cherchez un pair, pas un prestataire.
 
-### CTA secondaire
-**« Travailler avec Thomas Issa »** →  [lien vers /accompagnement]
+Travailler avec Thomas Issa, c'est un échange entre décideurs — sur la structuration, le patrimoine, la stratégie. Pas un mandat standardisé.
+
+**CTA** : Découvrir l'accompagnement →  [lien vers /accompagnement]
+
+---
+
+### Bloc B — Leila
+
+**H3** : Vous avez un dossier. Soumettez-le.
+
+ISSA Capital étudie les opportunités qualifiées — immobilier résidentiel et participations minoritaires. Critères explicites, réponse dans la journée.
+
+**CTA** : Consulter nos critères →  [lien vers /opportunites]
+
+[Note @legal : "réponse dans la journée" = engagement de délai, pas promesse de rendement. "Opportunités qualifiées" = posture entrante, conforme L.411-1 CMF.]
 
 ---
 
@@ -250,3 +272,43 @@ Marc voit l'identité libanaise affirmée dès le premier écran, la mission en 
 - G19 PASS — identité libanaise, double CTA Karim/Leila, références à l'écosystème spécifique : non copiable tel quel
 - G24 PASS — vouvoiement systématique (zéro tutoiement)
 - Anti-L.411-1 PASS — aucun mot de la liste noire (rendement, ROI, placement, appel à investisseurs…)
+
+---
+
+## Handoff Phase 3 — @fullstack
+
+**Corrections copy appliquées sur cette page (session 3)**
+
+| Correction | Section | Changement |
+|---|---|---|
+| Section finale symétrique | Section 6 | Ancienne section asymétrique (CTA Leila dominant, Karim invisible) → remplacée par section 2 blocs équivalents Karim / Leila avec H3 + sous-titre + CTA chacun |
+| Sous-label stat "50%" | Section 4 — Carte Gradient One | Ajout spécification wording sous-label + tooltip optionnel |
+| Variante baseline | Section 1 — Hero | Note d'usage ajoutée : baseline canonique conservée en hero homepage, variantes documentées dans brand-voice.md pour pages internes |
+
+**Chaînes exactes à remplacer dans le code @fullstack**
+
+1. `src/app/page.tsx` — Section 6 (CTA final)
+   - Ancien : bloc centré unique (H2 "Votre dossier correspond à nos critères ?" + CTA "Présenter une opportunité" + CTA secondaire "Travailler avec Thomas Issa")
+   - Nouveau : section 2 colonnes symétriques
+
+   **Bloc A — Karim (colonne gauche ou première sur mobile)**
+   - H3 : `"Vous cherchez un pair, pas un prestataire."`
+   - Corps : `"Travailler avec Thomas Issa, c'est un échange entre décideurs — sur la structuration, le patrimoine, la stratégie. Pas un mandat standardisé."`
+   - CTA texte : `"Découvrir l'accompagnement"` → `/accompagnement`
+
+   **Bloc B — Leila (colonne droite ou deuxième sur mobile)**
+   - H3 : `"Vous avez un dossier. Soumettez-le."`
+   - Corps : `"ISSA Capital étudie les opportunités qualifiées — immobilier résidentiel et participations minoritaires. Critères explicites, réponse dans la journée."`
+   - CTA texte : `"Consulter nos critères"` → `/opportunites`
+
+   [Styling : fond sombre (ink-950). Deux blocs de poids visuel identique — ni primaire ni secondaire entre Karim et Leila.]
+
+2. `src/app/page.tsx` — Section 4, carte Gradient One
+   - Ajouter sous-label sous le chiffre "50%" : `"Part d'ISSA Capital dans Gradient One — co-fondée en 2020"`
+   - Si composant tooltip disponible dans le design system : `"Gradient One est la holding intermédiaire détenant Versi Immobilier, Versi Invest, Immocrew et Versimo."`
+   - Si pas de composant tooltip : le sous-label seul est suffisant
+
+**Décisions copy non négociables sur cette page**
+- Section finale : poids visuel ÉGAL pour les deux blocs Karim/Leila — interdiction de redonner la primauté à l'un sur l'autre
+- Ton éditorial en section finale : pas de fond rouge, pas de compte à rebours, pas de "DERNIÈRE CHANCE" — Principe #0 VITRINE
+- "Racines libanaises. Exigences sans exception." reste en footer — ne pas supprimer

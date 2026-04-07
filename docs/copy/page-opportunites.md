@@ -90,6 +90,11 @@ Biens en dehors de l'Île-de-France en dehors d'un cas particulièrement structu
 **Ce que nous étudions :**
 Prises de participation minoritaires dans des entreprises opérationnelles — tech, services aux professionnels, immobilier, secteurs cohérents avec notre écosystème existant. Fondateurs qui cherchent un actionnaire de long terme, pas un fonds à horizon de sortie contraint.
 
+**Engagement financier :**
+Tickets calibrés au cas par cas selon la nature du dossier — nous privilégions les opérations où notre engagement fait sens dans la durée plutôt qu'un montant standardisé.
+
+[Note @copywriter — correction Phase 3 : posture ticket participations ajoutée ici, Option C validée par Thomas. Distingue explicitement le régime participations (calibration humaine, pas de seuil affiché) du régime immobilier (seuil 200 k€ explicite dans le bloc ci-dessus). Aucun chiffre introduit. Conforme Principe #0 VITRINE.]
+
 **Ce que nous n'étudions pas :**
 Projets crypto / Web3 purs. Véhicules spéculatifs court terme. Secteurs contraires à nos filtres éthiques (environnement, humanité). First-time founders en pre-seed sans traction démontrée.
 
@@ -144,11 +149,15 @@ Soumettre une opportunité.
 **Email professionnel** *(obligatoire)*
 `placeholder : vous@votreentreprise.com`
 
+[Note @fullstack — correction Phase 3 : le label dans ContactForm.tsx variant="opportunite" doit afficher "Email professionnel" (pas "Email"). Voir handoff en fin de document.]
+
 **Type d'opportunité** *(obligatoire — liste déroulante)*
 Options : Immobilier résidentiel | Participation dans une entreprise | Autre
 
-**Localisation / Périmètre géographique** *(obligatoire pour immobilier)*
+**Localisation / Périmètre géographique** *(obligatoire si type = Immobilier résidentiel — facultatif sinon)*
 `placeholder : Ex. : Paris 11e, Montreuil, Île-de-France`
+
+[Note @fullstack — correction Phase 3 : le champ Localisation doit être `required` uniquement quand le type sélectionné est "Immobilier résidentiel". Pour les types "Participation dans une entreprise" et "Autre", il reste facultatif. Ajouter une note conditionnelle visible sous le champ quand immo sélectionné : "Requis pour les opportunités immobilières — premier filtre géographique Île-de-France."]
 
 **Description courte de l'opportunité** *(obligatoire — champ texte libre, 500 caractères max)*
 `placeholder : Décrivez votre opportunité en 2-3 lignes : nature, localisation ou secteur, taille indicative.`
@@ -171,7 +180,9 @@ Les informations que vous transmettez via ce formulaire sont collectées par ISS
 **« Soumettre ma proposition »**
 
 ### Message de succès (après soumission)
-Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées.
+Votre proposition a été transmise. Nous étudions chaque dossier soumis et revenons vers vous dans la journée si votre opportunité correspond à nos critères.
+
+[Note @copywriter — correction Phase 3 : ajout du délai "dans la journée" pour aligner avec la décision verrouillée n°14. Friction P1 résolue : Leila avait l'impression de soumettre dans le vide.]
 
 ### Message d'erreur — champ obligatoire vide
 Ce champ est obligatoire.
@@ -247,9 +258,47 @@ Verdict @legal : page conforme L.411-1 CMF.
 - G5 PASS — Leila nommée >= 2 fois dans le test persona, Karim et Marc nommés
 - G10 PASS — aucun "pourrait", "envisager", "éventuellement"
 - G12 PASS — formulaire avec 7 champs spécifiés, microcopy complet, CTA avec verbe d'action
-- G13 PASS — ticket minimum 200 000 € = donnée source project-context.md. Aucun chiffre inventé.
+- G13 PASS — ticket minimum 200 000 € = donnée source project-context.md. Ticket participations : posture calibration cas par cas sans chiffre (décision Thomas validée). Aucun chiffre inventé.
 - G15 PASS — aucun placeholder résiduel (les champs du formulaire ont des placeholders fonctionnels, pas des [PLACEHOLDER])
 - G16 PASS — ISSA Capital cité >= 6 fois
 - G19 PASS — critères immobiliers IDF, double filtre éthique, structure entrante spécifique — non copiable
 - G24 PASS — vouvoiement systématique
 - Anti-L.411-1 PASS — vérification ligne par ligne documentée ci-dessus
+
+---
+
+## Handoff Phase 3 — @fullstack
+
+**Corrections copy appliquées sur cette page (session 3)**
+
+| Correction | Section | Changement |
+|---|---|---|
+| Ticket minimum participations | Section 2 — H3 Participations minoritaires | Ajout du bloc "Engagement financier" avec posture calibration cas par cas (Option C Thomas) — aucun chiffre |
+| Message de succès formulaire | Section 4 — Message de succès | Ajout "et revenons vers vous dans la journée si votre opportunité correspond à nos critères" |
+| Label Email professionnel | Section 4 — Champ Email | Label doit afficher "Email professionnel" (pas "Email") |
+| Localisation conditionnelle | Section 4 — Champ Localisation | `required` uniquement si type = "Immobilier résidentiel". Note conditionnelle à afficher dynamiquement. |
+
+**Chaînes exactes à remplacer dans le code @fullstack**
+
+1. `ContactForm.tsx` variant `opportunite` — message de succès
+   - Ancien : `"Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées."`
+   - Nouveau : `"Votre proposition a été transmise. Nous étudions chaque dossier soumis et revenons vers vous dans la journée si votre opportunité correspond à nos critères."`
+
+2. `ContactForm.tsx` variant `opportunite` — label champ email
+   - Ancien label : `"Email"`
+   - Nouveau label : `"Email professionnel"`
+
+3. `ContactForm.tsx` variant `opportunite` — champ Localisation
+   - Comportement actuel : `required` global
+   - Comportement cible : `required` uniquement si `typeOpportunite === "Immobilier résidentiel"`
+   - Note conditionnelle à afficher : `"Requis pour les opportunités immobilières — premier filtre géographique Île-de-France."`
+
+4. `/opportunites` page TSX — Section 2, bloc Participations minoritaires
+   - Ajouter après la liste "Ce que nous étudions" et avant "Ce que nous n'étudions pas" :
+   - `"Engagement financier : Tickets calibrés au cas par cas selon la nature du dossier — nous privilégions les opérations où notre engagement fait sens dans la durée plutôt qu'un montant standardisé."`
+   - [Styling suggéré : même traitement visuel que le "Ticket minimum : 200 000 €" du bloc immobilier — typographie sobre, pas de mise en gras excessive]
+
+**Décisions copy non négociables sur cette page**
+- Posture entrante (ISSA reçoit des propositions, n'en fait pas) — aucune inversion de ce sens
+- Ticket minimum participations : JAMAIS de chiffre affiché (décision Thomas verrouillée)
+- Clause L.411-1 CMF obligatoire en pied de page — ne pas supprimer

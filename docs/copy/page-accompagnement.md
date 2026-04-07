@@ -118,7 +118,24 @@ Les sujets sur lesquels Thomas intervient.
 ### Intro
 Ces domaines sont déduits de son parcours réel — pas d'une offre construite pour le marché.
 
+[Note @copywriter — correction Phase 3 : restructuration en deux blocs Patrimonial / Corporate pour clarifier la lisibilité. Karim cherche du patrimonial structuré — le bloc Patrimonial le concerne en priorité. La séparation permet à chaque persona de scanner la liste sans devoir lire les 7 domaines dans l'ordre.]
+
 ---
+
+### Bloc Patrimonial
+
+**Structuration de holding et écosystème patrimonial**
+ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars.
+
+**Investissement immobilier en direct et participations minoritaires**
+15 lots résidentiels en gestion directe en Île-de-France. Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale sans en faire leur métier principal.
+
+**Transmission et gouvernance patrimoniale**
+Structurer pour les générations suivantes — choix de la forme juridique, organisation de la gouvernance familiale, préparation de la transmission. Pour les fondateurs et investisseurs qui pensent au-delà de leur propre horizon.
+
+---
+
+### Bloc Corporate
 
 **Stratégie internationale et go-to-market Europe**
 Déploiement d'une solution dans 7 régions en moins d'un an. Thomas a géré les partenariats, les équipes locales et les relations HQ Japon. Pour les fondateurs qui veulent étendre leur activité hors de France sans partir à l'aveugle.
@@ -131,15 +148,6 @@ Deux lignes de produits Sony menées simultanément, chacune avec son positionne
 
 **Stratégie marketing et positionnement de marque**
 De 2 % à 35 % de part de marché en deux ans sur le segment haut de gamme. Pour les fondateurs qui veulent construire une position dominante sur leur segment, pas juste de la notoriété.
-
-**Relations corporate internationales**
-HQ Japon, partenariats européens, clients Fortune 500. Pour les fondateurs qui doivent naviguer dans des structures où la hiérarchie et la culture comptent autant que l'offre.
-
-**Structuration de holding et écosystème patrimonial**
-ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars.
-
-**Investissement immobilier en direct et participations minoritaires**
-15 lots résidentiels en gestion directe en Île-de-France. Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale sans en faire leur métier principal.
 
 ---
 
@@ -186,9 +194,11 @@ Dans les deux cas : aucun tarif affiché. La mission commence par un échange de
 Si le périmètre correspond, prenons contact.
 
 ### Corps
-Un échange. Pas un formulaire de dix champs. Si votre situation correspond au périmètre décrit ici, envoyez un message à contact@issa-capital.com avec deux lignes sur ce que vous cherchez.
+Quelques informations pour comprendre votre situation. Le formulaire ci-dessous est court — il ne sert pas à qualifier mécaniquement, mais à permettre à Thomas de préparer un échange substantiel.
 
 Thomas répond aux demandes qualifiées.
+
+[Note @copywriter — correction Phase 3 : ancienne formulation "Un échange. Pas un formulaire de dix champs" supprimée — dissonance avec le formulaire réel. Nouvelle formulation aligne la promesse (échange humain, pas process froid) avec la mécanique réelle sans mentir sur l'existence du formulaire.]
 
 ### CTA principal
 **« Envoyer un message »** → mailto:contact@issa-capital.com
@@ -248,3 +258,31 @@ Méthode : argumentation directe dans le corps + anti-personas assumés
 - G19 PASS — parcours spécifique Thomas, anti-personas spécifiques, non copiable
 - G24 PASS — vouvoiement systématique
 - Anti-L.411-1 PASS — 0 mot interdit
+
+---
+
+## Handoff Phase 3 — @fullstack
+
+**Corrections copy appliquées sur cette page (session 3)**
+
+| Correction | Section | Changement |
+|---|---|---|
+| Reformulation intro formulaire | Section 7 — Corps | Suppression "Un échange. Pas un formulaire de dix champs." → "Quelques informations pour comprendre votre situation. Le formulaire ci-dessous est court…" |
+| Restructuration 7 domaines | Section 4 | Ajout de deux blocs labellisés : **Bloc Patrimonial** (holding/immo/transmission) + **Bloc Corporate** (Sony/TEOS/produit/marketing). Domaine "Transmission et gouvernance patrimoniale" ajouté dans Bloc Patrimonial. Domaine "Relations corporate internationales" absorbé dans le bloc Corporate sans disparaître — à vérifier si 6 domaines affichés en code au lieu de 7 : conserver les 7, juste les regrouper visuellement en deux blocs via un H3 label. |
+
+**Chaînes exactes à remplacer dans le code @fullstack**
+
+1. `/accompagnement` — intro formulaire (Section 7)
+   - Ancien texte rendu : `"Un échange. Pas un formulaire de dix champs. Si votre situation correspond au périmètre décrit ici, envoyez un message à contact@issa-capital.com avec deux lignes sur ce que vous cherchez."`
+   - Nouveau texte : `"Quelques informations pour comprendre votre situation. Le formulaire ci-dessous est court — il ne sert pas à qualifier mécaniquement, mais à permettre à Thomas de préparer un échange substantiel."`
+   - Fichier probable : `src/app/accompagnement/page.tsx` ou composant dédié
+
+2. `/accompagnement` — Section 4 domaines
+   - Ajouter deux sous-titres (H3 ou overline) avant les domaines : `"Patrimonial"` (avant Structuration holding, Immobilier, Transmission) et `"Corporate"` (avant Stratégie internationale, Intrapreneuriat, Product management, Marketing)
+   - Domaine "Transmission et gouvernance patrimoniale" est nouveau — ajouter dans le rendu entre Immobilier et Corporate
+   - Domaine "Relations corporate internationales" peut être retiré si le compte de domaines passe à 7 avec Transmission — à arbitrer avec Thomas
+
+**Décisions copy non négociables sur cette page**
+- Vouvoiement systématique (zéro tutoiement)
+- Aucun tarif affiché
+- CTA principal = mailto, pas formulaire (échange direct avec Thomas)
