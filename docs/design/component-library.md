@@ -364,10 +364,215 @@ Style : `text-xs` Inter, `ink-500`, checkbox de consentement `required`.
 
 ## 6. Hero
 
+### Variant Hero Accueil (principal)
+
+**Layout** :
+- Fond `ink-950`, plein largeur, padding vertical `spacing-5xl` (128px) desktop / `spacing-3xl` (64px) mobile
+- Texte centré horizontalement, max-width `720px`, margin auto
+- Overline optionnelle : `text-overline` Inter SemiBold `levant-500` uppercase — ex : "Holding patrimoniale — famille libanaise"
+- Tagline hero : `text-display` Cormorant Garamond Regular `parchment-100` — "On décide. Pas un calendrier de fonds."
+- Sous-titre : `text-lead` Inter `ink-300`, max-width `560px`
+- CTA : Button primary size `lg` — "Proposer une opportunité" — centré, margin-top `spacing-2xl`
+- Baseline : `text-body-sm` Inter `ink-400` — "Famille libanaise. Exigences sans exception." — sous le CTA
+
+**Animation d'entrée** :
+- Overline : `fade-up + translateY(16px→0)`, delay `0ms`, duration `duration-slow` (500ms)
+- Tagline : `fade-up + translateY(24px→0)`, delay `150ms`, duration `600ms`
+- Sous-titre : `fade-up`, delay `300ms`, duration `500ms`
+- CTA : `fade-in`, delay `450ms`, duration `400ms`
+- `prefers-reduced-motion` : toutes les animations = `duration-instant`, pas de translateY
+
+**5 états du Hero (G21 — données dynamiques) :**
+
+| État | Apparence |
+|---|---|
+| **default** | Texte visible, CTA actif |
+| **loading** | N/A (contenu statique) |
+| **vide** | N/A (contenu hardcodé) |
+| **erreur** | N/A (contenu statique) |
+| **succès** | N/A (pas d'action dans le Hero lui-même) |
+
+**6 états du CTA Hero** : voir composant Button — variant primary, size lg.
+
+### Variant Hero Section (interne — pages Mission, Participations, etc.)
+
+**Layout** :
+- Fond `parchment-100` (clair), padding vertical `spacing-4xl` (96px) desktop / `spacing-2xl` (48px) mobile
+- Titre de page : `text-h1` Cormorant `ink-950`, max-width `720px`
+- Chapeau : `text-lead` Inter `ink-700`, max-width `600px`, margin-top `spacing-lg`
+- Séparateur bottom : `2px solid levant-500`, width `48px`, margin-top `spacing-xl`
+
+**Breakpoints** :
+- Mobile (375px) : titre en `text-h1` mobile (36px), chapeau `text-lead` mobile (18px), padding réduit
+- Tablette (768px) : titre desktop mais padding intermédiaire
+- Desktop (1280px) : spec complète
+
 ## 7. Section-header
+
+**Usage** : titre de section intermédiaire dans le corps d'une page (ex : "Notre écosystème de participations", "Ce que nous recherchons")
+
+**Variants** :
+
+| Variant | Fond | Usage |
+|---|---|---|
+| `light` | `parchment-100` ou `white-pure` | Sections sur fond clair |
+| `dark` | `ink-950` | Sections sur fond sombre |
+| `accent` | `levant-500` | Sections d'appel à l'action (usage exceptionnel) |
+
+**Layout standard (variant `light`) :**
+- Overline optionnelle : `text-overline` Inter SemiBold `levant-600` uppercase, letter-spacing `0.12em`
+- Titre de section : `text-h2` Cormorant `ink-950`, max-width `640px`
+- Description optionnelle : `text-body` Inter `ink-600`, max-width `560px`, margin-top `spacing-md`
+- Séparateur bas : `2px solid levant-500` width `32px` — uniquement si pas de description
+
+**6 états (le Section-header est statique — états des éléments interactifs éventuels) :**
+
+| État | Apparence |
+|---|---|
+| **default** | Texte visible, overline `levant-600` |
+| **hover** | N/A (statique) |
+| **active** | N/A |
+| **focus-visible** | Si lien imbriqué dans le titre : outline standard |
+| **disabled** | N/A |
+| **loading** | Skeleton 2 lignes `ink-100` animé `animate-pulse` |
+
+**Animation scroll-in-view** :
+- Overline + titre + description : `fade-up + translateY(20px→0)`, stagger `100ms`, duration `duration-slow`
+- `prefers-reduced-motion` : `duration-instant`, pas de translateY
+
+**Breakpoints** :
+- Mobile : titre `text-h2` mobile (28px), overline visible, description tronquée possible
+- Tablette : même que desktop mais max-width s'adapte à la grille 8 colonnes
+- Desktop : spec complète, alignement par défaut à gauche (centré uniquement sur pages éditoriales)
 
 ## 8. Quote / Pullquote
 
+**Usage** : citations fortes de Thomas Issa ou de la famille — taglines verrouillées ("Patient par choix. Exigeant par principe."), déclarations de philosophie
+
+**Variants** :
+
+| Variant | Usage |
+|---|---|
+| `editorial` | Grand format dans le corps d'une page — typiquement 50% de la largeur desktop |
+| `inline` | Dans un paragraphe de texte — indentation gauche discrète |
+| `hero-quote` | Plein largeur centré sur fond `ink-950` — usage page Mission |
+
+**Variant editorial :**
+- Fond `parchment-50`, bordure gauche `3px solid levant-500`
+- Padding : `spacing-xl` vertical + `spacing-lg` horizontal
+- Guillemet ouvrant `"` : `text-h1` Cormorant `levant-500`, line-height `0`, position relative, margin-bottom `-spacing-sm`
+- Texte citation : `text-lead` Cormorant Garamond italic `ink-950`
+- Attribution : `text-label` Inter Medium `ink-500` — précédé de `—`
+- Guillemet fermant `"` : aligné à droite, même style que ouvrant
+
+**Variant hero-quote (plein largeur fond sombre) :**
+- Fond `ink-950`, padding `spacing-4xl` vertical
+- Citation : `text-h2` Cormorant italic `parchment-100`, centré, max-width `640px`
+- Attribution : `text-label` Inter `ink-300`
+- Séparateur top/bottom : `1px solid ink-800`
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Citation visible |
+| **hover** | N/A (statique) |
+| **active** | N/A |
+| **focus-visible** | Si lien dans l'attribution : outline standard |
+| **disabled** | N/A |
+| **loading** | Skeleton 3 lignes `ink-100` animé |
+
+**Accessibilité** : `<blockquote>` sémantique + `<cite>` pour l'attribution.
+
 ## 9. Banner
 
+**Usage ISSA Capital** : pas de cookies en V1 (Plausible sans cookies confirmé par @legal — aucun bandeau CNIL obligatoire). Le composant Banner est documenté pour d'éventuels usages futurs (mentions légales, alertes de maintenance, messages d'information discrets).
+
+**Variants** :
+
+| Variant | Couleur | Usage |
+|---|---|---|
+| `info` | `parchment-50` + bordure `levant-500` | Information neutre (ex: "Site en maintenance le XX") |
+| `warning` | fond `levant-100` + bordure `levant-600` | Avertissement non critique |
+| `error` | fond `reserve-100` + bordure `reserve-500` | Erreur critique (ex: formulaire indisponible) |
+
+**Layout** :
+- Full width, `position: sticky top-[nav-height]` si besoin, padding `spacing-md` vertical
+- Texte : `text-body-sm` Inter `ink-700`, centré
+- Bouton fermeture optionnel : icône `X` Lucide, `44×44px` touch target, `aria-label="Fermer"`
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Visible, texte lisible |
+| **hover** | N/A (fond non interactif) |
+| **active** | N/A |
+| **focus-visible** | Outline `2px solid levant-500` sur le bouton de fermeture |
+| **disabled** | N/A |
+| **loading** | N/A |
+
+**Accessibilité** : `role="alert"` pour les banners d'erreur. `role="status"` pour les informatifs. Bouton fermeture : `aria-label` obligatoire.
+
 ## 10. Link (text-link, icon-link, external-link)
+
+### Text-link
+
+**Usage** : liens dans le corps du texte, appels à l'action secondaires ("Voir nos participations", "En savoir plus")
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Texte `levant-600`, underline `levant-300` (discret), underline-offset `3px` |
+| **hover** | Texte `levant-700`, underline `levant-600` (plus visible) |
+| **active/pressed** | Texte `levant-700`, underline `levant-700` |
+| **focus-visible** | Outline `2px solid levant-500`, offset `2px`, border-radius `2px` |
+| **disabled** | Texte `ink-300`, curseur `default`, underline absent |
+| **visited** | Texte `parchment-600` (optionnel — à activer si beaucoup de liens de contenu) |
+
+**Sur fond sombre (`ink-950`) :**
+- default : `levant-400`, hover `levant-300`, focus `levant-400`
+
+### Icon-link
+
+**Usage** : liens avec icône Lucide (ex: flèche "Voir plus", "Télécharger")
+
+**Layout** : `text-label` Inter Medium + icône Lucide `16px` à droite, gap `spacing-xs`
+
+**6 états** : identiques à text-link + icône change de couleur avec le texte.
+
+**Animation hover** : icône se décale de `4px` vers la droite — transition `duration-fast` `ease-out`. Désactivé avec `prefers-reduced-motion`.
+
+### External-link
+
+**Usage** : liens vers les sites des participations (Immocrew, Versimo, Versi Immobilier si live)
+
+**Layout** : `text-label` + icône `ExternalLink` Lucide `14px` à droite, couleur `levant-600`
+
+**6 états** : identiques à text-link.
+
+**Accessibilité** : `target="_blank"` + `rel="noopener noreferrer"` + `aria-label="[Nom du site] (s'ouvre dans un nouvel onglet)"`.
+
+---
+
+## Composants transversaux — Règles communes
+
+### Skeleton / Loading state
+
+Tous les composants avec données dynamiques ont un état loading. Style standard :
+- Fond `ink-100` (light) / `ink-800` (dark)
+- Animation `animate-pulse` (Tailwind — `prefers-reduced-motion: reduce` désactive automatiquement cette animation)
+- Hauteurs/largeurs simulant le contenu réel pour éviter le layout shift (CLS)
+
+### Badge
+
+- Fond `levant-100`, texte `levant-700`, radius `2px`, padding `2px 8px`
+- `text-caption` Inter Medium uppercase
+- Exemples : "En activité", "Lancement 2026", "Immobilier", "Tech"
+
+### Responsive — Règle générale
+
+- **Mobile (375-767px)** : padding horizontal `spacing-md` (16px), typographie compressée, colonnes empilées
+- **Tablette (768-1023px)** : padding `spacing-xl` (32px), max 2 colonnes, typographie intermédiaire
+- **Desktop (1024px+)** : spec complète, grille 12 colonnes, typographie display

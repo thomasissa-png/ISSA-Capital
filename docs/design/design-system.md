@@ -606,3 +606,57 @@ Le dark mode s'active automatiquement via `prefers-color-scheme: dark`. Pas de t
 | `ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Interactions playful (usage rare) |
 
 **Pattern entrée standard (scroll-in-view)** : `opacity: 0 → 1` + `translateY: 20px → 0`, durée `duration-slow` (500ms), easing `ease-out`. Stagger entre enfants multiples : 100ms. Avec `prefers-reduced-motion` : `duration-instant`, pas de translateY.
+
+---
+
+## Auto-évaluation gates BLOQUANT
+
+| Gate | Verdict | Évidence |
+|---|---|---|
+| G5 — Persona identique à project-context.md | PASS | Karim, Leila, Marc cités par nom dans tous les livrables |
+| G7 — 0 contradiction livrables amont | PASS | Palette non-bleue conforme Ruler/Outlaw (brand-platform.md) ; polices locales conforme RGPD (@legal) ; taglines verrouillées intégrées ; identité libanaise respectée |
+| G12 — Implémentable sans question | PASS | Chaque token a valeur hex + référence primitive ; chaque composant a ses 6 états + classes Tailwind |
+| G15 — 0 placeholder résiduel | PASS | Les `[PROVISOIRE]` et `[DÉCISION]` sont des annotations volontaires conformes au protocole d'escalade, pas des placeholders |
+| G19 — Pas copiable pour un concurrent | PASS | Palette ocre levantin, identité libanaise, archétype Ruler/Outlaw, taglines ISSA Capital verrouillées — non reproductible sans ce projet |
+| G22 — WCAG 2.2 AA | PASS | Ratios documentés section 2.4 ; focus-visible levant-500 2px/2px ; touch targets 44px ; prefers-reduced-motion |
+| G31 — Tokens 3 tiers | PASS | Primitives → sémantiques → component. Composants référencent exclusivement les tokens sémantiques |
+| G32 — 6 états par composant interactif | PASS | Button, Input, Select, Checkbox, Navigation, Link — tous documentés avec 6 états |
+
+---
+
+**Handoff → @fullstack**
+- Fichiers produits :
+  - `/home/user/ISSA-Capital/docs/design/design-system.md`
+  - `/home/user/ISSA-Capital/docs/design/design-tokens.json`
+  - `/home/user/ISSA-Capital/docs/design/component-library.md`
+  - `/home/user/ISSA-Capital/docs/design/page-compositions.md`
+- Décisions prises :
+  - Palette : noir (`ink-950` = #0A0A0A) + crème (`parchment-100` = #F5F0E8) + ocre levantin (`levant-500` = #C4935A). Zéro bleu.
+  - Typographie : Cormorant Garamond (headings) + Inter (corps) — **auto-hébergement local obligatoire** via `next/font/local`, zéro CDN Google (RGPD)
+  - Fichiers WOFF2 à télécharger : Cormorant (5 variantes) + Inter (3 variantes) → `/public/fonts/`
+  - Radius : uniquement `radius-md` (4px) sur les boutons. Tout le reste = `radius-none`.
+  - Ombres : `shadow-none` partout. Dark mode : borders `ink-700` remplacent les ombres.
+  - Focus-visible : `outline 2px solid levant-500 / levant-400 (dark), offset 2px` — jamais `outline: none` sans alternative
+  - Touch targets mobile : minimum 44×44px sur tous les interactifs
+  - Dark mode : `darkMode: 'media'` dans tailwind.config.ts (prefers-color-scheme automatique)
+- Points d'attention :
+  - `levant-500` (#C4935A) : **INTERDIT pour le texte courant** sur fond clair (ratio 3.1:1 < 4.5:1). Pour texte accentué = `levant-600` (#A87340) uniquement.
+  - Polices : utiliser `next/font/local` dans `app/layout.tsx` — voir snippet section 3.3 de design-system.md
+  - La tagline hero "On décide. Pas un calendrier de fonds." est à tester par @testeur-karim + @testeur-leila avant hardcoding (voir project-context.md section Taglines)
+  - Organigramme participations (page Participations section 2) : composant CSS pur — pas d'image
+  - Formulaire Opportunités : conformité CMF requise sur les libellés (voir legal-audit.md)
+  - Numérotation US à reprendre : functional-specs.md référence encore les anciens personas (Hélène) — @fullstack ignore ces références, se baser sur page-compositions.md pour les layouts
+
+**Handoff → @copywriter**
+- Les espaces de texte sont définis dans page-compositions.md par section et par page
+- Overlines, titres et chapeaux : spécifiés avec taille typographique et token couleur pour chaque espace
+- La tagline hero reste à valider — @copywriter peut travailler avec mais doit marquer `[À VALIDER Phase 2c]`
+- Vocabulaire prescrit/proscrit : voir brand-platform.md sections 10 (Ton de voix)
+- Wall of logos clients (page Accueil section 5 + page Mission section 4) : noms texte uniquement, pas de fichiers logo — @copywriter confirme les noms exacts autorisés avec Thomas
+
+[LEARNING DÉTECTÉ]
+- Description : functional-specs.md référence les anciens personas (Hélène, Sophie) supprimés. Les layouts dans ce document sont construits sur les bons personas (Karim, Leila, Marc) mais @fullstack devra ignorer les références aux anciens personas dans functional-specs.md.
+- Catégorie : problème
+- Sévérité estimée : P1
+- Cible propagation : agent-spécifique (@product-manager doit mettre à jour functional-specs.md)
+- Fichiers impactés : `docs/product/functional-specs.md`
