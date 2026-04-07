@@ -492,4 +492,117 @@ Si une illustration est nécessaire (page 404, état vide), utiliser :
 
 ## 9. Accessibilité WCAG 2.2 AA
 
+### 9.1 Contrastes (voir section 2.4 pour les ratios détaillés)
+
+- Texte standard (≥4.5:1) : `ink-950` sur `parchment-100` = 17.8:1 — PASS
+- Texte secondaire (≥4.5:1) : `ink-500` sur `parchment-100` = 5.3:1 — PASS
+- Texte accentué (≥4.5:1) : `levant-600` sur `parchment-100` = 4.6:1 — PASS
+- Interactifs (≥3:1) : `levant-500` sur `parchment-100` = 3.1:1 — PASS pour boutons/interactifs
+- Dark mode : tous les ratios ≥4.5:1 vérifiés (voir tableau section 2.4)
+
+### 9.2 Focus visible — règle absolue
+
+**Aucun `outline: none` sans alternative visible.** Toute suppression de l'outline natif doit être remplacée par un focus custom visible.
+
+**Standard focus ISSA Capital :**
+```css
+:focus-visible {
+  outline: 2px solid var(--color-interactive-focus); /* levant-500 #C4935A */
+  outline-offset: 2px;
+  border-radius: var(--radius-sm); /* 2px — suit le radius de l'élément */
+}
+```
+
+Ce focus est visible sur fond clair (ratio levant-500/#C4935A sur parchment-100 = 3.1:1 — PASS interactif) ET sur fond sombre (levant-400/#D4AC7A sur ink-950 = 9.2:1 — PASS).
+
+**Règle** : en dark mode, la couleur de focus passe automatiquement à `color-interactive-focus` du dark mode (`levant-400`).
+
+### 9.3 Touch targets mobile
+
+- Taille minimum : 44×44px sur tous les éléments interactifs (recommandé 48×48px)
+- Implémentation : si l'élément visuel est plus petit (icône 20px), utiliser `padding` ou `min-height/min-width` pour atteindre la taille cible sans modifier l'apparence visuelle
+- Boutons principaux : height minimum 48px sur mobile
+- Liens de navigation : padding vertical minimum 12px pour atteindre 44px de hauteur totale
+
+### 9.4 prefers-reduced-motion
+
+Toutes les animations du site respectent `prefers-reduced-motion: reduce`.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+**Exceptions fonctionnelles** (conservées même avec reduced-motion) : transitions d'état des formulaires (erreur → succès), feedback d'action utilisateur (durée réduite à 150ms max).
+
+### 9.5 Sémantique HTML et ARIA
+
+- Titres hiérarchiques : `h1` → `h2` → `h3` sans sauter de niveau
+- Navigation principale : `<nav aria-label="Navigation principale">`
+- Footer : `<footer>`
+- Formulaires : chaque `<input>` a un `<label>` associé ou `aria-label`
+- Boutons icône : `aria-label` descriptif obligatoire
+- Images décoratives : `alt=""`
+- Images informatives : `alt` décrivant le contenu
+- Liens "Lire la suite" : `aria-label="Lire la suite — [titre de l'article]"`
+
 ## 10. Dark mode
+
+### 10.1 Principe de remapping
+
+Le dark mode d'ISSA Capital n'est pas un simple invertion des couleurs. Il suit un remapping sémantique strict :
+
+- `parchment-100` (fond clair) → `ink-950` (fond sombre)
+- `ink-950` (texte principal clair) → `parchment-100` (texte principal sombre)
+- `ink-500` (texte muted clair) → `ink-400` (texte muted sombre — légèrement plus clair)
+- Les ombres disparaissent, les borders `ink-700` prennent le relais
+- L'ocre levantin (`levant-500`) reste identique — couleur d'action stable entre les deux modes
+
+### 10.2 Implémentation Tailwind
+
+```js
+// tailwind.config.ts
+module.exports = {
+  darkMode: 'media', // ou 'class' si toggle manuel souhaité
+  // prefers-color-scheme est le défaut recommandé
+}
+```
+
+```html
+<!-- Exemple : fond de page -->
+<body class="bg-background-default dark:bg-background-default-dark text-text-default dark:text-text-default-dark">
+```
+
+### 10.3 Sections hero sur fond sombre
+
+Les sections hero à fond `ink-950` (page Accueil, certaines sections Mission) sont identiques en dark mode — le fond sombre est déjà le fond sombre. Pas de changement nécessaire.
+
+### 10.4 Support prefers-color-scheme
+
+Le dark mode s'active automatiquement via `prefers-color-scheme: dark`. Pas de toggle manuel en V1 (ajout optionnel en V2 si demandé par Thomas).
+
+---
+
+## Tokens Motion
+
+| Token | Valeur | Usage |
+|---|---|---|
+| `duration-instant` | 0ms | Transitions désactivées (reduced-motion) |
+| `duration-fast` | 150ms | Micro-interactions (hover buttons, focus) |
+| `duration-normal` | 300ms | Transitions UI standard (modals, dropdowns) |
+| `duration-slow` | 500ms | Animations scroll-in-view |
+| `duration-glacial` | 1000ms | Transitions de page uniquement |
+| `ease-default` | `cubic-bezier(0.4, 0, 0.2, 1)` | Défaut général |
+| `ease-out` | `cubic-bezier(0, 0, 0.2, 1)` | Éléments qui entrent |
+| `ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | Éléments qui sortent |
+| `ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Interactions playful (usage rare) |
+
+**Pattern entrée standard (scroll-in-view)** : `opacity: 0 → 1` + `translateY: 20px → 0`, durée `duration-slow` (500ms), easing `ease-out`. Stagger entre enfants multiples : 100ms. Avec `prefers-reduced-motion` : `duration-instant`, pas de translateY.
