@@ -1,0 +1,289 @@
+# Brand Platform — ISSA Capital
+
+> Fichier de référence stratégique. Produit par @creative-strategy le 2026-04-07.
+> Lu obligatoirement par @copywriter, @design, @ux, @seo avant toute production.
+
+---
+
+## Résumé exécutif
+
+- **Objectif** : poser les fondations de marque d'ISSA Capital, holding patrimoniale d'une famille libanaise enracinée en France
+- **Décisions clés** : positionnement sur l'espace libre "famille assumée + horizon intergénérationnel + filtres éthiques non négociables" ; archétype Caregiver/Ruler ; ton premium sobre éditorial ; vouvoiement systématique
+- **Dépendances** : @copywriter lit ce fichier avant toute rédaction ; @design lit ce fichier avant tout choix typographique ou coloriel ; @ux prend le CTA principal de ce fichier
+
+---
+
+## Framework stratégique utilisé
+
+**Golden Circle (Sinek)** — choisi parce qu'ISSA Capital est une marque mission-driven, structurée autour d'un pourquoi fondateur (la famille, la transmission) plutôt qu'autour d'un produit à vendre.
+
+**Prisme de Kapferer** — utilisé en complément pour structurer les 6 facettes identitaires d'une marque institutionnelle à forte composante culturelle (identité libanaise + ancrage français).
+
+**Perceptual Mapping** — appliqué dans le benchmark concurrentiel pour visualiser l'espace libre non occupé (voir `docs/strategy/competitive-benchmark.md`).
+
+---
+
+## 1. Raison d'être
+
+ISSA Capital existe parce que la famille Issa a choisi de structurer son patrimoine de manière rigoureuse, durable et transmissible — non pas pour maximiser un retour à court terme, mais pour bâtir quelque chose qui tiendra encore dans trente ans.
+
+Elle naît d'un refus : celui de confier le patrimoine familial à des logiques financières court-termistes, déconnectées des valeurs qui fondent la famille. Elle naît aussi d'une ambition : transformer un patrimoine privé en un héritage organisé, lisible, et fièrement transmissible d'une génération à la suivante.
+
+---
+
+## 2. Vision (horizon 30 ans — perspective intergénérationnelle)
+
+ISSA Capital sera reconnue comme l'une des grandes holdings familiales indépendantes de France — une institution discrète, solide, et respectée, dont les participations auront contribué à construire des entreprises saines, des secteurs plus équitables, et un patrimoine familial intact et valorisé sur plusieurs générations.
+
+Dans trente ans, les enfants de la famille Issa pourront regarder chaque investissement consenti aujourd'hui et en être fiers — non seulement pour ce qu'il aura produit financièrement, mais pour ce qu'il aura respecté.
+
+---
+
+## 3. Mission (verrouillée — variante A, Thomas 2026-04-07)
+
+ISSA Capital est la holding patrimoniale de la famille Issa. Sa raison d'être est de **faire fructifier le patrimoine familial dans la durée et d'organiser sa transmission** entre les générations.
+
+---
+
+## 4. Promesse (verrouillée — variante A reformulée libanaise, Thomas 2026-04-07)
+
+> "La holding patrimoniale d'une **famille libanaise** qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
+
+---
+
+## 5. Valeurs filtres
+
+> Ces valeurs ne sont pas la finalité d'ISSA Capital — elles en sont les filtres de décision. Toute opportunité d'investissement est évaluée à leur aune avant d'être retenue ou refusée.
+
+### 5.1 Horizon patrimonial long terme
+
+**Ce que cela signifie** : ISSA Capital raisonne en décennies, pas en exercices comptables. Un investissement n'est pas évalué sur son TRI à 5 ans, mais sur sa capacité à créer de la valeur durable et à rester pertinent dans 20 ou 30 ans.
+
+**En pratique** : refus systématique des logiques LBO à horizon de sortie contraint, des paris spéculatifs court-termistes, et de toute opération conçue pour être revendue rapidement. ISSA Capital entre dans une entreprise pour y rester.
+
+### 5.2 Préservation de l'environnement
+
+**Ce que cela signifie** : l'environnement n'est pas un argument de communication — c'est un critère de sélection réel. Une opportunité d'investissement dont le modèle économique repose structurellement sur la dégradation de l'environnement est éliminée, quelle que soit sa rentabilité.
+
+**En pratique** : évaluation de l'impact environnemental comme variable de décision au même titre que la solidité financière. Non-exposition aux industries extractives non responsables, au transport intensif sans plan de décarbonation, aux modèles de surconsommation non soutenables.
+
+### 5.3 Éthique humaine
+
+**Ce que cela signifie** : ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité — armement, industries contraires à la dignité humaine, modèles économiques fondés sur l'exploitation. Ce filtre est non négociable et précède toute analyse financière.
+
+**En pratique** : liste d'exclusion sectorielle maintenue en interne. Aucune exception pour raison de rentabilité. Ce filtre est visible publiquement sur la page "Opportunités d'investissement" du site.
+
+---
+
+## 6. Personnalité de marque
+
+### Cinq adjectifs
+
+1. **Sobre** — ISSA Capital ne cherche pas la visibilité. Elle préfère la profondeur à l'éclat.
+2. **Enracinée** — une identité double (libanaise et française) assumée, des valeurs stables dans le temps.
+3. **Exigeante** — des filtres non négociables. Pas de compromis sur les valeurs pour une opportunité financière.
+4. **Durable** — tout ce qu'ISSA Capital construit est pensé pour traverser les générations.
+5. **Discrète** — la marque ne fait pas de bruit. Elle agit.
+
+### Archétype Jungien
+
+**Archétype principal : Ruler (le Souverain)** — ISSA Capital incarne la maîtrise, la responsabilité, et la construction durable. Elle ne cherche pas à convaincre — elle pose son cadre et invite ceux qui partagent ses valeurs à en faire partie.
+
+**Archétype secondaire : Caregiver (le Gardien)** — la dimension familiale et la transmission intergénérationnelle font d'ISSA Capital une entité qui protège et préserve, pas uniquement qui développe.
+
+---
+
+## 7. Signature / Tagline candidates
+
+Trois options. Toutes en français. Toutes compatibles avec le ton sobre et éditorial.
+
+**Option A — Sur la transmission**
+> "Ce que nous construisons aujourd'hui, nous le transmettons demain."
+
+*Pourquoi* : ancre directement dans la promesse fondatrice. Long mais mémorable. Convient à la page Mission.
+
+**Option B — Sur l'horizon**
+> "Investir pour les générations à venir."
+
+*Pourquoi* : court, direct, intemporel. Fonctionne en baseline sous le logo. Proche de la promesse officielle.
+
+**Option C — Sur l'héritage et la fierté**
+> "Un patrimoine qu'on est fier de transmettre."
+
+*Pourquoi* : reprend le mot "fier" de la promesse officielle. Ton légèrement plus chaleureux, moins institutionnel. Convient à la page Accueil.
+
+**Recommandation** : Option B en baseline site, Option C en hero Accueil, Option A en ouverture de la page Mission.
+
+---
+
+## 8. Anti-promesses — Ce qu'ISSA Capital ne sera jamais
+
+> Ces anti-promesses sont aussi importantes que la promesse elle-même. Elles délimitent le territoire de marque et font fuir les mauvais interlocuteurs autant qu'elles attirent les bons.
+
+- **Jamais un fonds d'investissement** — ISSA Capital n'est pas un véhicule à terme avec des investisseurs tiers. C'est une holding 100% familiale, 100% privée.
+- **Jamais court-termiste** — aucune logique de retour rapide, de revente à 5 ans, de valorisation d'exit. L'horizon est intergénérationnel.
+- **Jamais opportuniste** — ISSA Capital refuse des investissements que ses filtres excluent, même rentables. La cohérence des valeurs est non négociable.
+- **Jamais tape-à-l'œil** — ni ostentation, ni communication agressive, ni marketing de notoriété. La discrétion est une posture, pas une timidité.
+- **Jamais une famille française** — ISSA Capital est une SAS française mais la famille fondatrice est libanaise. Cette identité est un asset, pas un détail à effacer.
+- **Jamais généraliste** — l'écosystème ISSA est cohérent : tech, immobilier, services aux professionnels. Pas de diversification tous azimuts sans logique patrimoniale.
+
+---
+
+## 9. Références visuelles — Holdings familiales de référence
+
+> Pour @design : ce que nous empruntons et ce que nous évitons à chaque référence.
+
+### 9.1 Financière Agache (France — Arnault)
+- **Ce qu'on emprunte** : sobriété absolue, site quasi-vide, primauté du texte sur l'image, absence de claims commerciaux
+- **Ce qu'on évite** : opacité totale (Agache communique presque zéro), structure pyramidale LVMH qui écrase l'identité familiale, pas de purpose visible
+
+### 9.2 Groupe Artémis / Pinault (France)
+- **Ce qu'on emprunte** : lisibilité de l'écosystème (liste claire des participations), cohérence entre les domaines d'investissement et les valeurs de la famille
+- **Ce qu'on évite** : diversification excessive sans fil rouge visible (de Kering à Christie's à Stade Rennais), ton parfois trop institutionnel et froid
+
+### 9.3 Peugeot Invest (France)
+- **Ce qu'on emprunte** : clarté du positionnement "actionnaire minoritaire long terme", transparence sur les critères d'investissement, formulation sobre et précise
+- **Ce qu'on évite** : tonalité trop financière / cotée (chiffres en avant-plan), manque de dimension humaine et familiale visible
+
+### 9.4 Investor AB / Wallenberg (Suède)
+- **Ce qu'on emprunte** : profil bas assumé ("Esse, non Videri" — être, plutôt que paraître), ancrage générationnel fort (depuis 1916), connexion entre héritage familial et impact long terme
+- **Ce qu'on évite** : anglicisation totale du site, distance froide, absence de chaleur humaine
+
+### 9.5 Saradar Capital Holding (Liban)
+- **Ce qu'on emprunte** : référence moyen-orientale qui prouve qu'une holding familiale régionale peut afficher une identité forte et une structure lisible ; ancrage dans trois piliers clairs (financier, immobilier, alternatif) ; ton direct
+- **Ce qu'on évite** : aspect parfois daté du site, manque de modernité éditoriale, faible dimension "transmission générationnelle" dans le messaging visible
+
+> **Synthèse direction visuelle** : le standard est Artémis/Wallenberg pour la structure et la sobriété, avec une chaleur humaine et une lisibilité supérieure à Agache. L'identité libanaise peut s'exprimer par des touches typographiques ou de palette, jamais de manière clinquante.
+
+---
+
+## 10. Ton de voix
+
+### Registre
+
+**Vouvoiement systématique** — ISSA Capital s'adresse à des adultes, des professionnels, des pairs. Le tutoiement serait une fausse proximité inadaptée à ce contexte institutionnel.
+
+### Quatre traits de voix avec Do / Don't
+
+**Trait 1 : Sobre**
+- Do : "ISSA Capital investit dans des entreprises qu'elle peut accompagner sur la durée."
+- Don't : "Nous sommes PASSIONNÉS par l'entrepreneuriat et ENTHOUSIASTES à l'idée de vous rencontrer !"
+
+**Trait 2 : Précis**
+- Do : "Nos critères d'investissement excluent explicitement les industries dont le modèle est structurellement contraire à l'intérêt humain."
+- Don't : "Nous croyons en un monde meilleur et investissons dans des projets qui ont du sens."
+
+**Trait 3 : Ancré**
+- Do : "Famille libanaise enracinée en France, nous investissons avec un horizon intergénérationnel."
+- Don't : "Start-up nation", "disruption", "agilité", "synergies", "scale-up"
+
+**Trait 4 : Éditorial**
+- Do : Phrases complètes, syntaxe soignée, ponctuation respectée, pas de bullet points dans les textes de fond.
+- Don't : Listes à puces dans les textes de présentation, titres en MAJUSCULES, emojis, exclamations.
+
+### Adaptation du ton selon le contexte
+
+| Contexte | Adaptation |
+|---|---|
+| Page Accueil | Sobre et affirmatif — la marque pose son territoire |
+| Page Mission & Philosophie | Éditorial et intime — on parle de la famille, de ses valeurs profondes |
+| Page Participations | Factuel et structuré — on décrit l'écosystème sans se vanter |
+| Page Opportunités | Précis et exigeant — on formule des critères clairs, pas des incitations |
+| Formulaire de contact | Courtois et direct — on facilite la démarche sans sur-promettre |
+
+### Vocabulaire prescrit
+
+- patrimoine, transmission, génération, héritage, durée, horizon, famille, ancrage, héritage libanais
+- participer, accompagner, construire, préserver, développer
+- exigeant, cohérent, lisible, solide, durable
+
+### Vocabulaire proscrit
+
+- investisseurs (pour désigner des tiers), levée de fonds, ticket d'entrée (langage VC)
+- disruption, innovation de rupture, agilité, pivot (langage startup)
+- performance, rendement en premier plan (le financier n'est pas la promesse principale)
+- famille française (erreur factuelle et perte d'asset)
+- passionné, enthousiaste, dynamique (jargon corporate creux)
+
+### Exemples avant / après
+
+**Avant** : "Nous sommes une holding familiale dynamique qui investit dans des projets innovants avec une approche responsable."
+**Après** : "ISSA Capital est la holding patrimoniale de la famille Issa — une structure privée, indépendante, qui investit avec un horizon de plusieurs générations."
+
+**Avant** : "Vous avez un projet ? Contactez-nous, nous serons ravis d'échanger !"
+**Après** : "Si votre projet répond à nos critères d'investissement, nous vous invitons à nous le soumettre via le formulaire ci-dessous."
+
+---
+
+## 11. Hiérarchie de messages
+
+### 11.1 Message principal (brand promise)
+
+> "La holding patrimoniale d'une famille libanaise qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
+
+### 11.2 Messages de soutien — 3 piliers
+
+**Pilier 1 — Famille et transmission**
+- Claim : "Une holding 100% familiale, 100% indépendante."
+- RTB (Reason To Believe) : ISSA Capital n'a pas d'actionnaire institutionnel, pas de fonds tiers, pas d'horizon de sortie contraint. La famille décide seule.
+- Exemple : contrairement à un fonds LBO, ISSA Capital peut décider de garder une participation dix, vingt, trente ans si cela sert les intérêts familiaux à long terme.
+
+**Pilier 2 — Horizon intergénérationnel**
+- Claim : "Investir aujourd'hui pour ce que nos enfants pourront être fiers de recevoir."
+- RTB : les critères d'investissement sont conçus pour résister à l'épreuve du temps — viabilité économique + cohérence éthique + solidité du secteur.
+- Exemple : l'écosystème Versi et Immocrew s'inscrit dans l'immobilier, secteur structurant et durable ; Versimo apporte une technologie propriétaire au service de ce secteur.
+
+**Pilier 3 — Filtres non négociables**
+- Claim : "Nous refusons autant que nous choisissons."
+- RTB : trois filtres de décision explicites et publics — horizon long terme, préservation de l'environnement, éthique humaine. Pas de vernis RSE : des critères d'exclusion réels.
+- Exemple : une opportunité dans un secteur à fort impact environnemental négatif sera refusée même si le rendement est attractif.
+
+### 11.3 Messages par persona
+
+**Pour Hélène (fondatrice PME cherchant adossement)** : "Vous avez construit votre entreprise sur des décennies. ISSA Capital est la seule holding qui vous propose un adossement sans contrainte de revente — parce que nous investissons pour nos enfants, pas pour un fonds."
+
+**Pour le partenaire B2B (banquier / avocat / conseiller)** : "Un interlocuteur unique, une structure lisible, des critères d'investissement documentés. ISSA Capital est un partenaire institutionnel sérieux avec lequel vous pouvez travailler directement."
+
+**Pour le journaliste / analyste** : "ISSA Capital est la holding patrimoniale d'une famille libanaise implantée en France depuis plusieurs années — un modèle de holding familiale indépendante, cohérente, et structurée autour d'un écosystème tech/immobilier."
+
+### 11.4 Messages par étape du funnel
+
+| Étape | Enjeu | Message |
+|---|---|---|
+| Awareness (problème) | "Je ne connais pas ISSA Capital" | "Une holding patrimoniale familiale. Discrète, exigeante, long-terme." |
+| Consideration (solution) | "Est-ce que ça correspond à ce que je cherche ?" | "Nous n'investissons que dans des projets que nous pouvons accompagner sur la durée — avec des critères clairs et publics." |
+| Decision (action) | "Comment leur soumettre une opportunité ?" | "Si votre projet répond à nos critères, soumettez-le via notre formulaire. Nous répondons à chaque demande qualifiée." |
+
+### 11.5 Elevator pitch (30 secondes — pour Thomas)
+
+"ISSA Capital est la holding patrimoniale de la famille Issa — une famille libanaise enracinée en France. Nous gérons et développons un patrimoine familial avec un horizon de plusieurs générations, à travers un écosystème de participations dans la tech, l'immobilier, et les services. Nous n'investissons que dans des projets que nous pouvons accompagner sur la durée, et que nous serons fiers de transmettre."
+
+### 11.6 Boilerplate (presse, partenaires, bios)
+
+"ISSA Capital est la holding patrimoniale de la famille Issa, famille libanaise établie en France. Structurée en SAS française (SIREN 102 356 094, siège à Nanterre), elle gère et développe un portefeuille de participations dans les secteurs de la technologie, de l'immobilier et des services aux professionnels, avec un horizon d'investissement intergénérationnel. Ses participations incluent notamment Gradient One, Versi Immobilier, Versi Invest, Immocrew et Versimo. ISSA Capital refuse tout investissement contraire à ses filtres de décision : horizon long terme, préservation de l'environnement, éthique humaine."
+
+---
+
+## 12. Brand Architecture
+
+ISSA Capital opère une architecture de marque de type **Endorsed** : chaque participation conserve son nom et son identité propres (Immocrew, Versimo, Versi…), mais peut se référencer à ISSA Capital comme holding de référence si pertinent pour sa crédibilité.
+
+Règle de présentation sur le site : chaque participation est présentée avec son nom, son positionnement propre, et la mention "une participation ISSA Capital" — jamais sous le nom ISSA Capital directement.
+
+---
+
+## Hypothèses à valider
+
+- [HYPOTHÈSE : les participations Gradient One, Versi Immobilier, Versi Invest et l'immobilier direct sont à documenter par Thomas avant la production du copy de la page Participations — voir project-context.md champs marqués "À COMPLÉTER"]
+- [HYPOTHÈSE : le KPI North Star (demandes qualifiées / mois) sera formalisé et calé par @data-analyst]
+
+---
+
+**Handoff → @copywriter, @design, @ux**
+- Fichiers produits : `docs/strategy/brand-platform.md`
+- Décisions prises : positionnement sur l'espace "holding 100% familiale + horizon intergénérationnel + filtres non négociables" ; archétype Ruler/Caregiver ; vouvoiement systématique ; trois taglines candidates avec recommandation d'usage par page ; anti-promesses explicites ; hiérarchie de messages complète
+- Points d'attention pour la suite :
+  - @copywriter : respecter le vocabulaire prescrit/proscrit (section 10), ne JAMAIS écrire "famille française"
+  - @design : references visuelles section 9, direction "sobre + éditorial + typographique" à 0€ photo
+  - @ux : CTA principal "Proposer une opportunité d'investissement", CTAs secondaires à définir en cohérence avec les messages par persona (section 11.3)
+  - Agents aval : les participations Gradient One, Versi Immobilier, Versi Invest et immobilier direct sont encore à documenter (Thomas doit fournir)
