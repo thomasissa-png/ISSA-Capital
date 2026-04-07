@@ -14,7 +14,11 @@
 - **Date de début** : 2026-04-07
 - **Forme juridique** : SAS — SIREN 102 356 094 — siège 54 Rue Henri Barbusse, 92000 Nanterre
 - **Date de création société** : 17 mars 2026
+- **Capital social** : **1 047 562,00 €** (confirmé Thomas 2026-04-07)
+- **TVA intracommunautaire** : **FR50102356094** (assujettie, confirmé Thomas 2026-04-07)
 - **Activité déclarée** : Étude, création, exploitation, financement, prise de participation, gestion et contrôle d'entreprises commerciales, industrielles, agricoles ou immobilières + gestion de filiales et prestation de services financiers, administratifs et techniques
+- **Email unique de contact** : **contact@issa-capital.com** (utilisé pour tout — contact général, privacy RGPD, opportunités d'investissement, presse — confirmé Thomas 2026-04-07)
+- **Hébergeur site** : **Replit** (confirmé Thomas 2026-04-07) — à documenter dans mentions légales avec coordonnées Replit complètes
 
 ---
 
