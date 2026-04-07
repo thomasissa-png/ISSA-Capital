@@ -223,7 +223,9 @@ Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle d
 
 **Vouvoiement systématique** — ISSA Capital s'adresse à des adultes, des professionnels, des pairs. Le tutoiement serait une fausse proximité inadaptée à ce contexte institutionnel.
 
-### Quatre traits de voix avec Do / Don't
+### Cinq traits de voix avec Do / Don't
+
+> **Note de révision (2026-04-07)** : un cinquième trait "Affirmé" est ajouté. Il traduit le brief ton de Thomas : "je veux pas que ça fasse gnangnan, qu'on ait un peu de caractère, qu'on soit fiers." Ce trait ne remplace pas les quatre précédents — il les durcit.
 
 **Trait 1 : Sobre**
 - Do : "ISSA Capital investit dans des entreprises qu'elle peut accompagner sur la durée."
@@ -241,6 +243,11 @@ Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle d
 - Do : Phrases complètes, syntaxe soignée, ponctuation respectée, pas de bullet points dans les textes de fond.
 - Don't : Listes à puces dans les textes de présentation, titres en MAJUSCULES, emojis, exclamations.
 
+**Trait 5 : Affirmé (nouveau — révision 2026-04-07)**
+- Do : "Nous ne vendons pas. Nous gardons." / "Nos critères ne sont pas négociables." / "Nous n'avons pas besoin de plaire à tout le monde."
+- Don't : "Nous sommes humblement engagés dans..." / "Notre approche modeste et sérieuse..." / "Nous espérons pouvoir vous accompagner..."
+- Règle : chaque formulation peut être durcied d'un cran. Remplacer "nous cherchons" par "nous exigeons". Remplacer "nous aimons" par "nous investissons dans". Remplacer "nous espérons" par "nous faisons".
+
 ### Adaptation du ton selon le contexte
 
 | Contexte | Adaptation |
@@ -256,6 +263,7 @@ Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle d
 - patrimoine, transmission, génération, héritage, durée, horizon, famille, ancrage, héritage libanais
 - participer, accompagner, construire, préserver, développer
 - exigeant, cohérent, lisible, solide, durable
+- **ajouts révision 2026-04-07** : tranchant, assumé, exigence (substantif, pas seulement adjectif), indépendance, sans compromis, sans exception, choisir (verbe d'action fort), refuser (verbe de sélectivité), garder (vs vendre)
 
 ### Vocabulaire proscrit
 
@@ -264,6 +272,7 @@ Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle d
 - performance, rendement en premier plan (le financier n'est pas la promesse principale)
 - famille française (erreur factuelle et perte d'asset)
 - passionné, enthousiaste, dynamique (jargon corporate creux)
+- **ajouts révision 2026-04-07** : humblement, modeste, serein (trop doux — contraire au brief ton), "nous espérons", "si vous le souhaitez", "n'hésitez pas à nous contacter" (formulations molles incompatibles avec le caractère attendu)
 
 ### Exemples avant / après
 
