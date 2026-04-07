@@ -107,6 +107,21 @@ Avant production : vérifier si project-context.md mentionne un Principe directe
 
 Avant de proposer une tagline patrimoniale ("on garde", "long-terme", "pas de sortie"), LIRE les 6 champs de chaque participation/activité dans project-context.md. Si une activité implique du trading/arbitrage/sortie (marchand de biens, club deal, asset management), la tagline ne DOIT PAS créer de fausse promesse de "ne jamais vendre". Le bon angle : "on décide quand et selon nos critères, pas un calendrier imposé".
 
+## Règle absolue — Simplicité > Démonstration > Élégance (P0 cross-sessions)
+
+**Pour tout projet vitrine / family office / holding familiale**, le positionnement et les taglines doivent **DIRE** une identité, pas la **DÉMONTRER**. Anti-patterns INTERDITS (Thomas a dû rappeler "simple" 3 fois sur ISSA Capital) :
+
+1. **Hero qui se justifie** : antithèse défensive en hero ("On X. Pas Y.") = répond à un adversaire non nommé. Inadapté à une vitrine. Une vitrine POSE son identité, elle ne se défend pas.
+2. **Taglines qui en rajoutent** : aphorismes en chaîne, anaphores rhétoriques ("Nous choisissons. Nous gardons. Nous transmettons."), maximum 1 aphorisme par positionnement.
+3. **Posture > description** : le brand-platform doit décrire ce que la marque EST, pas démontrer une posture qui en rajoute. Un fondateur pragmatique veut "famille libanaise qui garde et transmet", pas "manifeste contre les fonds court-termistes".
+
+### Tests obligatoires sur chaque tagline / positionnement
+- **Test d'inversion** : remplacer le nom du projet par un concurrent. Si la formulation reste pertinente → trop générique. Si elle devient défensive → reformuler en plus identitaire.
+- **Test du fondateur hostile** : un fondateur pragmatique non-marketing va-t-il dire "ça se prend trop au sérieux" ? Si oui, simplifier d'un cran.
+
+### Calibration spécifique vitrine
+Pour une vitrine, préférer toujours : (a) identité courte et factuelle ("Racines libanaises. Exigences sans exception.") (b) répétition assumée hero/footer si elle suffit (c) une seule baseline canonique plutôt qu'un système complexe de variantes par section.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser positionnement, persona principal et promesse dans les premières sections écrites.

@@ -187,6 +187,25 @@ Format :
 
 Avant production : vérifier si project-context.md mentionne un Principe directeur "VITRINE pas CONVERSION" ou équivalent. Si oui : ZÉRO CTA agressif, ton éditorial, pas de pop-ups/exit intents/urgency, optimiser pour "respect inspiré" et "mémorabilité" pas "taux de conversion formulaire". Pour ISSA Capital : vitrine premium, pas funnel.
 
+## Règle absolue — Simplicité > Démonstration > Élégance (P0 cross-sessions)
+
+**Pour tout projet de type vitrine, family office, holding familiale ou société patrimoniale**, la règle n°1 du copy est : **simple avant d'être élégant, élégant avant d'être démonstratif**. Un fondateur pragmatique veut que sa marque DISE ce qu'elle est, pas qu'elle DÉMONTRE une posture.
+
+### Anti-patterns INTERDITS (détectés 3+ fois sur ISSA Capital — Thomas a dû rappeler "simple" 3 fois)
+1. **Antithèses défensives en série** : "X. Pas Y." répété plus de 2 fois dans une page, surtout en hero. Une antithèse répond à un adversaire non nommé — défensive par nature, inadaptée à une vitrine qui doit POSER une identité. Ex interdit : "On décide. Pas un calendrier de fonds." en hero.
+2. **Anaphores rhétoriques pour faire beau** : "Nous choisissons. Nous gardons. Nous transmettons." répétées sur plusieurs sections — sonne manifeste militant au lieu de description familiale.
+3. **Aphorismes en chaîne** : plus de 1 aphorisme par page. Ils se neutralisent et finissent par sonner prétentieux.
+4. **Formulations "X n'a pas ce que nous avons"** : définition négative de soi par contraste avec les concurrents. Interdit en vitrine.
+5. **Hero qui se justifie** : le premier message d'une vitrine doit affirmer une identité, pas répondre à une objection.
+
+### Tests obligatoires avant livraison
+- **Test d'inversion** : si on remplace le nom du projet par un concurrent, est-ce que la formulation reste identitaire ou devient générique défensive ? Si défensive → reformuler.
+- **Test de l'antithèse** : combien de "X. Pas Y." sur la page ? Plus de 2 = sur-intellectualisation.
+- **Test du fondateur hostile** : un fondateur pragmatique va-t-il dire "ça se prend au sérieux" ? Si oui → reformuler en plus direct.
+
+### Règle opérationnelle
+Lire chaque phrase à haute voix en imaginant le fondateur pragmatique. Si ça sonne "marketing" ou "pose", reformuler. Le test ultime : ça ressemble à ce qu'un humain dirait d'une holding familiale ? Ou à un slogan publicitaire ?
+
 ## Anti-règle identité culturelle
 
 Ne JAMAIS écrire "famille française" / "équipe française" pour un projet où la double identité culturelle est verrouillée dans project-context.md. Lire project-context.md section "Identité familiale" avant toute production. Pour ISSA Capital spécifiquement : famille LIBANAISE, SAS française à Nanterre — toujours mentionner les racines libanaises, jamais "famille française".
