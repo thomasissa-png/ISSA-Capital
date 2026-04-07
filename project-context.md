@@ -164,19 +164,31 @@ Thomas a **créé une agence de communication** à partir de **1 500 € de fond
 - **Déclencheur de republication** : quand Thomas signale que la restriction est levée, @copywriter et @seo DOIVENT l'intégrer en priorité sur la page Mission de conseil — c'est un asset de crédibilité majeur (exit à 2 M€ from 1 500 €, bootstrap pur, track record chiffré)
 - **Recommandation framework** (à ajouter dans lessons-learned.md) : ajouter un système de "assets différés" dans project-context.md — informations connues à usage interne uniquement jusqu'à déverrouillage par le fondateur
 
-### Format d'accompagnement — [À CONFIRMER par Thomas]
-Options à proposer par @copywriter en Phase 1 (Thomas arbitrera) :
-- Mission ponctuelle (stratégie, positionnement, launch Europe)
-- Conseil stratégique récurrent (abonnement ou retainer mensuel)
-- Conseil board / advisor equity
-- Session one-shot (audit + recos)
-- **Pricing** : [À CONFIRMER par Thomas — proposition @copywriter : "sur devis" par défaut, pricing explicite en option]
+### Format d'accompagnement (confirmé Thomas 2026-04-07)
+**Deux formats uniquement — pas d'abonnement, pas de one-shot classique** :
+1. **Mission ponctuelle** — intervention délimitée avec objectif clair (stratégie, positionnement, launch Europe, go-to-market, audit stratégique, structuration d'opération)
+2. **Advisoring** — rôle d'advisor récurrent auprès du fondateur/dirigeant (conseil stratégique régulier, sparring partner long-terme, présence board informel possible)
 
-### Anti-persona — à qui Thomas ne veut PAS parler — [À COMPLÉTER par Thomas]
-Important pour le ton "caractère". À demander à Thomas avant publication.
+**Pricing** : [DÉCISION Thomas en attente — proposition orchestrator à arbitrer : "sur devis" pour mission ponctuelle + "advisor equity ou retainer mensuel" pour advisoring. À trancher avant @copywriter en Phase 1]
 
-### Phrase obligatoire / phrase interdite — [À COMPLÉTER par Thomas]
-Pour encadrer @copywriter.
+### Anti-persona — recommandation orchestrator (à valider par Thomas)
+Compte tenu du profil Thomas (15+ ans corporate premium Sony, co-founder TEOS à gros ROI, advisor startups triés sur le volet, holding patrimoniale famille libanaise, scope immo + participations financières, ton "caractère/fier/pas gnangnan"), recommandation :
+- **Pas de first-time founders en pre-seed** — Thomas est un advisor pour entrepreneurs qui ont déjà fait leurs preuves, pas un incubateur
+- **Pas de projets crypto / Web3 purs** — hors scope ISSA (immo + participations financières classiques)
+- **Pas de démarchage cold / pitchs génériques** — le site reçoit des propositions qualifiées, pas du volume
+- **Pas d'opportunités sous seuil de ticket minimum** — proposition : 200 k€ mini pour l'immo (aligné Leila), à valider
+- **Pas de mission de conseil < 1 mois** — trop court pour apporter de la valeur réelle
+- **Pas de projets contrevenant à l'ADN éthique** — environnement, humanité (cf. ADN dur)
+- **Pas de sollicitation pour véhicules spéculatifs court-terme**
+→ **À VALIDER PAR THOMAS avant publication** — ces anti-personas donnent du caractère mais doivent être assumés publiquement
+
+### Clients publiquement mentionnables (confirmé Thomas 2026-04-07)
+**Via Sony TEOS** : **Lego, Siemens, Netflix, Cap Gemini, Suzuki, Hilton, Mango**
+**Via l'agence de communication** (clients OK à citer, mais **SANS révéler l'existence de l'agence elle-même** — toujours sous NDA) : **TikTok, Adidas, Lego**
+**Note stratégique @copywriter** : on peut mentionner ces clients comme "Thomas a accompagné / travaillé avec" sans préciser le contexte exact (Sony TEOS ou agence). Éviter toute formulation qui trahirait l'existence de l'agence confidentielle. Lego apparaît dans les deux sources — parfait pour une mention naturelle sans révéler la source.
+
+### Phrase obligatoire / phrase interdite (confirmé Thomas 2026-04-07)
+**Aucune phrase spécifique** obligatoire ou interdite au niveau du fondateur. Liberté laissée à @copywriter dans le cadre du ton "caractère/fier" et des règles globales (vocabulaire prescrit/proscrit brand-platform, anti-L.411-1 CMF liste noire legal).
 
 ---
 
