@@ -49,7 +49,13 @@ OG description : Holding patrimoniale familiale. Horizon intergénérationnel. F
 [Note @copywriter — simplification Phase 4 : ancienne tagline "On décide. Pas un calendrier de fonds." retirée sur décision Thomas. Antithèse défensive remplacée par la baseline canonique, conformément à la décision verrouillée post-deploy.]
 
 ### Sous-titre (sous le H1)
-La holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Patrimoine, participations, transmission.
+[Note @copywriter Phase 5 — Mission 2 finalisée. Suppression de la répétition "famille Issa — famille aux racines" dans la même phrase de 14 mots. Deux variantes calibrées pour Thomas — choisir l'une avant intégration @fullstack.]
+
+**Variante A (recommandée)** : La holding patrimoniale d'une famille libanaise, établie en France. Patrimoine, participations, transmission.
+
+**Variante B** : Holding patrimoniale — famille libanaise, ancrage français. Patrimoine, participations, transmission.
+
+[Décision @copywriter : Variante A recommandée — conserve la construction narrative "d'une famille" qui ancre l'identité humaine avant l'identité institutionnelle. "Libanaise" direct, sans la périphrase "aux racines libanaises" qui était la source de la répétition. Variante B est plus lapidaire — si Thomas préfère le ton overline-descriptor. À valider Thomas avant intégration.]
 
 ### CTA principal (double entrée)
 - **CTA A** — texte : « Présenter une opportunité d'affaires » → /opportunites
@@ -74,7 +80,9 @@ ISSA Capital, c'est une décision de famille.
 ### Corps
 ISSA Capital est la holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Sa raison d'être est simple : faire fructifier le patrimoine familial dans la durée et organiser sa transmission entre les générations.
 
-Pas un fonds. Pas une structure à terme. Une holding indépendante, dont la famille est le seul actionnaire, et dont l'horizon est intergénérationnel.
+Une holding indépendante, dont la famille Issa est le seul actionnaire, et dont l'horizon est intergénérationnel.
+
+[Note @copywriter Phase 5 — Mission 4 finalisée : les deux antithèses "Pas un fonds. Pas une structure à terme." remplacées par une seule affirmation directe. "Pas un fonds" supprimé — le terme "holding" suffit à poser la différence sans l'articuler en opposition. "Pas une structure à terme" supprimé — vocabulaire hors-champ Karim. L'idée de durabilité est portée par "dont l'horizon est intergénérationnel". Ce qu'on est prime sur ce qu'on n'est pas.]
 
 Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — une famille libanaise qui a appris à construire, à tenir, et à transmettre.
 
@@ -87,6 +95,7 @@ Lire notre mission →  [lien vers /mission]
 
 [Framework : AIDA — Interest, bifurcation Karim/Leila]
 [Notes @design : 2 colonnes côte à côte sur desktop. Chacune avec icône ou illustration discrète, titre, 2-3 lignes de texte, CTA. Traitement symétrique mais visuellement distinct.]
+[Note @copywriter Phase 5 : Section 3 conservée. Section 4 "Deux points d'entrée" supprimée (doublon de Section 7). La bifurcation des parcours reste ici, en milieu de page, sans l'antithèse défensive.]
 
 ### H2
 Deux raisons de prendre contact.
@@ -97,7 +106,9 @@ Deux raisons de prendre contact.
 
 **H3** : Structurer votre patrimoine avec quelqu'un qui l'a fait.
 
-Thomas Issa a co-fondé une holding, investi en direct dans l'immobilier francilien et accompagné des fondateurs pendant 7 ans. Si vous cherchez un pair qui connaît les arbitrages — pas un conseiller qui vend des produits — c'est l'interlocuteur.
+Thomas Issa a co-fondé une holding, investi en direct dans l'immobilier francilien et accompagné des fondateurs pendant sept ans. Un pair qui connaît les arbitrages — pas les produits à placer.
+
+[Note @copywriter Phase 5 — Mission 3 : "patrimoniaux" retiré — redondant avec "holding" et "patrimoine" déjà établis dans le contexte. La formulation "pas les produits à placer" est directe et suffit sans la répétition de l'adjectif. Section 4 supprimée — l'antithèse défensive originale "pas un conseiller qui vend des produits" disparaît avec elle. Ce bloc Section 3 contient la seule occurrence restante, déjà simplifiée ici.]
 
 **CTA** : Découvrir l'accompagnement →  [lien vers /accompagnement]
 
@@ -113,7 +124,33 @@ ISSA Capital investit dans l'immobilier résidentiel et des participations minor
 
 ---
 
-## Section 4 — L'écosystème en aperçu
+## Section 4 — Filiation Jean-Pierre Issa (REMPLACE l'ancienne Section 4 "Deux points d'entrée")
+
+[Framework : StoryBrand — Character (arc générationnel)]
+[Note @copywriter Phase 5 — Mission 1 finalisée : l'ancienne Section 4 ("Deux points d'entrée") était un doublon de Section 7. Elle est remplacée par la filiation Jean-Pierre Issa — seul endroit de la homepage où l'identité libanaise passe du déclaratif au narratif. Faits sources : project-context.md section "Filiation fondatrice Jean-Pierre Issa" + page-mission.md Section 1. Aucune date inventée — seules les dates factuelles documentées sont utilisées.]
+[Conscience : Problem-Aware à Solution-Aware — Marc et Karim veulent comprendre l'origine réelle de la holding]
+[Notes @design : section sobre, ton éditorial, fond légèrement différencié (ex. tone="subtle"). Pas de chronologie visuelle, pas de frise. Max 80-100 mots de copy. Une citation facultative en pull-quote si pertinent visuellement.]
+
+### Overline
+Trois décennies avant la holding.
+
+### H2
+Ce qu'ISSA Capital a hérité.
+
+### Paragraphe principal
+Jean-Pierre Issa est né à Dakar en 1958, dans une famille libanaise. Il a construit sa carrière chez IBM, puis rejoint l'équipe qui a lancé Lexmark en Europe dans les années 1990 — Directeur de filiales dans plusieurs pays, Directeur Marketing EMEA. Il a aussi racheté 2J Impression en co-actionnariat : une société fondée en 1994 à Mérignac, spécialisée dans l'impression numérique industrielle, aujourd'hui présente dans dix-sept pays.
+
+### Phrase pivot
+Thomas Issa est son fils. ISSA Capital est la formalisation de ce qu'il a regardé fonctionner pendant des décennies — construire, tenir, transmettre.
+
+### Lien sortant
+Lire la mission →  [lien vers /mission]
+
+[Note wording : total corps = 73 mots — dans la cible 50-100 mots. Zéro superlatif, zéro date inventée. "Dans les années 1990" conforme à project-context.md qui indique "années 1990" sans date exacte. Phrase pivot = 2 phrases courtes — le premier membre dit la filiation, le second dit le sens de la holding sans jamais prononcer le mot "héritage" qui tirerait vers la mythification.]
+
+---
+
+## Section 5 (ex-Section 4) — L'écosystème en aperçu
 
 [Framework : AIDA — Desire, preuve par l'exemple]
 [Notes @design : grille 2×3 ou 3×2 cartes. Chaque carte : nom + activité en une ligne + lien si site live. Fond neutre, typographie sobre. Pas de logos tiers sans autorisation.]
@@ -213,11 +250,20 @@ Travailler avec Thomas Issa, c'est un échange entre décideurs — sur la struc
 
 **H3** : Vous avez un dossier. Soumettez-le.
 
-ISSA Capital étudie les opportunités qualifiées — immobilier résidentiel et participations minoritaires. Critères explicites, réponse dans la journée.
+[Note @copywriter Phase 5 — Mission 5 : deux variantes proposées pour équilibrer le traitement narratif avec le bloc Karim. Le bloc Karim peint une situation ("a co-fondé une holding, investi en direct, accompagné des fondateurs") — Leila doit recevoir le même traitement. Longueur cible : équivalente au bloc Karim pour l'équilibre visuel. Thomas choisit la variante.]
+
+**Variante A (recommandée — situation narrative)** :
+Vous avez un actif à présenter ou une opportunité à faire étudier. ISSA Capital investit en propre — immobilier résidentiel francilien ou participations minoritaires dans des entreprises saines. Critères explicites, horizon long, aucun comité trimestriel à convaincre.
+
+**Variante B (plus directe, plus courte)** :
+Vous repérez un actif avant le marché, ou cherchez un co-investisseur qui décide sans comité. ISSA Capital investit en propre, avec ses propres critères. Pas de process de six mois.
+
+[Note wording Variante A : 40 mots — légèrement plus court que le bloc Karim (44 mots). Équilibre visuel préservé. Situation narrative : "vous avez un actif" ancre dans le réel de Leila. "Investit en propre" répond à l'objection tacite "qui prend vraiment la décision". "Aucun comité trimestriel" traite la friction principale de Leila sans antithèse syntaxique défensive.]
+[Note wording Variante B : 30 mots — plus lapidaire, légèrement asymétrique vs Karim. "Pas de process de six mois" est une quasi-antithèse mais brève et factuelle. Acceptable si Thomas préfère la concision.]
 
 **CTA** : Consulter nos critères →  [lien vers /opportunites]
 
-[Note @legal : "réponse dans la journée" = engagement de délai, pas promesse de rendement. "Opportunités qualifiées" = posture entrante, conforme L.411-1 CMF.]
+[Note @legal : "réponse dans la journée" est retiré de la Variante A (engagement de délai contraignant). "Aucun comité trimestriel" est factuel — ISSA Capital est une holding familiale sans comité d'investissement institutionnel. Conforme L.411-1 CMF.]
 
 ---
 
@@ -285,30 +331,152 @@ Marc voit l'identité libanaise affirmée dès le premier écran, la mission en 
 | Sous-label stat "50%" | Section 4 — Carte Gradient One | Ajout spécification wording sous-label + tooltip optionnel |
 | Variante baseline | Section 1 — Hero | Note d'usage ajoutée : baseline canonique conservée en hero homepage, variantes documentées dans brand-voice.md pour pages internes |
 
-**Chaînes exactes à remplacer dans le code @fullstack**
+**Chaînes exactes à remplacer dans le code @fullstack — Phase 3 (sessions précédentes)**
 
-1. `src/app/page.tsx` — Section 6 (CTA final)
-   - Ancien : bloc centré unique (H2 "Votre dossier correspond à nos critères ?" + CTA "Présenter une opportunité" + CTA secondaire "Travailler avec Thomas Issa")
-   - Nouveau : section 2 colonnes symétriques
+1. `src/app/page.tsx` — Section 6 (CTA final) [Phase 3 — cf. historique]
+   - Ancien : bloc centré unique
+   - Nouveau : section 2 colonnes symétriques (détail ci-dessus)
 
-   **Bloc A — Karim (colonne gauche ou première sur mobile)**
-   - H3 : `"Vous cherchez un pair, pas un prestataire."`
-   - Corps : `"Travailler avec Thomas Issa, c'est un échange entre décideurs — sur la structuration, le patrimoine, la stratégie. Pas un mandat standardisé."`
-   - CTA texte : `"Découvrir l'accompagnement"` → `/accompagnement`
+2. `src/app/page.tsx` — Section 4 (stats), carte Gradient One [Phase 3]
+   - Ajouter sous-label "50%" : `"Part d'ISSA Capital dans Gradient One — co-fondée en 2020"`
 
-   **Bloc B — Leila (colonne droite ou deuxième sur mobile)**
-   - H3 : `"Vous avez un dossier. Soumettez-le."`
-   - Corps : `"ISSA Capital étudie les opportunités qualifiées — immobilier résidentiel et participations minoritaires. Critères explicites, réponse dans la journée."`
-   - CTA texte : `"Consulter nos critères"` → `/opportunites`
+---
 
-   [Styling : fond sombre (ink-950). Deux blocs de poids visuel identique — ni primaire ni secondaire entre Karim et Leila.]
+**Chaînes exactes à remplacer dans le code @fullstack — Phase 5 (mini-passe post-audit croisé)**
 
-2. `src/app/page.tsx` — Section 4, carte Gradient One
-   - Ajouter sous-label sous le chiffre "50%" : `"Part d'ISSA Capital dans Gradient One — co-fondée en 2020"`
-   - Si composant tooltip disponible dans le design system : `"Gradient One est la holding intermédiaire détenant Versi Immobilier, Versi Invest, Immocrew et Versimo."`
-   - Si pas de composant tooltip : le sous-label seul est suffisant
+### Modif 1 — Sous-titre hero (Mission 2)
+
+**Localisation** : `src/app/page.tsx` lignes 64-67
+
+**Avant** :
+```
+La holding patrimoniale de la famille Issa — famille aux racines libanaises,
+établie en France. Patrimoine, participations, transmission.
+```
+
+**Après (Variante A — Thomas valide)** :
+```
+La holding patrimoniale d'une famille libanaise, établie en France. Patrimoine, participations, transmission.
+```
+
+**Après (Variante B — alternative)** :
+```
+Holding patrimoniale — famille libanaise, ancrage français. Patrimoine, participations, transmission.
+```
+
+[Thomas doit choisir une variante avant intégration @fullstack.]
+
+---
+
+### Modif 2 — Section 2, antithèse "Pas un fonds" (Mission 4)
+
+**Localisation** : `src/app/page.tsx` lignes 93-96
+
+**Avant** :
+```
+Pas un fonds. Pas une structure à terme. Une holding indépendante, dont la
+famille est le seul actionnaire, et dont l'horizon est intergénérationnel.
+```
+
+**Après** :
+```
+Une holding indépendante, dont la famille Issa est le seul actionnaire, et dont l'horizon est intergénérationnel.
+```
+
+---
+
+### Modif 3 — Section 4 entière : suppression "Deux points d'entrée" → remplacement par Section Filiation (Mission 1)
+
+**Localisation** : `src/app/page.tsx` lignes 142-191 (commentaire `{/* Section 4 — Deux points d'entrée */}` jusqu'à la balise `</Section>` fermante)
+
+**Avant** : section complète "Deux points d'entrée" avec 2 articles Karim/Leila
+
+**Après** : nouvelle section "Filiation Jean-Pierre Issa"
+
+```tsx
+{/* Section 4 — Filiation Jean-Pierre Issa */}
+<Section tone="subtle">
+  <Container width="editorial">
+    <Overline>Trois décennies avant la holding.</Overline>
+    <h2 className="mt-md font-heading text-h2 text-ink-950">
+      Ce qu&apos;ISSA Capital a hérité.
+    </h2>
+    <div className="mt-lg space-y-md text-lead text-ink-700">
+      <p>
+        Jean-Pierre Issa est né à Dakar en 1958, dans une famille libanaise.
+        Il a construit sa carrière chez IBM, puis rejoint l&apos;équipe qui a
+        lancé Lexmark en Europe dans les années 1990 — Directeur de filiales
+        dans plusieurs pays, Directeur Marketing EMEA. Il a aussi racheté
+        2J Impression en co-actionnariat : une société fondée en 1994 à
+        Mérignac, spécialisée dans l&apos;impression numérique industrielle,
+        aujourd&apos;hui présente dans dix-sept pays.
+      </p>
+      <p>
+        Thomas Issa est son fils. ISSA Capital est la formalisation de ce
+        qu&apos;il a regardé fonctionner pendant des décennies — construire,
+        tenir, transmettre.
+      </p>
+    </div>
+    <Link
+      href="/mission"
+      className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+    >
+      Lire la mission
+      <ArrowRight size={18} aria-hidden="true" />
+    </Link>
+  </Container>
+</Section>
+```
+
+---
+
+### Modif 4 — Section 3 (bifurcation Karim/Leila), bloc Karim — antithèse "pas un conseiller" (Mission 3)
+
+**Localisation** : `src/app/page.tsx` lignes 157-161 (corps du premier article)
+
+**Avant** :
+```
+Thomas Issa a co-fondé une holding, investi en direct dans l'immobilier
+francilien et accompagné des fondateurs pendant sept ans. Si vous cherchez
+un pair qui connaît les arbitrages — pas un conseiller qui vend des produits
+— c'est l'interlocuteur.
+```
+
+**Après** :
+```
+Thomas Issa a co-fondé une holding, investi en direct dans l'immobilier francilien et accompagné des fondateurs pendant sept ans. Un pair qui connaît les arbitrages — pas les produits à placer.
+```
+
+[Note : la suppression de Section 4 (Modif 3) élimine une première occurrence de l'antithèse défensive. Cette Modif 4 traite la deuxième occurrence, dans Section 3 qui elle est conservée.]
+
+---
+
+### Modif 5 — Section 7 (Deux portes symétriques), bloc Leila (Mission 5)
+
+**Localisation** : `src/app/page.tsx` lignes 317-319 (corps du deuxième article, porte Leila)
+
+**Avant** :
+```
+Immobilier résidentiel ou participation minoritaire. Critères explicites,
+horizon long, décision rapide. Nous étudions chaque dossier qualifié.
+```
+
+**Après (Variante A — recommandée, situation narrative)** :
+```
+Vous avez un actif à présenter ou une opportunité à faire étudier. ISSA Capital investit en propre — immobilier résidentiel francilien ou participations minoritaires dans des entreprises saines. Critères explicites, horizon long, aucun comité trimestriel à convaincre.
+```
+
+**Après (Variante B — plus directe)** :
+```
+Vous repérez un actif avant le marché, ou cherchez un co-investisseur qui décide sans comité. ISSA Capital investit en propre, avec ses propres critères. Pas de process de six mois.
+```
+
+[Thomas valide la variante avant intégration @fullstack.]
+
+---
 
 **Décisions copy non négociables sur cette page**
 - Section finale : poids visuel ÉGAL pour les deux blocs Karim/Leila — interdiction de redonner la primauté à l'un sur l'autre
-- Ton éditorial en section finale : pas de fond rouge, pas de compte à rebours, pas de "DERNIÈRE CHANCE" — Principe #0 VITRINE
+- Ton éditorial en section finale : pas de fond rouge, pas de compte à rebours — Principe #0 VITRINE
 - "Racines libanaises. Exigences sans exception." reste en footer — ne pas supprimer
+- Famille LIBANAISE — jamais "française" dans les textes visibles

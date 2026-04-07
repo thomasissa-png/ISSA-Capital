@@ -62,8 +62,8 @@ export default function HomePage(): JSX.Element {
             Exigences sans exception.
           </h1>
           <p className="mx-auto mt-xl max-w-[520px] font-body text-lead text-ink-300">
-            La holding patrimoniale de la famille Issa — famille aux racines libanaises,
-            établie en France. Patrimoine, participations, transmission.
+            La holding patrimoniale d&apos;une famille libanaise, établie en France.
+            Patrimoine, participations, transmission.
           </p>
           <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row">
             <Button href="/opportunites" variant="primary-inverse" size="lg">
@@ -80,7 +80,7 @@ export default function HomePage(): JSX.Element {
       <Section tone="default">
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
-          <h2 className="mt-md font-heading text-h2 text-ink-950">
+          <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
             ISSA Capital, c&apos;est une décision de famille.
           </h2>
           <div className="mt-lg space-y-md text-lead text-ink-700">
@@ -91,8 +91,8 @@ export default function HomePage(): JSX.Element {
               transmission entre les générations.
             </p>
             <p>
-              Pas un fonds. Pas une structure à terme. Une holding indépendante, dont la
-              famille est le seul actionnaire, et dont l&apos;horizon est intergénérationnel.
+              Une holding indépendante, dont la famille Issa est le seul actionnaire, et
+              dont l&apos;horizon est intergénérationnel.
             </p>
             <p>
               Cette holding n&apos;est pas née en 2026. Elle est l&apos;aboutissement de
@@ -114,8 +114,8 @@ export default function HomePage(): JSX.Element {
       <Section tone="inverse">
         <Container width="content">
           <div className="grid grid-cols-1 gap-xl md:grid-cols-3 md:divide-x md:divide-ink-800">
-            <div className="px-xl text-center md:text-left">
-              <p className="font-heading text-[4rem] leading-none text-levant-500">50%</p>
+            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
+              <p className="font-heading text-6xl leading-none text-levant-500">50%</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Gradient One
               </p>
@@ -123,14 +123,14 @@ export default function HomePage(): JSX.Element {
                 Holding intermédiaire — co-fondée en 2020
               </p>
             </div>
-            <div className="px-xl text-center md:text-left">
-              <p className="font-heading text-[4rem] leading-none text-levant-500">2020</p>
+            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
+              <p className="font-heading text-6xl leading-none text-levant-500">2020</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Première participation
               </p>
             </div>
-            <div className="px-xl text-center md:text-left">
-              <p className="font-heading text-[4rem] leading-none text-levant-500">4</p>
+            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
+              <p className="font-heading text-6xl leading-none text-levant-500">4</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Participations opérationnelles
               </p>
@@ -139,54 +139,32 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 4 — Deux points d'entrée */}
+      {/* Section 4 — Filiation Jean-Pierre Issa */}
       <Section tone="subtle">
-        <Container width="content">
-          <div className="mb-2xl">
-            <Overline>Deux points d&apos;entrée</Overline>
-            <h2 className="mt-md font-heading text-h2 text-ink-950">
-              Deux raisons de prendre contact.
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-            <article className="border border-ink-200 bg-white p-xl md:p-2xl">
-              <p className="overline text-levant-700">Pour les dirigeants</p>
-              <h3 className="mt-md font-heading text-h3 text-ink-950">
-                Structurer votre patrimoine avec quelqu&apos;un qui l&apos;a fait.
-              </h3>
-              <p className="mt-md text-base text-ink-700">
-                Thomas Issa a co-fondé une holding, investi en direct dans l&apos;immobilier
-                francilien et accompagné des fondateurs pendant sept ans. Si vous cherchez
-                un pair qui connaît les arbitrages — pas un conseiller qui vend des produits
-                — c&apos;est l&apos;interlocuteur.
-              </p>
-              <Link
-                href="/accompagnement"
-                className="mt-lg inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
-              >
-                Découvrir l&apos;accompagnement
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </article>
-            <article className="border border-ink-200 bg-white p-xl md:p-2xl">
-              <p className="overline text-levant-700">Pour les apporteurs d&apos;affaires</p>
-              <h3 className="mt-md font-heading text-h3 text-ink-950">
-                Proposer un deal à une holding qui décide vite.
-              </h3>
-              <p className="mt-md text-base text-ink-700">
-                ISSA Capital investit dans l&apos;immobilier résidentiel et des
-                participations minoritaires. Horizon long. Critères explicites. Aucun
-                comité d&apos;investissement qui se réunit une fois par trimestre.
-              </p>
-              <Link
-                href="/opportunites"
-                className="mt-lg inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
-              >
-                Consulter nos critères
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </article>
-          </div>
+        <Container width="editorial">
+          <Overline>Trois décennies avant la holding</Overline>
+          <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
+            Ce qu&apos;ISSA Capital a hérité.
+          </h2>
+          <p className="mt-lg max-w-[640px] font-body text-lead text-ink-700">
+            Jean-Pierre Issa est né à Dakar en 1958, dans une famille libanaise. Il a
+            construit sa carrière chez IBM, puis rejoint l&apos;équipe qui a lancé Lexmark
+            en Europe dans les années 1990 — Directeur de filiales dans plusieurs pays,
+            Directeur Marketing EMEA. Il a aussi racheté 2J Impression en co-actionnariat :
+            une société fondée en 1994 à Mérignac, spécialisée dans l&apos;impression
+            numérique industrielle, aujourd&apos;hui présente dans dix-sept pays.
+          </p>
+          <p className="mt-lg max-w-[640px] font-body text-lead text-ink-700">
+            Thomas Issa est son fils. ISSA Capital est la formalisation de ce qu&apos;il a
+            regardé fonctionner pendant des décennies — construire, tenir, transmettre.
+          </p>
+          <Link
+            href="/mission"
+            className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+          >
+            Lire la mission
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
         </Container>
       </Section>
 
@@ -315,8 +293,10 @@ export default function HomePage(): JSX.Element {
                 Présenter une opportunité.
               </h3>
               <p className="mt-md flex-1 text-base text-ink-300">
-                Immobilier résidentiel ou participation minoritaire. Critères explicites,
-                horizon long, décision rapide. Nous étudions chaque dossier qualifié.
+                Vous avez un actif à présenter ou une opportunité à faire étudier. ISSA
+                Capital investit en propre — immobilier résidentiel francilien ou
+                participations minoritaires dans des entreprises saines. Critères
+                explicites, horizon long, aucun comité trimestriel à convaincre.
               </p>
               <div className="mt-lg">
                 <Button href="/opportunites" variant="primary-inverse" size="lg">
