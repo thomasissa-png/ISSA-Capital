@@ -217,7 +217,150 @@ Style : `text-xs` Inter, `ink-500`, checkbox de consentement `required`.
 
 ## 4. Card (participation, key-stat, quote)
 
+### Card Participation
+
+**Usage** : présentation de chaque participation de l'écosystème ISSA (Gradient One, Versi Immobilier, etc.)
+
+**Layout** :
+- Fond `white-pure`, bordure `1px solid ink-200`, radius `0px`, padding `spacing-xl` (32px)
+- Overline `text-overline` Inter SemiBold uppercase `ink-500` (secteur d'activité)
+- Nom de la participation : `text-h4` Cormorant SemiBold `ink-950`
+- Description courte : `text-sm` Inter `ink-700`, 2-3 lignes maximum
+- Statut badge (si applicable : "En activité", "En cours") : composant Badge
+- Lien sortant (si site disponible) : composant Link external-link
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Fond `white-pure`, bordure `ink-200`, shadow `none` |
+| **hover** | Bordure `ink-500`, fond `parchment-50` — transition `duration-fast` |
+| **active/pressed** | Bordure `ink-950`, fond `parchment-100` |
+| **focus-visible** | Outline `2px solid levant-500`, offset `2px` (si card est un lien) |
+| **disabled** | Opacité `0.5` — non applicable en V1 (toutes les participations sont actives) |
+| **loading** | Skeleton : fond `ink-100` animé `animate-pulse`, hauteurs fixes simulant le contenu |
+
+### Card Key-Stat
+
+**Usage** : statistiques clés (sur page Mission — "15 lots en IDF", données de l'écosystème si applicable)
+
+**Layout** :
+- Fond `ink-950` (section sombre), padding `spacing-2xl`
+- Valeur principale : `text-display` Cormorant `levant-500` — grand, tranchant
+- Label : `text-overline` Inter `ink-300` en majuscules
+- Optionnel : icône Lucide `24px` `levant-500` au-dessus de la valeur
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Fond `ink-950`, valeur `levant-500`, label `ink-300` |
+| **hover** | Valeur `levant-400` (légèrement plus clair) si la carte est interactive |
+| **active** | Valeur `levant-300` |
+| **focus-visible** | Outline `2px solid levant-500`, offset `2px` |
+| **disabled** | Opacité `0.5` |
+| **loading** | Skeleton fond `ink-800` animé `animate-pulse` |
+
+### Card Quote (témoignage / citation éditoriale)
+
+**Usage** : citations de la famille, déclarations de Thomas, pull-quotes éditoriaux
+
+**Layout** :
+- Fond `parchment-50`, bordure gauche `3px solid levant-500`, padding `spacing-xl`
+- Texte citation : `text-lead` Cormorant Garamond italic `ink-950`
+- Guillemets ouvrant/fermant : `levant-500`, taille `text-h2`
+- Attribution (si présente) : `text-label` Inter Medium `ink-500`, précédé de `—`
+
+**6 états :**
+
+| État | Apparence |
+|---|---|
+| **default** | Fond `parchment-50`, bordure gauche `levant-500` |
+| **hover** | Non interactif — pas d'état hover |
+| **active** | Non interactif |
+| **focus-visible** | Si lien imbriqué : outline standard |
+| **disabled** | Non applicable |
+| **loading** | Skeleton 3 lignes `ink-100` animé |
+
 ## 5. Navigation (header, footer, breadcrumb)
+
+### Header (Navigation principale)
+
+**Layout desktop** :
+- `position: sticky top-0`, `z-index: 50`, height `72px`
+- Fond : `parchment-100` par défaut → `rgba(245,240,232,0.95) backdrop-blur(8px)` au scroll
+- Bordure bottom `1px solid ink-100` (apparaît au scroll)
+- Logo ISSA Capital : `text-h4` Cormorant SemiBold `ink-950` — texte pur, pas d'image logo
+- Liens navigation : `text-label` Inter Medium `ink-600`, hover `ink-950`, active `ink-950` + underline `2px levant-500`
+- CTA sticky "Proposer une opportunité" : Button secondary size `sm`
+
+**Layout mobile** :
+- Height `64px`
+- Logo à gauche, icône hamburger `Menu` Lucide à droite (44×44px touch target)
+- Menu déroulant : bottom sheet sur mobile (full-width, fond `parchment-100`, liens en liste verticale, padding `spacing-md`)
+
+**6 états du lien navigation :**
+
+| État | Apparence |
+|---|---|
+| **default** | `text-label` Inter `ink-600` |
+| **hover** | `ink-950`, underline `levant-500` apparaît |
+| **active (page courante)** | `ink-950`, underline `levant-500` permanent |
+| **focus-visible** | Outline `2px solid levant-500`, offset `2px` |
+| **disabled** | `ink-300`, curseur `default` |
+| **loading** | Spinner discret si navigation en cours (Next.js router) |
+
+**Accessibilité** :
+- `<nav aria-label="Navigation principale">`
+- Lien actif : `aria-current="page"`
+- Menu hamburger mobile : `aria-expanded`, `aria-controls`, `aria-label="Ouvrir le menu"`
+
+### Footer
+
+**Layout** :
+- Fond `ink-950`, texte `parchment-100`
+- Padding vertical `spacing-3xl` (64px)
+- 3 colonnes desktop (logo+tagline / liens / légal) → empilé mobile
+- Tagline baseline : `text-body-sm` Inter `ink-300` sous le nom ISSA Capital
+- Liens : `text-label` `ink-300`, hover `parchment-100`, underline au hover
+- Séparateur : `1px solid ink-800`
+- Mentions légales : copyright + liens Mentions légales / Politique de confidentialité
+
+**6 états des liens footer :**
+
+| État | Apparence |
+|---|---|
+| **default** | `text-label` `ink-300` |
+| **hover** | `parchment-100`, underline apparaît |
+| **active** | `parchment-100`, underline |
+| **focus-visible** | Outline `2px solid levant-400` (version dark mode du focus), offset `2px` |
+| **disabled** | `ink-600` |
+| **loading** | N/A |
+
+### Breadcrumb
+
+**Usage** : navigation secondaire sur pages profondes (Mentions légales, Politique de confidentialité)
+
+**Layout** :
+- `text-caption` Inter `ink-500`
+- Séparateur : `/` `ink-300`
+- Dernier élément (page courante) : `ink-950`, non cliquable
+
+**6 états des liens breadcrumb :**
+
+| État | Apparence |
+|---|---|
+| **default** | `ink-500`, underline `ink-200` |
+| **hover** | `ink-950`, underline `levant-500` |
+| **active (lien courant)** | Non applicable (dernier élément non-lien) |
+| **focus-visible** | Outline `2px solid levant-500`, offset `2px` |
+| **disabled** | N/A |
+| **loading** | N/A |
+
+**Accessibilité** :
+- `<nav aria-label="Fil d'Ariane">`
+- `<ol>` avec items `<li>`
+- Dernier item : `aria-current="page"`
 
 ## 6. Hero
 
