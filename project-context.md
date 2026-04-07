@@ -77,7 +77,7 @@
 - **Cible** : mandataires immo solo (exclut agences/équipes), France
 - **Headline site** : "Tu n'as pas choisi l'immobilier pour passer tes soirées sur Canva"
 - **Source** : WebFetch immocrew.fr 2026-04-07
-- **À clarifier** : détention directe par ISSA Capital ou indirecte via Gradient One ?
+- **Détention** : **indirecte via Gradient One** (confirmé par Thomas le 2026-04-07)
 
 ### 5. Versimo — home staging IA
 - **URL** : versimo.fr (live)
@@ -87,7 +87,7 @@
 - **Cibles** : architectes d'intérieur, marchands de biens, particuliers exigeants
 - **Headline site** : "Votre pièce meublée, en 90 secondes."
 - **Source** : WebFetch versimo.fr 2026-04-07
-- **À clarifier** : détention directe par ISSA Capital ou indirecte via Gradient One ?
+- **Détention** : **indirecte via Gradient One** (confirmé par Thomas le 2026-04-07)
 
 ### 6. Immobilier en direct — patrimoine résidentiel
 - **Type de biens** : résidentiel
@@ -97,8 +97,11 @@
 - **Communication publique** : **traitement discret** — Thomas accepte une mention courte sans détailler. Suggestion copy : un paragraphe générique type "Patrimoine immobilier résidentiel en Île-de-France géré en direct" sans chiffres
 - **Source** : confirmé par Thomas le 2026-04-07
 
-### Question résiduelle (Phase 1)
-Immocrew et Versimo sont-elles détenues par ISSA Capital **directement** ou **via Gradient One** (qui détient "Versi et autres activités") ? Impact sur l'organigramme et la cohérence du portefeuille affiché. À confirmer avec Thomas.
+### Organigramme verrouillé (confirmé Thomas 2026-04-07)
+- ISSA Capital détient **50% de Gradient One** (co-fondateur, 3 actionnaires)
+- Gradient One détient **Versi Immobilier**, **Versi Invest**, **Immocrew**, **Versimo**, et autres activités
+- ISSA Capital détient en direct : **immobilier résidentiel IDF (15 lots)**
+- Implication site : la page Participations doit afficher 2 niveaux — (1) participation directe Gradient One + immobilier direct, (2) sous-jacents de Gradient One. À traiter visuellement par @design en Phase 1.
 
 ---
 
