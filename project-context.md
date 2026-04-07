@@ -338,6 +338,34 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 
 ---
 
+## Décisions Phase 0 révisées — VERROUILLÉES par Thomas le 2026-04-07
+
+### Personas (révision finale)
+- **Principal A — Karim** (42 ans, entrepreneur en structuration patrimoniale) — cible CTA "Mission de conseil & accompagnement" ✅
+- **Principal B — Leila** (38 ans, apporteur d'affaires immo / fondateur cherchant co-investisseur) — cible CTA "Proposer une opportunité d'affaires" ✅
+- **Secondaire — Marc** (38 ans, journaliste/analyste économique) — earned media & crédibilité institutionnelle ✅
+- **Supprimés** : Hélène + Sophie (scope business incompatible — cf. lessons-learned.md)
+
+### Archétype de marque
+**Ruler / Outlaw** ✅ — tranchant, vertèbre visuelle, less is more assumé. Pas de brutalisme radical.
+
+### Taglines verrouillées
+- **Baseline** (sous logo, partout) : **« Famille libanaise. Exigences sans exception. »** ✅
+- **Hero** (page Accueil, grand format) : **« On décide. Pas un calendrier de fonds. »** ⚠️ validé avec RÉSERVES par Thomas — à **retester en Phase 2c** par @testeur-karim + @testeur-leila. Si au moins un des deux testeurs la rejette ou la trouve confuse → @creative-strategy propose 2-3 alternatives à Thomas avant le launch. Ne pas hardcoder avant ce retest.
+- **Signature** (page Mission de conseil) : **« Patient par choix. Exigeant par principe. »** ✅ (mention spéciale Thomas : "j'aime bien aussi")
+- **Taglines écartées** : #1 "On ne vend pas. On garde." (fausse promesse — cf. lessons-learned P0) + #3, #5 (même biais)
+
+### Pricing accompagnement
+**Aucun pricing affiché sur le site.** Pas de "sur devis" explicite non plus — plus premium de ne rien mentionner et d'amener directement au formulaire de contact. Si @copywriter estime qu'il faut une mention, proposition par défaut : "Tarifs sur demande après qualification de la mission" (discret, n'apparaît pas comme un prix).
+
+### Anti-personas verrouillés (7 critères) — voir section Expertise fondateur
+
+### Pricing/format accompagnement
+- Formats : Mission ponctuelle OU Advisoring (pas d'abonnement ni one-shot)
+- Pricing : **non affiché sur le site**
+
+---
+
 ## Hypothèses — TOUTES VALIDÉES par Thomas le 2026-04-07
 
 Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phase 0 production peut maintenant être lancée.
