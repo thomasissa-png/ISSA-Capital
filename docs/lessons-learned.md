@@ -1,0 +1,16 @@
+# Lessons Learned — ISSA Capital
+
+> Mémoire organisationnelle du projet. Format v2 (11 colonnes) — voir CLAUDE.md section "Mémoire organisationnelle".
+> Règle : un learning P0/P1 doit être propagé avant clôture de session (ou documenté dans le mémo de reprise).
+
+## Session 2026-04-07 — ISSA Capital (cadrage initial)
+
+| Session | Date | Catégorie | Sévérité | Description | Correction appliquée | Recommandation framework | Cible propagation | Fichiers impactés | Statut correction | Statut propagation |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ISSA Capital — cadrage | 2026-04-07 | préférence fondateur | P0 | Sur une holding familiale, ne JAMAIS confondre Mission (objectif fondateur) et Valeurs (filtres de décision). La Mission = intérêts de la famille + transmission générationnelle. Les Valeurs (éthique humaine, environnement, patrimoine long-terme) sont des FILTRES qui encadrent les décisions, pas la finalité. L'orchestrator avait initialement formulé une promesse qui plaçait l'éthique humaine comme finalité — Thomas a corrigé : "L'objectif numéro 1 est les intérêts de la famille Issa et la transmission. L'éthique humaine fait partie des valeurs." | project-context.md mis à jour : section Positionnement réécrite avec bloc "Mission vs Valeurs" explicite, hiérarchie famille > transmission > filtres verrouillée, H2/H3/H4 reformulées avec 3 variantes chacune, 3 mots de marque ajustés (Famille/Transmission/Long-terme au lieu de Patrimoine/Long-terme/Éthique) | Pour tout projet de type "holding familiale", "family office", "patrimoine intergénérationnel" ou "société patrimoniale" : @creative-strategy DOIT explicitement séparer Mission / Valeurs / Promesse dans le brand-platform et hiérarchiser famille > transmission > valeurs filtres. Ne JAMAIS placer une valeur (éthique, environnement, RSE) comme finalité — toujours comme filtre encadrant la finalité. Ajouter cette règle au protocole de @creative-strategy section "Cas particuliers — holdings & family offices". | agents (creative-strategy.md) + founder-preferences.md | .claude/agents/creative-strategy.md, docs/founder-preferences.md | fait | non-propagé |
+| ISSA Capital — cadrage | 2026-04-07 | performance-ia | P1 | L'orchestrator n'a pas l'outil WebFetch dans son outillage (constaté lors de la tentative de récupération du contenu de issa-capital.com et gradientone.fr). Quand des données web sont nécessaires pendant un run, l'orchestrator doit déléguer à un agent qui a WebFetch ou demander à l'utilisateur. | Documenté dans Notes libres de project-context.md. Données factuelles récupérées via le main thread (societe.com, immocrew.fr, versimo.fr). | Vérifier si l'orchestrator devrait avoir WebFetch en standard, ou si la délégation à @seo / agent dédié est suffisante. À trancher en fin de session. | documentation | docs/lessons-learned.md (cette ligne) | fait | n/a |
+
+## Notes de propagation
+
+**À propager en clôture de session** :
+- P0 "Mission vs Valeurs sur holding familiale" → modifier `.claude/agents/creative-strategy.md` (ajouter section "Cas particuliers — holdings & family offices") + créer/mettre à jour `docs/founder-preferences.md` côté repo Agent-Team (cross-projets).

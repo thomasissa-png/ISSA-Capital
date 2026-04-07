@@ -41,23 +41,37 @@
 ---
 
 ## Positionnement
-- **Promesse unique** : [HYPOTHÈSE — à formuler par @creative-strategy en Phase 0] — direction : "La holding familiale française qui capitalise patiemment, transmet, et n'investit que dans ce qui sert l'humanité"
-- **Mission** : [HYPOTHÈSE — Thomas délègue la formulation, @creative-strategy proposera 3 angles en Phase 0]. Inputs durs de Thomas : holding familiale, capitalise les actifs de la famille Issa, se transmet de génération en génération
+
+### Mission vs Valeurs (hiérarchie verrouillée par Thomas — 2026-04-07)
+
+> **Règle de cadrage non négociable** : sur ISSA Capital, la Mission (le QUOI/POURQUOI) et les Valeurs (les FILTRES de décision) sont deux choses distinctes. Ne JAMAIS confondre les deux. Tout livrable qui place l'éthique comme finalité (et non comme filtre) est à corriger.
+
+- **Mission (le QUOI / POURQUOI — finalité fondatrice)** : servir les intérêts de la famille Issa et organiser la transmission du patrimoine entre les générations de la famille. C'est la raison d'être unique de la holding.
+- **Valeurs (les FILTRES de décision — comment on décide)** : patrimoine long-terme, préservation de l'environnement, éthique humaine (n'investit JAMAIS dans ce qui va à l'encontre de l'humanité). Ces valeurs encadrent les décisions d'investissement, elles n'en sont pas la finalité.
+
+### Mission — 3 variantes proposées (à arbitrer par Thomas)
+- **Variante A (sobre / institutionnelle)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Sa raison d'être est de faire fructifier le patrimoine familial dans la durée et d'organiser sa transmission entre les générations."
+- **Variante B (engagée / multigénérationnelle)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Elle préserve et développe le patrimoine familial pour le transmettre intact aux générations suivantes."
+- **Variante C (active / bâtisseuse)** : "ISSA Capital est la holding patrimoniale de la famille Issa. Elle bâtit, détient et transmet le patrimoine familial dans une perspective intergénérationnelle."
+
+- **Promesse unique** : [HYPOTHÈSE H3 — corrigée 2026-04-07] — la promesse parle aux interlocuteurs externes (fondateurs accueillis, partenaires) en restant honnête sur l'ADN familial. 3 variantes proposées (voir section Hypothèses, H3).
 - **Ton de marque** : premium élégant, sobre, intemporel, éditorial. Pas de tape-à-l'œil. Référence : maisons de gestion patrimoniale haut de gamme, holdings familiales européennes type Agache / Artémis / Berkshire (texte minimaliste)
-- **3 mots qui DÉFINISSENT la marque** : Patrimoine — Long-terme — Éthique
+- **3 mots qui DÉFINISSENT la marque** : Famille — Transmission — Long-terme
 - **3 mots qui ne DÉFINISSENT PAS la marque** : Spéculatif — Tape-à-l'œil — Court-termiste
 - **Concurrents / holdings de référence** : Agache, Artémis (Pinault), Mulliez (AFM), Peugeot Invest, Otium Capital (Stérin), Eurazeo (dans une moindre mesure). Toutes holdings familiales européennes — à benchmarker par @creative-strategy en Phase 0 (competitive-benchmark.md)
-- **Notre différence clé** : [HYPOTHÈSE] — taille humaine + ADN éthique explicite (refus d'investir dans ce qui va à l'encontre de l'humanité) + écosystème tech/immo intégré (Gradient, Versi, Immocrew, Versimo)
+- **Notre différence clé** : [HYPOTHÈSE H4 — corrigée] — holding 100% familiale assumée + horizon intergénérationnel (pas de fonds à terme) + filtres de décision non négociables (éthique humaine, environnement) + écosystème tech/immo intégré (Gradient, Versi, Immocrew, Versimo)
 
 ---
 
-## Valeurs (ADN dur — donné directement par Thomas, non négociable)
-- Valeurs fortes
-- Patrimoine
-- Préservation de l'environnement
-- N'investit JAMAIS dans ce qui va à l'encontre de l'humanité
+## ADN dur (non négociable — donné directement par Thomas)
 
-→ Cet ADN doit être visible et structurant dans le brand-platform, le copy de la page Mission, et le filtre d'opportunités d'investissement présenté sur le site.
+- **Mission fondatrice** : intérêts de la famille Issa + transmission générationnelle (priorité absolue)
+- **Filtres de décision** :
+  - Patrimoine (logique long-terme, pas de spéculation court-termiste)
+  - Préservation de l'environnement
+  - Éthique humaine : n'investit JAMAIS dans ce qui va à l'encontre de l'humanité
+
+→ Cet ADN doit être visible et structurant dans le brand-platform, le copy de la page Mission, et le filtre d'opportunités d'investissement présenté sur le site. **Hiérarchie obligatoire** : famille > transmission > filtres de décision. Ne JAMAIS inverser.
 
 ---
 
@@ -134,6 +148,7 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | Agent | Date | Livrable produit | Décisions clés | Pourquoi / Alternatives écartées |
 |-------|------|-----------------|----------------|----------------------------------|
 | orchestrator | 2026-04-07 | project-context.md (initialisation) | Cadrage initial, hypothèses posées sur persona/mission/KPI, ADN éthique verrouillé, stack validée, table rase confirmée | Thomas a délégué mission/persona/KPI à l'équipe → hypothèses documentées pour validation en checkpoint Phase 0 |
+| orchestrator | 2026-04-07 | project-context.md (correction Mission/Valeurs) | Hiérarchie verrouillée : Mission = intérêts famille + transmission (objectif fondateur) ; Valeurs = filtres de décision (éthique, environnement, patrimoine long-terme). H2 réordonnée avec 3 variantes famille-first. H3 réécrite avec 3 variantes (l'ancienne confondait promesse et valeurs). H4 reformulée. 3 mots de marque ajustés : Patrimoine/Long-terme/Éthique → Famille/Transmission/Long-terme | Arbitrage stratégique direct de Thomas : "L'objectif numéro 1 est les intérêts de la famille Issa et la transmission. L'éthique humaine fait partie des valeurs, pas de la promesse." Correction critique pour éviter de contaminer tout le brand-platform en aval |
 
 ---
 
@@ -159,9 +174,9 @@ Toutes les hypothèses ci-dessous DOIVENT être arbitrées par Thomas avant la f
 | # | Hypothèse | Source | À valider par | Statut |
 |---|---|---|---|---|
 | H1 | Persona principal = fondateur de PME (Hélène) plutôt que journaliste ou partenaire B2B | Thomas n'a pas tranché — orchestrator propose | Thomas + @creative-strategy | À valider |
-| H2 | Mission formulée autour de "holding familiale française qui capitalise, transmet, et investit selon l'éthique humaine" | Thomas a délégué la formulation, donné inputs (familiale, capitalise, transmet) | Thomas + @creative-strategy (3 propositions) | À valider |
-| H3 | Promesse unique : "La holding familiale française qui capitalise patiemment, transmet, et n'investit que dans ce qui sert l'humanité" | Hypothèse orchestrator basée sur ADN éthique | Thomas + @creative-strategy | À valider |
-| H4 | Différence clé vs concurrents : taille humaine + ADN éthique explicite + écosystème tech/immo intégré | Hypothèse orchestrator | Thomas + @creative-strategy | À valider |
+| H2 | Mission = servir les intérêts de la famille Issa + organiser la transmission patrimoniale entre générations (3 variantes A/B/C dans section Positionnement) | Corrigée 2026-04-07 par Thomas : la mission est l'objectif fondateur familial, PAS l'éthique | Thomas (choix variante A/B/C) | À valider |
+| H3 | Promesse unique — 3 variantes : (A) "La holding patrimoniale d'une famille française qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement." (B) "Capital patient, vision multigénérationnelle, choix d'investissement filtrés par une éthique non négociable." (C) "Une holding familiale qui accueille les fondateurs comme des partenaires de long terme, parce qu'on n'investit que dans ce qu'on serait fier de transmettre à nos enfants." | Corrigée 2026-04-07 — l'ancienne version confondait promesse et valeurs | Thomas (choix A/B/C ou variante 4) | À valider |
+| H4 | Différence clé : holding 100% familiale assumée + horizon intergénérationnel + filtres de décision non négociables (éthique humaine, environnement) + écosystème tech/immo intégré (Gradient, Versi, Immocrew, Versimo) | Reformulée 2026-04-07 pour aligner sur la hiérarchie famille > transmission > filtres | Thomas + @creative-strategy | À valider |
 | H5 | KPI North Star quanti = nombre de demandes de contact qualifiées / mois (seuil <2/mois = alerte) | Thomas a dit "pas de KPI spécifique" — orchestrator propose | Thomas + @data-analyst | À valider |
 | H6 | KPI qualitatif complémentaire = perception de crédibilité (3-5 retours partenaires post-lancement) | Hypothèse orchestrator | Thomas + @data-analyst | À valider |
 | H7 | Objectifs site = (a) crédibilité institutionnelle + (b) pipeline d'opportunités d'investissement entrantes | Thomas a dit "site vitrine" sans préciser — orchestrator propose les 2 objectifs | Thomas | À valider |
