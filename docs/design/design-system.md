@@ -419,7 +419,76 @@ Le design system privilégie les **séparateurs horizontaux typographiques** (un
 
 ## 7. Iconographie
 
+### 7.1 Librairie retenue : Lucide Icons
+
+**Pourquoi Lucide** : style linéaire fin (1.5px stroke), cohérent et neutre, excellente lisibilité à petite taille, licence ISC (libre et commercialisable), compatible React/Next.js (`lucide-react` package), taille standard 24×24px.
+
+**Alternative écartée** : Phosphor Icons — trop d'options (5 styles = risque d'incohérence). Hero Icons — trop associé à Tailwind/generic. FontAwesome — trop connu = signal générique.
+
+### 7.2 Règles d'usage
+
+- **Taille standard** : 20×20px dans les composants UI, 24×24px dans la navigation, 32×32px dans les sections de contenu
+- **Touch target mobile** : l'icône seule ne peut jamais être un interactif — toujours accompagnée d'un label texte visible ou d'un wrapper de 44×44px minimum
+- **Couleur** : hérite toujours de `currentColor` — jamais de couleur hardcodée dans l'icône
+- **Stroke width** : 1.5px par défaut (standard Lucide). Sur fond sombre : 1.75px pour meilleure lisibilité
+- **Labels obligatoires** : en conformité avec le pattern design "Labels texte > icônes seules" (back-offices, actions importantes), tout bouton icône DOIT avoir un label visible ou un `aria-label` explicite
+
+### 7.3 Icônes interdites
+
+- Emojis en remplacement d'icônes
+- Icônes illustratives colorées (type illustrations Storyset)
+- Icônes "financières" clipart (billets, coffres-forts, graphiques génériques)
+- Icônes différentes selon les pages (cohérence = Lucide partout)
+
 ## 8. Images et illustrations
+
+### 8.1 Stratégie budget 0€
+
+Budget photo/vidéo = 0€ est une **contrainte qui devient une identité**. La stratégie repose sur trois piliers :
+
+**Pilier 1 : Typographie as hero.** Les grandes sections utilisent la typographie Cormorant Garamond en grand format comme élément visuel principal. Un titre h1 en Cormorant 72px sur fond `parchment-100` est plus impactant qu'une photo de stock générique.
+
+**Pilier 2 : Contraste de fonds.** Les alternances `parchment-100` / `white-pure` / `ink-950` créent une respiration visuelle sans besoin d'images.
+
+**Pilier 3 : Unsplash avec critères éditoriaux stricts.** Quand une image est utilisée, elle doit passer le filtre ci-dessous.
+
+### 8.2 Critères de sélection Unsplash
+
+**Critères obligatoires (PASS) :**
+- Architecture intérieure ou paysage avec lumière naturelle et teintes chaudes (ocre, blanc, beige)
+- Angle de prise de vue architectural ou éditorial (pas photo portrait générique)
+- Pas de visage humain identifiable (ou flou naturel, pas photoshopé)
+- Résolution minimale 2400px de large
+- Orientation : paysage (16:9) ou carré (1:1) selon usage
+
+**Critères éliminatoires (FAIL) :**
+- Poignée de mains, réunion de bureau générique, homme en costume devant écran
+- Immeuble de verre type La Défense générique (trop "corporate")
+- Photos surtraitées HDR, filtres Instagram
+- Personnes souriantes en situation professionnelle artificielle
+- Fond vert ou bleu avec texte en surimpression
+
+**Mots-clés recommandés Unsplash** :
+- "stone architecture detail" — textures naturelles
+- "liban beyrouth architecture" — identité libanaise possible
+- "library books warm light" — sens de la durée, transmission
+- "empty hallway marble floor" — sobre, éditorial
+- "mountain rocky landscape" — horizon, permanence
+
+### 8.3 Illustrations et patterns géométriques
+
+Si une illustration est nécessaire (page 404, état vide), utiliser :
+- **Patterns géométriques CSS** : grilles, diagonales, cercles concentriques en `color-border-subtle` — aucune dépendance externe
+- **Génération IA uniquement si absolument nécessaire** : prompt type "minimal geometric pattern, warm ivory background, gold accent lines, no text, abstract, architectural" via DALL-E ou Midjourney. Exclure tout ornement arabe illustratif.
+
+### 8.4 Interdictions absolues
+
+- Photos de billets, lingots d'or, pièces de monnaie (cliché financier)
+- Illustrations "famille heureuse" type brochure assurance
+- Carte géographique du Liban en illustration décorative
+- Drapeau libanais comme décoration
+- Calligraphie arabe ornementale (folklore)
+- Photos de Beyrouth sauf si contexte explicitement éditorial et haute qualité
 
 ## 9. Accessibilité WCAG 2.2 AA
 
