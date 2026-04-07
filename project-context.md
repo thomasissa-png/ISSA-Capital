@@ -35,12 +35,70 @@
 ---
 
 ## Écosystème de participations (à présenter sur le site)
-- **Gradient One** (gradientone.fr) — non documenté publiquement (site bloqué aux bots) — [À COMPLÉTER en Phase 1 par Thomas]
-- **Versi Immobilier** — branche immobilière — [À COMPLÉTER en Phase 1]
-- **Versi Invest** — branche investissement — [À COMPLÉTER en Phase 1]
-- **Immocrew** (immocrew.fr) — services marketing externalisés pour mandataires immobiliers indépendants. Promesse : "Tu publies, on fait le reste". Pricing : 100€/mois (annuel) ou 150€/mois. Cible : mandataires immo solo France
-- **Versimo** (versimo.fr) — home staging virtuel par IA. USP : pipeline 2 passes préservant géométrie/lumière de la photo originale. Pricing : Découverte gratuit (2 visuels) / Starter 9,90€ / Pro 29€/mois. Cibles : architectes d'intérieur, marchands de biens, particuliers exigeants
-- **Immobilier en direct** — actifs immobiliers détenus directement — [À COMPLÉTER en Phase 1]
+
+**Ordre d'affichage souhaité sur le site** : Gradient One → Versi Immobilier → Versi Invest → Immocrew → Versimo → Immobilier en direct
+**Participation à mettre en avant comme vitrine** : aucune en particulier — traitement équilibré
+**Source** : confirmé par Thomas le 2026-04-07
+
+### 1. Gradient One — holding intermédiaire
+- **URL** : pas de site web
+- **Activité** : holding qui détient Versi (Versi Immobilier + Versi Invest) et autres activités
+- **Cible/nature** : holding intermédiaire (ISSA Capital en détient 50%)
+- **Stade** : en activité
+- **Date d'entrée ISSA** : 2020
+- **Thèse ISSA** : projets entrepreneuriaux et immobiliers
+- **Rôle ISSA** : co-fondateur, **50% du capital**, 3 actionnaires au total
+- **Note copy** : Gradient One n'a pas de site public — la présentation sur issa-capital.com sera donc statique (pas de lien sortant cliquable)
+
+### 2. Versi Immobilier — marchand de biens
+- **URL** : versi-immobilier.fr (site **bientôt prêt**, pas encore en ligne)
+- **Activité** : marchand de biens (activité classique)
+- **Cible** : marché secondaire immobilier
+- **Stade** : lancée — activité existante, site en cours de finalisation
+- **Date d'entrée** : 2025
+- **Rôle ISSA** : actionnaire co-gérant
+- **Note copy** : si site live au lancement → lien sortant ; sinon mention "site bientôt disponible"
+
+### 3. Versi Invest — club deal & conseil immobilier
+- **URL** : versi-invest.fr (site pas encore fait)
+- **Activité** : club deal et conseil en achat immobilier
+- **Cible** : investisseurs cherchant à placer dans l'immobilier (immeubles essentiellement) sans avoir le temps ou les compétences
+- **Stade** : vient d'être lancé
+- **Date d'entrée** : 2026
+- **Rôle ISSA** : co-gérant
+- **Note copy** : pas encore de site → présentation statique sur issa-capital.com, pas de lien sortant
+- **⚠️ ATTENTION LEGAL** : "club deal" et "conseil en achat immobilier" doivent être présentés avec prudence pour éviter qualification d'offre au public de titres financiers / démarchage financier (cf. legal-audit.md liste noire). À valider par @copywriter + @legal avant publication.
+
+### 4. Immocrew — marketing externalisé mandataires immo
+- **URL** : immocrew.fr (live)
+- **Activité** : services marketing externalisés pour mandataires immobiliers indépendants
+- **Promesse** : "Tu publies, on fait le reste"
+- **Pricing** : 100€/mois (annuel) ou 150€/mois
+- **Cible** : mandataires immo solo (exclut agences/équipes), France
+- **Headline site** : "Tu n'as pas choisi l'immobilier pour passer tes soirées sur Canva"
+- **Source** : WebFetch immocrew.fr 2026-04-07
+- **À clarifier** : détention directe par ISSA Capital ou indirecte via Gradient One ?
+
+### 5. Versimo — home staging IA
+- **URL** : versimo.fr (live)
+- **Activité** : home staging virtuel par IA — transforme photos pièces vides en espaces meublés en 90s
+- **USP** : pipeline 2 passes préservant géométrie / angle / lumière de la photo originale
+- **Pricing** : Découverte gratuit (2 visuels) / Starter 9,90€ (15 visuels) / Pro 29€/mois (50 visuels)
+- **Cibles** : architectes d'intérieur, marchands de biens, particuliers exigeants
+- **Headline site** : "Votre pièce meublée, en 90 secondes."
+- **Source** : WebFetch versimo.fr 2026-04-07
+- **À clarifier** : détention directe par ISSA Capital ou indirecte via Gradient One ?
+
+### 6. Immobilier en direct — patrimoine résidentiel
+- **Type de biens** : résidentiel
+- **Zones** : Île-de-France
+- **Volume** : **15 lots en gestion** actuellement
+- **Stratégie** : patrimoine + rendement
+- **Communication publique** : **traitement discret** — Thomas accepte une mention courte sans détailler. Suggestion copy : un paragraphe générique type "Patrimoine immobilier résidentiel en Île-de-France géré en direct" sans chiffres
+- **Source** : confirmé par Thomas le 2026-04-07
+
+### Question résiduelle (Phase 1)
+Immocrew et Versimo sont-elles détenues par ISSA Capital **directement** ou **via Gradient One** (qui détient "Versi et autres activités") ? Impact sur l'organigramme et la cohérence du portefeuille affiché. À confirmer avec Thomas.
 
 ---
 
@@ -170,6 +228,7 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | data-analyst | 2026-04-07 | docs/analytics/kpi-framework.md + docs/analytics/tracking-plan.md | North Star Metric = demandes de contact qualifiées/mois (formulaire, type_demande = opportunite_investissement) ; outil = Plausible (H10 validé) ; 5 KPIs secondaires quanti + 1 KPI qualitatif panel partenaires ; 9 events custom Plausible avec types TypeScript stricts ; 3 Goals Plausible ; implémentation Next.js prête à copier-coller pour @fullstack. Tous les seuils = [HYPOTHÈSE] à calibrer M+1 post-launch | NSM validé par Thomas (H5) : pipeline d'opportunités = objectif central. Plausible retenu (H10) vs GA4 : sans cookies, RGPD-natif, cohérent avec le ton premium institutionnel. Seuils non inventés : tous sourcés (Contentsquare 2024, btob-leaders, agencenile) et marqués [HYPOTHÈSE]. next-plausible retenu vs snippet manuel : TypeScript strict, hook React natif, App Router compatible |
 | creative-strategy | 2026-04-07 | docs/strategy/brand-platform.md + docs/strategy/personas.md + docs/strategy/competitive-benchmark.md | Positionnement : espace libre "holding familiale lisible, dimension humaine forte, horizon intergénérationnel assumé" — entre l'opacité Agache et le corporate froid Peugeot Invest. Archétype Ruler/Caregiver. Vouvoiement systématique. 3 taglines candidates (Option B recommandée en baseline). Anti-promesses explicites (jamais "famille française", jamais fonds, jamais court-termiste). Personas : Hélène (principal), Marc (journaliste, secondaire 1), Sophie (partenaire B2B, secondaire 2). Benchmark 7 holdings (FR + International + Moyen-Orient). 5 enseignements actionnables. | Framework Golden Circle (marque mission-driven) + Prisme Kapferer (identité culturelle forte). Espace libre identifié par WebSearch + Perceptual Map : aucune holding française n'occupe la zone "dimension familiale forte + lisibilité forte" aujourd'hui. Alternatives écartées : positionnement "pure performance financière" (occupé par Peugeot Invest / Eurazeo) ; positionnement "opacité premium" (Agache — impossible à tenir pour une structure nouvelle et inconnue). Recommandation de création d'agents @testeur-helene et @testeur-sophie par @agent-factory. |
 | legal | 2026-04-07 | docs/legal/legal-audit.md + docs/legal/rgpd-checklist.md | (1) Risque CRITIQUE identifié : qualification "offre au public de titres financiers" (art. L.411-1 CMF) — liste de mots interdits produite pour @copywriter. (2) Mentions légales : 2 données manquantes bloquantes (capital social + TVA à vérifier). (3) Pas de bandeau cookies requis (Plausible cookieless confirmé). (4) Pas d'obligations AMF confirmé noir sur blanc. (5) Base légale formulaire = consentement (art. 6.1.a RGPD). (6) DPA Resend obligatoire (art. 28 RGPD). (7) Pas de DPO obligatoire. | Risque CMF maîtrisé par le copy (ISSA collecte des propositions entrantes, ne démarche pas). Consentement retenu comme base légale du formulaire car la soumission est volontaire et clairement identifiée. Intérêt légitime écarté : moins solide juridiquement pour une nouvelle société inconnue. Plausible cookieless confirmé par documentation officielle Plausible : aucun bandeau CNIL requis en l'état. Sources : art. L.411-1 CMF (Légifrance), art. 6 III LCEN modifié loi SREN 2024, art. 13 RGPD, recommandations CNIL fiche 16. |
+| product-manager | 2026-04-07 | docs/product/product-vision.md + docs/product/functional-specs.md + docs/product/execution-plan.md | Vision produit : site vitrine institutionnel pur, 6 promesses fonctionnelles, 10 anti-features verrouillées, KPI North Star = demandes qualifiées/mois. Specs : 8 US (US-01 à US-13 avec gaps intentionnels), formulaire 7 champs qualifiants + consentement RGPD, composant réutilisable Contact/Opportunités, page Mentions légales noindex. Plan d'exécution : 5 phases par dépendances, parallélisation maximale, 8 données manquantes Thomas identifiées, 2 agents spécialisés recommandés (@testeur-helene, @testeur-sophie). | Formulaire Opportunités : 7 champs qualifiants (secteur, taille, description) vs 3 champs génériques — décision de qualifier sans intimider pour maximiser la qualité des leads plutôt que le volume. Données participations en fichier config participations.ts pour mises à jour sans toucher le code. Page Contact distincte de la page Opportunités pour ne pas forcer Sophie et Marc dans le formulaire Opportunités (trop spécifique pour eux). Plausible sans cookies = bandeau simplifié (confirmé par @legal). |
 
 ---
 
