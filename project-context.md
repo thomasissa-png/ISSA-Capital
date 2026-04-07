@@ -6,6 +6,53 @@
 
 ---
 
+## 🏛️ Principe directeur #0 — VITRINE, PAS CONVERSION (verrouillé par Thomas 2026-04-07)
+
+> **Citation exacte Thomas** : *"On est pas là pour plaire au prospect. On est là pour avoir une belle vitrine."*
+
+**Implication pour TOUS les agents (présents et futurs)** :
+
+### ✅ Ce que le site DOIT être
+- Une **vitrine** premium qui raconte qui est la famille Issa, son héritage, son écosystème
+- Un **musée éditorial** des valeurs, de la filiation (Jean-Pierre → Thomas → génération à venir), du parcours
+- Une **présence institutionnelle** qui inspire le respect sans chercher à convaincre
+- Un site qui **se suffit à lui-même** : si personne ne remplit jamais le formulaire, le site a quand même réussi sa mission (projeter l'identité, l'histoire, la crédibilité)
+
+### ❌ Ce que le site N'EST PAS
+- Une **landing page** optimisée conversion
+- Un **funnel** avec urgency / scarcity / FOMO
+- Un site qui cherche à **vendre** un service ou **convaincre** un prospect
+- Un **deck de pitch** déguisé en site web
+- Une **machine à leads**
+
+### Règles de calibration pour les agents
+1. **@copywriter** : ton éditorial, pas persuasif. Vocabulaire qui **affirme** plutôt que convainc. Pas d'argumentation commerciale. Zéro tactique de copy de conversion (PAS, AIDA, BAB doivent être utilisés **en sourdine** — structurer l'info, pas pousser à l'action).
+2. **@design** : esthétique muséale / éditoriale. Respiration, silences visuels, typographie imposante. Pas de CTAs agressifs. Pas de "social proof" clinquant. Pas de "trust badges".
+3. **@ux** : parcours **contemplatifs**, pas optimisés pour la soumission de formulaire. Friction OK si elle sert la posture premium. CTAs secondaires, pas primaires.
+4. **@growth** (si invoqué) : **ne pas** appliquer les frameworks AARRR/funnel/boucles virales classiques. La "conversion" n'est pas le KPI principal.
+5. **@seo** : optimiser pour le **branding** et l'**autorité**, pas pour le trafic transactionnel. Mots-clés défensifs et de marque, pas des mots-clés d'intention d'achat.
+6. **@qa / testeurs persona** : les tests ne mesurent PAS la "conviction à soumettre". Ils mesurent la **perception de prestige**, la **crédibilité**, le **respect inspiré**, la **clarté de l'identité**.
+7. **@fullstack** : implémentation soignée mais sans features de tracking de conversion agressives. Analytics Plausible minimal. Pas de heatmaps, pas de session recording.
+
+### Révision des gates testeur-persona (GP1-GP10)
+Les gates GP1-GP10 définies dans CLAUDE.md sont calibrées "conviction + conversion". Pour ce projet, recalibrer ainsi :
+- **GP7 "Conviction à s'inscrire"** → devient **"Respect inspiré"** : "Après avoir vu le site, je respecte ISSA Capital et je comprends pourquoi elle existe" — pas besoin que le testeur veuille remplir un formulaire
+- **GP9 "Outputs utiles"** → devient **"Identité lisible"** : "Je comprends qui est la famille, son histoire, son écosystème, ses valeurs"
+- **GP10 "Fidélisation"** → devient **"Mémorabilité"** : "Le site me laisse une impression durable, différente d'une holding lambda"
+
+Les autres gates (GP1 compréhension immédiate, GP3 crédibilité, GP8 look & feel) restent pertinentes.
+
+### Implication sur la page Opportunités et le CTA B
+La page Opportunités existe (on garde l'option de recevoir des propositions), mais elle est **discrète** :
+- Pas de "pitch" de la page Opportunités sur la page Accueil en gros CTA
+- Pas de répétition insistante dans les autres pages
+- Posture "nous acceptons quelques dossiers, voici nos critères" — pas "envoyez-nous vos deals maintenant !"
+
+### Implication sur la page Accompagnement (CTA A)
+Pareil : l'offre de conseil existe, elle est documentée sobrement, mais ce n'est pas un consultant qui cherche des clients. C'est une mention qui dit "si vous souhaitez travailler avec Thomas, voici ce qu'il propose" — sans persuasion.
+
+---
+
 ## Identité
 - **Nom du projet** : ISSA Capital
 - **URL (si existante)** : https://issa-capital.com (refonte 100% from scratch — table rase, contenu actuel inaccessible aux bots, non récupéré)
