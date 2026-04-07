@@ -312,11 +312,11 @@ Données existantes :
 
 ### Objectif
 
-Expliquer QUI est la famille Issa, POURQUOI elle a créé ISSA Capital, et COMMENT elle prend ses décisions d'investissement — pour convaincre Hélène que c'est un partenaire sur le long-terme, pas un fonds.
+Expliquer QUI est la famille Issa, POURQUOI elle a créé ISSA Capital, et COMMENT elle prend ses décisions d'investissement — pour convaincre Karim que Thomas est un pair compétent, et convaincre Leila que la holding a une thèse d'investissement sérieuse et lisible.
 
 ### Audience prioritaire
 
-Hélène (persona principal) — Hélène est arrivée sur le site, elle a vu l'accroche, elle veut creuser l'identité et les valeurs avant de proposer son entreprise.
+Karim (persona principal A) — il a vu l'accroche sur l'Accueil, il veut creuser la crédibilité et le profil de Thomas avant de déclencher une prise de contact. Marc (persona secondaire) — cherche des éléments éditoriaux sur la thèse d'investissement.
 
 ### Sections obligatoires
 
@@ -346,8 +346,9 @@ Hélène (persona principal) — Hélène est arrivée sur le site, elle a vu l'
   - Préservation de l'environnement : critère de sélection, pas de greenwashing
 
 **Section CTA de sortie :**
-- CTA primaire : "Proposer une opportunité" → /opportunites#formulaire
-- CTA secondaire : "Voir nos participations →" → /participations
+- CTA A : "Parler avec Thomas" → /accompagnement (cible Karim — il est convaincu, il passe à l'action)
+- CTA B : "Proposer une opportunité" → /opportunites#formulaire (cible Leila — elle a validé la thèse)
+- CTA tertiaire : "Voir nos participations →" → /participations
 
 ### États UI
 
