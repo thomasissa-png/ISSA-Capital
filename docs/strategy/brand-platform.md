@@ -309,23 +309,39 @@ Pourquoi : c'est la formulation la plus forte du territoire ISSA Capital. Elle d
 
 ### 11.3 Messages par persona
 
-**Pour Hélène (fondatrice PME cherchant adossement)** : "Vous avez construit votre entreprise sur des décennies. ISSA Capital est la seule holding qui vous propose un adossement sans contrainte de revente — parce que nous investissons pour nos enfants, pas pour un fonds."
+> **Note de révision (2026-04-07)** : Hélène et Sophie sont supprimées — voir personas.md. Messages recalés sur Karim (CTA accompagnement), Leila (CTA opportunités), et Marc (earned media).
 
-**Pour le partenaire B2B (banquier / avocat / conseiller)** : "Un interlocuteur unique, une structure lisible, des critères d'investissement documentés. ISSA Capital est un partenaire institutionnel sérieux avec lequel vous pouvez travailler directement."
+**Pour Karim (entrepreneur en structuration patrimoniale — CTA accompagnement)** : "Thomas Issa a construit une holding, co-fondé un écosystème immobilier et tech, et investi en direct dans 15 lots en Île-de-France. Si vous cherchez quelqu'un qui l'a fait — pas quelqu'un qui vous vend un produit — c'est à lui que vous parlez."
 
-**Pour le journaliste / analyste** : "ISSA Capital est la holding patrimoniale d'une famille libanaise implantée en France depuis plusieurs années — un modèle de holding familiale indépendante, cohérente, et structurée autour d'un écosystème tech/immobilier."
+**Pour Leila (apporteur d'affaires immobilier / fondateur cherchant co-investisseur — CTA opportunités)** : "ISSA Capital investit dans l'immobilier et des participations minoritaires. Pas d'horizon de sortie contraint. Pas de comité d'investissement qui se réunit tous les 6 mois. Si votre dossier répond à nos critères, nous vous répondons."
 
-### 11.4 Messages par étape du funnel
+**Pour Marc (journaliste / analyste — earned media)** : "ISSA Capital est la holding patrimoniale d'une famille libanaise implantée en France — un modèle de holding familiale indépendante, structurée autour d'un écosystème immobilier et tech cohérent, avec des filtres d'investissement non négociables. Thomas Issa est disponible pour un entretien via contact@issa-capital.com."
+
+### 11.4 Messages par étape du funnel — 2 parcours distincts
+
+> ISSA Capital a désormais deux funnels parallèles. Les messages varient selon le CTA d'entrée.
+
+**Funnel A — Karim (accompagnement)**
 
 | Étape | Enjeu | Message |
 |---|---|---|
-| Awareness (problème) | "Je ne connais pas ISSA Capital" | "Une holding patrimoniale familiale. Discrète, exigeante, long-terme." |
-| Consideration (solution) | "Est-ce que ça correspond à ce que je cherche ?" | "Nous n'investissons que dans des projets que nous pouvons accompagner sur la durée — avec des critères clairs et publics." |
-| Decision (action) | "Comment leur soumettre une opportunité ?" | "Si votre projet répond à nos critères, soumettez-le via notre formulaire. Nous répondons à chaque demande qualifiée." |
+| Awareness | "Je ne connais pas Thomas Issa" | "Fondateur, co-investisseur, opérateur immo. Pas un conseiller de cabinet — quelqu'un qui l'a fait." |
+| Consideration | "Est-ce que son expérience correspond à ma situation ?" | "Holding IS, immo en direct IDF, participations minoritaires : si ce sont vos sujets, c'est le bon interlocuteur." |
+| Decision | "Comment prendre contact ?" | "Un échange. Pas un formulaire de 10 champs. [Lien CTA accompagnement]" |
+
+**Funnel B — Leila (opportunités)**
+
+| Étape | Enjeu | Message |
+|---|---|---|
+| Awareness | "Je cherche un co-investisseur ou acquéreur sérieux" | "ISSA Capital investit dans l'immobilier et des participations. Horizon long, critères clairs, décision rapide." |
+| Consideration | "Est-ce que mon deal rentre dans leurs critères ?" | "Secteurs, tailles de tickets, posture d'actionnaire : tout est documenté sur la page Opportunités." |
+| Decision | "Comment soumettre mon dossier ?" | "Formulaire direct. Nous répondons à chaque opportunité qualifiée sous [DONNÉE À OBTENIR DE THOMAS — délai de réponse] jours ouvrés." |
 
 ### 11.5 Elevator pitch (30 secondes — pour Thomas)
 
-"ISSA Capital est la holding patrimoniale de la famille Issa — une famille libanaise enracinée en France. Nous gérons et développons un patrimoine familial avec un horizon de plusieurs générations, à travers un écosystème de participations dans la tech, l'immobilier, et les services. Nous n'investissons que dans des projets que nous pouvons accompagner sur la durée, et que nous serons fiers de transmettre."
+**Version accompagnement (Karim)** : "J'accompagne des entrepreneurs et investisseurs dans la structuration de leur patrimoine et de leur holding. J'ai co-fondé ISSA Capital, je gère 15 lots en direct en Île-de-France, et j'ai co-construit un écosystème de participations dans l'immo et la tech depuis 2020. Si vous cherchez quelqu'un qui l'a fait, pas quelqu'un qui vous vend un produit, je suis disponible."
+
+**Version opportunités (Leila)** : "ISSA Capital est la holding patrimoniale de la famille Issa — famille libanaise établie en France. On investit dans l'immobilier résidentiel et des participations minoritaires avec un horizon intergénérationnel. On ne vend pas. Si vous avez un dossier qui correspond à nos critères, soumettez-le."
 
 ### 11.6 Boilerplate (presse, partenaires, bios)
 
@@ -348,11 +364,16 @@ Règle de présentation sur le site : chaque participation est présentée avec 
 
 ---
 
-**Handoff → @copywriter, @design, @ux**
-- Fichiers produits : `docs/strategy/brand-platform.md`
-- Décisions prises : positionnement sur l'espace "holding 100% familiale + horizon intergénérationnel + filtres non négociables" ; archétype Ruler/Caregiver ; vouvoiement systématique ; trois taglines candidates avec recommandation d'usage par page ; anti-promesses explicites ; hiérarchie de messages complète
+**Handoff → @ux, @copywriter, @design**
+- Fichiers produits : `docs/strategy/brand-platform.md` (révision majeure 2026-04-07)
+- Décisions prises :
+  - Archétype recalibré : Ruler/Outlaw remplace Ruler/Caregiver (Caregiver conservé dans les valeurs, pas dans le ton)
+  - 6 nouvelles taglines avec caractère — baseline recommandée : "Famille libanaise. Exigences sans exception." — hero recommandée : "On ne vend pas. On garde."
+  - Vocabulaire enrichi : tranchant, assumé, exigence, indépendance, sans compromis, garder — mots interdits ajoutés : humblement, modeste, serein, "n'hésitez pas"
+  - Trait de voix n°5 "Affirmé" ajouté
+  - Messages par persona et funnel recalés sur les 2 CTAs (accompagnement / opportunités)
 - Points d'attention pour la suite :
-  - @copywriter : respecter le vocabulaire prescrit/proscrit (section 10), ne JAMAIS écrire "famille française"
-  - @design : references visuelles section 9, direction "sobre + éditorial + typographique" à 0€ photo
-  - @ux : CTA principal "Proposer une opportunité d'investissement", CTAs secondaires à définir en cohérence avec les messages par persona (section 11.3)
-  - Agents aval : les participations Gradient One, Versi Immobilier, Versi Invest et immobilier direct sont encore à documenter (Thomas doit fournir)
+  - @copywriter : les 2 elevator pitches (section 11.5) sont les templates de référence pour chaque page — le ton du pitch "accompagnement" est plus direct/pair que celui des "opportunités" qui reste institutionnel. Respecter cette bifurcation.
+  - @design : l'archétype Outlaw peut infléchir la direction visuelle vers plus de vertèbre (typo bold, contraste fort, espaces tranchants) — à arbitrer avec Thomas. Ne pas basculer vers le brutalisme complet sans validation.
+  - @ux : 2 CTAs distincts = potentiellement 2 pages ou 2 points d'entrée distincts. Arbitrer l'architecture avec Thomas avant de spécifier les parcours.
+  - Thomas doit fournir : (1) validation des 6 catégories d'expertise hypothétiques, (2) délai de réponse aux opportunités soumises (section 11.4 funnel B), (3) son parcours détaillé pour la page /accompagnement
