@@ -2,7 +2,7 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-07 — fin de session 1 (Phase 0 + Phase 1 + Phase 2a)**
+> Dernière mise à jour : **2026-04-07 — fin de session 2 (Phase 2b + Phase 2c COMPLETE)**
 
 ---
 
@@ -34,8 +34,44 @@ Livrer le **site vitrine premium** d'ISSA Capital (holding patrimoniale famille 
 - @seo → `docs/seo/` : seo-strategy + keyword-map + metadata-templates + structured-data
 - @infrastructure → `docs/infra/` : infrastructure + performance-audit + security-checklist + deployment-replit + `REPLIT_ACTIONS.md` à la racine (produit par orchestrator après erreur d'agent)
 
-### 🔜 Phase 2b — Implémentation (PROCHAINE SESSION)
-**À lancer par @orchestrator** :
+### ✅ Phase 2b — Implémentation (COMPLETE — session 2)
+
+**Exécutée par @orchestrator session 2** :
+- ✅ **Propagation locale 4 learnings P0** dans `.claude/agents/*.md` (creative-strategy, copywriter, design, orchestrator, ux, growth, _base-agent-protocol) — gate bloquante session 1 résolue (commit `382cb3b`)
+- ✅ **@design — assets finaux** : logo (3 variantes SVG), favicon SVG, og-image source SVG (1200×630, baseline "Racines libanaises. Exigences sans exception."), webmanifest, `docs/design/assets-handoff.md` avec template `scripts/generate-assets.mjs` (commit `147151c`)
+- ✅ **@fullstack initial** : bootstrap Next.js 14 + tokens 3 tiers + composants (Button, Container, Section, Overline, Header, Footer, ContactForm) + lib (env, rateLimit, sanitize, cn, resend, contactSchema) + 7 pages App Router + API `/api/contact` + robots.ts + sitemap.ts + JSON-LD Organization + error/loading/not-found (commit `d63b443`)
+- ✅ **@fullstack finalisation** : build check PASS (tsc + lint + next build, 12 routes < 100 kB), 21 baselines Playwright (3 devices × 7 pages), `scripts/generate-assets.mjs` exécuté → 5 binaires PNG/ICO produits, décision #8 mise à jour (levant-600 → levant-700 WCAG AA) (commit `f5da8fe`)
+- ✅ **@qa** : 5 livrables `docs/qa/` (qa-strategy, TESTING.md matrice G27 100% 11/11 US, visual-baselines-review, security-audit, a11y-audit), 127 Playwright + 5 Vitest PASS, axe-core sur 7 pages (commit `28010db`)
+- ✅ **@fullstack mode fix** : 3 bugs bloquants QA résolus — (1) levant-700 WCAG AA propagé sur 9 pages + composants, (2) footer sémantique /accompagnement déjà conforme, (3) `npm install next@14.2.35 + vitest@2.1.9` 0 critical (commit `5c27064`)
+
+**Verdict QA Phase 2b** : GO CONDITIONNEL → GO après fix → 127/127 Playwright + 5/5 Vitest PASS, build green, 0 critical, axe-core PASS sur 7 pages.
+
+### ✅ Phase 2c — Tests persona (COMPLETE — session 2)
+
+- ✅ **@testeur-karim** sur `/`, `/mission`, `/accompagnement` → `docs/reviews/testeur-karim-phase-2c.md` — verdict **GO CONDITIONNEL**, gates 6/6 BLOQUANT + 4/4 REQUIS PASS, 2 P1 + 2 P2 + 1 P3, taglines validées (réserves Thomas sur "On décide. Pas un calendrier de fonds." infondées de son point de vue), identité libanaise dosage exact (commit `998276e`)
+- ✅ **@testeur-leila** sur `/`, `/opportunites`, `/participations` → `docs/reviews/testeur-leila-phase-2c.md` — verdict **GO CONDITIONNEL**, gates 6/6 BLOQUANT + 4/4 REQUIS PASS (GP5 PASS avec réserve), 2 P1 + 3 P2 + 1 P3, conformité L.411-1 CMF PASS, simulation parcours mercredi 9h30 deal Montreuil 980 K€
+
+### Frictions résiduelles à arbitrer Phase 3 (avant déploiement)
+
+| Priorité | Page | Friction | Owner |
+|---|---|---|---|
+| P1 | /accompagnement | Séquence signature/formulaire à inverser (signature AVANT formulaire) | @fullstack ou @copywriter |
+| P1 | /accompagnement | Dissonance "pas de formulaire 10 champs" vs formulaire réel | @copywriter |
+| P1 | /opportunites | Message succès sans rappel délai "dans la journée" | @fullstack + @copywriter |
+| P1 | /opportunites | Ticket minimum absent pour participations minoritaires | @copywriter (validation Thomas) |
+| P2 | / | CTA final home trop orienté Leila — pas d'accroche symétrique Karim | @fullstack + @copywriter |
+| P2 | /accompagnement | 7 domaines en liste plate, pas séparés patrimonial/corporate | @copywriter |
+| P2 | /opportunites | Label "Email" vs "Email professionnel" | @fullstack |
+| P2 | /opportunites | Champ Localisation non obligatoire pour deals immo | @fullstack + @copywriter |
+| P2 | / | Stat "50%" sans contexte immédiat | @copywriter |
+| P3 | toutes | Répétition baseline hero/footer | @copywriter |
+| P3 | /participations | 2/4 filiales sans URL live (Versi Immobilier + Versi Invest) | suivi futur |
+
+---
+
+### 🗑️ Phase 2b — Plan d'origine (archivé pour traçabilité)
+
+**Initialement prévu (cf. exécution réelle ci-dessus)** :
 1. **@fullstack** (priorité 1 — le plus gros chunk)
    - Code des 7 pages Next.js App Router + TypeScript + Tailwind selon `docs/design/page-compositions.md`
    - Composant `<ContactForm variant="accompagnement|opportunite|contact">`
@@ -63,9 +99,10 @@ Livrer le **site vitrine premium** d'ISSA Capital (holding patrimoniale famille 
    - Évaluation gates GP1-GP10 recalibrées VITRINE
    - Verdict GO / NO-GO pour la page d'accompagnement (testeur-karim) et la page d'opportunités (testeur-leila)
 
-### 🔜 Phase 3 — QA final & conformité (après Phase 2b)
+### 🔜 Phase 3 — Corrections frictions Phase 2c + QA final (PROCHAINE SESSION)
+- **Corrections frictions Phase 2c** : @fullstack + @copywriter traitent les 4 P1 + 5 P2 listés ci-dessus
 - @reviewer → audit final 32 gates binaires sur TOUS les livrables
-- @legal → relecture finale copy vs liste noire L.411-1 CMF
+- @legal → relecture finale copy vs liste noire L.411-1 CMF (note : Leila a déjà validé /opportunites conforme)
 - @seo → vérification implémentation (metadata, JSON-LD, sitemap, robots.txt)
 
 ### 🔜 Phase 4 — Sales enablement & earned media (après Phase 3)
@@ -80,13 +117,23 @@ Livrer le **site vitrine premium** d'ISSA Capital (holding patrimoniale famille 
 
 ---
 
+## 📊 Compteur session 2
+
+- **Phases terminées** : 2 (Phase 2b + Phase 2c)
+- **Tasks producteurs** : 8 / 18 (seuil ALERTE ROUGE) — propagation, design, fullstack-1, fullstack-2, qa, fullstack-3 fix, karim, leila
+- **Livrables session 2** :
+  - Code Next.js complet (30+ fichiers `src/`)
+  - 5 livrables `docs/qa/` + 2 livrables `docs/reviews/`
+  - 21 baselines Playwright + 5 binaires assets PNG/ICO + 9 SVG
+  - 9 commits poussés sur `claude/propagate-learnings-9PntQ`
+- **Build green** : tsc + lint + next build PASS, 12 routes < 100 kB, 127/127 Playwright + 5/5 Vitest PASS, 0 critical
+- **Learnings P0/P1 propagés** : 4/4 en local — propagation cross-projets repo Agent-Team à faire par Thomas en meta-maintenance
+
 ## 📊 Compteur session 1
 
 - **Phases terminées** : 3 (Phase 0, Phase 1, Phase 2a)
 - **Tasks producteurs** : ~16-17 / 18 (seuil ALERTE ROUGE) — session 1 clôturée à temps
 - **Livrables produits** : 30+ fichiers dans `docs/` + 2 agents testeurs dans `.claude/agents/`
-- **Pas de dégradation contextuelle majeure**
-- **Learnings P0/P1 non-propagés** : 3 (Mission vs Valeurs / Identité libanaise / Vitrine pas conversion) — propagation différée à `docs/founder-preferences.md` dans le repo Agent-Team, à faire en début de session suivante ou en meta-maintenance framework
 
 ---
 
@@ -135,21 +182,31 @@ Livrer le **site vitrine premium** d'ISSA Capital (holding patrimoniale famille 
 
 ---
 
-## 🚀 Commande de reprise session 2
+## 🚀 Commande de reprise session 3
 
 Copie-colle exactement ceci dans la prochaine session :
 
-> **@orchestrator — reprise ISSA Capital session 2**
+> **@orchestrator — reprise ISSA Capital session 3**
 >
-> Lis project-context.md et docs/orchestration-plan.md. Continue où on s'était arrêté : Phase 2b (implémentation).
+> Lis project-context.md et docs/orchestration-plan.md. Continue où on s'était arrêté : Phase 3 (corrections frictions Phase 2c + QA final).
 >
-> Lance @fullstack en premier pour coder les 7 pages Next.js App Router selon docs/design/page-compositions.md + docs/copy/*.md + docs/infra/infrastructure.md. Composant unique ContactForm avec prop variant. API /api/contact avec Zod + honeypot + rate limit + Resend. Fonts self-hosted. Boucle visuelle Playwright obligatoire sur 3 devices (iPhone 13 / iPad / Desktop 1280px) avec baselines dans tests/screenshots/. Pre-commit build check obligatoire.
+> **Étape 1 — Corrections P1/P2 frictions Phase 2c** (cf. tableau "Frictions résiduelles" dans Phase 2c) :
+> - Lance @copywriter pour traiter les corrections copy : intro formulaire /accompagnement, restructuration 7 domaines, ticket minimum participations (validation Thomas requise), CTA final home Karim, stat 50%, label Email professionnel, variation baseline hero/footer
+> - Lance @fullstack en parallèle pour les corrections code : déplacer signature AVANT formulaire /accompagnement, message succès /opportunites avec rappel délai "dans la journée", localisation requise pour deals immo, label Email
+> - Re-run pre-commit build check + Playwright après corrections
 >
-> En parallèle, lance @design pour produire les assets finaux (favicon.ico/svg, apple-touch-icon, og-image 1200×630 avec baseline "Racines libanaises. Exigences sans exception.", logo.svg, site.webmanifest).
+> **Étape 2 — QA final + conformité** :
+> - Lance @reviewer pour audit final 32 gates binaires sur TOUS les livrables docs/ + src/
+> - Lance @legal pour relecture finale copy vs liste noire L.411-1 CMF (note : Leila a déjà validé /opportunites conforme — focus sur les pages /accompagnement, /participations, /mission)
+> - Lance @seo pour vérification implémentation (metadata, JSON-LD, sitemap, robots.txt)
 >
-> Après @fullstack : lance @qa (tests Vitest + Playwright E2E + matrice traçabilité US→tests) puis @testeur-karim et @testeur-leila en Phase 2c sur le site codé.
+> **Étape 3 — Phase 4 (réduite vu VITRINE) + Phase 5** : à arbitrer en fin de session 3 selon temps disponible.
 >
 > Respecte le Principe directeur #0 : VITRINE, pas conversion. Zéro CTAs agressifs, ton éditorial.
+
+## 🚀 Commande de reprise session 2 (archivée)
+
+> @orchestrator — reprise ISSA Capital session 2 — Phase 2b implémentation. (Cette session est désormais COMPLETE — voir compteurs ci-dessus.)
 
 ---
 
