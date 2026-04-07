@@ -46,7 +46,24 @@ Ce que nous construisons, et pourquoi.
 
 ---
 
-## Section 1 — La décision fondatrice
+## Section 1 — L'origine générationnelle
+
+[Framework : StoryBrand — Character, contexte fondateur]
+[Notes @design : section éditoriale — ton sobre, marges généreuses. Pas de chronologie visuelle ni de frise — le récit se suffit à lui-même. Photo de Thomas optionnelle, pas de photo de famille sans validation explicite.]
+
+### H2
+Ce qui précède la holding.
+
+### Corps
+ISSA Capital n'a pas commencé en mars 2026. Elle a commencé bien avant — avec Jean-Pierre Issa, né à Dakar en 1958 dans une famille libanaise, qui a appris le monde dans les salles de réunion d'IBM et fait partie de l'équipe qui a lancé Lexmark en Europe dans les années 1990. Directeur de filiales dans plusieurs pays. Directeur Marketing EMEA. Un homme qui a construit un patrimoine — immobilier à Paris, en Normandie, au Liban — décision après décision, continent après continent.
+
+Thomas Issa est son fils. C'est de lui qu'il a tout appris sur la valeur des actifs réels, la patience, et la transmission comme horizon naturel de toute décision économique. ISSA Capital est la formalisation juridique de ce legs — une SAS créée en 2026 pour organiser ce qui existait déjà dans les convictions d'une famille.
+
+Ce n'est pas l'histoire d'un entrepreneur tech qui crée une holding pour diversifier ses revenus. C'est l'aboutissement de trois décennies de construction patrimoniale, transmis d'un père à son fils, destiné à passer à la génération suivante.
+
+---
+
+## Section 2 — La décision fondatrice
 
 [Framework : StoryBrand — Problem / Guide]
 
@@ -62,7 +79,7 @@ La famille Issa — famille libanaise établie en France — a préféré constr
 
 ---
 
-## Section 2 — La mission (verrouillée)
+## Section 3 — La mission (verrouillée)
 
 [Framework : StoryBrand — Plan]
 
@@ -76,7 +93,7 @@ C'est tout. Pas une mission de bien public, pas une promesse de transformation s
 
 ---
 
-## Section 3 — L'identité
+## Section 5 — L'identité
 
 [Framework : StoryBrand — Character, identité affirmée]
 
@@ -94,23 +111,28 @@ Les deux ensemble forment quelque chose d'assez rare dans le paysage des holding
 
 ---
 
-## Section 4 — La vision à trente ans
+## Section 6 — La vision à trente ans
 
 [Framework : StoryBrand — Success]
+[Notes @design : section sobre, traitement éditorial — pas de visuel décoratif. La densité du texte est suffisante.]
 
 ### H2
 Ce que nous voulons que nos enfants reçoivent.
 
 ### Corps
-Dans trente ans, les enfants de la famille Issa regarderont chaque décision prise aujourd'hui. Pas seulement pour ce qu'elle aura produit financièrement. Pour ce qu'elle aura respecté.
+Jean-Pierre Issa a construit quelque chose. Thomas l'a reçu, compris, et décidé de l'organiser. Les trois enfants de Thomas devront, à leur tour, décider de ce qu'ils en font.
 
-Un portefeuille de participations dans des entreprises saines. Un patrimoine immobilier transmissible. Des choix cohérents avec les valeurs qui fondent la famille — et pas seulement avec les conditions de marché du moment.
+ISSA Capital est là pour que cette question ne soit jamais contrainte par des erreurs de structuration, des décisions prises à court terme, ou un patrimoine qui s'est effrité faute d'organisation.
+
+Dans trente ans, ces trois enfants regarderont chaque décision prise aujourd'hui. Pas seulement pour ce qu'elle aura produit financièrement. Pour ce qu'elle aura respecté.
+
+Un portefeuille de participations dans des entreprises saines. Un patrimoine immobilier transmissible — en France et au Liban. Des choix cohérents avec les valeurs qui fondent la famille, et pas seulement avec les conditions de marché du moment.
 
 C'est ce que nous construisons. Décision après décision.
 
 ---
 
-## Section 5 — Les trois filtres
+## Section 7 — Les trois filtres
 
 [Framework : StoryBrand — Plan, les règles du guide]
 [Notes @design : trois blocs distincts visuellement — pas de tableau, pas de bullet points. Traitement éditorial avec H3 fort et paragraphe de corps.]
@@ -143,7 +165,7 @@ ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce f
 
 ---
 
-## Section 6 — Ce que nous ne sommes pas
+## Section 8 — Ce que nous ne sommes pas
 
 [Framework : StoryBrand — Failure avoided, anti-promesses]
 [Notes @design : section sobre, peut être traitée avec un fond légèrement différencié ou un filet typographique]
@@ -160,7 +182,7 @@ Ces refus sont aussi constitutifs de l'identité ISSA que ses engagements positi
 
 ---
 
-## Section 7 — CTA de sortie
+## Section 9 — CTA de sortie
 
 [Notes @design : bloc final sobre, pas de surcharge visuelle]
 
