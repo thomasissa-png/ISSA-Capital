@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Overline } from '@/components/ui/Overline';
 import { Button } from '@/components/ui/Button';
+import { siteConfig } from '@/config/site';
 
 /**
  * Page d'accueil — rendu statique (SSG).
@@ -13,6 +15,39 @@ import { Button } from '@/components/ui/Button';
  */
 
 export const dynamic = 'force-static';
+
+// NOTE : le title est utilisé tel quel (pas de suffixe — c'est la home).
+// Le layout root applique `template: '%s — ISSA Capital'`, donc on définit ici
+// un title "absolute" via l'objet pour neutraliser le template sur la home.
+export const metadata: Metadata = {
+  title: {
+    absolute: 'ISSA Capital — Holding patrimoniale famille libanaise',
+  },
+  description:
+    "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.",
+  alternates: { canonical: `${siteConfig.url}/` },
+  openGraph: {
+    title: 'ISSA Capital — Racines libanaises. Exigences sans exception.',
+    description:
+      'Holding patrimoniale familiale. Horizon intergénérationnel. Filtres de décision non négociables. Immobilier, participations, conseil.',
+    url: `${siteConfig.url}/`,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} — ${siteConfig.baseline}`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ISSA Capital — Holding patrimoniale famille libanaise',
+    description:
+      "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
+    images: [siteConfig.ogImage],
+  },
+};
 
 export default function HomePage(): JSX.Element {
   return (
@@ -233,7 +268,7 @@ export default function HomePage(): JSX.Element {
                 desc: "Nous raisonnons en décennies. Un investissement est évalué sur sa capacité à créer de la valeur sur 20 ou 30 ans — pas sur son TRI à 5 ans.",
               },
               {
-                title: 'Préservation de l\u2019environnement',
+                title: 'Préservation de l’environnement',
                 desc: "Toute opportunité dont le modèle économique repose sur la dégradation de l'environnement est éliminée, quelle que soit sa rentabilité.",
               },
               {

@@ -15,12 +15,12 @@ import { siteConfig } from '@/config/site';
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: 'Participations — Écosystème',
+  title: 'Participations',
   description:
-    "ISSA Capital détient des participations dans Gradient One, Versi Immobilier, Versi Invest, Immocrew, Versimo et un patrimoine immobilier résidentiel en Île-de-France.",
+    "L'écosystème de participations d'ISSA Capital : Gradient One, Versi Immobilier, Immocrew, Versimo et patrimoine immobilier en Île-de-France.",
   alternates: { canonical: `${siteConfig.url}/participations` },
   openGraph: {
-    title: "Les participations d'ISSA Capital",
+    title: "Participations — ISSA Capital",
     description:
       'Holding patrimoniale familiale. Écosystème cohérent : tech, immobilier, services aux professionnels.',
     url: `${siteConfig.url}/participations`,
@@ -45,7 +45,7 @@ const filiales: ReadonlyArray<Filiale> = [
   },
   {
     name: 'Versi Invest',
-    activity: 'Club deal et conseil en acquisition immobilière',
+    activity: 'Acquisitions immobilières et accompagnement de partenaires',
     role: 'Co-gérant (via Gradient One)',
     date: '2026',
   },

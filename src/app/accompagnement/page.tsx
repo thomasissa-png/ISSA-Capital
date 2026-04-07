@@ -293,8 +293,9 @@ export default function AccompagnementPage(): JSX.Element {
               <h3 className="font-heading text-h3 text-ink-950">Advisoring</h3>
               <p className="mt-md text-base text-ink-700">
                 Un rôle d&apos;advisor récurrent auprès du fondateur ou du dirigeant —
-                conseil stratégique régulier, sparring partner long terme, présence
-                informelle au board possible. Durée : à déterminer selon la situation.
+                stratégie, développement, organisation. Sparring partner de fond,
+                présence informelle au board possible. Hors périmètre : conseil en
+                instruments financiers réglementés.
               </p>
             </article>
           </div>
@@ -323,8 +324,9 @@ export default function AccompagnementPage(): JSX.Element {
               Si le périmètre correspond, prenons contact.
             </h2>
             <p className="mt-md text-base text-ink-700">
-              Un échange. Pas un formulaire de dix champs. Si votre situation correspond
-              au périmètre décrit ici, envoyez-nous un message.
+              Quelques informations pour comprendre votre situation. Le formulaire
+              ci-dessous est court — il ne sert pas à qualifier mécaniquement, mais à
+              permettre à Thomas de préparer un échange substantiel.
             </p>
           </div>
           <ContactForm

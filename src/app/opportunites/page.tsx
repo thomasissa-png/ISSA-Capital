@@ -15,12 +15,12 @@ import { siteConfig } from '@/config/site';
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: "Opportunités d'affaires",
+  title: "Opportunités d'investissement",
   description:
-    "Soumettez votre opportunité à ISSA Capital — holding familiale qui investit dans l'immobilier et des participations minoritaires. Critères explicites, horizon long terme.",
+    "Proposez une opportunité à ISSA Capital : immobilier résidentiel Île-de-France, participations tech/immo. Critères explicites, horizon long terme.",
   alternates: { canonical: `${siteConfig.url}/opportunites` },
   openGraph: {
-    title: 'Proposer une opportunité à ISSA Capital',
+    title: "Opportunités d'investissement — ISSA Capital",
     description:
       "ISSA Capital étudie des opportunités de rapprochement dans l'immobilier et les participations. Critères lisibles, décision rapide.",
     url: `${siteConfig.url}/opportunites`,

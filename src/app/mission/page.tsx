@@ -15,9 +15,9 @@ import { siteConfig } from '@/config/site';
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: 'Mission — Patrimoine, famille, transmission',
+  title: 'Mission & Philosophie',
   description:
-    "La mission d'ISSA Capital : faire fructifier le patrimoine familial d'une famille aux racines libanaises et organiser sa transmission. Filtres de décision, philosophie, valeurs.",
+    "La mission d'ISSA Capital : faire fructifier le patrimoine d'une famille aux racines libanaises et organiser sa transmission. Filtres de décision, valeurs.",
   alternates: { canonical: `${siteConfig.url}/mission` },
   openGraph: {
     title: 'Mission & Philosophie — ISSA Capital',
@@ -44,6 +44,7 @@ const personJsonLd = {
     { '@type': 'CollegeOrUniversity', name: 'IMT Atlantique' },
   ],
   knowsLanguage: ['fr', 'en', 'de', 'ar'],
+  sameAs: ['https://www.linkedin.com/in/thomasissa'],
 };
 
 export default function MissionPage(): JSX.Element {

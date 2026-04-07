@@ -91,7 +91,7 @@ export const viewport: Viewport = {
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
+  '@type': ['Organization', 'FinancialService'],
   name: siteConfig.legalName,
   alternateName: siteConfig.name,
   url: siteConfig.url,
@@ -112,6 +112,14 @@ const organizationJsonLd = {
   foundingDate: '2026',
   vatID: siteConfig.tvaIntra,
   taxID: siteConfig.siren,
+  sameAs: ['https://www.linkedin.com/in/thomasissa'],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    email: siteConfig.email,
+    areaServed: 'FR',
+    availableLanguage: ['French', 'English'],
+  },
 };
 
 export default function RootLayout({
