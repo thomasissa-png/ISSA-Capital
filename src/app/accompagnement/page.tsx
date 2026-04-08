@@ -8,65 +8,80 @@ import { siteConfig } from '@/config/site';
 
 /**
  * /accompagnement — rendu statique (SSG).
- * Page de conseil Thomas Issa. Ton éditorial, aucun pricing, signature
- * "Patient par choix. Exigeant par principe."
+ *
+ * Refonte session 6 Variante A (duo opérationnel) AJUSTÉE session 7 en
+ * "Variante A flexible" — CHECKPOINT #5 Thomas : *"A, ça peut être aussi
+ * l'un, l'autre ou les 2 suivant les missions"*. Jean-Pierre ET Thomas sont
+ * opérationnels dans les missions clients, mais la composition de l'équipe
+ * mission est flexible selon le contexte.
+ *
+ * Source de vérité : docs/strategy/accompagnement-refonte-10-10-session6.md
+ * section 8 (lignes 550-664) — verbatim ajusté session 7 + sections
+ * inchangées de la Variante A session 6 (bios Jean-Pierre et Thomas
+ * lignes 88-116).
+ *
+ * Architecture 8 sections :
+ *   1. Hero — overline "Conseil & accompagnement" + H1 duo
+ *   2. Pour qui — filtre Karim (inchangé)
+ *   3. Jean-Pierre Issa — bio opérationnelle 4 paragraphes + domaines
+ *   4. Thomas Issa — bio 5 paragraphes + formation
+ *   5. Ce que le duo produit — méthode + paragraphe flexibilité session 7
+ *   6. Ce qui ne correspond pas — phrase d'ouverture ajustée session 7
+ *   7. Deux formats — inchangé
+ *   8. Signature + formulaire — signature inchangée + phrase finale flexibilité
+ *
+ * Faits biographiques verrouillés :
+ * - 2J Impression rachat = 2016 (jamais 1994)
+ * - Jean-Pierre né à Dakar en 1958, famille d'origine libanaise
+ * - Thomas 15 ans chez Sony Europe, co-fondateur TEOS
+ * - Mention Sony/TEOS/TikTok/Adidas/Lego AUTORISÉE ici uniquement
+ *   (exception Q2 session 5 — coupée de /mission)
+ * - Identité libanaise jamais française
+ * - Zéro mention nom agence Thomas — "une agence de communication
+ *   internationale"
  */
 
 export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
-  title: 'Conseil & accompagnement — Thomas Issa',
+  title: 'Conseil & accompagnement — Jean-Pierre Issa et Thomas Issa',
   description:
-    "Thomas Issa accompagne fondateurs et investisseurs en structuration patrimoniale, holding, immo en direct et participations. 15 ans Sony, co-fondateur TEOS.",
+    "Jean-Pierre Issa et Thomas Issa accompagnent fondateurs et dirigeants sur ce qu'ils ont eux-mêmes construit. Structuration de holding, rachat et développement, internationalisation, stratégie patrimoniale.",
   alternates: { canonical: `${siteConfig.url}/accompagnement` },
   openGraph: {
     title: 'Conseil & accompagnement — ISSA Capital',
     description:
-      'Stratège, co-fondateur, opérateur immo. Thomas Issa accompagne les décideurs qui cherchent un pair — pas un prestataire.',
+      "Jean-Pierre Issa et Thomas Issa accompagnent fondateurs et dirigeants. Selon la nature de la mission, l'un, l'autre ou les deux interviennent.",
     url: `${siteConfig.url}/accompagnement`,
   },
 };
 
-type Domaine = { title: string; desc: string };
+type Domaine = string;
 
-const domainesPatrimonial: ReadonlyArray<Domaine> = [
-  {
-    title: 'Structuration de holding et écosystème patrimonial',
-    desc: "ISSA Capital, Gradient One, Versi, Immocrew, Versimo — co-fondés et développés. Pour les fondateurs qui veulent construire une architecture patrimoniale cohérente, pas un portefeuille d'actifs épars.",
-  },
-  {
-    title: 'Investissement immobilier en direct et participations minoritaires',
-    desc: "Patrimoine résidentiel en gestion directe en Île-de-France. Co-investisseur dans plusieurs structures. Pour les fondateurs qui veulent intégrer l'immo dans leur stratégie patrimoniale.",
-  },
+// Domaines Jean-Pierre (Variante A session 6 ligne 98 du livrable)
+const domainesJeanPierre: ReadonlyArray<Domaine> = [
+  'Rachat et développement d’entreprise',
+  'Structuration co-actionnariat',
+  'Internationalisation opérationnelle',
+  'Gouvernance long terme',
 ];
 
-const domainesCorporate: ReadonlyArray<Domaine> = [
-  {
-    title: 'Stratégie internationale et go-to-market Europe',
-    desc: "Déploiement d'une solution dans 7 régions en moins d'un an. Partenariats, équipes locales, relations HQ Japon. Pour les fondateurs qui veulent étendre leur activité hors de France sans partir à l'aveugle.",
-  },
-  {
-    title: 'Intrapreneuriat et création depuis zéro',
-    desc: "TEOS est née dans une grande entreprise, avec peu de ressources et un horizon très court. Si vous construisez quelque chose dans un contexte où les ressources ne sont pas illimitées, Thomas a fait ça.",
-  },
-  {
-    title: 'Product management premium B2B et B2C',
-    desc: "Deux lignes de produits Sony menées simultanément, chacune avec son positionnement, ses canaux, ses clients. Pour les fondateurs qui gèrent plusieurs offres ou doivent arbitrer entre segments.",
-  },
-  {
-    title: 'Stratégie marketing et positionnement de marque',
-    desc: "De 2% à 35% de part de marché en deux ans sur le segment haut de gamme. Pour les fondateurs qui veulent construire une position dominante sur leur segment, pas juste de la notoriété.",
-  },
-  {
-    title: 'Relations corporate internationales',
-    desc: "HQ Japon, partenariats européens, clients Fortune 500. Pour les fondateurs qui doivent naviguer dans des structures où la hiérarchie et la culture comptent autant que l'offre.",
-  },
+// Domaines Thomas (Variante A session 6 ligne 114 du livrable)
+const domainesThomas: ReadonlyArray<Domaine> = [
+  'Structuration de holding et écosystème patrimonial',
+  'Investissement immobilier en direct',
+  'Advisory corporate et stratégie internationale',
+  'Product management',
+  'Positionnement de marque',
 ];
 
 export default function AccompagnementPage(): JSX.Element {
   return (
     <>
-      {/* Hero */}
+      {/* Section 1 — Hero (overline ajusté session 7 : "Conseil & accompagnement"
+          en lieu et place de "Mission de conseil & accompagnement" / "Un
+          accompagnement à deux voix" — raison : "à deux voix" sous-entendrait
+          une présence systématique des deux, or la composition est flexible). */}
       <Section tone="default">
         <Container width="content">
           <nav aria-label="Fil d'Ariane" className="text-xs text-ink-500">
@@ -79,186 +94,220 @@ export default function AccompagnementPage(): JSX.Element {
             <span>Conseil & accompagnement</span>
           </nav>
           <div className="mt-lg max-w-[900px]">
-            <Overline>Mission de conseil & accompagnement</Overline>
+            <Overline>Conseil & accompagnement</Overline>
             <h1 className="mt-md font-heading text-h1 text-ink-950">
-              Thomas Issa accompagne fondateurs et dirigeants sur ce qu&apos;il a
-              lui-même construit.
+              Jean-Pierre Issa et Thomas Issa accompagnent fondateurs et
+              dirigeants sur ce qu&apos;ils ont eux-mêmes construit.
             </h1>
           </div>
         </Container>
       </Section>
 
-      {/* Pour qui — remplace l'ancienne section "Citation" (verbatim fictif retiré
-          en session 5 — voir docs/strategy/accompagnement-restructure.md, Option A).
-          Section sobre, filtre de qualification self-service : Karim s'identifie
-          en 5 secondes ou pas, sans qu'on lui prête de mots dans la bouche. */}
+      {/* Section 2 — Pour qui (filtre Karim — inchangé session 6) */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Pour qui</Overline>
-          {/* Modif session 5 C2 — P1-1 : ancien H2 "Pour qui." (doublure de l'Overline) remplacé par phrase de qualification directe. L'Overline garde son rôle de repère de scan. Voir docs/copy/page-accompagnement.md Section 1. */}
           <h2 className="mt-md font-heading text-h2 text-ink-950">
             Un fondateur ou dirigeant qui a déjà fait ses preuves.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Qui gère une ou plusieurs structures, a déjà pris des décisions de capital,
-              et n&apos;attend pas qu&apos;on lui apprenne son métier. Qui cherche un pair
-              pour structurer ce qui vient ensuite — patrimoine, holding, immobilier en
-              direct, participations — pas un prestataire qui lui vendra une prestation.
+              Qui gère une ou plusieurs structures, a déjà pris des décisions de
+              capital, et n&apos;attend pas qu&apos;on lui apprenne son métier.
+              Qui cherche des pairs pour structurer ce qui vient ensuite —
+              patrimoine, holding, immobilier en direct, participations — pas
+              des prestataires qui lui vendront une prestation.
             </p>
             <p>
-              Si vous vous reconnaissez, la suite de cette page est pour vous. Sinon, elle
-              ne le sera pas — et c&apos;est très bien.
+              Si vous vous reconnaissez, la suite de cette page est pour vous.
+              Sinon, elle ne le sera pas — et c&apos;est très bien.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* Proposition */}
+      {/* Section 3 — Jean-Pierre Issa (tone="elevated" pour cohérence avec
+          /mission Section 2). Bio 4 paragraphes + domaines. Verbatim verrouillé
+          Variante A session 6 lignes 88-98 du livrable. 2J Impression rachat
+          2016 (jamais 1994). */}
+      <Section tone="elevated">
+        <Container width="editorial">
+          <Overline>Jean-Pierre Issa</Overline>
+          <h2 className="mt-md font-heading text-h2 text-ink-950">
+            Trente ans de construction opérationnelle.
+          </h2>
+          <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
+            <p>
+              Jean-Pierre Issa est né à Dakar en 1958, dans une famille
+              d&apos;origine libanaise. Après IBM dans les années 1980, il fait
+              partie de l&apos;équipe fondatrice qui lance Lexmark en Europe
+              lors de sa scission d&apos;IBM : Directeur de filiales dans
+              plusieurs pays, Directeur Marketing EMEA. Deux décennies à
+              construire des organisations depuis le terrain, continent après
+              continent.
+            </p>
+            <p>
+              En 2016, avec deux associés, il rachète 2J Impression à Mérignac —
+              une structure de distribution multimarque de matériel
+              d&apos;impression numérique industrielle. L&apos;entreprise
+              atteint 4 millions d&apos;euros de chiffre d&apos;affaires et
+              opère dans 17 pays. Co-Managing Director, Jean-Pierre Issa y
+              applique la logique apprise chez IBM : construire avec méthode,
+              tenir dans la durée, décider avec rigueur.
+            </p>
+            <p>
+              Ce qu&apos;il apporte dans une mission d&apos;accompagnement : la
+              lecture longue. Rachat d&apos;une structure, développement
+              opérationnel dans la durée, internationalisation réelle,
+              co-actionnariat. Pour les fondateurs qui veulent construire
+              quelque chose qui tient sur dix ou vingt ans.
+            </p>
+          </div>
+
+          <div className="mt-2xl border-t border-ink-200 pt-xl">
+            <Overline>Domaines</Overline>
+            <ul className="mt-md space-y-sm text-sm text-ink-700">
+              {domainesJeanPierre.map((d) => (
+                <li key={d} className="flex gap-md">
+                  <span className="text-levant-700" aria-hidden="true">
+                    —
+                  </span>
+                  <span>{d}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Section 4 — Thomas Issa (tone="default"). Bio 5 paragraphes + formation.
+          Verbatim verrouillé Variante A session 6 lignes 102-116 du livrable.
+          Mention Sony/TEOS/TikTok/Adidas/Lego AUTORISÉE ici (exception Q2
+          session 5). Nom de l'agence : "une agence de communication
+          internationale" (jamais le nom). */}
       <Section tone="default">
         <Container width="editorial">
-          <Overline>La proposition</Overline>
+          <Overline>Thomas Issa</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Ce que Thomas fait.
+            De la création d&apos;entreprise à la structuration patrimoniale.
           </h2>
-          <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
+          <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              Thomas Issa accompagne des fondateurs et des investisseurs sur des sujets
-              où il a lui-même pris des décisions difficiles : structurer une holding,
-              investir dans l&apos;immobilier en direct, co-fonder des participations,
-              déployer une stratégie internationale depuis zéro.
+              Thomas Issa a passé 15 ans chez Sony Europe, où il a co-fondé
+              TEOS — une solution de gestion d&apos;espaces de travail construite
+              à partir d&apos;un deck de dix slides — et l&apos;a déployée dans
+              7 régions du monde en moins d&apos;un an, avec un ROI de
+              6 000 % la première année.
             </p>
             <p>
-              Deux formats uniquement : une mission ponctuelle délimitée, ou un rôle
-              d&apos;advisor récurrent auprès du dirigeant. Dans les deux cas : un
-              engagement de fond, pas une prestation standardisée.
-            </p>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Parcours */}
-      <Section tone="inverse">
-        <Container width="editorial">
-          <Overline tone="light">Le parcours</Overline>
-          <h2 className="mt-md font-heading text-h2 text-parchment-100">
-            15 ans de décisions — pas de théorie.
-          </h2>
-          <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-300">
-            <p>
-              Thomas Issa a passé 15 ans chez Sony Europe, où il a co-fondé TEOS — une
-              solution de gestion d&apos;espaces de travail construite à partir d&apos;un
-              deck de dix slides — et l&apos;a déployée dans 7 régions du monde en moins
-              d&apos;un an, avec un ROI de 6000% la première année. Les clients : Lego,
-              Siemens, Netflix, Cap Gemini, Suzuki, Hilton, Mango.
+              Depuis 2018, il accompagne des fondateurs en tant qu&apos;advisor
+              stratégique. Il a travaillé avec TikTok, Adidas, Lego. Il a fondé
+              une agence de communication internationale qui a réuni plus de
+              35 experts, avec des missions dans les grandes verticales
+              mondiales.
             </p>
             <p>
-              Il a simultanément géré deux lignes de produits Sony en parallèle — Home
-              Theater et Professional Displays — transformant des parts de marché
-              marginales en positions dominantes sur leur segment haut de gamme.
+              Depuis 2020, il co-fonde et développe l&apos;écosystème ISSA
+              Capital : holding patrimoniale, participations dans
+              l&apos;immobilier tech et les services aux professionnels,
+              patrimoine résidentiel en gestion directe en Île-de-France.
             </p>
             <p>
-              Depuis 2018, il accompagne des startups en tant qu&apos;advisor stratégique
-              — jusqu&apos;à cinq projets par an, sur la mise sur le marché en Europe, le
-              positionnement, le branding et la structuration commerciale. Il a travaillé
-              avec TikTok, Adidas, Lego.
-            </p>
-            <p>
-              Depuis 2020, il co-fonde et développe l&apos;écosystème ISSA Capital :
-              holding patrimoniale, participations dans l&apos;immobilier tech et les
-              services aux professionnels, patrimoine résidentiel en gestion directe en
-              Île-de-France.
+              Ce qu&apos;il apporte dans une mission d&apos;accompagnement : la
+              lecture du moment présent. Structuration de holding, advisory
+              corporate et tech, stratégie internationale, positionnement de
+              marque. Pour les fondateurs qui veulent construire une
+              architecture patrimoniale cohérente dans les contextes
+              d&apos;aujourd&apos;hui.
             </p>
           </div>
 
-          <div className="mt-2xl border-t border-ink-800 pt-xl">
-            <Overline tone="light">Formation</Overline>
-            <ul className="mt-md space-y-sm text-sm text-ink-300">
-              <li>HEC School of Management — Intelligence Marketing</li>
-              <li>University of California, Irvine — International Marketing</li>
-              <li>IMT Atlantique — Business Engineering, Droit des affaires</li>
-              <li>Classe préparatoire Sainte-Geneviève — Maths Physique</li>
+          <div className="mt-2xl border-t border-ink-200 pt-xl">
+            <Overline>Domaines</Overline>
+            <ul className="mt-md space-y-sm text-sm text-ink-700">
+              {domainesThomas.map((d) => (
+                <li key={d} className="flex gap-md">
+                  <span className="text-levant-700" aria-hidden="true">
+                    —
+                  </span>
+                  <span>{d}</span>
+                </li>
+              ))}
             </ul>
-            <p className="mt-md text-xs text-ink-400">
-              Major de promotion × 3. Exceptional Contribution Award × 2 (Sony). Best
-              Sony Europe Performance Award 2014. Quadrilingue : français, anglais,
-              allemand, arabe.
+          </div>
+
+          <div className="mt-2xl border-t border-ink-200 pt-xl">
+            <Overline>Formation</Overline>
+            <p className="mt-md text-sm text-ink-700">
+              HEC School of Management, University of California Irvine,
+              IMT Atlantique, prépa Sainte-Geneviève. Major de promotion × 3.
+              Quadrilingue.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* Domaines — regroupés en deux familles : Patrimonial / Corporate */}
+      {/* Section 5 — Ce que le duo produit (tone="subtle"). Verbatim session 7
+          lignes 587-595 du livrable — inclut le paragraphe de flexibilité
+          (§2 : "Selon la nature de la mission, Jean-Pierre, Thomas, ou les
+          deux interviennent directement. Le duo s'adapte au contexte — pas
+          l'inverse."). */}
       <Section tone="subtle">
-        <Container width="content">
-          <div className="mb-2xl max-w-editorial">
-            <Overline>Les sujets sur lesquels Thomas intervient</Overline>
-            <h2 className="mt-md font-heading text-h2 text-ink-950">
-              Sept domaines.
-            </h2>
-            <p className="mt-md text-lead text-ink-700">
-              Deux familles : patrimoniale et corporate.
+        <Container width="editorial">
+          <Overline>Ce que le duo produit</Overline>
+          <h2 className="mt-md font-heading text-h2 text-ink-950">
+            Une méthode héritée. Deux lectures du même sujet.
+          </h2>
+          <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
+            <p>
+              Jean-Pierre a bâti des structures qui tiennent sur vingt ans —
+              dans l&apos;industrie, dans le co-actionnariat, dans
+              l&apos;internationalisation réelle. Thomas a traduit cette méthode
+              dans les contextes d&apos;aujourd&apos;hui — holding patrimoniale,
+              advisory tech, marchés européens. Les deux ont fait leurs erreurs
+              pour leur propre compte, pas pour celui d&apos;un client.
             </p>
-          </div>
-
-          <div className="space-y-2xl">
-            <div>
-              <div className="mb-xl flex items-baseline gap-md">
-                <Overline>Patrimonial</Overline>
-                <span className="text-xs text-ink-500" aria-hidden="true">
-                  — {domainesPatrimonial.length} domaines
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-                {domainesPatrimonial.map((d) => (
-                  <div key={d.title} className="border-l-2 border-levant-500 pl-lg">
-                    <h3 className="font-heading text-h4 text-ink-950">{d.title}</h3>
-                    <p className="mt-sm text-sm text-ink-700">{d.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-xl flex items-baseline gap-md">
-                <Overline>Corporate</Overline>
-                <span className="text-xs text-ink-500" aria-hidden="true">
-                  — {domainesCorporate.length} domaines
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-                {domainesCorporate.map((d) => (
-                  <div key={d.title} className="border-l-2 border-levant-500 pl-lg">
-                    <h3 className="font-heading text-h4 text-ink-950">{d.title}</h3>
-                    <p className="mt-sm text-sm text-ink-700">{d.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p>
+              Selon la nature de la mission, Jean-Pierre, Thomas, ou les deux
+              interviennent directement. Le duo s&apos;adapte au contexte — pas
+              l&apos;inverse. Une mission de structuration patrimoniale et
+              d&apos;advisory tech sera portée par Thomas. Un rachat industriel
+              ou une question de gouvernance long terme mobilisera Jean-Pierre.
+              Une mission qui croise les deux registres mobilisera les deux.
+            </p>
+            <p>
+              Leurs structures actuelles — 2J Impression, l&apos;écosystème
+              ISSA Capital — suivent les mêmes logiques qu&apos;ils
+              transmettent. Ce n&apos;est pas du conseil de cabinet. C&apos;est
+              la lecture de deux personnes qui ont la peau dans le jeu.
+            </p>
           </div>
         </Container>
       </Section>
 
-      {/* Ce que Thomas n'accepte pas */}
+      {/* Section 6 — Ce qui ne correspond pas. Phrase d'ouverture ajustée
+          session 7 (lignes 603-607 du livrable) : mention explicite de la
+          flexibilité duo dans la phrase d'ouverture. Liste 7 puces inchangée. */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Ce qui ne correspond pas</Overline>
           <h2 className="mt-md font-heading text-h3 text-ink-950">
-            Ce qui ne correspond pas au périmètre.
+            Ce qui est hors périmètre.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Thomas accompagne des fondateurs et des investisseurs qui ont déjà fait
-              leurs preuves. Il n&apos;est pas un incubateur et n&apos;accompagne pas les
-              premières étapes d&apos;un projet.
+              Le périmètre d&apos;accompagnement ISSA Capital — qu&apos;il soit
+              porté par Jean-Pierre, Thomas, ou les deux — concerne des
+              fondateurs et des investisseurs qui ont déjà fait leurs preuves.
+              Pas les premières étapes d&apos;un projet.
             </p>
             <ul className="space-y-sm text-ink-700">
               {[
                 'Projets crypto / Web3 purs — hors scope.',
-                "First-time founders en pre-seed.",
-                "Démarches non sollicitées ou pitchs génériques sans lien avec le périmètre décrit ici.",
+                'First-time founders en pre-seed.',
+                'Démarches non sollicitées ou pitchs génériques sans lien avec le périmètre décrit ici.',
                 "Missions de moins d'un mois — trop court pour apporter une valeur réelle.",
-                "Tickets immobiliers inférieurs à 200 000 € dans le cadre d'un co-investissement.",
+                'Tickets immobiliers inférieurs à 200 000 € dans le cadre d’un co-investissement.',
                 "Projets contraires aux filtres éthiques d'ISSA Capital — environnement, humanité.",
                 'Véhicules spéculatifs court-terme.',
               ].map((item) => (
@@ -274,7 +323,7 @@ export default function AccompagnementPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Formats */}
+      {/* Section 7 — Deux formats (inchangé session 6) */}
       <Section tone="subtle">
         <Container width="content">
           <Overline>Deux formats</Overline>
@@ -283,27 +332,29 @@ export default function AccompagnementPage(): JSX.Element {
           </h2>
           <div className="mt-xl grid grid-cols-1 gap-xl md:grid-cols-2">
             <article className="border border-ink-200 bg-white p-xl">
-              <h3 className="font-heading text-h3 text-ink-950">Mission ponctuelle</h3>
+              <h3 className="font-heading text-h3 text-ink-950">
+                Mission ponctuelle
+              </h3>
               <p className="mt-md text-base text-ink-700">
                 Une intervention délimitée avec un objectif clair : structuration
-                patrimoniale, positionnement, stratégie internationale, go-to-market,
-                audit stratégique. Durée minimum : un mois. Livrables définis en amont.
+                patrimoniale, positionnement, stratégie internationale,
+                go-to-market, audit stratégique. Durée minimum : un mois.
+                Livrables définis en amont.
               </p>
             </article>
             <article className="border border-ink-200 bg-white p-xl">
               <h3 className="font-heading text-h3 text-ink-950">Advisoring</h3>
               <p className="mt-md text-base text-ink-700">
-                Un rôle d&apos;advisor récurrent auprès du fondateur ou du dirigeant —
-                stratégie, développement, organisation. Sparring partner de fond,
-                présence informelle au board possible. Hors périmètre : conseil en
-                instruments financiers réglementés.
+                Un rôle d&apos;advisor récurrent auprès du fondateur ou du
+                dirigeant — stratégie, développement, organisation. Sparring
+                partner de fond, présence informelle au board possible.
               </p>
             </article>
           </div>
         </Container>
       </Section>
 
-      {/* Signature — placée AVANT le formulaire pour clore l'argumentaire éditorial */}
+      {/* Section 8a — Signature (inchangée) */}
       <Section tone="inverse" className="py-2xl">
         <Container width="editorial" className="text-center">
           <p className="font-heading text-h2 italic text-parchment-100">
@@ -312,7 +363,8 @@ export default function AccompagnementPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* CTA + formulaire */}
+      {/* Section 8b — Formulaire (phrase finale ajoutée session 7 :
+          "Selon le contexte, Jean-Pierre, Thomas, ou les deux répondront."). */}
       <Section tone="default" id="contact">
         <Container width="narrow">
           <div className="mb-xl text-center">
@@ -321,11 +373,12 @@ export default function AccompagnementPage(): JSX.Element {
               Si le périmètre correspond, prenons contact.
             </h2>
             <p className="mt-sm text-sm text-ink-500">
-              Chaque mission démarre par un échange — pas par un devis.
+              Chaque mission démarre par un échange — pas par un devis. Selon
+              le contexte, Jean-Pierre, Thomas, ou les deux répondront.
             </p>
             <p className="mt-md text-base text-ink-700">
-              Quelques informations pour comprendre votre situation. Thomas lit chaque
-              message.
+              Quelques informations pour comprendre votre situation. Chaque
+              message est lu.
             </p>
           </div>
           <ContactForm
