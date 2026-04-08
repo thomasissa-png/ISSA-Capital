@@ -22,7 +22,7 @@ import { siteConfig } from '@/config/site';
  * - Section E pas de Button : 2 liens texte discrets, ton VITRINE
  * - Phrase-pont @creative-strategy Décision 4 verrouillée (ne pas reformuler)
  * - Sortie agence ("pour se consacrer à sa famille...") verrouillée par Thomas
- * - Placeholder [Nom de l'agence] = ellipse pivotable à remplacer quand révélation publique
+ * - Ellipse pivotable "Une agence de communication internationale" : structure appositive prête à accueillir le nom de l'agence quand Thomas validera la révélation publique (cf docs/copy/about-page-copy.md Partie 4 §1)
  *
  * Source copy : docs/copy/about-page-copy.md Partie 1
  * Source archi : docs/ux/about-page-architecture.md
@@ -130,10 +130,10 @@ export default function AProposPage(): JSX.Element {
                 manque : il ne trouve pas l&apos;agence de communication avec
                 laquelle il veut travailler. Alors il la crée.
               </p>
-              {/* TODO: remplacer [Nom de l'agence] quand Thomas valide la révélation publique */}
+              {/* Ellipse pivotable : la formulation appositive accueillera le nom de l'agence quand Thomas validera la révélation publique. */}
               <p>
-                [Nom de l&apos;agence], agence de communication internationale
-                qu&apos;il fonde à 35 ans, grandit rapidement : plus de 35 experts,
+                Une agence de communication internationale qu&apos;il fonde à
+                35 ans, grandit rapidement : plus de 35 experts,
                 des équipes sur 5 continents, des missions dans plus de 45 pays, une
                 notation parmi les meilleures de sa catégorie sur les plateformes
                 globales. Le modèle opérationnel repose sur des relais 24h/24 entre

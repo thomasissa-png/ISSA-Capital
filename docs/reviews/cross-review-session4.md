@@ -368,10 +368,50 @@
 
 ## Recommandations propagation (lessons-learned)
 
-[À REMPLIR]
+À ajouter dans `docs/lessons-learned.md` (format tableau v2) :
+
+1. **[problème / P1]** — Placeholder copy `[Nom de l'agence]` recopié tel quel par @fullstack ligne 135 page.tsx — alors que le handoff @copywriter Partie 4 §1 spécifiait la substitution V1. **Cible propagation : agent-spécifique (`@fullstack`)**. **Recommandation** : ajouter dans le protocole `@fullstack` une vérification systématique « après recopie d'un texte issu d'un livrable @copywriter, relire le handoff @copywriter pour identifier les marqueurs à substituer en V1 ». Statut correction : à-faire (1 Edit). Statut propagation : non-propagé.
+
+2. **[pattern / P2]** — La chaîne de référencement amont `> Sources amont : ...` en tête de livrable a éliminé les contradictions G7 sur 13/13 livrables session 4. **Cible propagation : règle-globale (CLAUDE.md règles communes)**. **Recommandation** : promouvoir ce pattern en règle commune n°15 « Chaque livrable DOIT commencer par un bloc `> Sources amont :` listant les fichiers `docs/...` lus avant production ». Statut : à-faire.
+
+3. **[recommandation / P2]** — Les 4 occurrences `[NOM]` Carl/Maxime dispersées dans @legal, @ia (×2), @PM créent un risque de substitution incomplète en Phase 8. **Cible propagation : agent-spécifique (`@product-manager`)**. **Recommandation** : maintenir un seed unique `docs/product/secretariat-contacts-database.md` comme source de vérité, et faire que les autres livrables référencent par lien plutôt que dupliquer la valeur. Statut : à-faire.
+
+4. **[recommandation / P2]** — Aucun testeur-persona créé pour évaluer la nouvelle page `/a-propos` côté UHNW. **Cible propagation : règle-globale (orchestrator Phase 5b)**. **Recommandation** : pour toute nouvelle page client-facing, déclencher automatiquement Phase 5b (audit testeur-persona) avant clôture session. Statut : à-faire (à intégrer dans `orchestrator.md`).
+
+5. **[pattern / P3]** — @moi a livré 3 décisions HAUTE confiance (>90%) avec précédents Thomas explicitement cités. Modèle exemplaire de proxy décisionnel. **Cible propagation : aucune** (pratique déjà documentée dans `moi.md`). Statut : n/a.
+
+---
+
+## Top 3 corrections prioritaires
+
+1. **P1 BLOQUANT pré-push main** — `src/app/a-propos/page.tsx:135` : remplacer `[Nom de l&apos;agence]` par `Une agence de communication internationale`. Action : 1 Edit @fullstack. Référence : `docs/copy/about-page-copy.md` Partie 4 §1 (note "en production V1...").
+
+2. **P2 — pré-Phase 8** : centraliser les noms de famille Carl/Maxime dans `docs/product/secretariat-contacts-database.md` puis substituer en bloc dans les 4 livrables qui les contiennent (`@legal`, `@ia` ×2, `@PM`). Action : 1 Grep + 4 Edits dès que Thomas fournit les noms.
+
+3. **P2 — post-push** : déclencher un audit testeur-persona Phase 5b sur la nouvelle page `/a-propos` pour valider la perception UHNW de la narration familiale (gates GP1-GP10). Action : invocation @testeur-persona si l'agent existe, sinon recommander à @orchestrator de le créer.
 
 ---
 
 ## Handoff
 
-[À REMPLIR]
+---
+**Handoff → @orchestrator**
+
+**Fichiers produits** :
+- `/home/user/ISSA-Capital/docs/reviews/cross-review-session4.md`
+
+**Décisions prises** :
+- **Verdict global session 4 : GO CONDITIONNEL** — push main autorisé après application de la correction P1 unique sur `src/app/a-propos/page.tsx:135`
+- 13 livrables audités, 12 GO + 1 GO CONDITIONNEL, 0 NO-GO, 0 gate BLOQUANT en FAIL
+- Score moyen pondéré : ~9.94/10 sur l'ensemble de la session
+- 4 lessons-learned à propager dans `docs/lessons-learned.md` (1 problème P1, 2 patterns/recommandations P2, 1 recommandation P2 testeur-persona)
+
+**Points d'attention** :
+- **Bloquant pré-push** : la correction `[Nom de l'agence]` → `Une agence de communication internationale` doit être appliquée AVANT le push main. C'est le seul item qui empêche un GO inconditionnel.
+- **Pré-Phase 8 (agent secrétariat)** : centraliser les `[NOM]` Carl/Maxime dès que Thomas les fournit, sinon risque de substitution partielle dans 4 fichiers.
+- **Audit testeur-persona manquant** : la session 4 a livré une nouvelle page client-facing (`/a-propos`) sans audit GP1-GP10. À planifier en post-session si pertinent.
+- **Qualité globale** : la session 4 est la plus aboutie observée sur ce projet — chaîne de référencement amont systématique, mode vélocité IA correctement appliqué, hypothèses transparentes, gates métier UI couvertes. À capitaliser en patterns globaux.
+
+---
+
+*Livrable produit par @reviewer — session issa-session-4-reprise-9oB9r — 2026-04-08*
