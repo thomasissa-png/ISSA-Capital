@@ -273,7 +273,7 @@ export default function HomePage(): JSX.Element {
               </p>
               <div className="mt-lg">
                 <Button href="/accompagnement" variant="primary-inverse" size="lg">
-                  Découvrir l&apos;accompagnement
+                  Besoin d&apos;être accompagné ?
                 </Button>
               </div>
             </article>

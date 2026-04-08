@@ -187,7 +187,7 @@ La famille fondatrice est libanaise. C'est une réalité qui compte dans chaque 
 Deux façons de continuer.
 
 **Lien A** : Découvrir nos participations →  [lien vers /participations]
-**Lien B** : Travailler avec Thomas Issa →  [lien vers /accompagnement]
+**Lien B** : Besoin d'être accompagné ? →  [lien vers /accompagnement]
 
 ---
 

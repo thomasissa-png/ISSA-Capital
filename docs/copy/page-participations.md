@@ -198,7 +198,7 @@ Gradient One, Versi, Immocrew, Versimo et le patrimoine direct d'ISSA Capital fo
 [Notes @design : bloc sobre, deux liens]
 
 **Lien A** : Proposer une opportunité d'affaires →  [lien vers /opportunites]
-**Lien B** : Découvrir l'accompagnement →  [lien vers /accompagnement]
+**Lien B** : Besoin d'être accompagné ? →  [lien vers /accompagnement]
 
 ---
 

@@ -279,7 +279,7 @@ export default function MissionPage(): JSX.Element {
               href="/accompagnement"
               className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
             >
-              Découvrir l&apos;accompagnement →
+              Besoin d&apos;être accompagné ? →
             </Link>
           </div>
         </Container>

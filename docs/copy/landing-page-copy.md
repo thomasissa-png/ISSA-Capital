@@ -59,7 +59,7 @@ OG description : Holding patrimoniale familiale. Horizon intergénérationnel. F
 
 ### CTA principal (double entrée)
 - **CTA A** — texte : « Présenter une opportunité d'affaires » → /opportunites
-- **CTA B** — texte : « Travailler avec Thomas Issa » → /accompagnement
+- **CTA B** — texte : « Besoin d'être accompagné ? » → /accompagnement
 
 [Notes @design : deux CTAs de poids visuel différent — CTA A primaire (plein, fond sombre), CTA B secondaire (contour). Placement côte à côte sur desktop, empilés sur mobile.]
 
@@ -110,7 +110,7 @@ Thomas Issa a co-fondé une holding, investi en direct dans l'immobilier francil
 
 [Note @copywriter Phase 5 — Mission 3 : "patrimoniaux" retiré — redondant avec "holding" et "patrimoine" déjà établis dans le contexte. La formulation "pas les produits à placer" est directe et suffit sans la répétition de l'adjectif. Section 4 supprimée — l'antithèse défensive originale "pas un conseiller qui vend des produits" disparaît avec elle. Ce bloc Section 3 contient la seule occurrence restante, déjà simplifiée ici.]
 
-**CTA** : Découvrir l'accompagnement →  [lien vers /accompagnement]
+**CTA** : Besoin d'être accompagné ? →  [lien vers /accompagnement]
 
 ---
 
@@ -242,7 +242,7 @@ Deux raisons de prendre contact.
 
 Travailler avec Thomas Issa, c'est un échange entre décideurs — sur la structuration, le patrimoine, la stratégie. Pas un mandat standardisé.
 
-**CTA** : Découvrir l'accompagnement →  [lien vers /accompagnement]
+**CTA** : Besoin d'être accompagné ? →  [lien vers /accompagnement]
 
 ---
 
