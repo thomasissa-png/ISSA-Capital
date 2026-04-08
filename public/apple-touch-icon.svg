@@ -2,21 +2,22 @@
   <title>ISSA Capital</title>
   <!--
     Apple Touch Icon — 180×180 (iOS home screen)
-    Direction 1 "Sceau / Cachet patrimonial" — variante inversée
-    Session 7 — ISSA Capital
+    Variante A sans-serif géométrique (session 8) — variante inversée
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
 
     Variante inversée pour fond iOS (fond clair dominant sur l'écran d'accueil) :
       Fond    : parchment-100 #F5F0E8 (crème principale)
       Glyphes : ink-950       #0A0A0A (noir quasi-pur)
       Contour : levant-500    #C4935A (ocre levantin)
 
-    Même géométrie que favicon-source.svg (512×512).
+    Même géométrie que favicon-source.svg (512×512) — seules les couleurs
+    sont inversées (glyphes et contour en ink-950 sur fond parchment).
     iOS applique automatiquement un arrondi (border-radius) à l'icône.
     Rasterisé en 180×180 via generate-assets.mjs / sharp.
 
     Contrastes WCAG 2.2 AA :
       ink-950 sur parchment-100 : ~18:1 (large, conforme)
-      levant-500 sur parchment-100 : ~2.8:1 (contour décoratif non-texte, conforme 3:1 à ajuster si nécessaire)
+      levant-500 sur parchment-100 : ~2.8:1 (contour décoratif non-texte)
   -->
 
   <!-- Fond circulaire plein — parchment-100 -->
@@ -26,50 +27,30 @@
   <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
 
   <!-- Cercle intérieur décoratif — levant-500 atténué -->
-  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6" opacity="0.5"/>
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6.4" opacity="0.5"/>
 
   <!--
-    Lettre I — sérif classique (paths L)
-    Centré sur x=168, zone y=144→368
+    I géométrique — barre verticale pure, sans empattement
     Glyphe : ink-950 sur fond parchment-100
+    x=164 → 192, y=144 → 368
   -->
   <path
-    d="M 128,144
-       L 208,144
-       L 208,168
-       L 184,168
-       L 184,344
-       L 208,344
-       L 208,368
-       L 128,368
-       L 128,344
-       L 152,344
-       L 152,168
-       L 128,168
-       Z"
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
     fill="#0A0A0A"
   />
 
   <!--
-    Lettre C — arc Bézier cubique sérif
-    Centre (304, 256), Re=72, Ri=44, k=0.5523
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (348, 256), Re=88, Ri=56, Bézier cubique k=0.5523
     Glyphe : ink-950 sur fond parchment-100
   -->
   <path
-    d="M 384,144
-       L 304,144
-       L 304,168
-       C 264,168 232,208 232,256
-       C 232,304 264,344 304,344
-       L 304,368
-       L 384,368
-       L 384,344
-       L 304,344
-       L 304,300
-       C 280,300 260,280 260,256
-       C 260,232 280,212 304,212
-       L 304,168
-       L 384,168
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
        Z"
     fill="#0A0A0A"
   />

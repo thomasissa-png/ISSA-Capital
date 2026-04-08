@@ -174,7 +174,7 @@ export default function OpportunitesPage(): JSX.Element {
               {
                 n: '3',
                 title: 'Échange et décision',
-                desc: "Un échange direct avec Thomas Issa. Pas de présentation formelle obligatoire. Si l'opportunité est retenue, nous structurons ensemble les modalités.",
+                desc: "Un échange direct avec l'un des membres de la famille. Pas de présentation formelle obligatoire. Si l'opportunité est retenue, nous structurons ensemble les modalités.",
               },
             ].map((step) => (
               <li key={step.n} className="border-t-2 border-levant-500 pt-md">

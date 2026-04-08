@@ -1,12 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Favicon ISSA Capital — Direction 1 "Sceau / Cachet patrimonial"
-    Session 7 — Décision Thomas : CHECKPOINT #5 retenu
+    Favicon ISSA Capital — Variante A sans-serif géométrique (session 8)
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
+    Remplace la Direction 1 "Sceau sérif classique" produite en session 7.
 
-    Concept : monogramme IC inscrit dans un sceau circulaire.
-    Signal : héritage, autorité familiale, patrimoine transmis.
-    Identité libanaise — holding familiale Jean-Pierre → Thomas → 3e génération.
+    Concept : monogramme IC géométrique pur inscrit dans un sceau circulaire.
+    Signal : modernité, précision, intemporalité — holding patrimoniale libanaise.
+    Référence typographique : Futura Bold / Avenir Black (sans empattement).
+    Update session 8 : lettres IC re-centrées (+6.5 unités horizontales) — le bloc
+    géométrique était collé à gauche dans la v1, maintenant centré dans le sceau.
 
     Couleurs (tokens primitifs — docs/design/design-tokens.json) :
       Fond sceau  : ink-950       #0A0A0A  (primitive.color.ink.950)
@@ -14,33 +17,20 @@
       Contour     : levant-500    #C4935A  (primitive.color.levant.500)
 
     Géométrie (viewBox 64×64) :
-      Centre       : (32, 32)
-      Fond cercle  : R=31.5 (plein, ink-950, borde exactement le viewBox)
-      Contour ext  : R=30, stroke 2.5px levant-500
-      Cercle déco  : R=26, stroke 0.8px levant-500 opacity=0.5
+      Centre  : (32, 32)
+      Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
+      Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
 
-      Zone glyphes : x=14→50, y=18→46 (28px hauteur capitales)
-      I centré sur : x=21 (largeur totale 10px avec sérifs : x=16→26)
-      C centré sur : cx=38, cy=32, Re=9, Ri=5.5
+    Lettres IC — bloc centré 20.5→43.5 (largeur 23), centre 32
+      I sans-serif : barre verticale x=20.5→24 (3.5px large), y=18→46
+      Espacement tracking : 8.5px entre I et C (32.5 - 24)
+      C géométrique : centre optique x=43.5, Re=11, Ri=7
 
-    I sérif — paths L (lettre droite, conforme règle anti-rectangles) :
-      Sérif haut  : y=18→21, x=16→26
-      Fût         : y=21→43, x=19→23
-      Sérif bas   : y=43→46, x=16→26
+    I géométrique : barre verticale pure, hauteur caps 28px (path L uniquement)
+    C géométrique : arc de cercle Bézier cubique k=0.5523, ouverture droite
 
-    C sérif Bézier cubique (k=0.5523) :
-      Re=9, k×Re=4.97 ≈ 5.0
-      Ri=5.5, k×Ri=3.04 ≈ 3.0
-      Arc extérieur :
-        Haut : (38,21) C (33.0,21) (29,26.0) (29,32)
-        Bas  : (29,32) C (29,38.0) (33.0,43) (38,43)
-      Arc intérieur :
-        Bas  : (38,37.5) C (35.0,37.5) (32.5,35.0) (32.5,32)
-        Haut : (32.5,32) C (32.5,29.0) (35.0,26.5) (38,26.5)
-      Sérifs extérieurs : y=18→21 et y=43→46, x=38→48
-
-    Lisibilité vérifiée aux 6 tailles : 16 / 32 / 48 / 180 / 192 / 512 px
-    Conformité Bézier : I en L (droite), C en courbes C cubiques.
+    Lisibilité 16px : NETTE — le I est une barre pure, le C est un arc lisse sans détail parasite
+    Conformité Bézier : I en L (droite), C en courbes C cubiques. Pas de rect.
   -->
 
   <!-- Fond circulaire plein — ink-950 -->
@@ -53,52 +43,28 @@
   <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
 
   <!--
-    Lettre I — sérif classique
-    Structure : sérif haut + fût + sérif bas — paths L uniquement (lettre droite)
-    Centré sur x=21, zone y=18→46
+    I géométrique — barre verticale pure, sans empattement
+    Largeur 3.5px, bord gauche x=20.5, bord droit x=24
+    y=18 → y=46 (hauteur caps 28px)
   -->
   <path
-    d="M 16,18
-       L 26,18
-       L 26,21
-       L 23,21
-       L 23,43
-       L 26,43
-       L 26,46
-       L 16,46
-       L 16,43
-       L 19,43
-       L 19,21
-       L 16,21
-       Z"
+    d="M 20.5,18 L 24,18 L 24,46 L 20.5,46 Z"
     fill="#F5F0E8"
   />
 
   <!--
-    Lettre C — arc Bézier cubique sérif
-    Centre arc (38, 32), Re=9, Ri=5.5, k=0.5523
-    Points Bézier :
-      Arc ext haut : (38,21) C (33.0,21) (29,26.0) (29,32)
-      Arc ext bas  : (29,32) C (29,38.0) (33.0,43) (38,43)
-      Arc int bas  : (38,37.5) C (35.0,37.5) (32.5,35.0) (32.5,32)
-      Arc int haut : (32.5,32) C (32.5,29.0) (35.0,26.5) (38,26.5)
-    Sérifs : y=18→21 / y=43→46, x=38→48
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (43.5, 32)
+    Arc extérieur Re=11, arc intérieur Ri=7
+    Bézier cubique k=0.5523
   -->
   <path
-    d="M 48,18
-       L 38,18
-       L 38,21
-       C 33.0,21 29,26.0 29,32
-       C 29,38.0 33.0,43 38,43
-       L 38,46
-       L 48,46
-       L 48,43
-       L 38,43
-       L 38,37.5
-       C 35.0,37.5 32.5,35.0 32.5,32
-       C 32.5,29.0 35.0,26.5 38,26.5
-       L 38,21
-       L 48,21
+    d="M 43.5,21
+       C 37.425,21 32.5,26.925 32.5,32
+       C 32.5,37.075 37.425,43 43.5,43
+       L 43.5,39
+       C 39.634,39 36.5,35.866 36.5,32
+       C 36.5,28.134 39.634,25 43.5,25
        Z"
     fill="#F5F0E8"
   />

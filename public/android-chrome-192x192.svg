@@ -2,7 +2,7 @@
   <title>ISSA Capital</title>
   <!--
     Android Chrome 192×192 — source SVG pour génération PNG
-    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+    Variante A sans-serif géométrique (session 8)
     Rasterisé en 192×192 via generate-assets.mjs / sharp
 
     Tokens primitifs (docs/design/design-tokens.json) :
@@ -11,7 +11,7 @@
       levant-500    #C4935A
 
     Géométrie identique à favicon-source.svg (512×512) :
-      Sceau circulaire, monogramme IC sérif Bézier.
+      Sceau circulaire, monogramme IC géométrique Bézier.
   -->
 
   <!-- Fond circulaire plein — ink-950 -->
@@ -21,42 +21,22 @@
   <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
 
   <!-- Cercle intérieur décoratif — levant-500 atténué -->
-  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6" opacity="0.5"/>
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6.4" opacity="0.5"/>
 
-  <!-- Lettre I — sérif classique (paths L) -->
+  <!-- I géométrique — barre verticale pure (path L) -->
   <path
-    d="M 128,144
-       L 208,144
-       L 208,168
-       L 184,168
-       L 184,344
-       L 208,344
-       L 208,368
-       L 128,368
-       L 128,344
-       L 152,344
-       L 152,168
-       L 128,168
-       Z"
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
     fill="#F5F0E8"
   />
 
-  <!-- Lettre C — arc Bézier cubique sérif -->
+  <!-- C géométrique — arc Bézier cubique k=0.5523 -->
   <path
-    d="M 384,144
-       L 304,144
-       L 304,168
-       C 264,168 232,208 232,256
-       C 232,304 264,344 304,344
-       L 304,368
-       L 384,368
-       L 384,344
-       L 304,344
-       L 304,300
-       C 280,300 260,280 260,256
-       C 260,232 280,212 304,212
-       L 304,168
-       L 384,168
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
        Z"
     fill="#F5F0E8"
   />

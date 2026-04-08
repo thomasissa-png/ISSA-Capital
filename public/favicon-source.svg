@@ -2,9 +2,10 @@
   <title>ISSA Capital</title>
   <!--
     Favicon ISSA Capital — Source master 512×512 pour génération PNG/ICO
-    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+    Variante A sans-serif géométrique (session 8)
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
 
-    Même géométrie que favicon.svg (64×64) × 8 :
+    Même géométrie que favicon.svg (64×64) multipliée par 8 :
       Couleurs identiques, proportions identiques.
       Cette source est utilisée par le script generate-assets.mjs
       pour produire les PNG 16/32/48/180/192/512px et favicon.ico.
@@ -14,28 +15,22 @@
       parchment-100 #F5F0E8
       levant-500    #C4935A
 
-    Géométrie (viewBox 512×512) :
+    Géométrie (viewBox 512×512) — conversion × 8 depuis la Variante A 64×64 :
       Centre       : (256, 256)
       Fond         : R=252 (plein, ink-950)
       Contour ext  : R=240, stroke 20px levant-500
-      Cercle déco  : R=208, stroke 6px levant-500 opacity=0.5
+      Cercle déco  : R=208, stroke 6.4px levant-500 opacity=0.5
 
-      Zone glyphes : y=144→368 (224px hauteur capitales)
-      I centré sur : x=168 (sérifs x=128→208)
-      C centré sur : cx=304, cy=256, Re=72, Ri=44
-        k=0.5523 : Re×k=39.8 ≈ 40, Ri×k=24.3 ≈ 24
+    Lettres IC — bloc centré 164→348, centre 256
+      I sans-serif : barre verticale x=164→192 (28px large), y=144→368 (224px haut)
+      C géométrique : centre optique (348, 256), Re=88, Ri=56
 
-    I sérif (paths L) :
-      Sérif haut  : y=144→168, x=128→208
-      Fût         : y=168→344, x=152→184
-      Sérif bas   : y=344→368, x=128→208
+    I géométrique : barre verticale pure, path L uniquement
+      x=164 → 192, y=144 → 368
 
-    C sérif Bézier (Re=72, Ri=44, centre 304,256) :
-      Arc ext haut : (304,168) C (264,168) (232,208) (232,256)
-      Arc ext bas  : (232,256) C (232,304) (264,344) (304,344)
-      Arc int bas  : (304,300) C (280,300) (260,280) (260,256)
-      Arc int haut : (260,256) C (260,232) (280,212) (304,212)
-      Sérifs extérieurs : y=144→168 et y=344→368, x=304→384
+    C géométrique (Bézier cubique k=0.5523, Re×k=48.6, Ri×k=30.9) :
+      Arc extérieur : (348,168) → (260,256) → (348,344)
+      Arc intérieur : (348,200) → (292,256) → (348,312)
   -->
 
   <!-- Fond circulaire plein — ink-950 -->
@@ -45,73 +40,31 @@
   <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
 
   <!-- Cercle intérieur décoratif — levant-500 atténué -->
-  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6" opacity="0.5"/>
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6.4" opacity="0.5"/>
 
   <!--
-    Lettre I — sérif classique (paths L)
-    Centré sur x=168, zone y=144→368
+    I géométrique — barre verticale pure, sans empattement
+    Largeur 28px, bord gauche x=164, bord droit x=192
+    y=144 → y=368 (hauteur caps 224px)
   -->
   <path
-    d="M 128,144
-       L 208,144
-       L 208,168
-       L 184,168
-       L 184,344
-       L 208,344
-       L 208,368
-       L 128,368
-       L 128,344
-       L 152,344
-       L 152,168
-       L 128,168
-       Z"
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
     fill="#F5F0E8"
   />
 
   <!--
-    Lettre C — arc Bézier cubique sérif
-    Centre (304, 256), Re=72, Ri=44, k=0.5523
-    Arc ext haut : (304,168) C (264,168) (232,208) (232,256)
-    Arc ext bas  : (232,256) C (232,304) (264,344) (304,344)
-    Arc int bas  : (304,300) C (280,300) (260,280) (260,256)
-    Arc int haut : (260,256) C (260,232) (280,212) (304,212)
-    Sérifs        : y=144→168 / y=344→368, x=304→384
-  -->
-  <!--
-    Path C : parcours du contour
-    1. Sérif haut extérieur : M(384,144) → L(304,144)
-    2. Transition sérif→arc ext haut : L(304,168)
-    3. Arc extérieur haut : (304,168) C (264,168) (232,208) (232,256)
-    4. Arc extérieur bas  : (232,256) C (232,304) (264,344) (304,344)
-    5. Sérif bas extérieur : L(304,368) → L(384,368)
-    6. Sérif bas intérieur : L(384,344) → L(304,344) — MAIS ici on reste à y=344
-       NB: la redondance L(304,344) est supprimée — on entre directement dans l'arc int bas
-    7. Arc intérieur bas  : (304,344) C (280,344) (260,324) (260,256) — CORRIGÉ
-       Correction : l'arc intérieur bas doit passer par y=300 (centre+Ri),
-       points de contrôle : (280,344) ne donne pas une bonne courbe.
-       Calcul correct : Ri=44, arc de (304,300) descendant.
-       Le sérif bas intérieur est à y=344, l'arc intérieur démarre à y=300 (= 256+44).
-       On descend du sérif intérieur (y=344) à la tangente de l'arc (y=300) par une droite,
-       puis l'arc de Bézier part de (304,300) → (260,256).
-    8. Arc intérieur haut : (260,256) C (260,212) (280,212) (304,212)
-    9. Remonter au sérif haut intérieur (304,212) → (304,168) — droite le long de x=304
-    10. Sérif haut intérieur : L(384,168) → Z
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (348, 256)
+    Arc extérieur Re=88, arc intérieur Ri=56
+    Bézier cubique k=0.5523
   -->
   <path
-    d="M 384,144
-       L 304,144
-       L 304,168
-       C 264,168 232,208 232,256
-       C 232,304 264,344 304,344
-       L 304,368
-       L 384,368
-       L 384,344
-       L 304,344
-       L 304,300
-       C 280,300 260,280 260,256
-       C 260,232 280,212 304,212
-       L 304,168
-       L 384,168
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
        Z"
     fill="#F5F0E8"
   />

@@ -2,101 +2,106 @@
   <title>ISSA Capital</title>
   <!--
     Safari Pinned Tab — SVG monochrome
-    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+    Variante A sans-serif géométrique (session 8)
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
+    Remplace la Direction 1 "Sceau sérif classique" produite en session 7.
 
-    Règles Safari :
+    Règles Safari Pinned Tab :
     - 1 seule couleur (#000000 — Safari applique sa propre couleur via mask)
     - Fond transparent (pas de rect/circle de fond)
-    - Forme pleine — pas de stroke (les strokes fins disparaissent)
+    - Forme pleine — pas de stroke (les strokes fins disparaissent en miniature)
     - Référencé dans layout.tsx : <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#C4935A"/>
       (Safari remplace #000000 par la couleur spécifiée dans color=)
 
-    Concept : contour du sceau circulaire + monogramme IC plein.
-    Le cercle extérieur est rendu en "anneau" (filled ring) pour survivre à la réduction.
+    Concept : sceau circulaire en anneau + monogramme IC géométrique plein.
+    Même géométrie que favicon-source.svg (Variante A centrée), converti en
+    anneaux pleins via fill-rule="evenodd" pour survivre à la réduction Safari.
 
-    Géométrie (viewBox 512×512) :
-      Anneau sceau extérieur : R_ext=252, R_int=220 → fills via even-odd
-      Anneau décoratif : R=208, epaisseur 12px
-      Lettre I : même géométrie que favicon-source.svg
-      Lettre C : même géométrie que favicon-source.svg
+    Géométrie (viewBox 512×512) — centre (256, 256), k=0.5523 :
+      Anneau principal sceau : R_ext=252, R_int=232 (épaisseur 20)
+      Anneau décoratif       : R_ext=211.2, R_int=204.8 (épaisseur 6.4)
+      Lettre I : barre verticale x=164→192, y=144→368
+      Lettre C : arc Bézier centre (348,256), Re=88, Ri=56
+
+    Correction session 8 : le fichier session 7 avait un bug de centrage
+    (cy=252 au lieu de 256). Corrigé en reprenant les coordonnées exactes
+    de favicon-source.svg (centre 256,256).
   -->
 
   <!--
-    Sceau circulaire monochrome :
-    Anneau extérieur (R=252 → R=220) via fill-rule evenodd
-    + Anneau décoratif (R=214 → R=202) via fill-rule evenodd
+    Anneau principal du sceau — fill-rule evenodd
+    Cercle extérieur R=252 (top 4, right 508, bottom 508, left 4)
+    Cercle intérieur R=232 (top 24, right 488, bottom 488, left 24)
+    Bézier cubique k=0.5523 :
+      R=252 → k×R = 139.18
+      R=232 → k×R = 128.13
   -->
   <path
     fill-rule="evenodd"
     clip-rule="evenodd"
     d="M 256,4
-       C 392.3,4 504,115.7 504,252
-       C 504,388.3 392.3,500 256,500
-       C 119.7,500 8,388.3 8,252
-       C 8,115.7 119.7,4 256,4
+       C 395.18,4 508,116.82 508,256
+       C 508,395.18 395.18,508 256,508
+       C 116.82,508 4,395.18 4,256
+       C 4,116.82 116.82,4 256,4
        Z
-       M 256,36
-       C 137.0,36 40,133.0 40,252
-       C 40,371.0 137.0,468 256,468
-       C 375.0,468 472,371.0 472,252
-       C 472,133.0 375.0,36 256,36
+       M 256,24
+       C 127.87,24 24,127.87 24,256
+       C 24,384.13 127.87,488 256,488
+       C 384.13,488 488,384.13 488,256
+       C 488,127.87 384.13,24 256,24
        Z"
     fill="#000000"
   />
 
-  <!-- Anneau décoratif intérieur -->
+  <!--
+    Anneau décoratif intérieur — fill-rule evenodd
+    Cercle extérieur R=211.2 (top 44.8, right 467.2)
+    Cercle intérieur R=204.8 (top 51.2, right 460.8)
+    Bézier cubique k=0.5523 :
+      R=211.2 → k×R = 116.65
+      R=204.8 → k×R = 113.11
+  -->
   <path
     fill-rule="evenodd"
     clip-rule="evenodd"
-    d="M 256,44
-       C 370.6,44 464,137.4 464,252
-       C 464,366.6 370.6,460 256,460
-       C 141.4,460 48,366.6 48,252
-       C 48,137.4 141.4,44 256,44
+    d="M 256,44.8
+       C 372.65,44.8 467.2,139.35 467.2,256
+       C 467.2,372.65 372.65,467.2 256,467.2
+       C 139.35,467.2 44.8,372.65 44.8,256
+       C 44.8,139.35 139.35,44.8 256,44.8
        Z
-       M 256,56
-       C 148.1,56 60,144.1 60,252
-       C 60,359.9 148.1,448 256,448
-       C 363.9,448 452,359.9 452,252
-       C 452,144.1 363.9,56 256,56
+       M 256,51.2
+       C 142.89,51.2 51.2,142.89 51.2,256
+       C 51.2,369.11 142.89,460.8 256,460.8
+       C 369.11,460.8 460.8,369.11 460.8,256
+       C 460.8,142.89 369.11,51.2 256,51.2
        Z"
     fill="#000000"
   />
 
-  <!-- Lettre I — sérif classique (paths L) -->
+  <!--
+    I géométrique — barre verticale pure, sans empattement
+    Même géométrie que favicon-source.svg : x=164→192, y=144→368
+    Path L uniquement (ligne droite) — conforme règle Bézier
+  -->
   <path
-    d="M 128,144
-       L 208,144
-       L 208,168
-       L 184,168
-       L 184,344
-       L 208,344
-       L 208,368
-       L 128,368
-       L 128,344
-       L 152,344
-       L 152,168
-       L 128,168
-       Z"
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
     fill="#000000"
   />
 
-  <!-- Lettre C — arc Bézier cubique sérif -->
+  <!--
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Même géométrie que favicon-source.svg
+    Centre optique (348, 256), Re=88, Ri=56, Bézier cubique k=0.5523
+  -->
   <path
-    d="M 384,144
-       L 304,144
-       L 304,168
-       C 264,168 232,208 232,256
-       C 232,304 264,344 304,344
-       L 304,368
-       L 384,368
-       L 384,344
-       L 304,344
-       L 304,300
-       C 280,300 260,280 260,256
-       C 260,232 280,212 304,212
-       L 304,168
-       L 384,168
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
        Z"
     fill="#000000"
   />
