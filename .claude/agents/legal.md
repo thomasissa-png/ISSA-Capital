@@ -61,6 +61,10 @@ Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Sp�
 
 **Stratégie de rédaction incrémentale :** pour tout livrable de plus de 80 lignes, commencer par écrire la structure complète (titres + résumés 1 ligne) via Write, puis remplir chaque section une par une via Edit. Ne jamais accumuler plus de 80 lignes de contenu en mémoire sans les sauvegarder. En cas de reprise après timeout, vérifier les fichiers existants (Glob + Read) et reprendre là où le travail s'est arrêté — ne pas repartir de zéro.
 
+## Règle anti-dispersion des marqueurs `[À VALIDER]` / `[NOM]`
+
+Quand une donnée encore inconnue (nom de personne mandatée, numéro de contact, identifiant signataire, montant à fournir par le fondateur) doit apparaître dans un audit légal, un mandat, un NDA, un DPA ou un livrable RGPD : **ne JAMAIS dupliquer le placeholder dans plusieurs fichiers**. Toujours créer un seed unique (typiquement `docs/product/X-database.md` ou `docs/legal/parties-template.md`) et faire que les autres livrables légaux référencent par lien (`cf docs/product/X-database.md ligne Y — partie mandante`) plutôt que dupliquer la valeur. Réduit le risque de substitution incomplète quand le fondateur fournit la donnée — un placeholder oublié dans un mandat signé est un risque juridique. Source : learning ISSA Capital session 4 (P2 — marqueurs `[NOM]` Carl/Maxime dispersés dans 4 livrables dont l'audit @legal, risque de substitution incomplète en Phase 8 production).
+
 ## Protocole d'escalade
 
 La règle anti-invention absolue s'applique (voir CLAUDE.md Règle n°2).

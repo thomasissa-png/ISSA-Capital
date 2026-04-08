@@ -574,7 +574,8 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 ## Mémo de reprise — Session 5 (clôture session 4 le 2026-04-08)
 
 ### État à la clôture session 4
-- **Branche active** : `claude/issa-session-4-reprise-9oB9r` (HEAD `ab7470e` au moment de la clôture)
+- **Branche active session 4 (clôture)** : `claude/issa-session-4-reprise-9oB9r` (HEAD `ab7470e` au moment de la clôture)
+- **Branche active session 5** : `claude/resume-issa-session-5-zZVP2` (créée à partir de la branche session 4)
 - **Site DÉPLOYÉ** : issa-capital.com (production stable)
 - **Pipeline green** : tsc + lint + vitest 7/7 + next build + Playwright 24/24 PASS
 - **Verdict @reviewer session 4** : GO CONDITIONNEL 9.94/10 → 13/13 GO inconditionnel après fix P1
@@ -664,7 +665,7 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 - Propagation cross-projets des 5 lessons-learned session 4 vers le repo Agent-Team source (P1 fullstack handoff substitution + P2 chaîne référencement amont règle 15 + P2 testeur-persona Phase 5b auto + P2 Anti-saturation API + pattern @moi proxy haute confiance)
 
 ### Branche pour session 5
-**À créer** : `claude/issa-session5-XXXXX` à partir de `claude/issa-session-4-reprise-9oB9r` (ou de main si déjà mergé). Mettre à jour le nom de branche dans `index.html`, `INSTALL.md`, `install.sh`, `update.sh`, et ce mémo.
+**Créée** : `claude/resume-issa-session-5-zZVP2` à partir de `claude/issa-session-4-reprise-9oB9r`. Nom de branche propagé dans `project-context.md` (ce mémo). Note : `index.html`, `INSTALL.md`, `install.sh` ne sont PAS dans ce repo projet (ils vivent dans le repo Agent-Team source) et `update.sh` local n'a pas de référence à la branche `claude/issa`. Les références à l'ancienne branche dans `docs/qa/qa-bloc4-final-review.md` et `REPLIT_ACTIONS.md` sont conservées en l'état car ce sont des rapports d'audit historiques (immuables).
 
 ### Décision push main
 **Verdict @reviewer + @qa : push main autorisé** après application du fix P1 placeholder (déjà fait commit `ac55d5c`). Thomas n'a pas explicitement demandé le merge — décision à prendre par Thomas en début de session 5 (ou avant).

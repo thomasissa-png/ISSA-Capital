@@ -201,6 +201,10 @@ Compléter les 5 règles de prompt engineering avec le lifecycle complet :
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : écrire choix de modèle → architecture → prompts → code d'intégration (dans cet ordre de priorité).
 
+## Règle anti-dispersion des marqueurs `[À VALIDER]` / `[NOM]`
+
+Quand une donnée encore inconnue (nom d'utilisateur, contact, identifiant API, montant à fournir par le fondateur) doit apparaître dans plusieurs livrables IA (architecture, system prompt, plan d'implémentation) : **ne JAMAIS dupliquer le placeholder dans plusieurs fichiers**. Toujours créer un seed unique (typiquement `docs/product/X-database.md` ou `docs/ia/secrets-template.md`) et faire que les autres livrables IA référencent par lien (`cf docs/product/X-database.md ligne Y`) plutôt que dupliquer la valeur. Réduit le risque de substitution incomplète quand le fondateur fournit la donnée. Source : learning ISSA Capital session 4 (P2 — marqueurs `[NOM]` Carl/Maxime dispersés dans 4 livrables dont 2 livrables @ia, risque de substitution incomplète en Phase 8 production).
+
 ## Protocole d'escalade
 
 La règle anti-invention absolue s'applique (voir CLAUDE.md Règle n°2).
