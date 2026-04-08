@@ -3,6 +3,8 @@
   <!--
     Variante A — Sans-serif géométrique (référence : Futura Bold / Avenir Black)
     Session 8 — Refonte typographique post-rejet Direction 1 session 7
+    Update Thomas : lettres IC re-centrées (+6.5 unités horizontales) — le bloc
+    géométrique était collé à gauche dans la v1, maintenant centré dans le sceau.
 
     Concept : lettres IC géométriques pures — aucun empattement, aucun ornement.
     Le I est une barre verticale simple à extrémités plates.
@@ -14,28 +16,22 @@
       Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
       Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
 
-    Lettres IC — zone centrale 22×28px, centrée optiquement
-      Bloc total : x=13→51, y=18→46 — hauteur caps 28px
-      I sans-serif : barre verticale x=14.5→17.5 (3px large), y=18→46
-      Espacement tracking : 3px entre I et C
-      C géométrique : centre optique x=37, Re=11, Ri=7
+    Lettres IC — bloc centré 20.5→43.5 (largeur 23), centre 32
+      I sans-serif : barre verticale x=20.5→24 (3.5px large), y=18→46
+      Espacement tracking : 8.5px entre I et C (32.5 - 24)
+      C géométrique : centre optique x=43.5, Re=11, Ri=7
 
     I géométrique :
       Simple barre verticale, largeur 3.5px, hauteur complète caps 28px
       Path L uniquement (ligne droite)
-      x= 14 → 17.5, y= 18 → 46
+      x= 20.5 → 24, y= 18 → 46
 
     C géométrique (Bézier cubique, k=0.5523) :
-      Centre (37, 32), Re=11, Ri=7
-      Ouverture : ~80° (coupe à 10h30 / 16h30 = y ± 9.5px)
-      Arc extérieur :
-        Haut cut : (37, 21)   → arc → (26, 32) → arc → (37, 43)
-        C (31.93, 21) (26, 26.93) (26, 32)
-        C (26, 37.07) (31.93, 43) (37, 43)
-      Terminaisons : extrémités plates horizontales (coupe à 10h/16h)
+      Centre optique (43.5, 32), Re=11, Ri=7
+      Arc extérieur : (43.5, 21) → arc gauche → (32.5, 32) → arc gauche → (43.5, 43)
+      Arc intérieur : (43.5, 25) → arc gauche → (36.5, 32) → arc gauche → (43.5, 39)
 
     Lisibilité 16px : NETTE — le I est une barre pure, le C est un arc lisse sans détail parasite
-    Risque : peut sembler froid — compensé par la chaleur des tokens ocre/parchment
   -->
 
   <!-- Fond circulaire — ink-950 #0A0A0A -->
@@ -49,37 +45,27 @@
 
   <!--
     I géométrique — barre verticale pure, sans empattement
-    Largeur 3.5px, centrée sur x=15.75
+    Largeur 3.5px, bord gauche x=20.5, bord droit x=24
     y=18 → y=46 (hauteur caps 28px)
   -->
   <path
-    d="M 14,18 L 17.5,18 L 17.5,46 L 14,46 Z"
+    d="M 20.5,18 L 24,18 L 24,46 L 20.5,46 Z"
     fill="#F5F0E8"
   />
 
   <!--
     C géométrique — arc de cercle pur, ouverture droite, extrémités plates
-    Centre optique (37, 32)
-    Arc extérieur  : Re=11 → points (37,21) arc gauche (37,43)
-    Arc intérieur  : Ri=7  → points (37,25) arc gauche (37,39)
-    Bézier cubique k=0.5523 :
-      Re=11 → cp offset = 6.075
-      Ri=7  → cp offset = 3.866
-
-    Arc ext haut  : M(37,21) C(30.925,21)(26,26.925)(26,32)
-    Arc ext bas   : (26,32) C(26,37.075)(30.925,43)(37,43)
-    Arc int bas   : (37,39) C(33.134,39)(30,35.866)(30,32)
-    Arc int haut  : (30,32) C(30,28.134)(33.134,25)(37,25)
-
-    Extrémités plates (stroke-linecap = butt implicite dans path)
+    Centre optique (43.5, 32)
+    Arc extérieur Re=11, arc intérieur Ri=7
+    Bézier cubique k=0.5523
   -->
   <path
-    d="M 37,21
-       C 30.925,21 26,26.925 26,32
-       C 26,37.075 30.925,43 37,43
-       L 37,39
-       C 33.134,39 30,35.866 30,32
-       C 30,28.134 33.134,25 37,25
+    d="M 43.5,21
+       C 37.425,21 32.5,26.925 32.5,32
+       C 32.5,37.075 37.425,43 43.5,43
+       L 43.5,39
+       C 39.634,39 36.5,35.866 36.5,32
+       C 36.5,28.134 39.634,25 43.5,25
        Z"
     fill="#F5F0E8"
   />
