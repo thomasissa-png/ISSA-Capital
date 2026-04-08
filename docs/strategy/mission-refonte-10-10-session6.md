@@ -475,3 +475,94 @@ Thomas Issa a grandi dans cette logique. Après une carrière internationale en 
 **Moyenne v2 : 10/10**
 
 **Verdict v2** : 10/10 sur les 10 dimensions. Version RICHE post-itération est le livrable cible.
+
+---
+
+## 6. Ma recommandation
+
+**Version recommandée : RICHE (v2 post-itération)**
+
+La Version RICHE v2 est la seule qui atteint 10/10 sur les 10 dimensions. Elle répond à la demande de Thomas ("beaucoup trop de détails — concentrons-nous sur la mission") sans tomber dans l'excès inverse : Karim a assez pour évaluer la crédibilité de Thomas sans lire sa biographie. Jean-Pierre est résumé en 1 paragraphe sobre. Thomas en 1 paragraphe pivot. Les filtres restent intacts. La famille est évoquée sans prénoms ni dates. C'est la version qui honore les deux impératifs simultanément : moins de biographie, mais mission lisible pour Karim.
+
+---
+
+## 7. Question à Thomas
+
+**Un seul arbitrage** : veux-tu garder la mention de Sonia Issa (Section 2, 1 phrase en italique : *"À ses côtés depuis le début, Sonia Issa — architecte d'intérieur — a donné à la famille son sens de l'espace, de la forme et du beau"*) ?
+
+- Si **OUI** : la Version RICHE reste telle quelle.
+- Si **NON** : supprimer la phrase Sonia, Section 2 devient 1 paragraphe unique sur Jean-Pierre. Aucun autre changement nécessaire.
+
+---
+
+## Handoff
+
+**À @fullstack (Phase 7)** — implémenter la Version RICHE v2 dans `src/app/mission/page.tsx`
+
+**Verbatim final retenu (Version RICHE v2) :**
+
+Section 1 — Hero : inchangé (déjà implémenté)
+
+Section 2 — Ce qui précède la holding :
+- H2 : "Une filiation, pas une création." (inchangé)
+- §1 : *Jean-Pierre Issa est né dans une famille d'origine libanaise. Il entre dans l'industrie dans les années 1980, chez IBM, puis fait partie de l'équipe fondatrice qui lance Lexmark en Europe. Il construit ensuite sa propre structure avec ses associés — une entreprise déployée dans plusieurs dizaines de pays, construite avec méthode, tenue dans la durée. Un parcours cohérent : entrer pour rester, décider avec rigueur, transmettre ce qui a été appris.*
+- §2 (conditionnel Sonia — Thomas arbitre) : *À ses côtés depuis le début, Sonia Issa — architecte d'intérieur — a donné à la famille son sens de l'espace, de la forme et du beau. Une sensibilité qui traverse discrètement tout ce que la famille construit.*
+
+Section 3 — Le fondateur :
+- H2 : "Thomas Issa" (inchangé)
+- §1 unique : *Thomas Issa a grandi dans cette logique. Après une carrière internationale en entreprise, puis comme fondateur d'une agence de communication internationale, il a tiré une conviction simple : les structures qui durent sont celles qu'on construit avec intention. C'est ce qu'il applique à ISSA Capital. En 2025, il quitte l'agence pour se consacrer à sa famille et au développement des activités de la holding. La holding est créée en 2026.*
+
+Section 4 — Ce que tout cela construit (NOUVELLE SECTION à créer) :
+- Overline : "L'horizon"
+- H2 : "Ce que tout cela construit."
+- §1 : *ISSA Capital n'existe pas pour gérer un actif. Elle existe parce que Thomas Issa a des enfants, et que ce qu'il construit aujourd'hui doit être transmissible demain. Ce que Jean-Pierre a bâti, Thomas en a hérité la méthode. Ce que Thomas construit, ses enfants en hériteront — avec les racines libanaises qui traversent trois générations. L'horizon de la holding, c'est le leur.*
+
+Section 5 — Trois filtres : inchangée (déjà implémentée correctement)
+
+Section 6 — Ce que nous sommes : fusionner l'actuelle Section 5 (Identité) dans l'actuelle Section 7 (Ce que nous sommes) — remplacer §2 de Section 7 par la fusion :
+- §2 révisé : *La famille fondatrice est d'origine libanaise. ISSA Capital est une SAS française, domiciliée à Nanterre. Ces deux réalités coexistent — elles se complètent.*
+
+**Suppressions attendues dans le TSX :**
+- Supprimer Section 3 — Thomas §1 (Florimont / Irvine / Inde)
+- Supprimer Section 3 — Thomas §2 (Sony / TEOS / "il identifie un manque")
+- Supprimer Section 3 — Thomas §3 (35 experts / TikTok / Adidas / Lego)
+- Supprimer Section 4 — La famille : prénoms Antoine/Noémie/Lucas et dates 2015/2018/2023
+- Supprimer Section 5 — Identité en tant que section indépendante (à fusionner dans Section 7)
+- Réduire Section 2 — Jean-Pierre §1 : retirer dates exactes (1958, années 1970, 1980, 1991) et titres exacts (Directeur de filiales, Directeur Marketing EMEA)
+- Supprimer Section 2 — Jean-Pierre §2 (2J Impression, Mérignac, 17 pays, 4M€ CA, Co-Managing Director)
+
+**Ajouts attendus :**
+- Section 4 (nouvelle) : "L'horizon" — verbatim ci-dessus, entre Thomas et Filtres
+- Section 3 Thomas : remplacer les 4 §§ par 1 § unique — verbatim ci-dessus
+
+**Composants React réutilisables :**
+- `<Section tone="subtle">` + `<Container width="editorial">` pour la nouvelle Section 4 (même structure que l'actuelle Section 4 La famille)
+- Aucun nouveau composant à créer
+
+**Impact JSON-LD Person :**
+- Supprimer `alumniOf` (Institut Florimont, UC Irvine) — ces formations ne figurent plus dans le copy
+- Conserver `name`, `jobTitle`, `worksFor`, `knowsLanguage`, `sameAs`
+- JSON-LD révisé minimal :
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Thomas Issa",
+  "jobTitle": "Fondateur et Président",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "ISSA Capital SAS",
+    "url": "https://issa.capital"
+  },
+  "knowsLanguage": ["fr", "en", "ar"],
+  "sameAs": ["https://www.linkedin.com/in/thomasissa"]
+}
+```
+
+**À @qa** : régénération baselines Playwright /mission sur 3 devices (iPhone 13 375px / iPad 768px / Desktop 1280px) après implémentation @fullstack.
+
+---
+
+## Hypothèses à valider
+
+Aucune donnée inventée. Tous les faits biographiques utilisés dans les 3 versions sont issus de `src/app/mission/page.tsx` (v1 existante). Les éléments retirés (dates, titres, chiffres, prénoms enfants) sont des suppressions, pas des remplacements par des données nouvelles.
