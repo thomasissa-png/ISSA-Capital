@@ -2,15 +2,55 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-08 — Session 6 Phase 1 + 1bis lancées (3 Tasks parallèles : audit Mission/À propos, options Gradient One, audit justifications explicites)**
+> Dernière mise à jour : **2026-04-08 — Session 6 CLÔTURÉE proprement (Phases 1-6 DONE, Phase 7 + Phase 4 reportées session 7 avec 2 décisions Thomas en attente)**
 
-<!-- SESSION: phases=1 tasks_prod=4 tasks_consult=0 -->
+<!-- SESSION: phases=7 tasks_prod=15 tasks_consult=0 -->
 
 ---
 
-## Session 6 — Plan d'exécution retours Thomas
+## Session 6 — CLÔTURE (2026-04-08)
 
-**Branche** : `claude/resume-issa-session-6-XXXX` (à confirmer)
+**Verdict session 6** : **CLÔTURÉE SANS IMPLÉMENTATION PHASE 7** — à la demande de Thomas en fin de session ("non finissons proprement puis changeons de session"). Les 3 livrables stratégiques (mission RICHE v2 + participations Variante A + accompagnement A ou C) sont produits et committés mais NON appliqués dans le TSX. Ils seront implémentés en début de session 7 après tranche des 2 décisions bloquantes.
+
+**Branche finale** : `claude/resume-issa-session-6-UDiOS` (HEAD `01bd819` + commit de clôture à venir)
+
+**Compteur Tasks producteurs utilisés** : **15/18** (marge 3 sous seuil ALERTE ROUGE)
+
+**Pipeline G28 final session 6** :
+- `tsc --noEmit` : **0 erreur**
+- `eslint .` : **0 erreur**
+- `vitest run` : **7/7 PASS**
+- `next build` : non re-testé en fin de clôture (dernier check Phase 6a = 15 routes PASS)
+- Playwright : 21 baselines régénérées en Phase 3+5 fusion + 6 baselines supplémentaires en Phase 6a
+
+### Les 6 retours Thomas session 6 — STATUT FINAL
+
+| # | Page(s) | Action Thomas | Statut final |
+|---|---|---|---|
+| 1 | / homepage incipit "Notre raison d'être" | Suppression "Cette holding n'est pas née en 2026." | ✅ DONE (Phase 2 vague 2.1) — commit `0b1c42a` |
+| 2 | / homepage "Participation phare" Gradient One | Réécriture "3 générations" | ✅ DONE v1 (Phase 2+3+5) puis RECORRECTION Phase 6a (stats 2020/6/3 remises, label "Participation phare" retiré) — mais Thomas a ensuite demandé de RETIRER aussi le texte éditorial Prop 1 + sous-titre + description → **EN ATTENTE Phase 7** (homepage stats-only strict, sans texte) |
+| 3 | / homepage "Notre écosystème" Gradient One + Versi Invest | Reformulation + "et financières" + Versi simplifié | ✅ DONE (Phase 6a) — commit `60ef82b` — label "Holding intermédiaire" gardé, ajout "et financières", Versi Invest simplifié à "Conseil en investissement immobilier et co-investissement sur sélection." |
+| 4 | / + /mission + /opportunites Filtres décision | Réécriture A/B | ✅ DONE (Phase 2+3+5) — Filtre 1 B principiel + Filtre 2 A pragmatique + Filtre 3 Horizon inchangé |
+| 5 | /mission vs /a-propos | Fusion — suppression /a-propos + refonte /mission | ✅ DONE v1 (Phase 3+5) puis REFONTE RICHE v2 10/10 produite (Phase 6b) → **EN ATTENTE Phase 7 implémentation TSX** (décision Sonia OUI déjà tranchée) |
+| 6 | Toutes pages | Audit + correction justifications explicites | ✅ DONE (Phase 1bis audit + Phase 2 vague 2.2 corrections) — 5 occurrences traitées (2 SUPPRIMER + 3 REFORMULER) |
+
+### 2 nouveaux retours Thomas ajoutés mi-session 6
+
+| # | Page | Action Thomas | Statut final |
+|---|---|---|---|
+| 7 | /accompagnement | Refonte duo Jean-Pierre + Thomas | 📄 LIVRABLE STRATÉGIQUE PRODUIT (Phase 6d) — Variante A duo opérationnel 9.5/10 OU Variante C maison et héritier 9.4/10 → **EN ATTENTE décision Thomas CHECKPOINT #5** puis Phase 7 implémentation TSX |
+| 8 | Favicon + icônes | Refonte complète | 📄 BRIEF STRATÉGIQUE PRODUIT (Phase 6e) — Direction 1 Sceau recommandée parmi 3 → **EN ATTENTE décision Thomas CHECKPOINT #5** puis implémentation graphique @design + propagation @fullstack en session 7 |
+
+### Corrections factuelles verrouillées session 6
+
+| # | Correction | Source | Impact |
+|---|---|---|---|
+| F1 | 2J Impression rachat = **2016** (pas 1994) | Retour Thomas post-Phase 6c | Corrigé dans `src/app/mission/page.tsx` l.131 + section "Corrections factuelles verrouillées par Thomas" ajoutée en fin de `project-context.md` |
+| F2 | Thomas jeunesse en **Afrique du Sud** (avant Inde et US) | Retour Thomas post-Phase 6c | Corrigé dans `src/app/mission/page.tsx` l.163-170 (ordre chronologique) + section verrouillages |
+
+### Ordre d'exécution session 6 (historique)
+
+**Branche** : `claude/resume-issa-session-6-UDiOS`
 **Date** : 2026-04-08
 **État au lancement** : Étape 2 (propagation 6 learnings session 5) DONE, committée `9bde9ef`. Compteur 1/18 Task producteur.
 **Mode** : autopilot avec checkpoints Thomas (2 blocages tranchage explicites)
@@ -116,9 +156,66 @@ Marge confortable sous le seuil ALERTE ROUGE (18). Pas de risque de saturation c
 - **R4** : régénération baselines Playwright — Phase 2 (Task E) régénère certaines baselines, Phase 3 (Task F) en régénère d'autres. Risque de drift si les deux phases touchent les mêmes sections. À séquencer strictement Phase 2 → Phase 3 (pas de chevauchement).
 - **R5** : déterminer si les "Filtres de décision" sont sur homepage uniquement, page `/participations`, ou les deux — Grep nécessaire en début Phase 2 par @copywriter pour cartographier tous les emplacements avant édit.
 
-### Status
+### Status session 6
 
-**EN ATTENTE VALIDATION main thread / Thomas avant lancement Phase 1.**
+**CLÔTURÉE sans implémentation Phase 7** — Thomas a demandé en fin de session de "finir proprement puis changer de session". Les 15 Tasks producteurs ont été utilisés sur Phases 1-6. Phase 7 (@fullstack mega-passe implementation) et Phase 4 (QA + testeur) sont reportées en session 7.
+
+---
+
+## Session 7 — À démarrer
+
+### 🔴 Décisions Thomas BLOQUANTES en début de session 7 (CHECKPOINT #5)
+
+**Décision 1 — Favicon direction** (Phase 6e brief disponible `docs/design/favicon-brief-session6.md`)
+- Direction 1 Sceau / Cachet patrimonial ⭐ (recommandation @creative-strategy)
+- Direction 2 Cèdre géométrique (identité libanaise explicite)
+- Direction 3 I monumental (rigueur structurelle)
+- Ou Direction 4 libre
+- **Impact** : détermine le brief de @design session 7 pour production des 8 SVG + binaires + apple-touch-icon
+
+**Décision 2 — /accompagnement opérationnel vs maison** (Phase 6d livrable disponible `docs/strategy/accompagnement-refonte-10-10-session6.md`)
+- Variante A duo opérationnel (Jean-Pierre dans les réunions, 9.5/10)
+- Variante C maison et héritier (Thomas opère, Jean-Pierre figure tutélaire, 9.4/10)
+- Question Thomas (verbatim @creative-strategy) : *"Quand tu dis 'tous les deux on accompagne', est-ce que Jean-Pierre intervient directement dans les missions clients — réunions, recommandations, échanges — ou est-ce qu'il est présent au sens de 'la maison Issa accompagne via sa méthode et son héritage', et c'est toi qui opères ?"*
+- **Impact** : détermine l'architecture exacte de la page /accompagnement (A = 8 sections 2 bios distinctes, C = structure maison-et-héritier)
+
+### Phase 7 session 7 — Mega-passe @fullstack (estimation 1 Task)
+
+Après les 2 décisions tranchées, une seule Task @fullstack applique **en une seule passe** :
+
+1. **Homepage stats-only strict** — retirer le texte éditorial Gradient One (titre Prop 1 + sous-titre + description) ajouté en Phase 3+5, garder UNIQUEMENT les stats 2020/6/3 proprement présentées
+2. **/mission** — implémenter Version RICHE v2 6 sections (bio Thomas 4 phrases, bio Jean-Pierre 4 phrases sans dates/titres, Sonia gardée 1 phrase italique, prénoms+dates enfants coupés, Florimont/Irvine/Sony/TEOS/TikTok/Adidas/Lego coupés, nouvelle section "L'horizon", JSON-LD Person `alumniOf` supprimé)
+3. **/participations** — implémenter Variante A par domaine d'activité (H1 remanié, 5 sections Immobilier en direct / Accompagnement et co-investissement / Technologie au service de l'immobilier / Une thèse pas un portefeuille, Gradient One relégué en attribution "via Gradient One" dans les fiches, suppression featured/border-2/col-span-2 sur Versi Invest)
+4. **/accompagnement** — implémenter la variante retenue (A ou C) avec respect des faits biographiques 2J 2016 + Afrique du Sud
+
+**Pipeline G28** complet + régénération baselines (21 baselines sur 3 devices pour les 4 pages modifiées).
+
+### Phase favicon session 7 — 2 Tasks séparés
+
+1. **@design** production des 8 SVG + binaires selon la Direction Thomas
+2. **@fullstack** propagation `public/` + `app/layout.tsx` + vérification des references + régénération éventuelle des baselines Playwright
+
+### Phase 4 session 7 — QA finale (2 Tasks)
+
+1. **@qa** tests E2E sur toutes les pages refondues + pipeline G28 complet
+2. **@testeur-karim** ré-évaluation gates GP1-GP10 sur les pages refondues
+
+### Budget session 7 estimé
+
+| Phase | Tasks | Cumul session 7 |
+|---|---|---|
+| Phase 7 mega-passe implementation | 1 | 1/18 |
+| Phase favicon (@design + @fullstack) | 2 | 3/18 |
+| Phase 4 QA + testeur | 2 | 5/18 |
+| **Marge restante** | | **13/18** |
+
+Marge très confortable en session 7 — pourra inclure d'autres chantiers (ex : démarrage agent secrétariat ISSA Capital si Thomas débloque les actions Phase 8).
+
+### Prochains chantiers importants (hors session 6-7)
+
+- **Agent secrétariat ISSA Capital** : 12-18h de dev, 8 phases, non démarré (spec @ia 1856 lignes prête)
+- **Actions Thomas Phase 8** : DPA Anthropic, DPA Replit, email RGPD Carl/Maxime, NDA signatures, numéro WhatsApp pro, complétion secretariat-contacts-database
+- **Propagation cross-projets** des 6 learnings session 5 (déjà propagés localement en début session 6)
 
 ---
 

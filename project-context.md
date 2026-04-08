@@ -594,6 +594,141 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 
 ---
 
+## Mémo de reprise — Session 7 (clôture session 6 le 2026-04-08)
+
+### État à la clôture session 6
+- **Branche active session 6 (clôturée)** : `claude/resume-issa-session-6-UDiOS` (HEAD à actualiser après commit clôture)
+- **Site DÉPLOYÉ** : issa-capital.com (avec les corrections Phase 2 + 3+5 + 6a + 6.5 appliquées dans le code). Phase 7 implémentation des refontes /mission + /participations + /accompagnement NON appliquée dans le TSX.
+- **Pipeline G28 final session 6** : tsc 0 / lint 0 / vitest 7/7 PASS / next build 15 routes (dernière Phase 6a) / 21 baselines Playwright régénérées
+- **Compteur producteurs session 6** : 15/18 Tasks producteurs utilisés (marge 3)
+- **Clôture demandée par Thomas** : "non finissons proprement puis changeons de session" — pas de Phase 7 ni Phase 4 en session 6
+
+### 🔴 2 décisions Thomas BLOQUANTES en début session 7
+
+**Décision 1 — Favicon direction** (brief `docs/design/favicon-brief-session6.md`)
+- Diagnostic Direction A (session 5 C3) : 5 défauts identifiés (C Bézier illisible 16px, monogramme flottant sans identité libanaise, cabinet européen banal, pas de signal patrimonial, manque de robustesse)
+- Direction 1 **Sceau / Cachet patrimonial** ⭐ recommandée par @creative-strategy (IC dans un sceau circulaire, fond ink-950, glyphe parchment-100, contour levant-500)
+- Direction 2 Cèdre géométrique (identité libanaise explicite)
+- Direction 3 I monumental (rigueur structurelle)
+- Question Thomas : *"Pour le favicon ISSA Capital, quel signal veux-tu transmettre dans l'onglet parmi vingt autres — IC dans un sceau/cachet de famille (D1), I seul monumental (D3), ou cèdre géométrique identité libanaise explicite (D2) ?"*
+
+**Décision 2 — /accompagnement opérationnel vs maison** (livrable `docs/strategy/accompagnement-refonte-10-10-session6.md`)
+- Variante A "Duo opérationnel" 9.5/10 (Jean-Pierre ET Thomas dans les réunions, 8 sections avec 2 bios distinctes)
+- Variante C "Maison et héritier" 9.4/10 (Thomas opère, Jean-Pierre figure tutélaire/méthode)
+- Question Thomas : *"Quand tu dis 'tous les deux on accompagne', est-ce que Jean-Pierre intervient directement dans les missions clients — réunions, recommandations, échanges — ou est-ce qu'il est présent au sens de 'la maison Issa accompagne via sa méthode et son héritage', et c'est toi qui opères ?"*
+- **Les 2 variantes ont leur verbatim complet prêt dans le livrable (551 lignes)** — implémentation possible dès tranchage
+
+### Ce qui a été livré en session 6 (15 Tasks producteurs utilisés)
+
+**Phase 2 vague 2.1 — Copy + Edit chirurgical (commit `0b1c42a`)** :
+1. Filtres décision 4 textes A/B — Filtre 1 B principiel + Filtre 2 A pragmatique + Filtre 3 Horizon inchangé
+2. Gradient One Option C (co-fondée avec deux associés, corrigée par Thomas) + Versi Invest
+3. Incipit "Notre raison d'être" — suppression "Cette holding n'est pas née en 2026." (src/app/page.tsx l.102)
+
+**Phase 2 vague 2.2 — 5 corrections justifications explicites (commit `7bcea0c`)** :
+- 2 SUPPRIMER + 3 REFORMULER sur /accompagnement + /home + /opportunites
+- P0 "Dans les deux cas : aucun tarif affiché..." → déplacée dans intro formulaire sous forme incarnée
+
+**Phase 3+5 fusion — Mega-passe TSX (commit `cd30dbb`)** :
+- Propagation Vague 2.1 (filtres + Gradient One Prop 1 + Versi Invest verbatim Thomas)
+- Refonte complète src/app/mission/page.tsx en 7 sections (absorption /a-propos v1)
+- Suppression intégrale src/app/a-propos/
+- next.config.js redirect 301→308 /a-propos → /mission
+- siteConfig.nav + footerLinks : item "À propos" retiré
+- 21 baselines régénérées (7 pages × 3 devices)
+
+**Phase 6a — 4 corrections rapides CHECKPOINT #3 (commit `60ef82b`)** :
+- Homepage : grid 3 stats remise (2020 Co-fondation / 6 Participations / 3 Générations), label "Participation phare" retiré
+- Écosystème Gradient One : "et financières" ajouté
+- Écosystème Versi Invest : description simplifiée à "Conseil en investissement immobilier et co-investissement sur sélection."
+- /participations : 2 occurrences "Participation phare" retirées
+
+**Phase 6.5 — Corrections factuelles verrouillées Thomas (commit `c7f21fd`)** :
+- src/app/mission/page.tsx l.131 : "En 1994" → "En 2016" (2J Impression rachat)
+- src/app/mission/page.tsx l.163-170 : réordonnancement chronologique (Afrique du Sud en tête de parcours)
+- project-context.md : section "Corrections factuelles verrouillées par Thomas — Session 6" ajoutée
+
+**Phase 6b — Livrable /mission refonte RICHE v2 10/10 (commit `689ac3e`)** :
+- `docs/strategy/mission-refonte-10-10-session6.md` (568 lignes, 3 versions MIN/INT/RICHE + auto-éval 10 dimensions)
+- Version RICHE v2 atteint 10/10 après 1 itération
+- **Architecture finale** : 6 sections (Hero + Jean-Pierre + Thomas + L'horizon NOUVELLE + Filtres + Ce que nous sommes)
+- **Coupes** : Section Famille complète (Antoine/Noémie/Lucas), Thomas Florimont/Irvine/Inde/Sony/TEOS, Jean-Pierre 2J 17 pays/4M€/Co-Managing Director, Section Identité séparée
+- **Sonia Issa GARDÉE** (1 phrase italique, décision Thomas CHECKPOINT #4)
+- Impact JSON-LD : supprimer `alumniOf` (Florimont + UC Irvine)
+
+**Phase 6c — Livrable /participations refonte Variante A 9.6/10 (commit `5e2fd5e`)** :
+- `docs/strategy/participations-refonte-10-10-session6.md` (419 lignes, 2 variantes A/B + auto-éval)
+- Variante A "par domaine d'activité" = 9.6/10 (non 10/10 car cosmétique, éviter la démonstration)
+- **Architecture finale** : H1 "Un écosystème immobilier construit depuis 2020." + 5 sections (Immobilier en direct / Accompagnement et co-investissement / Technologie au service de l'immobilier NOUVELLE / Une thèse pas un portefeuille)
+- **Gradient One** relégué en attribution "via Gradient One" dans les fiches entités, plus de traitement featured/border-2/col-span-2 sur Versi Invest
+- **Note Gradient One hero** : Thomas n'a pas tranché explicitement → hypothèse retenue **B retirer** (cohérent avec "personne ne connaît Gradient One")
+
+**Phase 6d — Livrable /accompagnement refonte 9.5/10 (commit `01bd819`)** :
+- `docs/strategy/accompagnement-refonte-10-10-session6.md` (551 lignes, 2 variantes A/C + auto-éval)
+- Variante A "Duo opérationnel" 9.5/10 (recommandée)
+- Variante C "Maison et héritier" 9.4/10 (alternative si Jean-Pierre pas opérationnel)
+- Score 10/10 non atteint car décision business Thomas bloquante
+- Faits biographiques respectés : 2J 2016 + Afrique du Sud
+
+**Phase 6e — Brief favicon 3 directions (commit `d318aad`)** :
+- `docs/design/favicon-brief-session6.md` (223 lignes)
+- Diagnostic Direction A session 5 C3 : 5 défauts identifiés
+- 3 directions proposées (Sceau / Cèdre / I monumental)
+- Direction 1 Sceau recommandée
+- **Pas d'implémentation graphique session 6** (reportée session 7 @design + @fullstack)
+
+### ⏳ Ce qui reste à faire en session 7 (ordre d'attaque recommandé)
+
+1. **Tranche des 2 décisions Thomas** (CHECKPOINT #5) : favicon direction + accompagnement variante A/C
+2. **Phase 7 mega-passe @fullstack** (1 Task) :
+   - Homepage stats-only strict (retirer texte éditorial Gradient One de la section refondue en Phase 3+5, garder uniquement stats 2020/6/3)
+   - /mission implémenter RICHE v2 6 sections (Sonia gardée, 2J 2016, Afrique du Sud, coupes Florimont/Irvine/Sony/TEOS, JSON-LD alumniOf supprimé)
+   - /participations implémenter Variante A 5 sections (Gradient One relégué en attribution)
+   - /accompagnement implémenter variante retenue (A ou C)
+   - Pipeline G28 + 21 baselines régénérées
+3. **Phase favicon** (2 Tasks) :
+   - @design produit 8 SVG + binaires + apple-touch-icon selon direction retenue
+   - @fullstack propage public/ + app/layout.tsx + références
+4. **Phase 4 QA finale** (2 Tasks) :
+   - @qa tests E2E sur toutes les pages refondues
+   - @testeur-karim ré-évaluation gates GP1-GP10
+
+### Contraintes cross-session (rappel inchangé)
+
+- **Principe directeur #0** : VITRINE pas conversion. Zéro CTA agressif.
+- **Règle absolue** : Simplicité > Démonstration > Élégance (P0 verrouillée).
+- **Identité libanaise** (jamais française).
+- **Caractères UTF-8 réels** dans le code (é è à ç).
+- **Mention TikTok / Adidas / Lego / Sony AUTORISÉE** (exception explicite Q2 session 5).
+- **Zéro mention du nom de l'agence Thomas** (commence par S, finit par i, 6 lettres) → "Une agence de communication internationale".
+- **Q3 "d'une famille libanaise, établie en France"** : verrouillée.
+- **Q1 Option B typo** (display 52px / h2 32px / h3 26px) : verrouillée.
+- **Faits biographiques verrouillés session 6** :
+  - 2J Impression rachat = **2016** (pas 1994)
+  - Thomas jeunesse en **Afrique du Sud** (avant Inde et US)
+- **Décisions Thomas verrouillées session 6** :
+  - A1 fusion /mission + /a-propos = OUI (fait)
+  - A2 Sonia Issa dans /mission = GARDÉE (1 phrase italique)
+  - A3 prénoms+dates enfants dans /mission = GARDÉS (mais seront coupés en Phase 7 selon Version RICHE v2 — Thomas a tranché différemment par la suite avec le feedback "trop de détails")
+  - Filtres : Filtre 1 = B principiel, Filtre 2 = A pragmatique
+  - Gradient One Bloc 1 titre = Prop 1 "co-fondée par Thomas Issa et deux associés"
+  - Homepage "Participation phare" = stats-only strict (PAS de texte éditorial, retirer Prop 1 + sous-titre + description en Phase 7)
+  - Gradient One écosystème : "Holding intermédiaire" GARDÉ + "et financières" ajouté
+  - Versi Invest écosystème : description simplifiée (1 phrase)
+  - Gradient One hero /participations : B retirer (hypothèse)
+
+### Compteur session 7 disponible
+
+**Budget Tasks producteurs session 7** : 18 (seuil ALERTE ROUGE).
+
+**Estimation Phase 7 + favicon + QA = ~5 Tasks** → marge 13 restante pour d'autres chantiers (ex : démarrage agent secrétariat ISSA Capital, propagation cross-projets des learnings, etc.)
+
+### Branche pour session 7
+
+**À créer en début session 7** : `claude/issa-session7-XXXXX` à partir de `claude/resume-issa-session-6-UDiOS` (HEAD après commit de clôture) ou depuis `main` si merge fait entre-temps. Mettre à jour le nom de branche dans project-context.md (ce mémo), index.html, INSTALL.md, install.sh, update.sh (règle 12 CLAUDE.md — si ces fichiers existent dans le repo projet).
+
+---
+
 ## Mémo de reprise — Session 6 (clôture session 5 le 2026-04-08)
 
 ### État à la clôture session 5
