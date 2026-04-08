@@ -52,18 +52,12 @@ export default function OpportunitesPage(): JSX.Element {
               sélectionnés — immobilier résidentiel et participations minoritaires.
               Critères explicites. Horizon intergénérationnel.
             </p>
+            <p className="mt-md text-sm italic text-ink-600">
+              Cette page s&apos;adresse aux apporteurs d&apos;affaires et aux fondateurs
+              qui cherchent un actionnaire de long terme — une holding familiale qui
+              décide sans comité trimestriel.
+            </p>
           </div>
-        </Container>
-      </Section>
-
-      {/* Intro positionnement */}
-      <Section tone="elevated">
-        <Container width="editorial">
-          <p className="text-base leading-relaxed text-ink-700">
-            Cette page s&apos;adresse aux apporteurs d&apos;affaires et aux fondateurs
-            qui cherchent un actionnaire de long terme : une holding familiale, sans
-            comité trimestriel, qui décide sur les dossiers qualifiés.
-          </p>
         </Container>
       </Section>
 
@@ -151,7 +145,7 @@ export default function OpportunitesPage(): JSX.Element {
       </Section>
 
       {/* Comment nous travaillons */}
-      <Section tone="default">
+      <Section tone="elevated">
         <Container width="content">
           <div className="mb-2xl max-w-editorial">
             <Overline>Notre process</Overline>
@@ -218,7 +212,7 @@ export default function OpportunitesPage(): JSX.Element {
       </Section>
 
       {/* Clause légale */}
-      <Section tone="default" className="py-xl">
+      <Section tone="subtle" className="py-xl">
         <Container width="editorial">
           <p className="text-xs italic leading-relaxed text-ink-500">
             Les informations publiées sur cette page ne constituent pas une offre de
