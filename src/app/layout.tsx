@@ -73,6 +73,22 @@ export const metadata: Metadata = {
   // (src/app/favicon.ico, src/app/icon.svg, src/app/apple-icon.png).
   // Cette convention génère automatiquement les <link> dans le <head>
   // et prend priorité sur metadata.icons. Plus fiable qu'une déclaration manuelle.
+  //
+  // Session 7 — Direction 1 Sceau : les 3 fichiers file-based ci-dessus sont
+  // synchronisés depuis public/favicon.svg|.ico et public/apple-touch-icon.png
+  // (générés par scripts/generate-assets.mjs à partir des SVG sources @design).
+  //
+  // Le mask-icon Safari (rel non-standard) est déclaré via icons.other car
+  // la convention file-based ne couvre pas ce cas.
+  icons: {
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/safari-pinned-tab.svg',
+        color: '#C4935A',
+      },
+    ],
+  },
   manifest: '/site.webmanifest',
   alternates: {
     canonical: siteConfig.url,

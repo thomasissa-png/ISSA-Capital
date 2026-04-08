@@ -153,14 +153,14 @@ export default function MissionPage(): JSX.Element {
             <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
               <p>
                 Thomas Issa a grandi dans cette logique, avec une jeunesse en
-                Afrique du Sud qui l&apos;a formé à la mobilité et à l&apos;adaptation.
-                Après une carrière internationale en entreprise, puis comme
-                fondateur d&apos;une agence de communication internationale, il a
-                tiré une conviction simple : les structures qui durent sont celles
+                Afrique du Sud qui l&apos;a formé à la mobilité et à
+                l&apos;adaptation. Après quinze ans dans l&apos;industrie
+                internationale à travers plusieurs pays, puis la co-fondation
+                d&apos;une agence de communication internationale, il a tiré une
+                conviction simple : les structures qui durent sont celles
                 qu&apos;on construit avec intention. C&apos;est ce qu&apos;il
                 applique à ISSA Capital. En 2025, il quitte l&apos;agence pour se
-                consacrer à sa famille et au développement des activités de la
-                holding. La holding est créée en 2026.
+                consacrer à sa famille. En 2026, ISSA Capital prend forme.
               </p>
             </div>
           </div>

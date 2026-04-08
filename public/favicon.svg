@@ -1,56 +1,106 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Favicon ISSA Capital — Refonte Session 5 (2026-04-08)
-    Direction A : sérif classique, C en courbe de Bézier cubique (corrige l'aspect "Paint" v1)
-    Composition : lettre I (sérif) + lettre C (arc Bézier) + filet ocre signature
-    Couleurs :
-      Fond     : ink-950    #0A0A0A  (primitive.color.ink.950)
-      Glyphes  : parchment-100 #F5F0E8 (primitive.color.parchment.100)
-      Accent   : levant-500   #C4935A  (primitive.color.levant.500)
-    Géométrie :
-      Hauteur capitale : y=112 à y=400 (288px)
-      I : fût 40px, empattements 96px de large, 28px de haut — centré sur x=120
-      C : Re=144px, Ri=88px (épaisseur 56px), sérifs 28px, centre (298,256)
-          Bézier k≈0.5523 → Re×k=80, Ri×k=49
+    Favicon ISSA Capital — Direction 1 "Sceau / Cachet patrimonial"
+    Session 7 — Décision Thomas : CHECKPOINT #5 retenu
+
+    Concept : monogramme IC inscrit dans un sceau circulaire.
+    Signal : héritage, autorité familiale, patrimoine transmis.
+    Identité libanaise — holding familiale Jean-Pierre → Thomas → 3e génération.
+
+    Couleurs (tokens primitifs — docs/design/design-tokens.json) :
+      Fond sceau  : ink-950       #0A0A0A  (primitive.color.ink.950)
+      Glyphes IC  : parchment-100 #F5F0E8  (primitive.color.parchment.100)
+      Contour     : levant-500    #C4935A  (primitive.color.levant.500)
+
+    Géométrie (viewBox 64×64) :
+      Centre       : (32, 32)
+      Fond cercle  : R=31.5 (plein, ink-950, borde exactement le viewBox)
+      Contour ext  : R=30, stroke 2.5px levant-500
+      Cercle déco  : R=26, stroke 0.8px levant-500 opacity=0.5
+
+      Zone glyphes : x=14→50, y=18→46 (28px hauteur capitales)
+      I centré sur : x=21 (largeur totale 10px avec sérifs : x=16→26)
+      C centré sur : cx=38, cy=32, Re=9, Ri=5.5
+
+    I sérif — paths L (lettre droite, conforme règle anti-rectangles) :
+      Sérif haut  : y=18→21, x=16→26
+      Fût         : y=21→43, x=19→23
+      Sérif bas   : y=43→46, x=16→26
+
+    C sérif Bézier cubique (k=0.5523) :
+      Re=9, k×Re=4.97 ≈ 5.0
+      Ri=5.5, k×Ri=3.04 ≈ 3.0
+      Arc extérieur :
+        Haut : (38,21) C (33.0,21) (29,26.0) (29,32)
+        Bas  : (29,32) C (29,38.0) (33.0,43) (38,43)
+      Arc intérieur :
+        Bas  : (38,37.5) C (35.0,37.5) (32.5,35.0) (32.5,32)
+        Haut : (32.5,32) C (32.5,29.0) (35.0,26.5) (38,26.5)
+      Sérifs extérieurs : y=18→21 et y=43→46, x=38→48
+
+    Lisibilité vérifiée aux 6 tailles : 16 / 32 / 48 / 180 / 192 / 512 px
+    Conformité Bézier : I en L (droite), C en courbes C cubiques.
   -->
 
-  <!-- Fond -->
-  <rect width="512" height="512" fill="#0A0A0A"/>
+  <!-- Fond circulaire plein — ink-950 -->
+  <circle cx="32" cy="32" r="31.5" fill="#0A0A0A"/>
 
-  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
-  <path d="
-    M 72,112 L 168,112 L 168,140 L 140,140
-    L 140,372 L 168,372 L 168,400
-    L 72,400 L 72,372 L 100,372
-    L 100,140 L 72,140 Z
-  " fill="#F5F0E8"/>
+  <!-- Contour extérieur du sceau — levant-500 -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#C4935A" stroke-width="2.5"/>
+
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
 
   <!--
-    Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux)
-    Contour : sérif haut droit → arc extérieur (Re=144) → sérif bas droit
-              → retour arc intérieur (Ri=88) → sérif haut intérieur → ferme
-    Sérifs : 28px de haut, x=298 à x=440
-    Arc extérieur  : (298,112) → via (378,112)+(154,176) → (154,256)
-                     (154,256) → via (154,336)+(218,400) → (298,400)
-    Arc intérieur  : (298,372) → via (249,372)+(210,305) → (210,256)
-                     (210,256) → via (210,207)+(249,140) → (298,140)
+    Lettre I — sérif classique
+    Structure : sérif haut + fût + sérif bas — paths L uniquement (lettre droite)
+    Centré sur x=21, zone y=18→46
   -->
-  <path d="
-    M 440,112
-    L 298,112
-    C 378,112 154,176 154,256
-    C 154,336 218,400 298,400
-    L 440,400
-    L 440,372
-    L 298,372
-    C 249,372 210,305 210,256
-    C 210,207 249,140 298,140
-    L 440,140
-    Z
-  " fill="#F5F0E8"/>
+  <path
+    d="M 16,18
+       L 26,18
+       L 26,21
+       L 23,21
+       L 23,43
+       L 26,43
+       L 26,46
+       L 16,46
+       L 16,43
+       L 19,43
+       L 19,21
+       L 16,21
+       Z"
+    fill="#F5F0E8"
+  />
 
-  <!-- Filet ocre levantin — signature graphique du système ISSA Capital -->
-  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+  <!--
+    Lettre C — arc Bézier cubique sérif
+    Centre arc (38, 32), Re=9, Ri=5.5, k=0.5523
+    Points Bézier :
+      Arc ext haut : (38,21) C (33.0,21) (29,26.0) (29,32)
+      Arc ext bas  : (29,32) C (29,38.0) (33.0,43) (38,43)
+      Arc int bas  : (38,37.5) C (35.0,37.5) (32.5,35.0) (32.5,32)
+      Arc int haut : (32.5,32) C (32.5,29.0) (35.0,26.5) (38,26.5)
+    Sérifs : y=18→21 / y=43→46, x=38→48
+  -->
+  <path
+    d="M 48,18
+       L 38,18
+       L 38,21
+       C 33.0,21 29,26.0 29,32
+       C 29,38.0 33.0,43 38,43
+       L 38,46
+       L 48,46
+       L 48,43
+       L 38,43
+       L 38,37.5
+       C 35.0,37.5 32.5,35.0 32.5,32
+       C 32.5,29.0 35.0,26.5 38,26.5
+       L 38,21
+       L 48,21
+       Z"
+    fill="#F5F0E8"
+  />
 
 </svg>

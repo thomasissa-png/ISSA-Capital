@@ -111,9 +111,16 @@ export default function ParticipationsPage(): JSX.Element {
                 Actifs résidentiels détenus et gérés en direct. Constitution
                 patrimoniale, revenus locatifs, gestion directe.
               </p>
-              <p className="mt-md text-sm italic text-ink-600">
-                Horizon long terme — les actifs sont détenus dans la durée.
-              </p>
+              <dl className="mt-auto space-y-sm pt-lg text-sm">
+                <div className="flex gap-md">
+                  <dt className="w-24 text-ink-500">Détention</dt>
+                  <dd className="text-ink-800">Directe — ISSA Capital</dd>
+                </div>
+                <div className="flex gap-md">
+                  <dt className="w-24 text-ink-500">Horizon</dt>
+                  <dd className="text-ink-800">Long terme</dd>
+                </div>
+              </dl>
             </article>
 
             {/* Bloc B — Versi Immobilier (marchand de biens) */}

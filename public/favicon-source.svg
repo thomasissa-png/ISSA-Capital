@@ -1,56 +1,119 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Favicon ISSA Capital — Refonte Session 5 (2026-04-08)
-    Direction A : sérif classique, C en courbe de Bézier cubique (corrige l'aspect "Paint" v1)
-    Composition : lettre I (sérif) + lettre C (arc Bézier) + filet ocre signature
-    Couleurs :
-      Fond     : ink-950    #0A0A0A  (primitive.color.ink.950)
-      Glyphes  : parchment-100 #F5F0E8 (primitive.color.parchment.100)
-      Accent   : levant-500   #C4935A  (primitive.color.levant.500)
-    Géométrie :
-      Hauteur capitale : y=112 à y=400 (288px)
-      I : fût 40px, empattements 96px de large, 28px de haut — centré sur x=120
-      C : Re=144px, Ri=88px (épaisseur 56px), sérifs 28px, centre (298,256)
-          Bézier k≈0.5523 → Re×k=80, Ri×k=49
+    Favicon ISSA Capital — Source master 512×512 pour génération PNG/ICO
+    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+
+    Même géométrie que favicon.svg (64×64) × 8 :
+      Couleurs identiques, proportions identiques.
+      Cette source est utilisée par le script generate-assets.mjs
+      pour produire les PNG 16/32/48/180/192/512px et favicon.ico.
+
+    Tokens primitifs (docs/design/design-tokens.json) :
+      ink-950       #0A0A0A
+      parchment-100 #F5F0E8
+      levant-500    #C4935A
+
+    Géométrie (viewBox 512×512) :
+      Centre       : (256, 256)
+      Fond         : R=252 (plein, ink-950)
+      Contour ext  : R=240, stroke 20px levant-500
+      Cercle déco  : R=208, stroke 6px levant-500 opacity=0.5
+
+      Zone glyphes : y=144→368 (224px hauteur capitales)
+      I centré sur : x=168 (sérifs x=128→208)
+      C centré sur : cx=304, cy=256, Re=72, Ri=44
+        k=0.5523 : Re×k=39.8 ≈ 40, Ri×k=24.3 ≈ 24
+
+    I sérif (paths L) :
+      Sérif haut  : y=144→168, x=128→208
+      Fût         : y=168→344, x=152→184
+      Sérif bas   : y=344→368, x=128→208
+
+    C sérif Bézier (Re=72, Ri=44, centre 304,256) :
+      Arc ext haut : (304,168) C (264,168) (232,208) (232,256)
+      Arc ext bas  : (232,256) C (232,304) (264,344) (304,344)
+      Arc int bas  : (304,300) C (280,300) (260,280) (260,256)
+      Arc int haut : (260,256) C (260,232) (280,212) (304,212)
+      Sérifs extérieurs : y=144→168 et y=344→368, x=304→384
   -->
 
-  <!-- Fond -->
-  <rect width="512" height="512" fill="#0A0A0A"/>
+  <!-- Fond circulaire plein — ink-950 -->
+  <circle cx="256" cy="256" r="252" fill="#0A0A0A"/>
 
-  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
-  <path d="
-    M 72,112 L 168,112 L 168,140 L 140,140
-    L 140,372 L 168,372 L 168,400
-    L 72,400 L 72,372 L 100,372
-    L 100,140 L 72,140 Z
-  " fill="#F5F0E8"/>
+  <!-- Contour extérieur du sceau — levant-500 -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
+
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6" opacity="0.5"/>
 
   <!--
-    Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux)
-    Contour : sérif haut droit → arc extérieur (Re=144) → sérif bas droit
-              → retour arc intérieur (Ri=88) → sérif haut intérieur → ferme
-    Sérifs : 28px de haut, x=298 à x=440
-    Arc extérieur  : (298,112) → via (378,112)+(154,176) → (154,256)
-                     (154,256) → via (154,336)+(218,400) → (298,400)
-    Arc intérieur  : (298,372) → via (249,372)+(210,305) → (210,256)
-                     (210,256) → via (210,207)+(249,140) → (298,140)
+    Lettre I — sérif classique (paths L)
+    Centré sur x=168, zone y=144→368
   -->
-  <path d="
-    M 440,112
-    L 298,112
-    C 378,112 154,176 154,256
-    C 154,336 218,400 298,400
-    L 440,400
-    L 440,372
-    L 298,372
-    C 249,372 210,305 210,256
-    C 210,207 249,140 298,140
-    L 440,140
-    Z
-  " fill="#F5F0E8"/>
+  <path
+    d="M 128,144
+       L 208,144
+       L 208,168
+       L 184,168
+       L 184,344
+       L 208,344
+       L 208,368
+       L 128,368
+       L 128,344
+       L 152,344
+       L 152,168
+       L 128,168
+       Z"
+    fill="#F5F0E8"
+  />
 
-  <!-- Filet ocre levantin — signature graphique du système ISSA Capital -->
-  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+  <!--
+    Lettre C — arc Bézier cubique sérif
+    Centre (304, 256), Re=72, Ri=44, k=0.5523
+    Arc ext haut : (304,168) C (264,168) (232,208) (232,256)
+    Arc ext bas  : (232,256) C (232,304) (264,344) (304,344)
+    Arc int bas  : (304,300) C (280,300) (260,280) (260,256)
+    Arc int haut : (260,256) C (260,232) (280,212) (304,212)
+    Sérifs        : y=144→168 / y=344→368, x=304→384
+  -->
+  <!--
+    Path C : parcours du contour
+    1. Sérif haut extérieur : M(384,144) → L(304,144)
+    2. Transition sérif→arc ext haut : L(304,168)
+    3. Arc extérieur haut : (304,168) C (264,168) (232,208) (232,256)
+    4. Arc extérieur bas  : (232,256) C (232,304) (264,344) (304,344)
+    5. Sérif bas extérieur : L(304,368) → L(384,368)
+    6. Sérif bas intérieur : L(384,344) → L(304,344) — MAIS ici on reste à y=344
+       NB: la redondance L(304,344) est supprimée — on entre directement dans l'arc int bas
+    7. Arc intérieur bas  : (304,344) C (280,344) (260,324) (260,256) — CORRIGÉ
+       Correction : l'arc intérieur bas doit passer par y=300 (centre+Ri),
+       points de contrôle : (280,344) ne donne pas une bonne courbe.
+       Calcul correct : Ri=44, arc de (304,300) descendant.
+       Le sérif bas intérieur est à y=344, l'arc intérieur démarre à y=300 (= 256+44).
+       On descend du sérif intérieur (y=344) à la tangente de l'arc (y=300) par une droite,
+       puis l'arc de Bézier part de (304,300) → (260,256).
+    8. Arc intérieur haut : (260,256) C (260,212) (280,212) (304,212)
+    9. Remonter au sérif haut intérieur (304,212) → (304,168) — droite le long de x=304
+    10. Sérif haut intérieur : L(384,168) → Z
+  -->
+  <path
+    d="M 384,144
+       L 304,144
+       L 304,168
+       C 264,168 232,208 232,256
+       C 232,304 264,344 304,344
+       L 304,368
+       L 384,368
+       L 384,344
+       L 304,344
+       L 304,300
+       C 280,300 260,280 260,256
+       C 260,232 280,212 304,212
+       L 304,168
+       L 384,168
+       Z"
+    fill="#F5F0E8"
+  />
 
 </svg>

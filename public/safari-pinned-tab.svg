@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital</title>
+  <!--
+    Safari Pinned Tab — SVG monochrome
+    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+
+    Règles Safari :
+    - 1 seule couleur (#000000 — Safari applique sa propre couleur via mask)
+    - Fond transparent (pas de rect/circle de fond)
+    - Forme pleine — pas de stroke (les strokes fins disparaissent)
+    - Référencé dans layout.tsx : <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#C4935A"/>
+      (Safari remplace #000000 par la couleur spécifiée dans color=)
+
+    Concept : contour du sceau circulaire + monogramme IC plein.
+    Le cercle extérieur est rendu en "anneau" (filled ring) pour survivre à la réduction.
+
+    Géométrie (viewBox 512×512) :
+      Anneau sceau extérieur : R_ext=252, R_int=220 → fills via even-odd
+      Anneau décoratif : R=208, epaisseur 12px
+      Lettre I : même géométrie que favicon-source.svg
+      Lettre C : même géométrie que favicon-source.svg
+  -->
+
+  <!--
+    Sceau circulaire monochrome :
+    Anneau extérieur (R=252 → R=220) via fill-rule evenodd
+    + Anneau décoratif (R=214 → R=202) via fill-rule evenodd
+  -->
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M 256,4
+       C 392.3,4 504,115.7 504,252
+       C 504,388.3 392.3,500 256,500
+       C 119.7,500 8,388.3 8,252
+       C 8,115.7 119.7,4 256,4
+       Z
+       M 256,36
+       C 137.0,36 40,133.0 40,252
+       C 40,371.0 137.0,468 256,468
+       C 375.0,468 472,371.0 472,252
+       C 472,133.0 375.0,36 256,36
+       Z"
+    fill="#000000"
+  />
+
+  <!-- Anneau décoratif intérieur -->
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M 256,44
+       C 370.6,44 464,137.4 464,252
+       C 464,366.6 370.6,460 256,460
+       C 141.4,460 48,366.6 48,252
+       C 48,137.4 141.4,44 256,44
+       Z
+       M 256,56
+       C 148.1,56 60,144.1 60,252
+       C 60,359.9 148.1,448 256,448
+       C 363.9,448 452,359.9 452,252
+       C 452,144.1 363.9,56 256,56
+       Z"
+    fill="#000000"
+  />
+
+  <!-- Lettre I — sérif classique (paths L) -->
+  <path
+    d="M 128,144
+       L 208,144
+       L 208,168
+       L 184,168
+       L 184,344
+       L 208,344
+       L 208,368
+       L 128,368
+       L 128,344
+       L 152,344
+       L 152,168
+       L 128,168
+       Z"
+    fill="#000000"
+  />
+
+  <!-- Lettre C — arc Bézier cubique sérif -->
+  <path
+    d="M 384,144
+       L 304,144
+       L 304,168
+       C 264,168 232,208 232,256
+       C 232,304 264,344 304,344
+       L 304,368
+       L 384,368
+       L 384,344
+       L 304,344
+       L 304,300
+       C 280,300 260,280 260,256
+       C 260,232 280,212 304,212
+       L 304,168
+       L 384,168
+       Z"
+    fill="#000000"
+  />
+
+</svg>

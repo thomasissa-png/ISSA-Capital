@@ -1,38 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Source SVG pour android-chrome-192x192.png
-    Direction A — Session 5 (2026-04-08) : sérif classique, C en Bézier cubique
-    viewBox 512×512 — sharp rasterise en 192×192 via generate-assets.mjs
-    Fond : ink-950 | Glyphes : parchment-100 | Filet : levant-500
+    Android Chrome 192×192 — source SVG pour génération PNG
+    Direction 1 "Sceau / Cachet patrimonial" — Session 7
+    Rasterisé en 192×192 via generate-assets.mjs / sharp
+
+    Tokens primitifs (docs/design/design-tokens.json) :
+      ink-950       #0A0A0A
+      parchment-100 #F5F0E8
+      levant-500    #C4935A
+
+    Géométrie identique à favicon-source.svg (512×512) :
+      Sceau circulaire, monogramme IC sérif Bézier.
   -->
 
-  <!-- Fond -->
-  <rect width="512" height="512" fill="#0A0A0A"/>
+  <!-- Fond circulaire plein — ink-950 -->
+  <circle cx="256" cy="256" r="252" fill="#0A0A0A"/>
 
-  <!-- Lettre I — sérif classique -->
-  <path d="
-    M 72,112 L 168,112 L 168,140 L 140,140
-    L 140,372 L 168,372 L 168,400
-    L 72,400 L 72,372 L 100,372
-    L 100,140 L 72,140 Z
-  " fill="#F5F0E8"/>
+  <!-- Contour extérieur du sceau — levant-500 -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
 
-  <!-- Lettre C — arc Bézier cubique -->
-  <path d="
-    M 440,112
-    L 298,112
-    C 378,112 154,176 154,256
-    C 154,336 218,400 298,400
-    L 440,400
-    L 440,372
-    L 298,372
-    C 249,372 210,305 210,256
-    C 210,207 249,140 298,140
-    L 440,140
-    Z
-  " fill="#F5F0E8"/>
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6" opacity="0.5"/>
 
-  <!-- Filet ocre levantin -->
-  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+  <!-- Lettre I — sérif classique (paths L) -->
+  <path
+    d="M 128,144
+       L 208,144
+       L 208,168
+       L 184,168
+       L 184,344
+       L 208,344
+       L 208,368
+       L 128,368
+       L 128,344
+       L 152,344
+       L 152,168
+       L 128,168
+       Z"
+    fill="#F5F0E8"
+  />
+
+  <!-- Lettre C — arc Bézier cubique sérif -->
+  <path
+    d="M 384,144
+       L 304,144
+       L 304,168
+       C 264,168 232,208 232,256
+       C 232,304 264,344 304,344
+       L 304,368
+       L 384,368
+       L 384,344
+       L 304,344
+       L 304,300
+       C 280,300 260,280 260,256
+       C 260,232 280,212 304,212
+       L 304,168
+       L 384,168
+       Z"
+    fill="#F5F0E8"
+  />
+
 </svg>
