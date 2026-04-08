@@ -812,3 +812,16 @@ L'orchestrator n'a pas WebFetch dans son outillage. Si des données web sont né
 - Immocrew : pricing 100€/mois (annuel) ou 150€/mois, cible mandataires solo France
 - Versimo : Découverte gratuit / Starter 9,90€ / Pro 29€/mois, USP pipeline 2 passes
 - gradientone.fr et issa-capital.com : sites bloquent les bots (403), contenu non récupérable
+
+### Corrections factuelles verrouillées par Thomas — Session 6 (2026-04-08)
+
+**À lire obligatoirement par @creative-strategy, @copywriter, @fullstack avant toute production sur bio Thomas ou Jean-Pierre.**
+
+1. **2J Impression — date de rachat** : le rachat de 2J Impression par Jean-Pierre Issa (et ses deux associés) a eu lieu en **2016**, **PAS en 1994**. L'erreur "1994" était présente dans plusieurs livrables session 5 (landing-page-copy.md, mission-page-fusion-copy.md, src/app/mission/page.tsx) et a été corrigée en session 6. Si une date de FONDATION de 2J Impression (différente du rachat) est utilisée, elle doit être vérifiée explicitement avec Thomas avant publication.
+
+2. **Parcours Thomas en jeunesse** : Thomas Issa a vécu en **Afrique du Sud** dans sa jeunesse, **avant** l'Inde et avant les États-Unis (Irvine). L'ordre chronologique correct du parcours international est : **Afrique du Sud (jeunesse) → Institut Florimont Genève (lycée 2002-2004) → [prépa/IMT] → University of California Irvine (2010) → Inde (détour humanitaire)**. Le CV de Thomas (section "Expertise fondateur Thomas Issa" ci-dessus) ne mentionnait pas l'Afrique du Sud : c'est un ajout biographique verrouillé par Thomas en session 6.
+
+**Fichiers corrigés en session 6** :
+- `src/app/mission/page.tsx` : "En 1994" → "En 2016" (l.131) + réordonnancement Afrique du Sud en tête (l.163-170)
+
+**Fichiers à NE PLUS contredire** sur ces 2 faits : tout livrable copy, stratégie, SEO, legal produit en session 6+.

@@ -128,7 +128,7 @@ export default function MissionPage(): JSX.Element {
               continent après continent.
             </p>
             <p>
-              En 1994, avec deux associés, il rachète 2J Impression à Mérignac —
+              En 2016, avec deux associés, il rachète 2J Impression à Mérignac —
               une structure de distribution multimarque de matériel d&apos;impression
               numérique industrielle. L&apos;entreprise développe ses activités dans
               17 pays, atteint 4 millions d&apos;euros de chiffre d&apos;affaires et
@@ -162,12 +162,13 @@ export default function MissionPage(): JSX.Element {
               <p>
                 Thomas Issa naît en France à la fin des années 1980, dans une famille
                 qui a appris à s&apos;adapter et à construire. Sa formation est
-                internationale dès le départ : Institut Florimont à Genève, puis
-                l&apos;Afrique du Sud, puis l&apos;université de Californie à Irvine.
-                Avant de rentrer en France, un détour par l&apos;Inde — quelques mois
-                d&apos;engagement humanitaire qui laissent une marque. Il revient
-                avec une conviction : les structures qui durent sont celles
-                qu&apos;on construit avec intention, pas avec précipitation.
+                internationale dès le départ : une jeunesse en Afrique du Sud,
+                puis l&apos;Institut Florimont à Genève, puis l&apos;université de
+                Californie à Irvine. Avant de rentrer en France, un détour par
+                l&apos;Inde — quelques mois d&apos;engagement humanitaire qui
+                laissent une marque. Il revient avec une conviction : les
+                structures qui durent sont celles qu&apos;on construit avec
+                intention, pas avec précipitation.
               </p>
               <p>
                 Il rejoint ensuite Sony, puis TEOS, et travaille en conseil
