@@ -307,6 +307,57 @@ non pas de soucis, mais on le met sur issa-capital
 
 ---
 
+## Réponses Thomas (consolidées le 2026-04-08, session 4)
+
+### Questions résiduelles RES1-RES6 (post-62 questions initiales)
+
+**RES1 — Multi-utilisateurs** (réf. Q1.4 + Q8.2 + N5)
+- (a) **3 personnes** au total : Thomas Issa, Carl, Maxime
+- (b) **Thomas voit TOUT**. Carl et Maxime voient **uniquement Gradient One et les Versi** (Versi Immobilier + Versi Invest + filiales du périmètre Gradient One). **Pas d'accès aux CR ISSA Capital.**
+- (c) **Whitelisting numéros WhatsApp via admin page** : OK
+
+**RES2 — Database contacts** (réf. Q4.1)
+- **Option (c) acquise** : import initial + saisie au fil de l'eau
+- **Action** : préparer un fichier `docs/product/secretariat-contacts-database.md` pré-rempli avec ce qui est connu, Thomas complétera. Ensuite saisie progressive : à chaque nouveau nom rencontré, le bot demande "Qui est X ? Titre ? Société ?" et l'enregistre
+
+**RES3 — Backoffice /admin** (réf. Q10.1)
+- URL : `issa-capital.com/admin` (mot de passe : `allezpsg` — à changer en production)
+- **4 modules validés** :
+  1. Gestion database contacts (CRUD)
+  2. Historique CRs publiés (lecture seule + lien Craft)
+  3. Logs de génération (lecture seule, accès Thomas uniquement)
+  4. Paramètres (whitelist numéros WhatsApp, switch entités, upload signature)
+
+**RES4 — Export PDF** (réf. Q3.6 reformulée)
+- **NON, pas besoin**. Pas d'export PDF, ni V1 ni V2. Le CR vit dans Craft, point.
+
+**RES5 — Signature scannée** (réf. Q5.3)
+- **OUI**, Thomas uploadera un **PNG transparent** de sa signature
+- L'image sera intégrée au bas du CR publié sur Craft (markdown image embed)
+- En attendant l'upload, fallback texte : "Établi et certifié exact par Thomas Issa, Président — ISSA Capital"
+
+**RES6 — Backup parallèle** (réf. Q5.2)
+- **Option (a) acquise** : Craft seul = source de vérité. Pas de backup auto. Thomas téléchargera depuis Craft si besoin (export manuel)
+
+### Nouvelles exigences architecture (réponses N1-N8)
+
+- **N1** Une seule plateforme : **WhatsApp uniquement** (pas iMessage)
+- **N2** iMessage abandonné (pas d'API publique Apple)
+- **N3** Stack : **WhatsApp Cloud API officielle Meta** (gratuit jusqu'à 1000 conversations/mois, vérification numéro pro requise)
+- **N4** **Numéro pro dédié WhatsApp** : Thomas en prendra un pour l'agent
+- **N5** Multi-utilisateur dès V1 (cf. RES1 : Thomas + Carl + Maxime)
+- **N6** Preview CR dans WhatsApp = texte Markdown brut + message "Réponds OK pour publier ou corrige"
+- **N7** Publication Craft : appel API en arrière-plan
+- **N8** Hébergement : **Replit Pro Autoscale** (Thomas a déjà ce plan)
+
+### Agents délégués pour décisions résiduelles
+
+- **@legal** doit trancher : Q4.2 (formules juridiques), Q4.6 (templates par type), Q5.1 (validation Art. 39-1 + format conforme contrôle fiscal), Q5.2 (durée conservation), Q5.4 (horodatage), Q5.6 (registre RGPD)
+- **@moi** doit trancher : Q6.2 (tags Craft), Q9.5 (distinction CRs sidebar)
+- **@orchestrator + @ia** : structure logs, gestion brouillons, pagination
+
+---
+
 ## Récapitulatif — questions critiques à trancher avant de coder
 
 Ces questions bloquent l'architecture ou sont irréversibles une fois l'implémentation démarrée. Elles doivent recevoir une réponse en priorité absolue.
