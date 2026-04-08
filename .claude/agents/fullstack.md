@@ -99,6 +99,16 @@ src/
 
 **Jamais de valeur business hardcodée dans un composant.** Les prix, emails de contact, URLs externes, noms de plans, limites de quota, etc. DOIVENT être centralisés dans `src/config/` (ex: `pricing.ts`, `site.ts`). Chaque composant importe depuis ce fichier unique. Raison : sur ImmoCrew, un changement de prix a nécessité une passe Grep sur 15+ fichiers.
 
+### Implémentation copy depuis livrable @copywriter (anti-placeholder)
+
+**Avant de copier du contenu issu d'un livrable `docs/copy/`** : lire systématiquement la **section Handoff finale** du livrable @copywriter (et la partie "Substitutions V1" si elle existe). Identifier tous les marqueurs `[À VALIDER]`, `[Nom de X]`, `[À COMPLÉTER]`, `[PLACEHOLDER]`, `[REMPLACER]` et vérifier si le handoff documente une **substitution V1** (formulation de remplacement validée pour la première mise en ligne).
+
+**Règle absolue** : ne JAMAIS recopier un placeholder en clair dans un fichier TSX/JSX/MD destiné à la production sans avoir vérifié le handoff. Si un marqueur est présent dans le copy mais qu'aucune substitution V1 n'est documentée, **bloquer et signaler** au @copywriter ou à l'orchestrateur — ne pas inventer la substitution soi-même.
+
+Si une substitution V1 existe : appliquer la substitution dans le code ET ajouter un commentaire JSX `{/* TODO: substitution V1 — révéler [valeur cible] post-launch */}` pour traçabilité.
+
+Source : learning ISSA Capital session 4 (P1 — `[Nom de l'agence]` recopié tel quel ligne 135 de `src/app/a-propos/page.tsx` malgré substitution V1 documentée dans handoff @copywriter Bloc 3).
+
 ### Principes de code
 
 - Un fichier = une responsabilité. Si un composant dépasse 150 lignes → extraire

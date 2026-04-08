@@ -166,6 +166,19 @@ Au lancement d'un projet, annoncer : "Ce projet est de complexité [légère/moy
 4. **Écrire `orchestration-plan.md` AVANT de lancer le premier Task.** Le plan doit exister sur disque avant toute exécution — c'est le point de reprise en cas de coupure.
 5. **Après un timeout** : utiliser Glob + Read pour vérifier les livrables déjà produits par les agents. Ne JAMAIS relancer un agent dont le livrable existe déjà sur disque.
 
+### Anti-saturation API (erreurs 529 / overloaded_error)
+
+Quand l'API Anthropic retourne des erreurs 529 répétées (`overloaded_error`) sur plusieurs Task consécutifs :
+
+1. **Arrêter de hammerer l'API immédiatement.** Une cascade de retries en parallèle ne fait qu'aggraver la saturation. Stopper tous les Task en attente.
+2. **Attendre 30-60 minutes** avant de relancer. Les pics de saturation Anthropic se résorbent généralement en moins d'une heure.
+3. **Passer en mode SOLO** : 1 agent à la fois, pas de parallélisation. Un agent qui réussit en solo vaut mieux que 3 agents qui échouent en parallèle.
+4. **Améliorer les briefs avec contexte INLINE** : ne PAS demander à l'agent de lire `project-context.md` (qui dépasse la limite Read 10k tokens et provoque des blocages silencieux). Injecter le contexte essentiel directement dans le prompt Task — persona, objectif, contraintes, principes verrouillés. Le brief devient un peu plus long mais l'agent ne se bloque pas sur un Read qui timeout.
+5. **Limiter strictement les WebSearch** : max 1-2 par agent. Chaque WebSearch consomme des ressources API et augmente le risque de timeout en cas de saturation.
+6. **Documenter le pattern dans `lessons-learned.md`** : noter l'horaire de saturation, le nombre de retries, la solution qui a fonctionné. Cela alimente la mémoire organisationnelle pour les futurs runs.
+
+Source : learning ISSA Capital session 4 (P2 — saturation 529 sur 8 tentatives consécutives 22h-07h30, retry 4 a finalement réussi en mode SOLO + brief inline pour @legal).
+
 ### Structure d'un message orchestrateur type
 
 ```
@@ -687,6 +700,13 @@ Après Phase 4 : même vérification d'automatisation contenu pour @growth et @s
 Si le projet n'a pas de code (stratégie pure, conseil) mais que des agents testeurs ont été créés en Phase 0b → les ré-invoquer sur les livrables finaux (`docs/`). Les gates GP s'appliquent sur les livrables stratégiques (GP9 "Outputs utiles" → évaluer les livrables produits par les agents, pas un site). Les gates GC s'appliquent si des livrables sont destinés aux clients du persona (ex: templates de documents, modèles de présentation).
 
 **Phase 5b — Revue finale chirurgicale (OBLIGATOIRE si du code existe dans src/) :**
+
+**Trigger automatique** : Phase 5b est OBLIGATOIRE et déclenchée automatiquement par l'orchestrateur dans tous les cas suivants, MÊME en session de design/content review (pas seulement en fin de run complet) :
+- Toute nouvelle page client-facing ajoutée à `src/app/` (ex: `/a-propos`, `/services`, `/team`)
+- Toute refonte structurelle d'une page existante (changement de sections, migration de contenu)
+- Toute modification de copy publié en production
+La règle : "page client-facing nouvelle ou modifiée = audit testeur-persona obligatoire avant push main". L'orchestrateur ne peut pas clôturer une session contenant une nouvelle page client-facing sans avoir déclenché les gates GP1-GP10 sur cette page (source : learning ISSA Capital session 4 — `/a-propos` livrée sans audit testeur-persona, manque détecté par @reviewer en fin de run).
+
 Après les tests E2E (@qa Phase 2), après la revue croisée (@reviewer), lancer la "Revue finale page par page" :
 1. @qa crawle TOUTES les pages et vérifie 21 dimensions par page (copie, orthographe, microcopy, tokens design, alignement, responsive, parcours logique, affordance, navigation, liens, images, formulaires, interactions, erreurs/auth, performance, états de données, dark mode, SEO/OG) + accessibilité + cross-browser
 2. @fullstack corrige TOUS les bugs (P0, P1 ET P2 — aucun n'est optionnel)
