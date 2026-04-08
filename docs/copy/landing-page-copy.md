@@ -83,7 +83,7 @@ ISSA Capital est la holding patrimoniale d'une famille libanaise, établie en Fr
 
 Une structure indépendante, dont les Issa sont les seuls actionnaires, et dont l'horizon est intergénérationnel.
 
-Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
+Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
 
 ### CTA secondaire
 Lire notre mission →  [lien vers /mission]
@@ -503,7 +503,7 @@ ISSA Capital est la holding patrimoniale d'une famille libanaise, établie en Fr
 
 Une structure indépendante, dont les Issa sont les seuls actionnaires, et dont l'horizon est intergénérationnel.
 
-Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
+Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
 ```
 
 [Motivation : retour Thomas #3 — ~9 occurrences "famille" → cible 3 max. H2 réécrit sans tournure "c'est". Chaleur familiale préservée via "lignée", "héritage", "trois décennies". Mot "famille" apparaît 1 fois dans le corps (paragraphe 1). "Les Issa" remplace la répétition "la famille Issa" en paragraphe 2.]
@@ -515,3 +515,120 @@ Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décenni
 - Ton éditorial en section finale : pas de fond rouge, pas de compte à rebours — Principe #0 VITRINE
 - "Racines libanaises. Exigences sans exception." reste en footer — ne pas supprimer
 - Famille LIBANAISE — jamais "française" dans les textes visibles
+
+---
+
+## Modif Session 6 — Filtres de décision (réécriture P0 retour Thomas #4)
+
+> Sources amont : src/app/page.tsx (homepage l.231-236), src/app/mission/page.tsx (l.224-238), src/app/opportunites/page.tsx (l.144-148), docs/copy/page-mission.md (l.154-162), docs/copy/page-opportunites.md (l.107-111)
+> Demande Thomas verbatim : "ça fait un peu gnangnan, je veux qu'on revoie ces textes"
+> Contrainte : éviter le pompeux/littéraire (R1), garder fermeté sobre
+
+### Filtre 1 — Préservation de l'environnement
+
+**Texte actuel (homepage)** : "Toute opportunité dont le modèle économique repose sur la dégradation de l'environnement est éliminée, quelle que soit sa rentabilité."
+
+**Problème** : structure administrative ("dont le modèle économique repose sur"), adverbe justificatif ("quelle que soit sa rentabilité"), verbe passif qui dilue l'autorité.
+
+#### Option A — registre pragmatique (décision business)
+**Titre** : Préservation de l'environnement
+**Corps** : Un investissement dont le modèle repose sur la dégradation environnementale ne passe pas le premier filtre.
+**Pourquoi** : Vocabulaire d'investisseur ("premier filtre", "passe"), concision qui implique le reste sans le dire — Karim comprend que c'est éliminatoire sans le mot "éliminé".
+
+#### Option B — registre principiel (conviction)
+**Titre** : Préservation de l'environnement
+**Corps** : Ce que nous finançons doit tenir sur trente ans. Un modèle qui dégrade l'environnement ne tient pas.
+**Pourquoi** : Ancre le filtre dans l'horizon patrimonial long terme (cohérence interne), pas dans une morale externe — la fermeté découle de la logique, pas d'un principe affiché.
+
+### Filtre 2 — Éthique humaine
+
+**Texte actuel (homepage)** : "ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce filtre est non négociable."
+
+**Problème** : formulation négative en double ("n'investit jamais" + "va à l'encontre") — deux négations pour dire une seule chose. "Ce filtre est non négociable" annonce sa propre importance, ce qui est l'inverse de l'autorité.
+
+#### Option A — registre pragmatique (décision business)
+**Titre** : Éthique humaine
+**Corps** : Certains secteurs sont hors périmètre, indépendamment du dossier. Ce n'est pas une question d'analyse.
+**Pourquoi** : "Indépendamment du dossier" dit le caractère absolu sans le crier. "Pas une question d'analyse" ferme la porte à toute négociation — plus définitif que "non négociable" car il ne répond même pas à l'objection.
+
+#### Option B — registre principiel (conviction)
+**Titre** : Éthique humaine
+**Corps** : Il y a ce que l'argent ne doit pas financer. ISSA Capital a une réponse claire à cette question.
+**Pourquoi** : Affirme une position sans liste, sans pédagogie, sans adverbe. La clarté annoncée ("réponse claire") est plus autoritaire que l'explication de ce qui est refusé — Karim n'a pas besoin du contenu exact, il a besoin de savoir que la ligne existe.
+
+### Notes pour @fullstack (Phase 3)
+- Emplacements à modifier (tous les fichiers TSX doivent recevoir la formulation retenue) :
+  - `src/app/page.tsx` l.231-232 (Filtre 1) et l.235-236 (Filtre 2)
+  - `src/app/mission/page.tsx` l.224-230 (Filtre 1) et l.234-238 (Filtre 2)
+  - `src/app/opportunites/page.tsx` l.144-148 (les deux filtres dans un même bloc prose)
+- Les fichiers docs/ (page-mission.md, page-opportunites.md, landing-page-copy.md Section 5) doivent être mis à jour en cohérence après l'arbitrage Thomas
+- 3e filtre détecté : "Horizon patrimonial long terme" (`src/app/page.tsx` l.227-228, `src/app/mission/page.tsx` l.214-220) — formulation actuelle sobre et directe, pas gnangnan, pas à modifier
+- Régénérer les baselines Playwright pour Section 5 homepage et section Trois filtres /mission après application
+
+### Handoff
+- **À Thomas** : 2 décisions indépendantes — A ou B pour Filtre 1, A ou B pour Filtre 2. Les combinaisons sont toutes cohérentes entre elles.
+- **À @fullstack (Phase 3)** : application TSX sur les 3 fichiers listés ci-dessus + propagation docs/ après arbitrage Thomas
+
+---
+
+## Modif Session 6 — Gradient One (Option C corrigée) + Versi Invest (retours Thomas #2 #3)
+
+> Sources amont : docs/strategy/gradient-one-angle-options.md, src/app/page.tsx (l.125-209), docs/copy/landing-page-copy.md (Section 4 Filiation Jean-Pierre + Section 5 écosystème)
+> Décision Thomas CHECKPOINT #1 : Option C retenue, mais "fondée" → "co-fondée avec deux associés"
+> Jean-Pierre Issa : OK nommé pour l'instant (Thomas a validé)
+> Nombre d'associés : deux (verrouillé Thomas) — noms non divulgués
+
+### Bloc 1 — "Participation phare" Gradient One (Section 3 key stats)
+
+**Overline** : Trois générations. Une structure.
+
+**Titre principal — 3 propositions (Thomas tranche)**
+
+- Proposition 1 : *Gradient One — co-fondée par Thomas Issa et deux associés.*
+- Proposition 2 : *Gradient One — fondée à trois, pour porter un écosystème familial.*
+- Proposition 3 : *Gradient One — la holding co-fondée par Thomas Issa en 2020.*
+
+**Sous-titre** : Première décision formelle d'une famille qui construit depuis trois décennies.
+
+**Description courte** : Ce que Jean-Pierre Issa a transmis à son fils, Thomas l'a structuré — avec deux associés. Gradient One est le premier acte de cet héritage mis en forme.
+
+**Stat affichée** : 50% — [INFO À VALIDER : ce chiffre représente la part d'ISSA Capital dans Gradient One. Si la co-fondation à trois n'implique pas une part égale de 1/3, le 50% reste cohérent si c'est bien la participation d'ISSA Capital. Thomas confirme ou corrige.]
+
+---
+
+### Bloc 2 — "Notre écosystème" Gradient One (card)
+
+**Card title** : Gradient One
+
+**Card label (remplace "Holding intermédiaire")** : Structure centrale
+
+**Card description** : Co-fondée en 2020. Porte les participations opérationnelles de l'écosystème.
+
+[Note : "50% ISSA Capital" supprimé per demande Thomas. "Holding intermédiaire" remplacé par "Structure centrale" — plus lisible pour Karim sans jargon juridique. "Co-fondée en 2020" maintenu — factuel, cohérent avec Section 3 key stats et titre Bloc 1.]
+
+---
+
+### Bloc 3 — "Notre écosystème" Versi Invest (card)
+
+**Card title** : Versi Invest
+
+**Card label (remplace "Acquisitions & accompagnement")** : Co-acquisitions & accompagnement
+
+**Card description** : Co-acquisitions immobilières en format club deal — pour investir en pool, sans en faire son métier. Missions d'accompagnement pour les partenaires qui structurent leur approche.
+
+[Note : les deux activités sont posées comme deux modalités complémentaires d'une même offre. "Club deal" conservé — terme reconnu par Karim investisseur. "Sans en faire son métier" = voix de Karim, pas celle de Versi Invest. @legal : cohérent avec la note L.411-1 existante — cette formulation décrit toujours une participation, pas une offre d'investissement d'ISSA Capital.]
+
+---
+
+### Notes pour @fullstack (Phase 3)
+
+- **Bloc 1 — key stats** (`src/app/page.tsx` l.133-137) : remplacer le sous-label "Holding intermédiaire — co-fondée en 2020" par le titre retenu (proposition Thomas) + conserver stat 50% sauf correction Thomas sur la part
+- **Bloc 2 — écosystème card Gradient One** (`src/app/page.tsx` l.178-181) : `sector` → "Structure centrale", `desc` → "Co-fondée en 2020. Porte les participations opérationnelles de l'écosystème."
+- **Bloc 3 — écosystème card Versi Invest** (`src/app/page.tsx` l.188-191) : `sector` → "Co-acquisitions & accompagnement", `desc` → voir Bloc 3 ci-dessus
+- Régénération baselines Playwright : Section 3 key stats + Section 4 écosystème homepage
+- Vérifier cohérence Section 4 Filiation (landing-page-copy.md l.133-148) — même arc narratif Jean-Pierre → Thomas, pas de redite verbatim
+
+### Handoff
+
+- **À Thomas** : (a) choix titre Bloc 1 parmi Propositions 1 / 2 / 3, (b) confirmation stat 50% ou correction si la part réelle est différente, (c) validation Blocs 2 et 3 tels quels
+- **À @fullstack (Phase 3)** : application TSX consolidée sur les 3 blocs après arbitrage Thomas — 3 lignes dans le même fichier `src/app/page.tsx`

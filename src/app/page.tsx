@@ -99,9 +99,8 @@ export default function HomePage(): JSX.Element {
               dont l&apos;horizon est intergénérationnel.
             </p>
             <p>
-              Cette holding n&apos;est pas née en 2026. Elle est l&apos;aboutissement de
-              trois décennies de construction patrimoniale — un héritage libanais qui a
-              appris à se tenir dans la durée.
+              Elle est l&apos;aboutissement de trois décennies de construction
+              patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
             </p>
           </div>
           <div className="mt-xl flex flex-col gap-md sm:flex-row sm:flex-wrap sm:gap-xl">
