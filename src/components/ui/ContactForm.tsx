@@ -174,7 +174,7 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
             type="text"
             required
             autoComplete="name"
-            placeholder="Jean Dupont"
+            placeholder="Antoine Vasseur"
             className={cn(inputClass, fieldErrors['name'] && 'border-reserve-500')}
             aria-invalid={Boolean(fieldErrors['name'])}
             aria-describedby={fieldErrors['name'] ? 'name-error' : undefined}

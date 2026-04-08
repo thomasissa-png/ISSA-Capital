@@ -196,21 +196,20 @@ export default function AccompagnementPage(): JSX.Element {
               Thomas Issa a passé 15 ans chez Sony Europe, où il a co-fondé
               TEOS — une solution de gestion d&apos;espaces de travail construite
               à partir d&apos;un deck de dix slides — et l&apos;a déployée dans
-              7 régions du monde en moins d&apos;un an, avec un ROI de
-              6 000 % la première année.
+              7 régions du monde en moins d&apos;un an, la faisant passer de
+              0 à 8 millions d&apos;euros de chiffre d&apos;affaires en 4 ans.
             </p>
             <p>
-              Depuis 2018, il accompagne des fondateurs en tant qu&apos;advisor
-              stratégique. Il a travaillé avec TikTok, Adidas, Lego. Il a fondé
-              une agence de communication internationale qui a réuni plus de
-              35 experts, avec des missions dans les grandes verticales
-              mondiales.
+              Depuis 2020, il a travaillé avec TikTok, Adidas, Lego via
+              l&apos;agence de communication internationale qu&apos;il a créée
+              et qui réunit plus de 40 experts, avec des missions dans les
+              grandes verticales mondiales.
             </p>
             <p>
-              Depuis 2020, il co-fonde et développe l&apos;écosystème ISSA
-              Capital : holding patrimoniale, participations dans
-              l&apos;immobilier tech et les services aux professionnels,
-              patrimoine résidentiel en gestion directe en Île-de-France.
+              Depuis 2026, il développe l&apos;écosystème ISSA Capital :
+              holding patrimoniale, participations dans l&apos;immobilier tech
+              et les services aux professionnels, patrimoine résidentiel en
+              gestion directe en Île-de-France.
             </p>
             <p>
               Ce qu&apos;il apporte dans une mission d&apos;accompagnement : la
@@ -241,7 +240,7 @@ export default function AccompagnementPage(): JSX.Element {
             <p className="mt-md text-sm text-ink-700">
               HEC School of Management, University of California Irvine,
               IMT Atlantique, prépa Sainte-Geneviève. Major de promotion × 3.
-              Quadrilingue.
+              Bilingue.
             </p>
           </div>
         </Container>
@@ -276,10 +275,10 @@ export default function AccompagnementPage(): JSX.Element {
               Une mission qui croise les deux registres mobilisera les deux.
             </p>
             <p>
-              Leurs structures actuelles — 2J Impression, l&apos;écosystème
-              ISSA Capital — suivent les mêmes logiques qu&apos;ils
-              transmettent. Ce n&apos;est pas du conseil de cabinet. C&apos;est
-              la lecture de deux personnes qui ont la peau dans le jeu.
+              Leurs structures actuelles suivent les mêmes logiques
+              qu&apos;ils transmettent. Ce n&apos;est pas du conseil de
+              cabinet. C&apos;est la lecture de deux personnes qui ont la peau
+              dans le jeu.
             </p>
           </div>
         </Container>

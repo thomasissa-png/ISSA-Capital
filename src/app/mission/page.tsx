@@ -155,7 +155,7 @@ export default function MissionPage(): JSX.Element {
                 Thomas Issa a grandi dans cette logique, avec une jeunesse en
                 Afrique du Sud qui l&apos;a formé à la mobilité et à
                 l&apos;adaptation. Après quinze ans dans l&apos;industrie
-                internationale à travers plusieurs pays, puis la co-fondation
+                internationale, notamment chez Sony Europe, puis la co-fondation
                 d&apos;une agence de communication internationale, il a tiré une
                 conviction simple : les structures qui durent sont celles
                 qu&apos;on construit avec intention. C&apos;est ce qu&apos;il

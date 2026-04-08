@@ -29,7 +29,13 @@ import helmet from 'helmet';
 
 import { closeDatabase, initDatabase } from './db/connection';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { draftRateLimit } from './middleware/rateLimitDraft';
+import { publishRateLimit } from './middleware/rateLimitPublish';
+import { draftRouter } from './routes/draft';
+import { draftsRouter } from './routes/drafts';
 import { healthRouter } from './routes/health';
+import { publishRouter } from './routes/publish';
+import { publishedRouter } from './routes/published';
 import { getEnv } from './utils/env';
 import { getLogger } from './utils/logger';
 
@@ -89,6 +95,17 @@ export function buildApp(): Application {
 
   // --- Routes ---
   app.use('/api/health', healthRouter);
+  // Phase 3 — génération CR via Anthropic. Rate limit dédié (20 req / 15 min / IP)
+  // appliqué AVANT le router pour éviter de consommer des tokens sur un abus.
+  app.use('/api/draft', draftRateLimit, draftRouter);
+  app.use('/api/drafts', draftsRouter);
+  // Phase 4 — publication d'un CR validé sur Craft. Rate limit dédié
+  // (10 req / 15 min / IP) car chaque publication crée un document externe
+  // facturable et immuable côté Craft.
+  app.use('/api/publish', publishRateLimit, publishRouter);
+  // Phase 4 — lecture des CR publiés (liste + détail). Pas de rate limit
+  // dédié : lecture en local SQLite, pas d'appel externe.
+  app.use('/api/published', publishedRouter);
 
   // --- 404 + error handler (DOIVENT être montés en dernier) ---
   app.use(notFoundHandler);

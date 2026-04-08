@@ -24,15 +24,15 @@ export const siteConfig = {
   nav: [
     { label: 'Mission', href: '/mission' },
     { label: 'Participations', href: '/participations' },
-    { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Opportunités', href: '/opportunites' },
+    { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Contact', href: '/contact' },
   ],
   footerLinks: [
     { label: 'Mission', href: '/mission' },
     { label: 'Participations', href: '/participations' },
-    { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Opportunités', href: '/opportunites' },
+    { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Contact', href: '/contact' },
     { label: 'Mentions légales', href: '/mentions-legales' },
   ],

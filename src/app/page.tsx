@@ -257,24 +257,10 @@ export default function HomePage(): JSX.Element {
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-            {/* Porte 1 — Dirigeants / Karim → /accompagnement */}
-            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
-              <Overline tone="light">Pour les dirigeants</Overline>
-              <h3 className="mt-md font-heading text-h3 text-parchment-100">
-                Accompagnement de dirigeants.
-              </h3>
-              <p className="mt-md flex-1 text-base text-ink-300">
-                Une mission ponctuelle ou un rôle d&apos;advisor récurrent. Pour les
-                fondateurs et dirigeants qui cherchent un pair — pas un prestataire.
-              </p>
-              <div className="mt-lg">
-                <Button href="/accompagnement" variant="primary-inverse" size="lg">
-                  Besoin d&apos;être accompagné ?
-                </Button>
-              </div>
-            </article>
-
-            {/* Porte 2 — Apporteurs d'affaires / Leila → /opportunites */}
+            {/* Porte 1 — Apporteurs d'affaires / Leila → /opportunites
+                Session 8 CHECKPOINT Thomas : ordre inversé — Opportunités
+                à gauche, Accompagnement à droite (cohérent avec l'ordre du
+                nav top qui place également Opportunités avant Accompagnement). */}
             <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
               <Overline tone="light">Pour les apporteurs d&apos;affaires</Overline>
               <h3 className="mt-md font-heading text-h3 text-parchment-100">
@@ -289,6 +275,23 @@ export default function HomePage(): JSX.Element {
               <div className="mt-lg">
                 <Button href="/opportunites" variant="primary-inverse" size="lg">
                   Présenter une opportunité
+                </Button>
+              </div>
+            </article>
+
+            {/* Porte 2 — Dirigeants / Karim → /accompagnement */}
+            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
+              <Overline tone="light">Pour les dirigeants</Overline>
+              <h3 className="mt-md font-heading text-h3 text-parchment-100">
+                Accompagnement de dirigeants.
+              </h3>
+              <p className="mt-md flex-1 text-base text-ink-300">
+                Une mission ponctuelle ou un rôle d&apos;advisor récurrent. Pour les
+                fondateurs et dirigeants qui cherchent un pair — pas un prestataire.
+              </p>
+              <div className="mt-lg">
+                <Button href="/accompagnement" variant="primary-inverse" size="lg">
+                  Besoin d&apos;être accompagné ?
                 </Button>
               </div>
             </article>
