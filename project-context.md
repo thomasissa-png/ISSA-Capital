@@ -580,6 +580,101 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 
 ---
 
+## Mémo de reprise — Session 6 (clôture session 5 le 2026-04-08)
+
+### État à la clôture session 5
+- **Branche active session 5 (clôturée)** : `claude/resume-issa-session-5-zZVP2` (HEAD `3cfc3c3` au moment de la clôture, à actualiser après commit clôture)
+- **Site DÉPLOYÉ** : issa-capital.com (production stable, 8 retours Thomas appliqués + favicon refonté)
+- **Pipeline G28 green** : tsc 0 / lint 0 / vitest 7/7 / next build 16 routes / Playwright 154 PASS 2 skipped 0 failed
+- **Verdict @reviewer session 5** : **GO CONDITIONNEL 9.4/10** — mise en ligne autorisée
+- **Verdict @testeur-karim session 5** : GO CONDITIONNEL 8.5/10 (P0-1 + P1-1 corrigés en C2, P1-2/P1-3/P2 reportés)
+- **Verdict @qa session 5** : GO intégral pipeline + traçabilité G27 11/11 + audit qualité 13/13
+- **Compteur producteurs session 5** : 11 Tasks producteurs / 18 (confortable, bien sous le seuil ALERTE ROUGE)
+
+### Ce qui a été livré en session 5 (15 commits, 11 phases)
+
+**Phase A — Restructures stratégiques (@creative-strategy)** :
+1. `docs/strategy/accompagnement-restructure.md` (`c66186a`) — restructure /accompagnement, suppression verbatim fictif, réalignement Karim
+2. `docs/strategy/participations-restructure.md` (`98fadcc`) — architecture 5 sections /participations, suppression redondance Niveau 1/Niveau 2
+
+**Phase B — Copy (@copywriter)** :
+3. `docs/copy/landing-page-copy.md` — section "Notre raison d'être" 1 occurrence "famille", titre "Une holding née d'une lignée." (#3)
+4. `docs/copy/page-accompagnement.md` — Section 1 "Pour qui" Option A + H2 reformulé (#6 + P1-1)
+5. `docs/copy/page-opportunites.md` — "La pierre s'inscrit dans le temps long..." (#7)
+6. `docs/copy/page-participations.md` — restructure 5 sections (#8)
+7. `docs/copy/audit-p1-session5.md` — audit transverse 7 fichiers, 10 détections, Pattern A éradiqué
+8. `docs/copy/about-page-copy.md` — Section C Option B (suppression chiffres géo + ajout marques) (P0-1)
+
+**Phase C — Code (@fullstack)** :
+9. `src/app/page.tsx` — #1 2e CTA hero, #2 limite 3 cards, #3 propagation copy
+10. `src/app/accompagnement/page.tsx` — #6 + P1-1 propagation
+11. `src/app/opportunites/page.tsx` — #7 propagation
+12. `src/app/participations/page.tsx` — #8 restructure grid 12 col
+13. `src/app/a-propos/page.tsx` — P0-1 propagation
+14. `src/components/layout/Header.tsx` — #5 scroll-to-top + #4 "À propos" déjà dans nav
+
+**Phase C3 — Refonte favicon (@design + @fullstack)** :
+15. `public/favicon.svg` — Direction A sérif classique, C en arc Bézier cubique unique
+16. `docs/design/favicon-redesign-session5.md` — audit + concept + handoff
+17. Propagation 8 SVG sources + binaires régénérés (favicon.ico, apple-touch-icon.png, android-chrome-192/512.png)
+18. Création `public/apple-touch-icon.svg` (manquait dans le repo)
+19. `src/app/favicon.ico` + `src/app/apple-icon.png` (file-based routing Next.js)
+
+**Phase D — Tests** :
+20. `docs/reviews/testeur-karim-session5.md` — audit GP1-GP10 4 pages, GO CONDITIONNEL 8.5/10
+21. `docs/qa/qa-session5-report.md` — pipeline G28 5/5 + G27 11/11 + audit qualité 13/13, GO intégral
+
+**Phase E — Audit final** :
+22. `docs/reviews/cross-review-session5.md` — gates 32, GO CONDITIONNEL 9.4/10
+
+### Décisions Thomas verrouillées en session 5
+- **Q1** Option B typo (52/32/26) : GARDÉE
+- **Q2** Mention nominative TikTok/Adidas/Lego/Sony : **AUTORISÉE** (exception explicite à CLAUDE.md n°14, validée par Thomas)
+- **Q3** OCC-11 "d'une famille libanaise" : GARDÉE
+- **Q4** Versi Invest col-span : caduque (intégrée dans #2 + #8)
+- **Q5** Portraits Thomas/Jean-Pierre : reportée
+
+### Frictions résiduelles reportées en session 6 (P1/P2)
+
+**P1 — décisions éditoriales Thomas en suspens** :
+1. **P1-2 Section 4 Filiation absente du code homepage TSX** — la section existe dans `docs/copy/landing-page-copy.md` (Modif 3) mais pas dans `src/app/page.tsx`. Décision Thomas requise : ajouter la section sur la home OU maintenir le delta éditorial copy/TSX comme volonté assumée
+2. **P1-3 Sony/TEOS continuité narrative** — `/a-propos` Section C : "Il rejoint Sony, puis TEOS" laisse penser à 2 étapes alors que TEOS est né chez Sony. Reformulation simple : "Il rejoint Sony, où il co-fonde TEOS..."
+
+**P2 — qualité site (non bloquant)** :
+3. **/participations Versi Invest "Participation phare" sans contexte** — la participation la plus récente (2026, pas de site) mérite une phrase d'explication ou un repositionnement éditorial
+4. **Homepage Section 6 répète bifurcation hero** — les 2 blocs "Pour les dirigeants" / "Pour les apporteurs d'affaires" répètent les 2 CTAs du hero. Audit @ux si Thomas confirme
+5. **TESTING.md ligne 54 "21 baselines/7 pages"** → réalité "24 baselines/8 pages" depuis ajout /a-propos session 4. 1 Edit @qa cosmétique
+
+**P1 — agent secrétariat (gros chantier 12-18h, NON démarré en session 5)** :
+6. Implémentation Phases 1-7 (specs complètes dans `docs/ia/secretariat-architecture.md` + `secretariat-system-prompt.md` + `secretariat-implementation-plan.md`)
+7. Code à produire dans `src/lib/ai/` (claude-client, system-prompt, cr-schema, cr-renderer, contacts-injector, evals)
+8. Code à produire dans `src/server/` (routes, services, db, admin)
+9. Phase 8 actions Thomas BLOQUANTES en parallèle (DPA Anthropic + Replit, numéro WhatsApp, database contacts complétée, signature Thomas, NDA Carl/Maxime)
+
+**P3 — communication & visibility** :
+10. Bannière LinkedIn 1584×396 Thomas (briefing dans `docs/copy/linkedin-thomas-issa.md`)
+11. Premier post LinkedIn d'annonce du site
+12. Promotion gate G33 Playwright `expect(page).toHaveScreenshot()` strict
+13. Monitoring SEO/GEO post-launch (GSC + Bing + Rich Results + citations LLM)
+
+**P3 — meta-maintenance framework** :
+14. Propagation cross-projets des 6 nouveaux lessons-learned session 5 vers le repo Agent-Team source (P1 sub-orchestrator pas de Task + P2 main thread dispatcher pattern + P1 propagation chirurgicale duplication + P2 fichiers manquants scripts + P3 testeur "FAIL si je doute" + P1 design assets typographiques Bézier)
+
+### Validation visuelle humaine recommandée
+
+- **Favicon Direction A** : test sur onglet navigateur réel à 16px et 32px (impossible automatique)
+- **Page /a-propos Section C** après suppression chiffres géographiques : vérifier que la lecture reste fluide
+- **Page /accompagnement Section "Pour qui"** après reformulation H2 : vérifier que Karim s'identifie sans confusion avec l'Overline
+- **Page /participations** après restructure 5 sections : vérifier visuellement que la section "Au sein de Gradient One" enchaîne bien la Section 1 (pas de redondance ressentie)
+
+### Branche pour session 6
+À créer à partir de `claude/resume-issa-session-5-zZVP2` (mergé sur main d'abord ou pas, à la discrétion Thomas).
+
+### Décision push main session 5
+**Verdict @reviewer + @qa : mise en ligne autorisée**. Thomas peut merger `claude/resume-issa-session-5-zZVP2` sur main quand il le souhaite. Les frictions P1-2/P1-3 + P2 ne sont pas bloquantes — c'est de la qualité éditoriale incrémentale, le site est fonctionnellement complet et déployable.
+
+---
+
 ## Mémo de reprise — Session 5 (clôture session 4 le 2026-04-08)
 
 ### État à la clôture session 4
