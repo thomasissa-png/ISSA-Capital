@@ -304,7 +304,7 @@ export default function ParticipationsPage(): JSX.Element {
                 </div>
                 <div className="flex gap-md">
                   <dt className="w-24 text-ink-500">Entrée</dt>
-                  <dd className="text-ink-800">2025</dd>
+                  <dd className="text-ink-800">2026</dd>
                 </div>
               </dl>
               <div className="mt-md">
