@@ -95,16 +95,16 @@ export default function AccompagnementPage(): JSX.Element {
       <Section tone="default">
         <Container width="editorial">
           <Overline>Pour qui</Overline>
+          {/* Modif session 5 C2 — P1-1 : ancien H2 "Pour qui." (doublure de l'Overline) remplacé par phrase de qualification directe. L'Overline garde son rôle de repère de scan. Voir docs/copy/page-accompagnement.md Section 1. */}
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Pour qui.
+            Un fondateur ou dirigeant qui a déjà fait ses preuves.
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Un fondateur ou dirigeant qui a déjà fait ses preuves. Qui gère une ou
-              plusieurs structures, a déjà pris des décisions de capital, et n&apos;attend
-              pas qu&apos;on lui apprenne son métier. Qui cherche un pair pour structurer
-              ce qui vient ensuite — patrimoine, holding, immobilier en direct,
-              participations — pas un prestataire qui lui vendra une prestation.
+              Qui gère une ou plusieurs structures, a déjà pris des décisions de capital,
+              et n&apos;attend pas qu&apos;on lui apprenne son métier. Qui cherche un pair
+              pour structurer ce qui vient ensuite — patrimoine, holding, immobilier en
+              direct, participations — pas un prestataire qui lui vendra une prestation.
             </p>
             <p>
               Si vous vous reconnaissez, la suite de cette page est pour vous. Sinon, elle

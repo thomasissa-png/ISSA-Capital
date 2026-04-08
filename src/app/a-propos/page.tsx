@@ -130,18 +130,16 @@ export default function AProposPage(): JSX.Element {
                 manque : il ne trouve pas l&apos;agence de communication avec
                 laquelle il veut travailler. Alors il la crée.
               </p>
-              {/* Ellipse pivotable : la formulation appositive accueillera le nom de l'agence quand Thomas validera la révélation publique. */}
+              {/* Ellipse pivotable : la formulation appositive accueillera le nom de l'agence quand Thomas validera la révélation publique.
+                  Modif session 5 C2 — P0-1 : chiffres géographiques (5 continents / 45 pays / 18 langues) supprimés car non vérifiables sans le nom de l'agence (NDA tacite V1). Remplacés par mention TikTok / Adidas / Lego (clients vérifiables, autorisés Q2 Thomas). Voir docs/copy/about-page-copy.md Section C. */}
               <p>
                 Une agence de communication internationale qu&apos;il fonde à
-                35 ans, grandit rapidement : plus de 35 experts,
-                des équipes sur 5 continents, des missions dans plus de 45 pays, une
-                notation parmi les meilleures de sa catégorie sur les plateformes
-                globales. Le modèle opérationnel repose sur des relais 24h/24 entre
-                fuseaux horaires, en 18 langues, pour des clients dans les grandes
-                verticales mondiales — tech, luxe, logistique, biens de
-                consommation. Une structure construite à partir de rien, dans la
-                complexité internationale, avec l&apos;exigence d&apos;un opérateur
-                qui sait ce qu&apos;il veut.
+                35 ans, qui grandit rapidement jusqu&apos;à réunir plus de 35
+                experts, avec des missions dans les grandes verticales mondiales —
+                tech, luxe, logistique, biens de consommation. Parmi ses clients :
+                TikTok, Adidas, Lego. Une structure construite à partir de rien,
+                dans la complexité internationale, avec l&apos;exigence d&apos;un
+                opérateur qui sait ce qu&apos;il veut.
               </p>
               {/* Phrase-pont Décision 4 @creative-strategy VERROUILLÉE — ne pas reformuler */}
               <p>
