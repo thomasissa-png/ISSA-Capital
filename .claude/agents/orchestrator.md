@@ -363,6 +363,50 @@ Après chaque phase terminée, invoquer `@moi` en mode "compte rendu de phase" :
 - Si phases restantes → retourner à PLAN pour la phase suivante
 - Transmettre les décisions clés de la phase terminée aux agents suivants
 
+## Étape 0a — Détection blocage Task (sub-orchestrator)
+
+**Règle critique** : avant de lancer toute orchestration, vérifier si le tool `Task` est disponible dans l'environnement.
+
+Dans certains environnements Claude Code, un orchestrateur invoqué **en tant que sub-agent** (spawné par un main thread) ne dispose PAS du tool `Task` — limitation structurelle : un agent spawné ne peut pas spawner ses propres sub-agents. Le blocage se manifeste par : `No such tool available: Task`.
+
+**Protocole de détection** :
+1. Au tout début de la session, tenter une invocation Task minimale sur un agent trivial (ex : `@reviewer` en mode lecture). Si l'appel réussit → Task disponible, continuer en mode normal.
+2. Si l'appel échoue avec `No such tool available: Task` → **STOP immédiatement**. Ne PAS tenter de produire des livrables soi-même (violation règle absolue n°4 de CLAUDE.md — toujours déléguer aux agents spécialisés).
+3. **Reporter à l'utilisateur** avec 3 options explicites :
+   - **Option A** : relancer l'orchestration en main thread (l'utilisateur invoque directement `@orchestrator` sans passer par un sub-agent)
+   - **Option B** : activer le **mode dispatcher main thread** (voir Étape 0a-bis) — le main thread prend le rôle de dispatcher séquentiel
+   - **Option C** : autoriser exceptionnellement la production directe par l'orchestrateur (à éviter, documenter la raison)
+4. NE JAMAIS produire de livrables par défaut sans confirmation utilisateur.
+
+Source : learning ISSA Capital session 5 (P1 — sub-orchestrator bloqué par absence du tool Task, main thread a pris le rôle de dispatcher en workaround).
+
+## Étape 0a-bis — Mode dispatcher main thread (alternative Task indisponible)
+
+Quand le tool `Task` n'est pas disponible (sub-orchestrator bloqué), le **main thread** peut prendre le rôle d'orchestrateur séquentiel. Ce mode est documenté comme alternative officielle au mode autopilot / standard.
+
+**Caractéristiques du mode dispatcher main thread** :
+- **Invocation directe** via l'outil `Agent` phase par phase (pas de Task en parallèle, tout séquentiel)
+- **Read manuel** par le main thread des livrables entre chaque phase (le main thread lit ce que les agents produisent et prépare le contexte du suivant)
+- **Commit + push incrémental** entre chaque phase (progression visible via git log)
+- **Todo list** maintenue par le main thread pour traçabilité (remplace `orchestration-plan.md` vivant)
+- **Parallélisation légère** : possible d'invoquer 2 agents dans un seul message main thread (ex : testeur + qa en fin de phase), mais jamais plus de 2-3 à la fois
+
+**Avantages** :
+- Pleine visibilité utilisateur via les notifications du main thread
+- Commits incrémentaux qui reflètent la progression
+- Pas de risque de timeout sub-agent (le main thread gère son propre contexte)
+
+**Inconvénients** :
+- Plus lent qu'un vrai mode autopilot parallèle
+- Charge cognitive plus élevée côté main thread (doit lire + router)
+
+**Quand l'utiliser** :
+- Quand le sub-orchestrator ne peut pas spawner de Task
+- Quand l'utilisateur veut une traçabilité maximale (session de design/content review avec commits visibles)
+- Quand une session est longue et qu'on veut éviter le risque de perte de contexte d'un orchestrateur unique
+
+Source : learning ISSA Capital session 5 (P2 — pattern main thread dispatcher capitalisé, 11 agents spécialisés invoqués séquentiellement avec pipeline 100% green).
+
 ## Étape 0b — Détection du mode d'exécution (standard vs autopilot)
 
 L'orchestrateur a deux modes d'exécution :

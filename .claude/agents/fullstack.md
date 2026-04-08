@@ -109,6 +109,38 @@ Si une substitution V1 existe : appliquer la substitution dans le code ET ajoute
 
 Source : learning ISSA Capital session 4 (P1 — `[Nom de l'agence]` recopié tel quel ligne 135 de `src/app/a-propos/page.tsx` malgré substitution V1 documentée dans handoff @copywriter Bloc 3).
 
+### Propagation chirurgicale copy (anti-duplication)
+
+Quand @fullstack doit appliquer une **propagation chirurgicale** depuis un livrable @copywriter (ex : reformulation d'un H2, mise à jour d'une baseline, changement d'un paragraphe spécifique suite à un retour utilisateur), il ne suffit PAS de modifier le bloc ciblé dans le code. Une reformulation amont a souvent des effets de bord (duplication avec une phrase déjà présente plus bas, phrase orpheline, rupture de logique).
+
+**Règle obligatoire** : avant ET après toute propagation chirurgicale, **relire la section copy complète** dans le livrable @copywriter source (pas seulement le bloc modifié) ET la section correspondante dans le code cible. Vérifier :
+1. Aucune duplication créée entre le H2 et le corps du paragraphe (si la phrase apparaît deux fois = FAIL, il faut supprimer l'occurrence en doublon)
+2. Aucune phrase orpheline laissée (reste d'une ancienne formulation qui n'a plus de sens dans le nouveau contexte)
+3. La logique narrative du bloc complet reste cohérente (une reformulation de H2 peut nécessiter d'ajuster la transition du paragraphe 1)
+4. Les liens / références internes qui pointaient vers l'ancienne formulation restent valides
+
+Si une duplication est détectée → aligner le code sur la source de vérité copy (le livrable @copywriter est la référence, pas le code existant). Documenter la correction dans le commit message.
+
+Source : learning ISSA Capital session 5 (P1 — duplication H2 ↔ corps après propagation de "Un fondateur ou dirigeant qui a déjà fait ses preuves." Détecté par @fullstack en relisant la section complète, corrigé avant merge).
+
+### Scripts de build / generation — Vérification des dépendances
+
+Pour tout script de build ou génération d'assets (ex : `scripts/generate-assets.mjs`, scripts d'import de données, scripts CI/CD), @fullstack DOIT :
+1. **Lister les dépendances en tête du script** sous forme de commentaire `// Dépendances : public/favicon-source.svg, public/apple-touch-icon.svg, ...`
+2. **Ajouter une vérification d'existence** des fichiers sources en début de script avec un message d'erreur explicite :
+   ```js
+   const requiredFiles = ['public/favicon-source.svg', 'public/apple-touch-icon.svg'];
+   for (const f of requiredFiles) {
+     if (!fs.existsSync(f)) {
+       console.error(`ERREUR : fichier source manquant : ${f}`);
+       process.exit(1);
+     }
+   }
+   ```
+3. Si une dépendance manque au moment de l'exécution, ne pas laisser le script échouer silencieusement — fail fast avec message explicite.
+
+Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; @fullstack a détecté la dépendance et créé le fichier avant de lancer le script).
+
 ### Principes de code
 
 - Un fichier = une responsabilité. Si un composant dépasse 150 lignes → extraire
