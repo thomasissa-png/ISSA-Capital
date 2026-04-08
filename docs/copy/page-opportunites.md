@@ -133,6 +133,19 @@ Un échange direct avec Thomas Issa. Pas de présentation formelle obligatoire. 
 
 ---
 
+## Section 3b — Signature éditoriale (entre process et formulaire)
+
+[Note @copywriter Session 5 — Retour Thomas #7 : la card quote "Vingt ans devant. Pas de sortie prévue." (issue de brand-platform.md / code src/app/opportunites/page.tsx ligne 195) est retirée. Thomas : "ne correspond pas du tout à l'immobilier" — horizon 20 ans est une référence PE/LBO, pas une réalité immobilière. L'immobilier patrimonial ne se pense pas en durée fixe mais en cycles et transmission. Nouvelle formulation ci-dessous.]
+[Note @fullstack Session 5 : remplacer la Card Quote lignes 190-200 de `src/app/opportunites/page.tsx` par la nouvelle formulation.]
+
+### Card signature (texte)
+
+La pierre s'inscrit dans le temps long. Elle traverse les cycles. Elle se transmet.
+
+[Cadrage : 3 phrases courtes, ton éditorial sobre, pas d'horizon chiffré. "Elle traverse les cycles" ancre la réalité immobilière (cycles de marché, pas de durée fixe). "Elle se transmet" évoque la dimension patrimoniale intergénérationnelle. Cohérent avec brand-voice.md — mot "transmission" prescrit.]
+
+---
+
 ## Section 4 — Formulaire de soumission
 
 [Notes @design : formulaire sobre, tous les champs visibles sans scroll excessif. Label au-dessus du champ (pas dans le champ). Bouton CTA bien visible, fond contrasté.]
@@ -298,7 +311,15 @@ Verdict @legal : page conforme L.411-1 CMF.
    - `"Engagement financier : Tickets calibrés au cas par cas selon la nature du dossier — nous privilégions les opérations où notre engagement fait sens dans la durée plutôt qu'un montant standardisé."`
    - [Styling suggéré : même traitement visuel que le "Ticket minimum : 200 000 €" du bloc immobilier — typographie sobre, pas de mise en gras excessive]
 
+5. `/opportunites` page TSX — Card Quote "Vingt ans devant. Pas de sortie prévue." (Session 5, retour Thomas #7)
+   - Localisation : `src/app/opportunites/page.tsx` ligne ~195, card quote entre Section 3 (process) et Section 4 (formulaire)
+   - Ancien texte : `"Vingt ans devant. Pas de sortie prévue."`
+   - Nouveau texte : `"La pierre s'inscrit dans le temps long. Elle traverse les cycles. Elle se transmet."`
+   - [Contexte : Thomas a signalé que l'horizon 20 ans est une référence LBO/PE inadaptée à l'immobilier. La nouvelle formulation évoque la durée par la nature du bien (pierre, cycles, transmission) sans durée chiffrée.]
+   - [Styling : conserver le même traitement typographique de la card quote — italic ou Cormorant, fond parchment-100. Seul le texte change.]
+
 **Décisions copy non négociables sur cette page**
 - Posture entrante (ISSA reçoit des propositions, n'en fait pas) — aucune inversion de ce sens
 - Ticket minimum participations : JAMAIS de chiffre affiché (décision Thomas verrouillée)
 - Clause L.411-1 CMF obligatoire en pied de page — ne pas supprimer
+- Signature éditoriale Section 3b : "La pierre s'inscrit dans le temps long..." — ne jamais remettre un horizon chiffré

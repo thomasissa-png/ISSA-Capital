@@ -73,18 +73,17 @@ OG description : Holding patrimoniale familiale. Horizon intergénérationnel. F
 ## Section 2 — Mission (chapeau)
 
 [Framework : AIDA — Interest]
+[Note @copywriter Session 5 — Retour Thomas #3 : H2 "ISSA Capital, c'est une décision de famille." réécrit — tournure "c'est" proscrite + 9 occurrences "famille" ramenées à 3 max dans cette section. Chaleur familiale conservée via héritage, lignée, transmission — sans sur-répétition du mot. Test de lecture : le sens est intact, le registre reste chaud sans être sentimental.]
 
 ### H2
-ISSA Capital, c'est une décision de famille.
+Une holding née d'une lignée.
 
 ### Corps
-ISSA Capital est la holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Sa raison d'être est simple : faire fructifier le patrimoine familial dans la durée et organiser sa transmission entre les générations.
+ISSA Capital est la holding patrimoniale d'une famille libanaise, établie en France. Sa raison d'être : structurer ce qui s'est construit sur trois décennies, le faire fructifier, le transmettre.
 
-Une holding indépendante, dont la famille Issa est le seul actionnaire, et dont l'horizon est intergénérationnel.
+Une structure indépendante, dont les Issa sont les seuls actionnaires, et dont l'horizon est intergénérationnel.
 
-[Note @copywriter Phase 5 — Mission 4 finalisée : les deux antithèses "Pas un fonds. Pas une structure à terme." remplacées par une seule affirmation directe. "Pas un fonds" supprimé — le terme "holding" suffit à poser la différence sans l'articuler en opposition. "Pas une structure à terme" supprimé — vocabulaire hors-champ Karim. L'idée de durabilité est portée par "dont l'horizon est intergénérationnel". Ce qu'on est prime sur ce qu'on n'est pas.]
-
-Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — une famille libanaise qui a appris à construire, à tenir, et à transmettre.
+Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
 
 ### CTA secondaire
 Lire notre mission →  [lien vers /mission]
@@ -472,6 +471,42 @@ Vous repérez un actif avant le marché, ou cherchez un co-investisseur qui déc
 ```
 
 [Thomas valide la variante avant intégration @fullstack.]
+
+---
+
+### Modif 6 — Section 2 (Mission chapeau) — Rewrite H2 + corps (Session 5, retour Thomas #3)
+
+**Localisation** : `src/app/page.tsx` — Section 2 (commentaire `{/* Section 2 — Mission */}`)
+
+**Avant — H2** :
+```
+ISSA Capital, c'est une décision de famille.
+```
+
+**Après — H2** :
+```
+Une holding née d'une lignée.
+```
+
+**Avant — Corps (3 paragraphes)** :
+```
+ISSA Capital est la holding patrimoniale de la famille Issa — famille aux racines libanaises, établie en France. Sa raison d'être est simple : faire fructifier le patrimoine familial dans la durée et organiser sa transmission entre les générations.
+
+Une holding indépendante, dont la famille Issa est le seul actionnaire, et dont l'horizon est intergénérationnel.
+
+Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — une famille libanaise qui a appris à construire, à tenir, et à transmettre.
+```
+
+**Après — Corps (3 paragraphes)** :
+```
+ISSA Capital est la holding patrimoniale d'une famille libanaise, établie en France. Sa raison d'être : structurer ce qui s'est construit sur trois décennies, le faire fructifier, le transmettre.
+
+Une structure indépendante, dont les Issa sont les seuls actionnaires, et dont l'horizon est intergénérationnel.
+
+Cette holding n'est pas née en 2026. Elle est l'aboutissement de trois décennies de construction patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
+```
+
+[Motivation : retour Thomas #3 — ~9 occurrences "famille" → cible 3 max. H2 réécrit sans tournure "c'est". Chaleur familiale préservée via "lignée", "héritage", "trois décennies". Mot "famille" apparaît 1 fois dans le corps (paragraphe 1). "Les Issa" remplace la répétition "la famille Issa" en paragraphe 2.]
 
 ---
 

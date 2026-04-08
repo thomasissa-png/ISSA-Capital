@@ -47,16 +47,25 @@ Thomas Issa accompagne fondateurs et dirigeants sur ce qu'il a lui-même constru
 
 ---
 
-## Section 1 — Signature de page
+## Section 1 — Pour qui (remplace la citation fictive)
 
-[Framework : BAB — Before, la situation du persona]
+[Framework : BAB — Before, qualification du persona]
+[Note @copywriter Session 5 — Retour Thomas #6 : suppression du verbatim fictif "J'ai besoin de quelqu'un qui l'a fait, pas de quelqu'un qui m'explique." attribué à un "entrepreneur accompagné" inexistant. Trois violations documentées dans accompagnement-restructure.md (règle n°2 zéro invention, P0 Simplicité, cohérence persona Karim). Remplacé par Option A recommandée par @creative-strategy : section "Pour qui" — filtre de qualification self-service. Karim s'identifie ou pas en 5 secondes sans qu'on lui prête des mots dans la bouche.]
+[Notes @design : section sobre, aucun blockquote, aucune typographie spectaculaire. Section `tone="default"`. Overline + H2 + 2 paragraphes. Visuellement discrète — entre Hero et Proposition.]
 
-### Pas de H2 — citation courte en grand format
+### Overline
+Pour qui
 
-*"J'ai besoin de quelqu'un qui l'a fait, pas de quelqu'un qui m'explique."*
-— verbatim persona Karim
+### H2
+Pour qui.
 
-[Notes @design : traitement citation — grand format, italique, centré ou aligné gauche selon la mise en page. Cette phrase ouvre la page avant tout argumentaire.]
+### Corps
+Un fondateur ou dirigeant qui a déjà fait ses preuves. Qui gère une ou plusieurs structures, a déjà pris des décisions de capital, et n'attend pas qu'on lui apprenne son métier. Qui cherche un pair pour structurer ce qui vient ensuite — patrimoine, holding, immobilier en direct, participations — pas un prestataire qui lui vendra une prestation.
+
+Si vous vous reconnaissez, la suite de cette page est pour vous. Sinon, elle ne le sera pas — et c'est très bien.
+
+[Note copy : 80 mots — dans la cible 80-130 mots (accompagnement-restructure.md). Karim, en lisant "a déjà pris des décisions de capital", sait en une ligne s'il est concerné. Filtre net, aucune ambiguïté, zéro verbatim attribué à quiconque. Test binaire : "OK, c'est pour moi" ou "Non, c'est pas pour moi" — pas de réponse floue possible.]
+[Note @fullstack : voir accompagnement-restructure.md section "Hand-off @fullstack" — supprimer lignes 92-106 (`src/app/accompagnement/page.tsx`), insérer `<Section tone="default">` avec Overline + H2 + 2 paragraphes ci-dessus.]
 
 ---
 
