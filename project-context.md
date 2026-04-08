@@ -571,6 +571,106 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 
 ---
 
+## Mémo de reprise — Session 5 (clôture session 4 le 2026-04-08)
+
+### État à la clôture session 4
+- **Branche active** : `claude/issa-session-4-reprise-9oB9r` (HEAD `ab7470e` au moment de la clôture)
+- **Site DÉPLOYÉ** : issa-capital.com (production stable)
+- **Pipeline green** : tsc + lint + vitest 7/7 + next build + Playwright 24/24 PASS
+- **Verdict @reviewer session 4** : GO CONDITIONNEL 9.94/10 → 13/13 GO inconditionnel après fix P1
+- **Compteur producteurs session 4** : ~17/18 (clôture proche du seuil ALERTE ROUGE)
+
+### Ce qui a été livré en session 4 (15 livrables, 17+ commits)
+1. Bloc 1 P0 : suppression CTA "Travailler avec Thomas Issa", fix favicon IC (root cause = conflit double favicon causant HTTP 500), suppression filler "Cette holding n'est pas née en 2026"
+2. F2 audit échelle typographique → **Option B validée Thomas** (display 52px / h2 32px / h3 26px) — appliquée au Bloc 4
+3. PM 62 questions agent secrétariat ISSA Capital (réponses Thomas RES1-RES6 acquises)
+4. Database contacts initiale `secretariat-contacts-database.md`
+5. @moi 3 arbitrages tranchés (Q6.2 tags Craft "CONFIDENTIEL" seul + convention nommage YYYY-MM-DD-[type]-[entite] / Q9.5 sidebar admin laxiste / CTA participations align)
+6. Wording CTA "Besoin d'être accompagné ?" propagé partout (3 TSX + 3 MD)
+7. @legal audit juridique secrétariat (5 blocs : fiscal Art. 39-1 CGI, tonalité juridique, signature scannée + RFC 3161 Universign, RGPD, RBAC multi-utilisateurs)
+8. F1 audit anti-filler global (11 occurrences détectées, 7 Edits P0 prêts + 3 OCC arbitrées par @copywriter Bloc 3)
+9. C archi page /a-propos (5 sections, route, nav footer-only, états, images)
+10. Scope éditorial /a-propos (@creative-strategy : arc thématique Racines/Construire/Transmettre, 5 décisions structurantes, hypothèses Thomas H1-H5 résolues)
+11. Bloc 3 copy /a-propos (~725 mots, 5 sections + passerelle homepage + 3 OCC F1 arbitrées)
+12. **Bloc 4 fullstack implémentation groupée** : nouvelle page `/a-propos` + migration Section 4 Filiation Jean-Pierre depuis homepage + Option B typo + 7 Edits F1 + 3 OCC reformulées + reorder /participations Versi Invest en phare (badge `featured` + col-span-2) + footer "À propos" + 24 baselines Playwright régénérées
+13. @ia 3 livrables specs agent secrétariat (1856 lignes : architecture + system prompt + plan d'implémentation 8 phases)
+14. @qa revue chirurgicale finale Bloc 4 → GO CONDITIONNEL (5/5 pipeline + 10/10 cohérence + 3/4 anti-régressions)
+15. @reviewer cross-review session 4 → GO CONDITIONNEL 9.94/10 (12 GO + 1 GO CONDITIONNEL → 13/13 GO après fix P1 placeholder appliqué)
+
+### Réponses Thomas verrouillées (ne pas redemander)
+- **Hero homepage** : H1 "Racines libanaises. Exigences sans exception." + sous-titre A "d'une famille libanaise, établie en France" — OK
+- **CTA hero** : suppression "Travailler avec Thomas Issa" — UN seul CTA "Présenter une opportunité d'affaires"
+- **CTA accompagnement** : "Besoin d'être accompagné ?" partout (homepage + mission + participations + footer)
+- **Section 4 Filiation Jean-Pierre** : migrée vers `/a-propos` (page dédiée), passerelle 2-3 lignes en homepage Section 2
+- **Identité visuelle** : logo IC monogramme + EB Garamond auto-hosted — OK
+- **Stats homepage** (50% / 2020 / 4 participations) : OK pour l'instant
+- **Versi Invest** : participation phare dans `/participations` (col-span-2 desktop, badge "Participation phare", border levant)
+- **Page /a-propos** : créée (5 sections Hero/Racines/Construire/Transmettre/Fermeture, layout fallback 1 colonne sans portrait Thomas)
+- **Épisode agence** : ellipse "Une agence de communication internationale" — nom caché temporairement (à révéler post-launch). NE JAMAIS écrire le nom (commence par S, finit par i, 6 lettres)
+- **Sortie agence** verrouillée : "pour se consacrer à sa famille et au développement des activités d'ISSA Capital"
+- **Bio Thomas pour /a-propos** : Florimont, UC Irvine, jalons géo, Sony/TEOS/conseil/agence (mention groupée), humanitaire Inde 4 mots, 3 enfants Antoine/Noémie/Lucas
+- **Tonalité éditoriale verrouillée** : règle P0 Simplicité > Démonstration > Élégance, jamais "famille française", "racines libanaises" au présent / "famille libanaise" au passé, zéro filler défensif
+
+### Agent secrétariat — réponses Thomas acquises
+- **Canal** : WhatsApp Cloud API officielle Meta (UNIQUEMENT, pas iMessage)
+- **Numéro pro WhatsApp** : à acquérir par Thomas (24-48h délai vérification Meta)
+- **Multi-utilisateurs** : Thomas (TOUS) + Carl + Maxime (Gradient One + Versi uniquement, RBAC strict)
+- **Hébergement** : Replit Pro Autoscale
+- **Backoffice** : `issa-capital.com/admin` (mot de passe `allezpsg` à changer en prod, 4 modules : contacts CRUD + historique CR + logs + paramètres)
+- **Database contacts** : import initial via `secretariat-contacts-database.md` + saisie au fil de l'eau
+- **Format CR** : 4 sections narratives Art. 39-1 CGI + signature scannée Thomas (PNG à uploader) + horodatage RFC 3161 Universign + numérotation `IC-CR-2026-XXXX` (compteur Craft externe)
+- **Templates** : 1 system prompt unique avec champs conditionnels par type (7 types : déjeuner, conseil, appel, interne, visite-immo, signature-contrat, dîner)
+- **Conservation** : 10 ans (Craft seul = source de vérité, pas de backup auto)
+- **Pas d'export PDF** (RES4 NON jamais)
+- **Tags Craft** : `CONFIDENTIEL` seul (pas de tags type/entité — tranché par @moi)
+- **Convention nommage** : `YYYY-MM-DD-[type]-[entite]-[interlocuteur].md`
+
+### TODO Phase 8 actions Thomas (BLOQUANTES avant production agent secrétariat)
+1. Signer DPA Anthropic (privacy.anthropic.com)
+2. Signer DPA Replit
+3. Email information RGPD à Carl + Maxime AVANT whitelist WhatsApp (Art. 13 RGPD)
+4. Signature mandat + NDA Carl + Maxime (Yousign/Docusign, 1 page)
+5. Upload signature PNG transparente Thomas (pour intégration footer CR)
+6. Acquérir numéro WhatsApp pro dédié (24-48h vérification Meta)
+7. Compléter `secretariat-contacts-database.md` : noms de famille Carl + Maxime + numéros WhatsApp + équipes Versi/Immocrew/Versimo + conseillers (expert-comptable, fiscaliste, notaire, banquier)
+
+### Reportés en session 5 (priorisé par @orchestrator)
+
+**P1 — décisions Thomas en suspens** :
+- Validation visuelle Option B + page /a-propos sur le site déployé (test condition réelle)
+- Arbitrage "Sony" : garder ou anonymiser dans /a-propos + /accompagnement (mention TikTok/Adidas/Lego/Sony pré-existante dans /accompagnement)
+- Validation OCC-11 homepage title "d'une famille libanaise" (au lieu de "famille libanaise")
+- Validation Versi Invest layout (col-span-2 OK ou alternative col-span-3)
+- Validation hypothèses portrait/archive Jean-Pierre (H4/H5 — pour layout 2 colonnes plus tard)
+
+**P1 — agent secrétariat (gros chantier 12-18h)** :
+- Implémentation Phases 1-7 (specs complètes dans `docs/ia/secretariat-architecture.md` + `secretariat-system-prompt.md` + `secretariat-implementation-plan.md`)
+- Code à produire dans `src/lib/ai/` (périmètre @ia) : claude-client, system-prompt, cr-schema, cr-renderer, contacts-injector, evals
+- Code à produire dans `src/server/` (périmètre @fullstack) : routes, services, db, admin
+- Phase 8 actions Thomas en parallèle dès le début
+
+**P2 — qualité site** :
+- Audit testeur-persona GP1-GP10 sur la nouvelle page `/a-propos` (manqué en session 4)
+- Centralisation marqueurs `[NOM]` Carl/Maxime dans database contacts puis substitution en bloc dans 4 livrables
+- Correction G15 sur les autres placeholders éventuels
+
+**P3 — communication & visibility** :
+- Bannière LinkedIn 1584×396 Thomas (briefing dans `docs/copy/linkedin-thomas-issa.md`)
+- Premier post LinkedIn d'annonce du site (si Thomas veut communiquer)
+- Promotion gate G33 Playwright `expect(page).toHaveScreenshot()` strict
+- Monitoring SEO/GEO post-launch (Google Search Console + Bing + Rich Results + citations LLM "family office libanais Paris", "Thomas Issa")
+
+**P3 — meta-maintenance framework** :
+- Propagation cross-projets des 5 lessons-learned session 4 vers le repo Agent-Team source (P1 fullstack handoff substitution + P2 chaîne référencement amont règle 15 + P2 testeur-persona Phase 5b auto + P2 Anti-saturation API + pattern @moi proxy haute confiance)
+
+### Branche pour session 5
+**À créer** : `claude/issa-session5-XXXXX` à partir de `claude/issa-session-4-reprise-9oB9r` (ou de main si déjà mergé). Mettre à jour le nom de branche dans `index.html`, `INSTALL.md`, `install.sh`, `update.sh`, et ce mémo.
+
+### Décision push main
+**Verdict @reviewer + @qa : push main autorisé** après application du fix P1 placeholder (déjà fait commit `ac55d5c`). Thomas n'a pas explicitement demandé le merge — décision à prendre par Thomas en début de session 5 (ou avant).
+
+---
+
 ## Notes libres
 
 **Profil utilisateur (Thomas)** :
