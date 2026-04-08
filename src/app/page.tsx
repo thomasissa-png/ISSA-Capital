@@ -215,10 +215,6 @@ export default function HomePage(): JSX.Element {
             <h2 className="mt-md font-heading text-h2 text-ink-950">
               Trois filtres. Aucune exception.
             </h2>
-            <p className="mt-md max-w-editorial text-lead text-ink-700">
-              Nos décisions d&apos;investissement ne sont pas négociables sur ces trois
-              critères.
-            </p>
           </div>
           <div className="grid grid-cols-1 gap-xl md:grid-cols-3">
             {[

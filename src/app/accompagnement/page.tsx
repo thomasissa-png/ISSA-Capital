@@ -270,10 +270,6 @@ export default function AccompagnementPage(): JSX.Element {
                 </li>
               ))}
             </ul>
-            <p>
-              Ces critères permettent à Thomas de consacrer son attention aux projets où
-              il apporte une vraie valeur.
-            </p>
           </div>
         </Container>
       </Section>
@@ -304,10 +300,6 @@ export default function AccompagnementPage(): JSX.Element {
               </p>
             </article>
           </div>
-          <p className="mt-xl text-sm italic text-ink-500">
-            Dans les deux cas : aucun tarif affiché. La mission commence par un échange
-            de qualification.
-          </p>
         </Container>
       </Section>
 
@@ -328,10 +320,12 @@ export default function AccompagnementPage(): JSX.Element {
             <h2 className="mt-md font-heading text-h2 text-ink-950">
               Si le périmètre correspond, prenons contact.
             </h2>
+            <p className="mt-sm text-sm text-ink-500">
+              Chaque mission démarre par un échange — pas par un devis.
+            </p>
             <p className="mt-md text-base text-ink-700">
-              Quelques informations pour comprendre votre situation. Le formulaire
-              ci-dessous est court — il ne sert pas à qualifier mécaniquement, mais à
-              permettre à Thomas de préparer un échange substantiel.
+              Quelques informations pour comprendre votre situation. Thomas lit chaque
+              message.
             </p>
           </div>
           <ContactForm

@@ -140,11 +140,10 @@ export default function OpportunitesPage(): JSX.Element {
               Ce que nous ne faisons jamais
             </p>
             <p className="mt-sm text-base text-ink-700">
-              Quel que soit le dossier : nous n&apos;investissons pas dans ce qui
-              contrevient à nos filtres de décision non négociables. Environnement :
-              toute opportunité dont le modèle économique repose structurellement sur la
-              dégradation de l&apos;environnement est refusée. Éthique humaine : ISSA
-              Capital n&apos;investit jamais dans ce qui va à l&apos;encontre de
+              Ces deux filtres précèdent toute analyse, sans exception. Préservation de
+              l&apos;environnement — ISSA Capital n&apos;entre pas dans un projet dont
+              le modèle repose sur la dégradation environnementale. Éthique humaine —
+              ISSA Capital n&apos;investit jamais dans ce qui va à l&apos;encontre de
               l&apos;humanité.
             </p>
           </div>

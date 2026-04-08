@@ -632,3 +632,26 @@ Elle est l'aboutissement de trois décennies de construction patrimoniale — un
 
 - **À Thomas** : (a) choix titre Bloc 1 parmi Propositions 1 / 2 / 3, (b) confirmation stat 50% ou correction si la part réelle est différente, (c) validation Blocs 2 et 3 tels quels
 - **À @fullstack (Phase 3)** : application TSX consolidée sur les 3 blocs après arbitrage Thomas — 3 lignes dans le même fichier `src/app/page.tsx`
+
+---
+
+## Modif Session 6 — Corrections justifications explicites (CHECKPOINT #1 validé en bloc)
+
+> Sources amont : docs/copy/audit-justifications-explicites-session6.md
+
+| # | Fichier | Ligne approx. | Action | Verbatim avant | Verbatim après |
+|---|---|---|---|---|---|
+| Occ 2 | `src/app/accompagnement/page.tsx` | ~274 | SUPPRIMER | "Ces critères permettent à Thomas de consacrer son attention aux projets où il apporte une vraie valeur." | (supprimé — la liste d'anti-personas se suffit) |
+| Occ 1 | `src/app/accompagnement/page.tsx` | ~308 | REFORMULER (suppression + déplacement) | "Dans les deux cas : aucun tarif affiché. La mission commence par un échange de qualification." | Phrase supprimée de la section Formats. Principe déplacé dans l'intro formulaire (section contact) : "Chaque mission démarre par un échange — pas par un devis." |
+| Occ 5 | `src/app/accompagnement/page.tsx` | ~330 | REFORMULER (partielle) | "Quelques informations pour comprendre votre situation. Le formulaire ci-dessous est court — il ne sert pas à qualifier mécaniquement, mais à permettre à Thomas de préparer un échange substantiel." | "Quelques informations pour comprendre votre situation. Thomas lit chaque message." |
+| Occ 4 | `src/app/page.tsx` | ~219 | SUPPRIMER | "Nos décisions d'investissement ne sont pas négociables sur ces trois critères." | (supprimé — H2 "Trois filtres. Aucune exception." enchaîne directement sur les cards) |
+| Occ 3 | `src/app/opportunites/page.tsx` | ~140 | REFORMULER | "Quel que soit le dossier : nous n'investissons pas dans ce qui contrevient à nos filtres de décision non négociables. Environnement : toute opportunité dont le modèle économique repose structurellement sur la dégradation de l'environnement est refusée. Éthique humaine : ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité." | "Ces deux filtres précèdent toute analyse, sans exception. Préservation de l'environnement — ISSA Capital n'entre pas dans un projet dont le modèle repose sur la dégradation environnementale. Éthique humaine — ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité." |
+
+### Handoff @fullstack (Phase 3)
+
+- **Fichiers TSX modifiés directement par @copywriter dans cette task** :
+  - `src/app/accompagnement/page.tsx` (3 modifications : occ 2 ~274, occ 1 ~308, occ 5 ~330)
+  - `src/app/page.tsx` (1 modification : occ 4 ~219)
+  - `src/app/opportunites/page.tsx` (1 modification : occ 3 ~140)
+- **Fichiers à propager pour @fullstack en Phase 3** : aucun — les 5 corrections sont directement appliquées en TSX dans cette task. Aucune chaîne résiduelle dans ce fichier copy à transcrire.
+- **Conflits potentiels avec Vague 2.1 ou Phase 5** : zéro. Les fichiers `/mission/page.tsx` et `/a-propos/page.tsx` (Phase 5 prep) n'ont pas été touchés. Les 5 occurrences actives étaient toutes sur `/accompagnement`, `/home` et `/opportunites`. La suppression de Occ 1 (phrase italique "Dans les deux cas") peut créer un delta de hauteur de section Formats — vérifier que le `mt-xl` de la grille 2 colonnes ne génère pas un déséquilibre visuel notable, et régénérer les baselines Playwright pour les 3 pages modifiées.
