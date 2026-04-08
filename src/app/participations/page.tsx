@@ -121,15 +121,13 @@ export default function ParticipationsPage(): JSX.Element {
 
           <div className="mt-xl grid grid-cols-1 gap-xl md:grid-cols-12">
             {/* Gradient One — holding intermédiaire
-                Refonte session 6 CHECKPOINT #2 Thomas : badge "Co-fondateur — 50%"
-                supprimé, titre + sous-titre + description verbatim validés. Le
-                bloc reste texte-pur, sans mention du pourcentage de détention. */}
+                Refonte session 6 CHECKPOINT #3 Thomas : badge "Participation phare"
+                retiré (Gradient One n'est pas assez connu pour mériter cette mise
+                en avant). Titre + sous-titre + description verbatim conservés.
+                Badge "Co-fondateur — 50%" déjà supprimé en CHECKPOINT #2. */}
             <div className="md:col-span-7">
               <div className="border border-ink-200 bg-parchment-50 p-xl md:p-2xl">
-                <span className="inline-block border border-levant-500 bg-levant-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-levant-700">
-                  Participation phare
-                </span>
-                <h3 className="mt-md font-heading text-h2 leading-[1.15] text-ink-950">
+                <h3 className="font-heading text-h2 leading-[1.15] text-ink-950">
                   Gradient One — co-fondée par Thomas Issa et deux associés.
                 </h3>
                 <p className="mt-md font-heading text-lead italic text-levant-700">
@@ -196,11 +194,10 @@ export default function ParticipationsPage(): JSX.Element {
                     : 'flex flex-col border border-ink-200 bg-white p-xl'
                 }
               >
-                {f.featured ? (
-                  <span className="mb-md inline-block self-start border border-levant-500 bg-levant-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-levant-700">
-                    Participation phare
-                  </span>
-                ) : null}
+                {/* Session 6 CHECKPOINT #3 Thomas : badge "Participation phare"
+                    retiré de toutes les cartes. Le traitement visuel featured
+                    (border-2 + col-span-2) est conservé — la refonte structurelle
+                    de /participations est prévue Phase 6c (@creative-strategy). */}
                 <h3 className="font-heading text-h3 text-ink-950">{f.name}</h3>
                 <p className="mt-md text-sm text-ink-700">{f.activity}</p>
                 <dl className="mt-lg space-y-sm text-sm">

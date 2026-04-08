@@ -119,15 +119,16 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 3 — Participation phare (Gradient One)
-          Refonte session 6 (CHECKPOINT #2 Thomas) : la section Key stats avec
-          stat 50% a été transformée en bloc narratif texte-pur. La stat 50%
-          est supprimée intégralement — Thomas a refusé le gros chiffre dans
-          la grille. Titre + sous-titre + description verbatim validés. */}
+      {/* Section 3 — Gradient One
+          Session 6 CHECKPOINT #3 Thomas : l'Overline "Participation phare" est
+          retirée (Gradient One n'est pas assez connu pour mériter cette mise
+          en avant — décision Thomas). La grid 3 stats (2020 / 6 / 3) est
+          réintroduite en remplacement du bloc texte-pur de CHECKPOINT #2.
+          Titre + sous-titre + description verbatim inchangés. Le chiffre 50
+          reste verrouillé hors scope (CHECKPOINT #2). */}
       <Section tone="inverse">
         <Container width="editorial">
-          <Overline tone="light">Participation phare</Overline>
-          <h2 className="mt-md font-heading text-h2 leading-[1.15] text-parchment-100">
+          <h2 className="font-heading text-h2 leading-[1.15] text-parchment-100">
             Gradient One — co-fondée par Thomas Issa et deux associés.
           </h2>
           <p className="mt-lg font-heading text-lead italic text-levant-500">
@@ -139,6 +140,32 @@ export default function HomePage(): JSX.Element {
             avec deux associés. Gradient One est le premier acte de cet héritage mis
             en forme.
           </p>
+          <dl className="mt-2xl grid grid-cols-1 gap-xl sm:grid-cols-3">
+            <div className="border-l-2 border-levant-500 pl-lg">
+              <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
+                Co-fondation
+              </dt>
+              <dd className="mt-sm font-heading text-h2 text-parchment-100">
+                2020
+              </dd>
+            </div>
+            <div className="border-l-2 border-levant-500 pl-lg">
+              <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
+                Participations
+              </dt>
+              <dd className="mt-sm font-heading text-h2 text-parchment-100">
+                6
+              </dd>
+            </div>
+            <div className="border-l-2 border-levant-500 pl-lg">
+              <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
+                Générations
+              </dt>
+              <dd className="mt-sm font-heading text-h2 text-parchment-100">
+                3
+              </dd>
+            </div>
+          </dl>
         </Container>
       </Section>
 
@@ -167,7 +194,7 @@ export default function HomePage(): JSX.Element {
               {
                 name: 'Gradient One',
                 sector: 'Holding intermédiaire',
-                desc: "Co-fondée en 2020. Porte les participations opérationnelles de l'écosystème.",
+                desc: "Co-fondée en 2020. Porte les participations opérationnelles et financières de l'écosystème.",
               },
               {
                 name: 'Versi Immobilier',
@@ -177,7 +204,7 @@ export default function HomePage(): JSX.Element {
               {
                 name: 'Versi Invest',
                 sector: 'Co-acquisitions & accompagnement',
-                desc: "Conseil en investissement immobilier et co-investissement sur sélection. Versi Invest accompagne les investisseurs privés dans l'analyse, la structuration et le suivi d'opérations — ticket adapté, fiscalité optimisée, horizon de sortie défini dès l'entrée.",
+                desc: 'Conseil en investissement immobilier et co-investissement sur sélection.',
               },
             ].map((p) => (
               <article
