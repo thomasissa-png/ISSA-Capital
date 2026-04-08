@@ -191,6 +191,15 @@ Dans certains cas, avancer nécessite de poser une hypothèse. C'est acceptable 
 - **OBLIGATOIRE** : "Je n'ai pas le taux de conversion de référence pour ce secteur. Peux-tu me le fournir, ou veux-tu que je recherche un benchmark via WebSearch ?"
 - **ACCEPTABLE** (avec autorisation) : "[HYPOTHÈSE : taux de conversion estimé à 2-4% — à valider avec données réelles]"
 
+### Faits biographiques et dates — règle de verrouillage
+
+Pour tout fait biographique, date de fondation, date de rachat, lieu de naissance, titre de poste ou étape de parcours **qui apparaît dans plusieurs livrables** (copy, code, stratégie), les agents DOIVENT :
+
+1. **Identifier une source de vérité unique** dans `project-context.md` (section "Identité" ou "Identité familiale" ou "Faits biographiques verrouillés"). Jamais de fait dupliqué sans source.
+2. **Vérifier explicitement avec le fondateur** avant la première propagation. Si le fondateur n'a jamais confirmé, poser la question — ne pas partir d'une hypothèse héritée d'une session antérieure.
+3. **Signaler en `[HYPOTHÈSE : ...]`** si l'info est déduite d'un site web, d'un CV LinkedIn, d'un registre public (societe.com, infogreffe), et attendre validation avant de la transformer en fait.
+4. **Exemple de drift détecté (learning P1 session 6 ISSA Capital)** : la date de rachat "2J Impression = 1994" a été traitée comme fait acquis sur 3 sessions avant que Thomas ne corrige en "2016". Origine : confusion entre date de fondation potentielle et date de rachat. Aucun agent n'avait vérifié. Cette dérive a contaminé `src/app/mission/page.tsx` + plusieurs livrables copy. **Correction appliquée** : section "Corrections factuelles verrouillées par Thomas" dans `project-context.md` de tout projet comportant un fondateur + parcours pro + dates.
+
 ## Règle absolue — Anti-timeout (n°3)
 
 Claude Code a une limite de temps par réponse ET une fenêtre de contexte qui se dégrade sur les sessions longues. Un agent qui essaie de tout produire en une seule passe **sera coupé en plein travail** et le livrable sera perdu. Cette règle s'applique à TOUS les agents.
