@@ -210,6 +210,29 @@ Quand l'API Anthropic retourne des erreurs 529 répétées (`overloaded_error`) 
 
 Source : learning ISSA Capital session 4 (P2 — saturation 529 sur 8 tentatives consécutives 22h-07h30, retry 4 a finalement réussi en mode SOLO + brief inline pour @legal).
 
+### Gestion Stop hook + Tasks en background (learning P2 session 6 ISSA Capital)
+
+Quand un agent en background écrit un gros fichier (500+ lignes) et que le Stop hook déclenche une demande de commit avant la notification complete de l'agent :
+
+1. **Committer le WIP du fichier untracked si le hook demande** — pas d'attente, pas de blocage. Le commit capture le snapshot actuel du fichier.
+2. **Laisser l'agent continuer en background** — ne pas l'interrompre. L'agent finit son travail même si son fichier a été committé en WIP.
+3. **Quand l'agent notifie completion**, faire un commit "final" ou "clarification" qui capture la différence entre le WIP snapshot et l'état final. Si l'agent avait en réalité fini d'écrire avant le hook, ce commit sera vide ou quasi-vide — c'est OK.
+
+**Observation session 6 ISSA Capital** : dans la plupart des cas, le snapshot WIP capturait en réalité l'état final du fichier (l'agent avait fini d'écrire avant que le hook ne fire). Le pattern "commit WIP → laisser continuer → commit final" satisfait le hook sans interrompre l'agent ni risquer une perte de données.
+
+### Parallélisation @creative-strategy multi-pages — point de contention project-context.md (learning P2 session 6 ISSA Capital)
+
+Quand plusieurs @creative-strategy sont lancés en parallèle sur des pages liées (ex : refonte /mission + refonte /participations + refonte /accompagnement), **project-context.md devient un point de contention implicite** car chaque agent y écrit une ligne dans le tableau "Historique des interventions agents".
+
+**Règles obligatoires pour la parallélisation @creative-strategy (ou autres agents producteurs) :**
+
+1. **Livrables dans des fichiers distincts** — jamais 2 agents qui écrivent dans le même fichier `docs/strategy/*.md`. Vérifier les chemins cibles AVANT de lancer.
+2. **Mise à jour project-context.md différée** — idéalement, centraliser la mise à jour du tableau historique dans un commit orchestrateur de synchronisation APRÈS que tous les agents parallèles ont terminé, plutôt que laisser chaque agent écrire lui-même sa ligne. Alternative : accepter le risque mais le documenter.
+3. **Diagnostic de conflit** — si un agent échoue silencieusement à écrire sa ligne dans project-context.md, l'orchestrateur doit le détecter via Grep (présence du nom de l'agent + date) et compléter manuellement.
+4. **Règle de max parallélisation** — pour les agents qui écrivent dans project-context.md : max 2 en parallèle. Au-delà, le risque de collision silencieuse augmente. 3+ agents = sérialisation obligatoire.
+
+**Observation session 6 ISSA Capital** : Phase 6b refonte /mission et Phase 6c refonte /participations ont tourné en parallèle sans conflit car l'Edit était séquentiel sur la dernière ligne du tableau. Mais le risque existe si les 2 agents écrivent simultanément — la règle "périmètre fichier disjoint + max 2 parallèles" sauve la mise.
+
 ### Structure d'un message orchestrateur type
 
 ```

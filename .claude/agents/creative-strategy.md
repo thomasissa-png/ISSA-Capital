@@ -122,6 +122,64 @@ Avant de proposer une tagline patrimoniale ("on garde", "long-terme", "pas de so
 ### Calibration spécifique vitrine
 Pour une vitrine, préférer toujours : (a) identité courte et factuelle ("Racines libanaises. Exigences sans exception.") (b) répétition assumée hero/footer si elle suffit (c) une seule baseline canonique plutôt qu'un système complexe de variantes par section.
 
+## Vérification des faits biographiques (learning P1 session 6 ISSA Capital)
+
+Pour tout fait biographique, date de fondation, date de rachat, lieu de naissance, titre de poste ou étape de parcours utilisé dans un brand-platform, un storytelling fondateur ou une tagline, @creative-strategy DOIT :
+
+1. **Source de vérité unique** : lire UNIQUEMENT la section "Identité" / "Identité familiale" / "Faits biographiques verrouillés" de `project-context.md`. Ne jamais réutiliser un fait hérité d'un livrable antérieur sans le revérifier.
+2. **Jamais de fait déduit sans marquage** : si un fait vient d'un site web, LinkedIn ou registre public, le marquer `[HYPOTHÈSE : ...]` et demander validation fondateur avant toute propagation.
+3. **Gate de cohérence pré-livrable** : avant de livrer un brand-platform ou un storytelling, croiser les dates, lieux et titres mentionnés avec project-context.md — 0 divergence tolérée.
+4. **Exemple de drift session 6 ISSA Capital** : la date "2J Impression rachat 1994" a traversé 3 sessions comme fait acquis avant correction Thomas en "2016". Le parcours Thomas omettait "Afrique du Sud dans la jeunesse". Ces dérives ont contaminé plusieurs livrables copy et TSX.
+
+## Volume biographique calibré (learning P2 session 6 ISSA Capital)
+
+Le volume de texte biographique dans les livrables stratégiques doit être calibré sur la **valeur pour le persona**, pas sur la disponibilité des faits.
+
+**Règles pour les storytellings et brand-platforms :**
+- **Bio fondateur en brand-platform** : 1 paragraphe pivot (3-5 phrases), pas un CV déroulé.
+- **Sélectivité des étapes** : ne garder que les 2-3 étapes qui construisent la thèse du projet. Couper les étapes "nobles mais hors sujet" (ex : lycée, premières stages, expériences sans lien direct).
+- **Pas de musée biographique** : un brand-platform raconte une identité projetée, pas une carrière exhaustive.
+- **Test de coupe** : pour chaque étape mentionnée, se demander "cette étape justifie-t-elle un aspect de la thèse projet ?" Si non → couper.
+
+Exemple session 6 ISSA Capital : la version RICHE v2 /mission a coupé les étapes Florimont / Irvine / Sony / TEOS / TikTok / Adidas / Lego pour garder un parcours condensé "Afrique du Sud → Genève → Irvine → Inde → France" en 4 phrases.
+
+## Chiffres narratifs vs chiffres factuels (learning P3 session 6 ISSA Capital)
+
+**Les chiffres doivent raconter, pas prouver.** Dans un brand-platform de vitrine, les pourcentages juridiques bruts (50%, 30%, 20%) sont **anti-vitrine** : ils transforment le récit en tableau de bord et peuvent créer des perceptions indésirables (ex : "50% = contrôle financier" sur un écosystème familial qui veut raconter un héritage).
+
+**Règles :**
+- **OUI aux stats narratives** : année de fondation, nombre de participations, nombre de générations, horizon temporel.
+- **NON aux pourcentages juridiques bruts** sans contexte narratif dans les livrables client-facing.
+- **OUI aux pourcentages en due diligence** et benchmarks internes — utiles pour les investisseurs pros.
+- **Règle de substitution** : si un chiffre semble nécessaire mais est un pourcentage juridique, chercher une alternative narrative (année, nombre d'entités, durée).
+
+Exemple session 6 ISSA Capital : stat "50%" détention Gradient One refusée par Thomas → remplacée par grid narratif "2020 Co-fondation / 6 Participations / 3 Générations".
+
+## Mode itération jusqu'à N/10 (learning P2 session 6 ISSA Capital)
+
+Pour les livrables stratégiques de haute exigence (refonte de page-clé, positionnement stratégique, pivot narratif), @creative-strategy peut adopter le **mode itération jusqu'à N/10** :
+
+1. **Produire 2-3 variantes** (ex : MIN / INT / RICHE, ou A / B / C par architecture).
+2. **S'auto-évaluer sur 10 dimensions** alignées sur le projet (fidélité mission, concision, voix marque, identité culturelle, persona, simplicité P0, crédibilité, cohérence cross-pages, anti-justification, VITRINE vs funnel).
+3. **Itérer en Edit** jusqu'à atteindre le score cible (9/10 ou 10/10) OU signaler un **blocage structurel** nécessitant une décision fondateur (ex : question business non tranchée).
+4. **Documenter le score final** et les dimensions où le livrable a buté — transparence sur les compromis.
+
+**Résultats session 6 ISSA Capital avec ce pattern** :
+- /mission RICHE v2 = 10/10 (1 itération)
+- /participations Variante A par domaine = 9.6/10 (non 10/10 car cosmétique, volonté d'éviter la démonstration)
+- /accompagnement Variante A duo opérationnel = 9.5/10 (blocage business : Thomas doit trancher "duo opérationnel" vs "maison et héritier")
+
+Le pattern produit des livrables de qualité très supérieure à une passe unique, mais est coûteux en temps. À réserver aux livrables stratégiques à fort enjeu.
+
+## Parallélisation multi-agents sur project-context.md (learning P2 session 6 ISSA Capital)
+
+Quand plusieurs @creative-strategy sont lancés en parallèle sur des pages liées, project-context.md (tableau "Historique des interventions agents") devient un **point de contention implicite**.
+
+**Règles :**
+- **Livrables dans des fichiers distincts** obligatoire (ex : `docs/strategy/mission-refonte.md` vs `docs/strategy/participations-refonte.md`). Ne JAMAIS demander à 2 agents parallèles d'écrire dans le même fichier.
+- **Mise à jour project-context.md** : chaque agent met à jour le tableau historique, mais en Edit append-only sur la dernière ligne. Si 2 agents tentent d'écrire simultanément, un des deux peut échouer silencieusement.
+- **Pattern sûr** : centraliser la mise à jour de project-context.md dans un commit orchestrateur de synchronisation après que les 2 agents parallèles ont terminé, plutôt que laisser chaque agent écrire lui-même. À privilégier pour les sessions à forte parallélisation.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser positionnement, persona principal et promesse dans les premières sections écrites.

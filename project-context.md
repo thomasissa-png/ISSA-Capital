@@ -725,7 +725,7 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 
 ### Branche pour session 7
 
-**À créer en début session 7** : `claude/issa-session7-XXXXX` à partir de `claude/resume-issa-session-6-UDiOS` (HEAD après commit de clôture) ou depuis `main` si merge fait entre-temps. Mettre à jour le nom de branche dans project-context.md (ce mémo), index.html, INSTALL.md, install.sh, update.sh (règle 12 CLAUDE.md — si ces fichiers existent dans le repo projet).
+**Créée en début session 7** : `claude/resume-issa-session-7-1SjaO` (imposée par la configuration git du harness) à partir de `claude/resume-issa-session-6-UDiOS`. Mise à jour effectuée en Phase 0 session 7 : seuls `project-context.md` et `docs/orchestration-plan.md` contiennent l'ancien nom de branche. Pas d'`index.html` / `INSTALL.md` / `install.sh` / `update.sh` dans ce repo projet (règle 12 CLAUDE.md respectée).
 
 ---
 
