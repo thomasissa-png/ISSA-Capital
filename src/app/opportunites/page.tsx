@@ -188,11 +188,16 @@ export default function OpportunitesPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Tagline */}
+      {/* Signature éditoriale (session 5 — retour Thomas #7).
+          Ancienne formulation "Vingt ans devant. Pas de sortie prévue." retirée :
+          horizon chiffré 20 ans = référence LBO/PE inadaptée à l'immobilier.
+          Nouvelle formulation : la durée passe par la nature du bien (pierre,
+          cycles, transmission) — pas par un horizon numérique. */}
       <Section tone="inverse" className="py-2xl">
         <Container width="editorial" className="text-center">
           <p className="font-heading text-h2 italic text-parchment-100">
-            Vingt ans devant. Pas de sortie prévue.
+            La pierre s&apos;inscrit dans le temps long. Elle traverse les cycles. Elle
+            se transmet.
           </p>
         </Container>
       </Section>

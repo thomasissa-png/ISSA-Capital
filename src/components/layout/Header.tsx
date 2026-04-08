@@ -28,6 +28,18 @@ export function Header(): JSX.Element {
     setMobileOpen(false);
   }, [pathname]);
 
+  /**
+   * Force le scroll en haut de page après une navigation depuis le menu top.
+   * Next.js conserve parfois la position de scroll lors du changement de route ;
+   * ici on garantit que cliquer sur un item de menu ramène toujours au top de
+   * la page de destination, qu'on soit déjà sur cette page ou non.
+   */
+  const handleNavClick = (): void => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <header
       className={cn(
@@ -43,6 +55,7 @@ export function Header(): JSX.Element {
       >
         <Link
           href="/"
+          onClick={handleNavClick}
           className="font-heading text-xl tracking-tight text-ink-950 hover:text-ink-700"
         >
           {siteConfig.name}
@@ -55,6 +68,7 @@ export function Header(): JSX.Element {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={handleNavClick}
                   className={cn(
                     'font-body text-sm transition-colors',
                     active
@@ -94,6 +108,7 @@ export function Header(): JSX.Element {
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    onClick={handleNavClick}
                     className={cn(
                       'block min-h-[48px] py-md font-body text-base',
                       active ? 'text-ink-950' : 'text-ink-700',

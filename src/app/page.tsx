@@ -65,9 +65,17 @@ export default function HomePage(): JSX.Element {
             La holding patrimoniale d&apos;une famille libanaise, établie en France.
             Patrimoine, participations, transmission.
           </p>
-          <div className="mt-2xl flex justify-center">
+          <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
             <Button href="/opportunites" variant="primary-inverse" size="lg">
               Présenter une opportunité d&apos;affaires
+            </Button>
+            <Button
+              href="/accompagnement"
+              variant="ghost"
+              size="lg"
+              className="border border-parchment-100/40 bg-transparent text-parchment-100 hover:bg-parchment-100/10 active:bg-parchment-100/20"
+            >
+              Être accompagné
             </Button>
           </div>
         </Container>
@@ -78,23 +86,22 @@ export default function HomePage(): JSX.Element {
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
           <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
-            ISSA Capital, c&apos;est une décision de famille.
+            Une holding née d&apos;une lignée.
           </h2>
           <div className="mt-lg space-y-md text-lead text-ink-700">
             <p>
-              ISSA Capital est la holding patrimoniale de la famille Issa — famille aux
-              racines libanaises, établie en France. Sa raison d&apos;être est simple :
-              faire fructifier le patrimoine familial dans la durée et organiser sa
-              transmission entre les générations.
+              ISSA Capital est la holding patrimoniale d&apos;une famille libanaise,
+              établie en France. Sa raison d&apos;être : structurer ce qui s&apos;est
+              construit sur trois décennies, le faire fructifier, le transmettre.
             </p>
             <p>
-              Une holding indépendante, dont la famille Issa est le seul actionnaire, et
+              Une structure indépendante, dont les Issa sont les seuls actionnaires, et
               dont l&apos;horizon est intergénérationnel.
             </p>
             <p>
-              ISSA Capital est l&apos;aboutissement de trois décennies de construction
-              familiale — une famille d&apos;origine libanaise qui a appris à construire,
-              à tenir, et à transmettre.
+              Cette holding n&apos;est pas née en 2026. Elle est l&apos;aboutissement de
+              trois décennies de construction patrimoniale — un héritage libanais qui a
+              appris à se tenir dans la durée.
             </p>
           </div>
           <div className="mt-xl flex flex-col gap-md sm:flex-row sm:flex-wrap sm:gap-xl">
@@ -159,26 +166,28 @@ export default function HomePage(): JSX.Element {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3">
+            {/*
+              Décision Thomas session 5 (retour #2) : la homepage est un teaser et
+              n'affiche QUE 3 participations — Gradient One, Versi Immobilier,
+              Versi Invest. L'écosystème complet (Immocrew, Versimo, immobilier
+              direct) est exclusivement présenté sur /participations, qui assume
+              le rôle de cartographie exhaustive.
+            */}
             {[
               {
                 name: 'Gradient One',
                 sector: 'Holding intermédiaire',
-                desc: 'Co-fondée en 2020. Détient Versi, Immocrew et Versimo.',
+                desc: "Co-fondée en 2020. 50% ISSA Capital — porte les participations opérationnelles de l'écosystème.",
               },
               {
                 name: 'Versi Immobilier',
                 sector: 'Marchand de biens',
-                desc: 'Marché secondaire résidentiel.',
+                desc: 'Marché secondaire résidentiel — acquisition, rénovation, revente.',
               },
               {
-                name: 'Immocrew',
-                sector: 'Marketing immobilier',
-                desc: 'Services pour mandataires indépendants.',
-              },
-              {
-                name: 'Versimo',
-                sector: 'Home staging IA',
-                desc: 'Transformation de photos en espaces meublés en 90 secondes.',
+                name: 'Versi Invest',
+                sector: 'Acquisitions & accompagnement',
+                desc: 'Acquisitions immobilières et accompagnement de partenaires investisseurs.',
               },
             ].map((p) => (
               <article

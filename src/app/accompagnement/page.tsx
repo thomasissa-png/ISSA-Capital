@@ -88,20 +88,29 @@ export default function AccompagnementPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Citation */}
-      <Section tone="elevated">
+      {/* Pour qui — remplace l'ancienne section "Citation" (verbatim fictif retiré
+          en session 5 — voir docs/strategy/accompagnement-restructure.md, Option A).
+          Section sobre, filtre de qualification self-service : Karim s'identifie
+          en 5 secondes ou pas, sans qu'on lui prête de mots dans la bouche. */}
+      <Section tone="default">
         <Container width="editorial">
-          <figure className="border-l-2 border-levant-500 pl-lg">
-            <blockquote>
-              <p className="font-heading text-h2 italic text-ink-950">
-                « J&apos;ai besoin de quelqu&apos;un qui l&apos;a fait, pas de quelqu&apos;un
-                qui m&apos;explique. »
-              </p>
-            </blockquote>
-            <figcaption className="mt-md text-sm text-ink-500">
-              — Verbatim entrepreneur accompagné
-            </figcaption>
-          </figure>
+          <Overline>Pour qui</Overline>
+          <h2 className="mt-md font-heading text-h2 text-ink-950">
+            Pour qui.
+          </h2>
+          <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
+            <p>
+              Un fondateur ou dirigeant qui a déjà fait ses preuves. Qui gère une ou
+              plusieurs structures, a déjà pris des décisions de capital, et n&apos;attend
+              pas qu&apos;on lui apprenne son métier. Qui cherche un pair pour structurer
+              ce qui vient ensuite — patrimoine, holding, immobilier en direct,
+              participations — pas un prestataire qui lui vendra une prestation.
+            </p>
+            <p>
+              Si vous vous reconnaissez, la suite de cette page est pour vous. Sinon, elle
+              ne le sera pas — et c&apos;est très bien.
+            </p>
+          </div>
         </Container>
       </Section>
 

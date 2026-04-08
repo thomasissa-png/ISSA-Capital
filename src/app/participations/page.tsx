@@ -91,35 +91,50 @@ export default function ParticipationsPage(): JSX.Element {
             <p className="mt-lg text-lead text-ink-700">
               ISSA Capital gère un portefeuille de participations cohérent, structuré
               autour de deux pôles — l&apos;immobilier et la technologie au service de
-              l&apos;immobilier.
+              l&apos;immobilier. Cet écosystème ne s&apos;est pas constitué par
+              opportunisme : il reflète une thèse d&apos;investissement construite depuis
+              2020, nourrie par un patrimoine familial dont les racines immobilières
+              précèdent la holding elle-même.
+            </p>
+            <p className="mt-md text-base text-ink-600">
+              Ci-dessous, la cartographie complète des participations
+              d&apos;ISSA Capital — structure de détention directe et participations
+              opérationnelles réunies.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* Niveau 1 — Gradient One */}
+      {/* Section 1 — Ce qu'ISSA Capital détient directement
+          Restructure session 5 (retour Thomas #8) : la liste des sous-jacents
+          de Gradient One est retirée de cette section — elle arrive en Section 2
+          comme suite logique. Le bloc Gradient One décrit ici son rôle structurel
+          de holding intermédiaire sans nommer les participations qu'elle porte.
+          Le patrimoine immobilier en direct est présenté en parallèle, comme
+          l'autre actif de niveau 1 détenu directement par ISSA Capital. */}
       <Section tone="elevated">
         <Container width="content">
-          <Overline>Participation directe</Overline>
+          <Overline>Détention directe</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Détenu directement par ISSA Capital.
+            Ce qu&apos;ISSA Capital détient directement.
           </h2>
 
           <div className="mt-xl grid grid-cols-1 gap-xl md:grid-cols-12">
+            {/* Gradient One — holding intermédiaire */}
             <div className="md:col-span-7">
               <div className="border border-ink-200 bg-parchment-50 p-xl md:p-2xl">
                 <span className="inline-block border border-levant-500 bg-levant-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-levant-700">
-                  Participation directe — 50%
+                  Co-fondateur — 50%
                 </span>
                 <h3 className="mt-md font-heading text-h2 text-ink-950">Gradient One</h3>
                 <p className="mt-xs text-sm text-ink-500">
                   Holding intermédiaire — depuis 2020
                 </p>
                 <p className="mt-lg text-base leading-relaxed text-ink-700">
-                  Gradient One détient les participations opérationnelles de
-                  l&apos;écosystème — Versi Immobilier, Versi Invest, Immocrew, Versimo.
-                  C&apos;est la structure qui agrège les projets entrepreneuriaux et
-                  immobiliers co-fondés depuis 2020.
+                  Gradient One est la structure intermédiaire d&apos;ISSA Capital —
+                  elle porte et agrège les participations opérationnelles co-fondées
+                  depuis 2020. C&apos;est par elle que l&apos;écosystème
+                  entrepreneurial de la holding prend corps.
                 </p>
                 <p className="mt-md text-xs italic text-ink-500">
                   Gradient One n&apos;a pas de site public.
@@ -127,33 +142,43 @@ export default function ParticipationsPage(): JSX.Element {
               </div>
             </div>
 
+            {/* Patrimoine immobilier résidentiel — actif parallèle de niveau 1 */}
             <div className="md:col-span-5">
-              <div className="border border-ink-200 bg-white p-xl">
-                <Overline>Filiales de Gradient One</Overline>
-                <ul className="mt-md space-y-md">
-                  {filiales.map((f) => (
-                    <li key={f.name} className="border-t border-ink-100 pt-md first:border-t-0 first:pt-0">
-                      <p className="font-heading text-h4 text-ink-950">{f.name}</p>
-                      <p className="text-xs text-ink-600">{f.activity}</p>
-                    </li>
-                  ))}
-                </ul>
+              <div className="flex h-full flex-col border border-ink-200 bg-white p-xl">
+                <span className="inline-block self-start border border-ink-300 bg-parchment-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-ink-700">
+                  Détention directe
+                </span>
+                <h3 className="mt-md font-heading text-h3 text-ink-950">
+                  Patrimoine immobilier résidentiel
+                </h3>
+                <p className="mt-xs text-sm text-ink-500">Île-de-France</p>
+                <p className="mt-lg text-base leading-relaxed text-ink-700">
+                  Actifs résidentiels détenus et gérés en direct. Constitution
+                  patrimoniale, revenus locatifs, gestion directe. Horizon long
+                  terme — les actifs sont détenus dans la durée, pas cédés à court
+                  terme.
+                </p>
               </div>
             </div>
           </div>
         </Container>
       </Section>
 
-      {/* Filiales en détail */}
+      {/* Section 2 — Au sein de Gradient One
+          Suite logique de la Section 1 (restructure session 5 — retour Thomas #8).
+          La ligne de transition remplace la liste supprimée du bloc Gradient One
+          ci-dessus. Aucune redescription de Gradient One ici — le lecteur vient
+          de la découvrir. Les 4 participations arrivent comme développement
+          naturel, pas comme répétition. */}
       <Section tone="subtle">
         <Container width="content">
           <div className="mb-2xl max-w-editorial">
             <Overline>Au sein de Gradient One</Overline>
             <h2 className="mt-md font-heading text-h2 text-ink-950">
-              Quatre participations opérationnelles.
+              Au sein de Gradient One.
             </h2>
             <p className="mt-md text-lead text-ink-700">
-              Chacune dans son secteur.
+              Gradient One détient quatre participations opérationnelles.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
@@ -209,22 +234,11 @@ export default function ParticipationsPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Immobilier direct */}
-      <Section tone="inverse">
-        <Container width="editorial">
-          <Overline tone="light">Patrimoine immobilier en direct</Overline>
-          <h2 className="mt-md font-heading text-h3 text-parchment-100">
-            Résidentiel — Île-de-France
-          </h2>
-          <p className="mt-md text-base leading-relaxed text-ink-300">
-            ISSA Capital gère en direct un patrimoine résidentiel en Île-de-France.
-            Constitution patrimoniale et revenus locatifs — gestion directe, horizon long
-            terme.
-          </p>
-        </Container>
-      </Section>
-
-      {/* Cohérence */}
+      {/* Section 3 — Cohérence éditoriale
+          Note session 5 : la section "Immobilier direct" inverse séparée a été
+          fusionnée dans la Section 1 (sous-bloc "Patrimoine immobilier
+          résidentiel" en parallèle de Gradient One). Elle apparaît maintenant
+          au bon niveau de la pyramide de détention, sans rupture visuelle. */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Cohérence</Overline>
