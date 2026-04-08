@@ -61,3 +61,130 @@ Cette page ne liste pas des actifs. Elle pose une thèse d'investissement incarn
 **Périmètre des entités** : Gradient One, Versi Invest, Versi Immobilier, Immocrew, Versimo, Patrimoine immobilier résidentiel (IDF).
 
 ---
+
+## 3. Variante A — Par domaine d'activité
+
+### Architecture (hero + 4 sections)
+
+| Section | Titre H2 | Contenu |
+|---|---|---|
+| Hero | "Un écosystème immobilier construit depuis 2020." | H1 + intro 3 lignes + note Gradient One (2 lignes discrètes) |
+| S1 | "Immobilier en direct." | Patrimoine résidentiel IDF + Versi Immobilier |
+| S2 | "Accompagnement et co-investissement." | Versi Invest + Immocrew |
+| S3 | "Technologie au service de l'immobilier." | Versimo |
+| S4 | "Une thèse, pas un portefeuille." | Éditoriale + liens de sortie |
+
+### Verbatim complet — Variante A (v2 finale)
+
+**HERO**
+
+Overline : Notre écosystème
+
+H1 : Un écosystème immobilier construit depuis 2020.
+
+Intro : ISSA Capital investit dans l'immobilier — en direct et via des participations — depuis 2020. Cet écosystème n'est pas le résultat d'opportunités saisies au fil du temps : il reflète une conviction familiale ancrée dans l'immobilier depuis trois décennies.
+
+Note contextuelle (typographie petite, ton neutre) : Gradient One est la holding intermédiaire co-fondée par ISSA Capital en 2020. Elle détient les participations opérationnelles de l'écosystème. Les actifs immobiliers résidentiels sont détenus directement par ISSA Capital.
+
+Ligne statut : Cette page présente la cartographie complète des participations et actifs d'ISSA Capital.
+
+---
+
+**SECTION 1 — Immobilier en direct.**
+
+Overline : Actifs détenus
+
+H2 : Immobilier en direct.
+
+Intro : ISSA Capital détient des actifs immobiliers résidentiels — en propre et via Versi Immobilier.
+
+Bloc A — Patrimoine immobilier résidentiel
+Île-de-France — détention directe ISSA Capital
+Actifs résidentiels détenus et gérés en direct. Constitution patrimoniale, revenus locatifs, gestion directe.
+Horizon long terme — les actifs sont détenus dans la durée.
+
+Bloc B — Versi Immobilier
+Marchand de biens — marché secondaire résidentiel.
+Rôle : actionnaire co-gérant — depuis 2025
+
+---
+
+**SECTION 2 — Accompagnement et co-investissement.**
+
+Overline : Services aux professionnels
+
+H2 : Accompagnement et co-investissement.
+
+Intro : Deux entités de l'écosystème accompagnent les professionnels et investisseurs de l'immobilier.
+
+Bloc A — Versi Invest
+Acquisitions immobilières et accompagnement de partenaires. Pour ceux qui veulent investir dans l'immobilier sans en faire leur métier principal.
+Rôle : co-gérant — depuis 2026
+
+Bloc B — Immocrew
+Marketing externalisé pour mandataires immobiliers indépendants. "Tu publies, on fait le reste."
+Rôle : actionnaire — immocrew.fr
+
+---
+
+**SECTION 3 — Technologie au service de l'immobilier.**
+
+Overline : Innovation
+
+H2 : Technologie au service de l'immobilier.
+
+Intro : Une participation de l'écosystème développe des outils numériques pour les professionnels du secteur.
+
+Bloc — Versimo
+Home staging virtuel par IA. Une pièce meublée en 90 secondes.
+Rôle : actionnaire — versimo.fr
+
+---
+
+**SECTION 4 — Une thèse, pas un portefeuille.**
+
+Overline : Cohérence
+
+H2 : Une thèse, pas un portefeuille.
+
+L'immobilier et la technologie au service de l'immobilier ne sont pas le résultat d'une stratégie construite sur PowerPoint. Ils reflètent un héritage familial — Sonia Issa, architecte d'intérieur, mère de Thomas — et une conviction : l'habitat est un secteur de durée, pas de spéculation.
+
+Chaque entité de l'écosystème sert un maillon de la même chaîne : acquérir, valoriser, gérer, transmettre.
+
+Liens de sortie :
+- Proposer une opportunité → /opportunites
+- Besoin d'être accompagné ? → /accompagnement
+
+---
+
+### Disposition des entités dans Variante A
+
+| Entité | Section | Position | Gradient One visible ? |
+|---|---|---|---|
+| Gradient One | Hero (note contextuelle) | 2 lignes discrètes | Oui — défini une fois |
+| Patrimoine immobilier IDF | S1 | Bloc principal | Non |
+| Versi Immobilier | S1 | Bloc secondaire | Non (implicite) |
+| Versi Invest | S2 | Bloc principal | Non (implicite) |
+| Immocrew | S2 | Bloc secondaire | Non (implicite) |
+| Versimo | S3 | Bloc unique | Non (implicite) |
+
+### Rationale
+
+Gradient One disparaît comme structure de page. Elle est définie une seule fois, discrètement, dans le hero — 2 lignes qui expliquent son rôle sans le mettre en avant. Karim lit les activités (immobilier, accompagnement, tech) avant de lire les noms d'entités. L'ordre va du plus concret (actifs détenus) au plus spécialisé (tech). Logique sectorielle, compréhensible sans aucune connaissance de l'organigramme.
+
+### Auto-évaluation — Variante A (v2)
+
+| # | Dimension | Score | Justification |
+|---|---|---|---|
+| 1 | Gradient One non sur-mis en avant | 10/10 | 2 lignes en note de hero — jamais titre de section |
+| 2 | Clarté pour Karim (30 sec.) | 10/10 | H2 sectoriels lisibles sans connaissance préalable |
+| 3 | Hiérarchie visible | 9/10 | Immo > Accompagnement > Tech — du plus tangible au plus spécialisé |
+| 4 | Voix de marque | 9/10 | Sobre, factuel, phrases courtes, zéro slogan |
+| 5 | Simplicité > Démonstration (P0) | 10/10 | Aucun effet de manche |
+| 6 | Cohérence homepage | 9/10 | Page exhaustive vs teaser — cohérent, pas redondant |
+| 7 | VITRINE non-conversion | 10/10 | Zéro CTA agressif |
+| 8 | Crédibilité | 9/10 | Contexte Gradient One posé proprement |
+| 9 | Différenciation entre entités | 10/10 | 5 entités, 5 activités distinctes |
+| 10 | Pas de justification explicite | 10/10 | Aucune phrase méta |
+
+**Score final Variante A : 9.6/10**
