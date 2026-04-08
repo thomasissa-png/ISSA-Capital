@@ -2,9 +2,9 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-08 — Session 6 démarrée (Étape 2 propagation learnings session 5 DONE, plan retours Thomas en attente validation)**
+> Dernière mise à jour : **2026-04-08 — Session 6 Phase 1 + 1bis lancées (3 Tasks parallèles : audit Mission/À propos, options Gradient One, audit justifications explicites)**
 
-<!-- SESSION: phases=0 tasks_prod=1 tasks_consult=0 -->
+<!-- SESSION: phases=1 tasks_prod=4 tasks_consult=0 -->
 
 ---
 
@@ -17,7 +17,7 @@
 **Principe directeur #0** : VITRINE (non-conversion) — calibration de tous les copy/UX
 **Verrous transverses** : identité libanaise jamais française · zéro mention nom agence Thomas · UTF-8 réel · Simplicité > Démonstration > Élégance (P0 verrouillée — vigilance point 4 sur l'écueil "trop littéraire/pompeux")
 
-### Les 5 retours Thomas — synthèse
+### Les 6 retours Thomas — synthèse
 
 | # | Page(s) | Nature | Owner principal | Bloque sur |
 |---|---|---|---|---|
@@ -26,6 +26,7 @@
 | 3 | / homepage "Notre écosystème" Gradient One + Versi Invest | Reformulation 2 blocs | @copywriter → @fullstack | Décision Thomas point 2 (cohérence Gradient One inter-sections) |
 | 4 | / + /participations Filtres "Préservation environnement" + "Éthique humaine" | Réécriture de fond — 2 options A/B par filtre | @copywriter → @fullstack | Décision Thomas (4 options à trancher) |
 | 5 | /mission vs /a-propos | Audit différentiel + recommandation fusion ou maintien | @creative-strategy → (si fusion) @copywriter + @fullstack | Décision Thomas (structurelle, impact nav + sitemap) |
+| 6 | TRANSVERSE — toutes pages | Audit + correction pattern "justification noir sur blanc" (ex : "Dans les deux cas : aucun tarif affiché. La mission commence par un échange de qualification.") | @copywriter (audit Phase 1bis) → @copywriter (corrections Phase 2) → @fullstack | Décision Thomas par occurrence (REFORMULER vs SUPPRIMER) |
 
 ### Ordre d'exécution proposé
 
@@ -39,28 +40,43 @@ Lancement dans le même message :
   - Lit `docs/strategy/brand-platform.md` + `docs/strategy/personas.md` + section actuelle `src/app/page.tsx`
   - Produit : 2-3 reformulations orientées 3 générations (pas data corporate), avec justification éditoriale par option, alignement voix marque
 
-**→ CHECKPOINT THOMAS #1** : remontée des 2 livrables. Thomas tranche :
+**Phase 1bis — Audit transverse justifications explicites (1 Task producteur, lancée en parallèle des Phase 1)**
+
+- **Task A'** — `@copywriter` : audit transverse du pattern "justification noir sur blanc" (point 6) → livrable `docs/copy/audit-justifications-explicites-session6.md`
+  - Lit séquentiellement tous les `src/app/**/page.tsx` + `src/components/sections/**` + `docs/copy/landing-page-copy.md`
+  - Inventaire chaque occurrence : verbatim + diagnostic + verdict (REFORMULER / SUPPRIMER / GARDER) + reformulation suggérée + sévérité P0/P1/P2
+  - Ignore /mission, /a-propos et bloc Gradient One homepage (en cours de refonte par Tasks A et B) — section "Zones en cours de refonte" pour mémoire
+  - Symptômes à détecter : phrases qui expliquent une absence ("Pas de X, mais Y"), annoncent un processus ("La mission commence par..."), ressemblent à des FAQ collées ("Dans les deux cas : ..."), registre méta, transcription verbatim Thomas/agent
+
+**→ CHECKPOINT THOMAS #1** : remontée des 3 livrables (audit Mission/À propos + options Gradient One + audit justifications). Thomas tranche :
 - (a) fusion vs maintien Mission/À propos
 - (b) option narrative Gradient One retenue (A/B/C)
+- (c) arbitrage par occurrence ou en bloc des justifications explicites (REFORMULER / SUPPRIMER / GARDER)
 
-**Phase 2 — Production copy + Edit chirurgical TSX (3 Tasks producteurs)**
+**Phase 2 — Production copy + Edit chirurgical TSX (4 Tasks producteurs, séquencés en 2 vagues de 3 max)**
 
-Lancement dans le même message (3 Tasks max conformément règle anti-timeout) :
+Vague 2.1 (3 Tasks parallèles) :
 - **Task C** — `@copywriter` : réécriture des 2 filtres "Préservation environnement" + "Éthique humaine" — 2 options A/B par filtre (4 textes au total) → ajout dans `docs/copy/landing-page-copy.md` section dédiée + handoff structuré (point 4)
   - Contraintes : conserver fermeté du filtre non négociable, éviter ton "mots d'enfant", cohérence brand-voice (retenue, gravité sobre, zéro pathos), éviter écueil inverse "trop littéraire/pompeux" (P0 Simplicité > Démonstration > Élégance)
 - **Task D** — `@copywriter` : reformulation blocs "Notre écosystème" Gradient One (suppression "50% ISSA Capital") + Versi Invest ("Co-acquisitions format type club deal + accompagnement") + intégration de l'option Gradient One tranchée par Thomas pour la "Participation phare" → édits dans `docs/copy/landing-page-copy.md` (points 2 + 3)
 - **Task E** — `@fullstack` : Edit chirurgical TSX point 1 uniquement (suppression incipit "Cette holding n'est pas née en 2026.") + propagation `docs/copy/landing-page-copy.md` correspondante + régénération baselines Playwright section impactée + pipeline G28 vert (point 1)
   - Indépendant des autres tasks, action courte, ne pas attendre
 
-**→ CHECKPOINT THOMAS #2** : remontée des 4 textes filtres + 3 textes Gradient One/Versi Invest. Thomas tranche :
-- (c) option A ou B pour chaque filtre (2 décisions)
-- (d) validation textes Gradient One / Versi Invest (ou ajustement)
+Vague 2.2 (1 Task séquentiel après Vague 2.1) :
+- **Task C'** — `@copywriter` : application des corrections justifications explicites validées par Thomas en CHECKPOINT #1 (point 6) → édits dans `docs/copy/landing-page-copy.md` + production de la liste consolidée des Edits TSX à appliquer en Phase 3
+  - Séquencée APRÈS Vague 2.1 pour éviter conflits sur `landing-page-copy.md`
+
+**→ CHECKPOINT THOMAS #2** : remontée des 4 textes filtres + 3 textes Gradient One/Versi Invest + corrections justifications appliquées. Thomas tranche :
+- (d) option A ou B pour chaque filtre (2 décisions)
+- (e) validation textes Gradient One / Versi Invest (ou ajustement)
+- (f) validation reformulations justifications (ou retour ajustement)
 
 **Phase 3 — Propagation TSX consolidée (1 Task producteur)**
 
-- **Task F** — `@fullstack` : propagation TSX en un seul passage des points 2, 3, 4 (homepage + page participations si filtres dupliqués) + régénération de TOUTES les baselines impactées sur 3 devices + pipeline G28 vert
+- **Task F** — `@fullstack` : propagation TSX en un seul passage des points 2, 3, 4, 6 (homepage + page participations si filtres dupliqués + toutes les pages avec justifications explicites corrigées) + régénération de TOUTES les baselines impactées sur 3 devices + pipeline G28 vert
   - Vérifie identité libanaise + UTF-8 réel + zéro mention agence
   - Vérifie cohérence copy `docs/copy/landing-page-copy.md` ↔ TSX (gate G7)
+  - Liste des Edits venant en partie de `docs/copy/audit-justifications-explicites-session6.md` (post-validation Thomas)
 
 **Phase 4 — QA + revue testeur-persona (2 Tasks consultation/producteur)**
 
@@ -81,12 +97,14 @@ Si Thomas tranche "maintien refondu" : Phase 5 = chantier copy léger sur les 2 
 | Phase | Tasks | Cumul session 6 |
 |---|---|---|
 | Étape 2 propagation learnings (DONE) | 1 | 1/18 |
-| Phase 1 audits | 2 | 3/18 |
-| Phase 2 copy + edit chirurgical | 3 | 6/18 |
-| Phase 3 propagation TSX | 1 | 7/18 |
-| Phase 4 QA + testeur | 2 | 9/18 |
-| Phase 5 (si fusion) | 3 | 12/18 |
-| **Total max** | **12** | **12/18** ✅ marge 6 |
+| Phase 1 audits stratégiques | 2 | 3/18 |
+| Phase 1bis audit transverse justifications | 1 | 4/18 |
+| Phase 2 vague 2.1 copy + edit chirurgical | 3 | 7/18 |
+| Phase 2 vague 2.2 corrections justifications | 1 | 8/18 |
+| Phase 3 propagation TSX | 1 | 9/18 |
+| Phase 4 QA + testeur | 2 | 11/18 |
+| Phase 5 (si fusion) | 3 | 14/18 |
+| **Total max** | **14** | **14/18** ✅ marge 4 |
 
 Marge confortable sous le seuil ALERTE ROUGE (18). Pas de risque de saturation contexte sur cette session.
 
