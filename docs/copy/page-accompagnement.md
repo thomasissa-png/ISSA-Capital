@@ -57,15 +57,17 @@ Thomas Issa accompagne fondateurs et dirigeants sur ce qu'il a lui-même constru
 Pour qui
 
 ### H2
-Pour qui.
+Un fondateur ou dirigeant qui a déjà fait ses preuves.
 
 ### Corps
-Un fondateur ou dirigeant qui a déjà fait ses preuves. Qui gère une ou plusieurs structures, a déjà pris des décisions de capital, et n'attend pas qu'on lui apprenne son métier. Qui cherche un pair pour structurer ce qui vient ensuite — patrimoine, holding, immobilier en direct, participations — pas un prestataire qui lui vendra une prestation.
+Qui gère une ou plusieurs structures, a déjà pris des décisions de capital, et n'attend pas qu'on lui apprenne son métier. Qui cherche un pair pour structurer ce qui vient ensuite — patrimoine, holding, immobilier en direct, participations — pas un prestataire qui lui vendra une prestation.
 
 Si vous vous reconnaissez, la suite de cette page est pour vous. Sinon, elle ne le sera pas — et c'est très bien.
 
-[Note copy : 80 mots — dans la cible 80-130 mots (accompagnement-restructure.md). Karim, en lisant "a déjà pris des décisions de capital", sait en une ligne s'il est concerné. Filtre net, aucune ambiguïté, zéro verbatim attribué à quiconque. Test binaire : "OK, c'est pour moi" ou "Non, c'est pas pour moi" — pas de réponse floue possible.]
-[Note @fullstack : voir accompagnement-restructure.md section "Hand-off @fullstack" — supprimer lignes 92-106 (`src/app/accompagnement/page.tsx`), insérer `<Section tone="default">` avec Overline + H2 + 2 paragraphes ci-dessus.]
+[Note copy : 80 mots — dans la cible 80-130 mots (accompagnement-restructure.md). Karim, en lisant le H2 "Un fondateur ou dirigeant qui a déjà fait ses preuves.", sait en une ligne s'il est concerné avant même de lire le corps. Filtre actif dans le titre, zéro verbatim attribué à quiconque. Test binaire : "OK, c'est pour moi" ou "Non, c'est pas pour moi" — pas de réponse floue possible.]
+[Note @fullstack : voir accompagnement-restructure.md section "Hand-off @fullstack" — supprimer lignes 92-106 (`src/app/accompagnement/page.tsx`), insérer `<Section tone="default">` avec Overline + H2 + 2 paragraphes ci-dessus. Le H2 a été reformulé en phrase pleine — mettre à jour la chaîne dans le code.]
+
+<!-- Modif session 5 C2 — P1-1 : Option α retenue. Ancien H2 "Pour qui." supprimé — il répétait mot pour mot l'Overline "Pour qui" (doublure GP9 identifiée par testeur-karim). H2 reformulé en phrase de qualification directe : "Un fondateur ou dirigeant qui a déjà fait ses preuves." Le H2 devient un filtre actif — Karim se qualifie ou se disqualifie dès le titre sans lire le corps. L'Overline "Pour qui" joue son rôle de signal de navigation. Options β (Overline → "Périmètre") et γ (supprimer Overline, garder H2) écartées : β crée un mot technique froid ("Périmètre") qui distancie Karim, γ perd le signal de navigation. -->
 
 ---
 

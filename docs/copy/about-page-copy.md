@@ -113,8 +113,10 @@ Il rejoint ensuite Sony, puis TEOS, et travaille en conseil stratégique — des
 
 **Paragraphe 3 — Épisode agence (avec ellipse pivotable)** :
 ```
-[Nom de l'agence], agence de communication internationale qu'il fonde à 35 ans, grandit rapidement : plus de 35 experts, des équipes sur 5 continents, des missions dans plus de 45 pays, une notation parmi les meilleures de sa catégorie sur les plateformes globales. Le modèle opérationnel repose sur des relais 24h/24 entre fuseaux horaires, en 18 langues, pour des clients dans les grandes verticales mondiales — tech, luxe, logistique, biens de consommation. Une structure construite à partir de rien, dans la complexité internationale, avec l'exigence d'un opérateur qui sait ce qu'il veut.
+Une agence de communication internationale qu'il fonde à 35 ans, qui grandit rapidement jusqu'à réunir plus de 35 experts, avec des missions dans les grandes verticales mondiales — tech, luxe, logistique, biens de consommation. Parmi ses clients : TikTok, Adidas, Lego. Une structure construite à partir de rien, dans la complexité internationale, avec l'exigence d'un opérateur qui sait ce qu'il veut.
 ```
+
+<!-- Modif session 5 C2 — P0-1 : Option B retenue (ancrage narratif). Les chiffres 45 pays / 18 langues / 5 continents supprimés car non vérifiables sans le nom de l'agence (NDA tacite V1). Remplacés par la mention des clients TikTok / Adidas / Lego — vérifiables indirectement via /accompagnement, autorisés par décision Q2 Thomas. L'ellipse pivotable "[Nom de l'agence]" est remplacée par la périphrase définitive "Une agence de communication internationale" cohérente avec la décision session 4. Chiffre 35 experts conservé (quantité d'équipe, non géographique, moins fragile). La dimension internationale reste portée par "grandes verticales mondiales" et les marques citées. Option A (retrait complet) écartée : affaiblit le parcours sans résoudre le problème — la zone d'ombre vient de l'absence d'ancrage vérifiable, pas du volume de chiffres. -->
 
 **Paragraphe 4 — Phrase-pont et sortie** :
 ```
