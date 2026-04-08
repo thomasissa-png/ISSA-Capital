@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Source SVG pour android-chrome-192x192.png
+    Source SVG pour apple-touch-icon.png (180×180)
     Direction A — Session 5 (2026-04-08) : sérif classique, C en Bézier cubique
-    viewBox 512×512 — sharp rasterise en 192×192 via generate-assets.mjs
+    viewBox 512×512 — sharp rasterise en 180×180 via generate-assets.mjs
     Fond : ink-950 | Glyphes : parchment-100 | Filet : levant-500
   -->
 
   <!-- Fond -->
   <rect width="512" height="512" fill="#0A0A0A"/>
 
-  <!-- Lettre I — sérif classique -->
+  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
   <path d="
     M 72,112 L 168,112 L 168,140 L 140,140
     L 140,372 L 168,372 L 168,400
@@ -18,7 +18,7 @@
     L 100,140 L 72,140 Z
   " fill="#F5F0E8"/>
 
-  <!-- Lettre C — arc Bézier cubique -->
+  <!-- Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux) -->
   <path d="
     M 440,112
     L 298,112
@@ -33,6 +33,6 @@
     Z
   " fill="#F5F0E8"/>
 
-  <!-- Filet ocre levantin -->
+  <!-- Filet ocre levantin — signature graphique -->
   <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
 </svg>

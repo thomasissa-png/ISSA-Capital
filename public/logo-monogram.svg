@@ -1,33 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital — monogramme IC">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital — monogramme IC">
   <title>ISSA Capital — monogramme IC</title>
   <!--
-    Monogramme ISSA Capital — "IC" stylisé avec accent ocre
+    Monogramme ISSA Capital — "IC" sérif classique (Direction A — Session 5)
     Usage : icônes, signatures compactes, nav mobile, splash screens
-    Direction A validée par Thomas (post-deploy 2026-04-07)
+    viewBox 512×512 partagé avec favicon.svg — le SVG est responsive et se scale
+    automatiquement à n'importe quelle taille (64px, 128px, 256px…).
     Fond carré ink-950 | Glyphes parchment-100 | Filet levant-500
   -->
 
-  <!-- Fond carré ink-950 pour usage standalone -->
-  <rect width="64" height="64" fill="#0A0A0A"/>
+  <!-- Fond -->
+  <rect width="512" height="512" fill="#0A0A0A"/>
 
-  <!-- ===== Lettre I — zone gauche, proportions 64px ===== -->
-  <!-- Fût vertical I -->
-  <rect x="9" y="14" width="6" height="36" fill="#F5F0E8"/>
-  <!-- Empattement haut I -->
-  <rect x="5" y="14" width="14" height="4" fill="#F5F0E8"/>
-  <!-- Empattement bas I -->
-  <rect x="5" y="46" width="14" height="4" fill="#F5F0E8"/>
+  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
+  <path d="
+    M 72,112 L 168,112 L 168,140 L 140,140
+    L 140,372 L 168,372 L 168,400
+    L 72,400 L 72,372 L 100,372
+    L 100,140 L 72,140 Z
+  " fill="#F5F0E8"/>
 
-  <!-- ===== Lettre C — zone droite, courbe ouverte ===== -->
-  <!-- Barre supérieure C -->
-  <rect x="28" y="14" width="26" height="5" fill="#F5F0E8"/>
-  <!-- Fût gauche C -->
-  <rect x="28" y="14" width="6" height="36" fill="#F5F0E8"/>
-  <!-- Barre inférieure C -->
-  <rect x="28" y="45" width="26" height="5" fill="#F5F0E8"/>
-  <!-- Creusement intérieur C -->
-  <rect x="34" y="19" width="20" height="26" fill="#0A0A0A"/>
+  <!--
+    Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux)
+    Contour : sérif haut droit → arc extérieur (Re=144) → sérif bas droit
+              → retour arc intérieur (Ri=88) → sérif haut intérieur → ferme
+  -->
+  <path d="
+    M 440,112
+    L 298,112
+    C 378,112 154,176 154,256
+    C 154,336 218,400 298,400
+    L 440,400
+    L 440,372
+    L 298,372
+    C 249,372 210,305 210,256
+    C 210,207 249,140 298,140
+    L 440,140
+    Z
+  " fill="#F5F0E8"/>
 
-  <!-- Filet ocre levantin — signature graphique -->
-  <rect x="5" y="53" width="49" height="2.5" fill="#C4935A"/>
+  <!-- Filet ocre levantin — signature graphique du système ISSA Capital -->
+  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+
 </svg>

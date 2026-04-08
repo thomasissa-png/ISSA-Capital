@@ -2,31 +2,36 @@
   <title>ISSA Capital</title>
   <!--
     Source SVG pour android-chrome-512x512.png
-    Fond plein ink-950 — monogramme IC crème avec accent ocre
-    Direction A validée par Thomas (post-deploy 2026-04-07)
+    Direction A — Session 5 (2026-04-08) : sérif classique, C en Bézier cubique
+    Fond : ink-950 | Glyphes : parchment-100 | Filet : levant-500
   -->
 
   <!-- Fond -->
   <rect width="512" height="512" fill="#0A0A0A"/>
 
-  <!-- ===== Lettre I — zone gauche ===== -->
-  <!-- Fût vertical I -->
-  <rect x="60" y="106" width="44" height="300" fill="#F5F0E8"/>
-  <!-- Empattement haut I -->
-  <rect x="32" y="106" width="100" height="30" fill="#F5F0E8"/>
-  <!-- Empattement bas I -->
-  <rect x="32" y="376" width="100" height="30" fill="#F5F0E8"/>
+  <!-- Lettre I — sérif classique -->
+  <path d="
+    M 72,112 L 168,112 L 168,140 L 140,140
+    L 140,372 L 168,372 L 168,400
+    L 72,400 L 72,372 L 100,372
+    L 100,140 L 72,140 Z
+  " fill="#F5F0E8"/>
 
-  <!-- ===== Lettre C — zone droite, courbe ouverte ===== -->
-  <!-- Barre supérieure C -->
-  <rect x="196" y="106" width="224" height="40" fill="#F5F0E8"/>
-  <!-- Fût gauche C -->
-  <rect x="196" y="106" width="44" height="300" fill="#F5F0E8"/>
-  <!-- Barre inférieure C -->
-  <rect x="196" y="366" width="224" height="40" fill="#F5F0E8"/>
-  <!-- Creusement intérieur C -->
-  <rect x="240" y="146" width="180" height="220" fill="#0A0A0A"/>
+  <!-- Lettre C — arc Bézier cubique -->
+  <path d="
+    M 440,112
+    L 298,112
+    C 378,112 154,176 154,256
+    C 154,336 218,400 298,400
+    L 440,400
+    L 440,372
+    L 298,372
+    C 249,372 210,305 210,256
+    C 210,207 249,140 298,140
+    L 440,140
+    Z
+  " fill="#F5F0E8"/>
 
   <!-- Filet ocre levantin -->
-  <rect x="32" y="432" width="388" height="18" fill="#C4935A"/>
+  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
 </svg>
