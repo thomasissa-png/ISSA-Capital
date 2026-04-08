@@ -2,7 +2,18 @@
 
 ## Synthèse exécutive
 
-[À REMPLIR EN FIN D'AUDIT]
+**Verdict global session 4 : GO CONDITIONNEL — push main autorisé après correction P1 unique sur `src/app/a-propos/page.tsx:135`.**
+
+**13 livrables audités** : 12 GO + 1 GO CONDITIONNEL. Aucun NO-GO. Aucun gate BLOQUANT en FAIL.
+
+**Qualité globale exceptionnelle** : la session 4 affiche le meilleur niveau de cohérence inter-agents observé sur ce projet. Tous les livrables documentaires (12 sur 13) atteignent 10/10 sur les gates appliquées, avec un alignement strict sur les décisions Thomas (mode @moi), la règle P0 "Simplicité > Démonstration > Élégance", et l'identité libanaise jamais française. Les chaînes de référencement amont (project-context → @legal → @ia → @fullstack ; @ux → @creative-strategy → @copywriter → @fullstack) sont propres et tracées.
+
+**Seul point d'attention bloquant pré-push** :
+- `src/app/a-propos/page.tsx:135` affiche `[Nom de l'agence]` en clair dans le rendu utilisateur. Le handoff @copywriter Partie 4 §1 spécifie qu'il faut le remplacer par `Une agence de communication internationale` en attendant la révélation publique. **Correction triviale (1 Edit, 0 risque)** mais indispensable avant push main — sinon les visiteurs voient un placeholder.
+
+**Conditions GO push main session 4** : appliquer la correction P1 ci-dessus → 13/13 GO.
+
+---
 
 ---
 
@@ -310,13 +321,48 @@
 
 ### 13. src/app/a-propos/page.tsx (@fullstack)
 
-[À REMPLIR]
+| Gate | Verdict | Note |
+|---|---|---|
+| G1 | PASS | 5 sections complètes implémentées (A/B/C/D/E) conformes au copy source |
+| G3 | N/A | Code, pas livrable doc — handoff implicite via commit message |
+| G5 | PASS | Persona UHNW respecté — ton VITRINE éditorial |
+| G6 | PASS | Principe directeur #0 VITRINE respecté — pas de CTA conversion |
+| G7 | PASS | Fidèle à about-page-architecture + about-page-scope + about-page-copy |
+| G12 | PASS | Code SSG fonctionnel, types Metadata, JSX correctement formé |
+| G13 | PASS | 0 donnée inventée |
+| G15 | PARTIEL | `[Nom de l'agence]` ligne 135 — DOCUMENTÉ comme TODO ligne 133 (commentaire pivotable). Cohérent avec décision @creative-strategy d'ellipse pivotable. **NB : à remplacer par "Une agence de communication internationale" en attendant la révélation publique selon le handoff @copywriter — actuellement le `[Nom de l'agence]` apparaît tel quel à l'utilisateur final !** Voir Top 3 corrections |
+| G19 | PASS | 100% spécifique narratif Issa |
+| G21 | PASS | États documentés (page statique SSG) — pas d'état dynamique requis |
+| G22 | PASS | Touch targets `min-h-[48px]` (l. 202, 209) + `focus-visible:ring-2` + alt sur ArrowRight `aria-hidden` |
+| G31 | PASS | Tokens sémantiques utilisés (`text-display`, `text-h2`, `text-lead`, `bg-parchment-100`, `text-levant-700`) — pas de valeurs hex en dur |
+| G23 | PASS | 0 valeur hardcodée hors `min-h-[48px]` (touch target standard) |
+| G14 | PASS | TODO documenté pour `[Nom de l'agence]` |
+
+**Caractères UTF-8** : utilisation de `&apos;` (entité HTML) au lieu de l'apostrophe UTF-8 typographique. **C'est correct dans le JSX rendu** (règle CLAUDE.md n°13 autorise les entités HTML dans le JSX rendu directement). PASS.
+
+**Score : 12/13 PASS = 9.2/10**
+**Verdict : GO CONDITIONNEL**
+
+**Action de correction P1** :
+- Remplacer `[Nom de l'agence]` par `Une agence de communication internationale` ligne 135 (le handoff @copywriter Partie 4 §1 spécifie : "en production V1, utiliser 'Une agence de communication internationale' à la place"). Le texte tel quel expose `[Nom de l'agence]` à l'utilisateur — incohérent avec une page client-facing.
 
 ---
 
 ## Patterns récurrents détectés
 
-[À REMPLIR]
+**Ce qui marche (à capitaliser)** :
+
+1. **Chaîne de référencement amont systématique** : tous les livrables citent en tête leurs sources (`> Sources amont : ...`). Ce pattern, généralisé en session 4, élimine de facto les contradictions inter-agents (G7 PASS sur 13/13).
+2. **Mode vélocité IA correctement appliqué** : le plan d'implémentation @ia exprime les efforts en heures, marque les parallélisations, et sépare les phases techniques (Phases 1-7) de la Phase 8 Thomas. Conforme règle CLAUDE.md n°5.
+3. **Documentation des hypothèses transparente** : 5 hypothèses `[À VALIDER PAR THOMAS]` dans about-page-scope, 10 points `[À VALIDER]` dans secretariat-architecture — zéro tentative de "combler le vide" par invention. Conforme règle n°2.
+4. **Gates métier UI couvertes** : @ux a livré explicitement les états (G21), le layout par section (G29), les images (G30) et les états interactifs (G22 touch targets). Modèle reproductible pour les futures pages.
+5. **@moi (proxy Thomas) robuste** : 3 décisions tranchées avec confiance HAUTE (>90%) ancrées sur des précédents documentés (Q6.1, Q6.3). Aucune décision arbitraire.
+
+**Ce qui pose problème (à corriger)** :
+
+1. **Placeholder visible côté utilisateur final** : `[Nom de l'agence]` ligne 135 de `src/app/a-propos/page.tsx`. Le handoff @copywriter Partie 4 §1 demandait explicitement de mettre `Une agence de communication internationale`, mais l'@fullstack a recopié le placeholder du copy-source. **Pattern à éviter** : quand le copy-source contient un marqueur destiné à être substitué en V1, @fullstack DOIT lire les notes du handoff et NE PAS recopier le marqueur tel quel.
+2. **Pattern `[NOM]` Carl/Maxime** : présent dans 4 livrables (legal, architecture, system-prompt, contacts-database). Justifié à court terme (Thomas n'a pas encore fourni les noms), mais sera à substituer en bloc dès Phase 8 — risque d'oubli partiel. Recommandation : créer un seed centralisé pour ces 2 noms et faire référencer par tous les livrables.
+3. **Couverture testeur-persona absente** : aucun audit GP1-GP10 n'a été produit cette session pour la nouvelle page `/a-propos`. Pour une page client-facing nouvelle, c'est un manque — l'audit testeur-persona aurait évalué la perception UHNW de la narration familiale.
 
 ---
 
