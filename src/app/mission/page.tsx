@@ -8,8 +8,29 @@ import { siteConfig } from '@/config/site';
 
 /**
  * /mission — page éditoriale. Rendu statique (SSG) — contenu 100% statique.
- * Histoire de la famille Issa, filiation Jean-Pierre → Thomas, filtres de décision.
- * JSON-LD Person pour Thomas injecté en bas de page.
+ *
+ * Refonte session 6 (CHECKPOINT #2 Thomas) : fusion /mission + /a-propos.
+ * La page absorbe la biographie Thomas complète, la section famille (enfants
+ * Antoine/Noémie/Lucas), et Sonia Issa depuis /a-propos. Structure en 7 sections
+ * (voir docs/copy/mission-page-fusion-copy.md) :
+ *
+ *   1. Hero — ancrage identitaire libanais
+ *   2. Ce qui précède la holding — Jean-Pierre Issa + Sonia
+ *   3. Le fondateur — Thomas Issa (biographie complète)
+ *   4. La famille — enfants, horizon transmissif
+ *   5. L'identité — racines libanaises, ancrage français
+ *   6. Trois filtres — corrections session 6 (Filtre 2 Option B, Filtre 3 Option A)
+ *   7. Ce que nous sommes — clôture, 2 liens sobres
+ *
+ * Décisions verrouillées CHECKPOINT #2 :
+ * - Filtre 2 "Préservation environnement" = Option B (principiel)
+ * - Filtre 3 "Éthique humaine" = Option A (pragmatique)
+ * - Biographie Thomas verbatim (phrase-pont Décision 4 @creative-strategy,
+ *   sortie agence, ellipse "Une agence de communication internationale")
+ * - Prénoms et dates enfants : Antoine 2015, Noémie 2018, Lucas 2023
+ *
+ * Source copy : docs/copy/mission-page-fusion-copy.md
+ * Source architecture : refonte fusion Phase 5 session 6
  */
 
 export const dynamic = 'force-static';
@@ -17,12 +38,12 @@ export const dynamic = 'force-static';
 export const metadata: Metadata = {
   title: 'Mission & Philosophie',
   description:
-    "La mission d'ISSA Capital : faire fructifier le patrimoine d'une famille aux racines libanaises et organiser sa transmission. Filtres de décision, valeurs.",
+    "La mission d'ISSA Capital : faire fructifier le patrimoine d'une famille aux racines libanaises et organiser sa transmission. Jean-Pierre Issa, Thomas Issa, filtres de décision.",
   alternates: { canonical: `${siteConfig.url}/mission` },
   openGraph: {
     title: 'Mission & Philosophie — ISSA Capital',
     description:
-      "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Sa raison d'être, ses valeurs, ses filtres de décision non négociables.",
+      "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Sa raison d'être, la filiation Jean-Pierre → Thomas, ses filtres de décision non négociables.",
     url: `${siteConfig.url}/mission`,
     type: 'article',
   },
@@ -39,11 +60,10 @@ const personJsonLd = {
     url: siteConfig.url,
   },
   alumniOf: [
-    { '@type': 'CollegeOrUniversity', name: 'HEC School of Management' },
+    { '@type': 'CollegeOrUniversity', name: 'Institut Florimont, Genève' },
     { '@type': 'CollegeOrUniversity', name: 'University of California, Irvine' },
-    { '@type': 'CollegeOrUniversity', name: 'IMT Atlantique' },
   ],
-  knowsLanguage: ['fr', 'en', 'de', 'ar'],
+  knowsLanguage: ['fr', 'en', 'ar'],
   sameAs: ['https://www.linkedin.com/in/thomasissa'],
 };
 
@@ -56,7 +76,7 @@ export default function MissionPage(): JSX.Element {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
       />
 
-      {/* Hero interne */}
+      {/* Section 1 — Hero */}
       <Section tone="default">
         <Container width="content">
           <nav aria-label="Fil d'Ariane" className="text-xs text-ink-500">
@@ -87,7 +107,7 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Notre histoire */}
+      {/* Section 2 — Ce qui précède la holding (Jean-Pierre Issa + Sonia) */}
       <Section tone="elevated">
         <Container width="editorial">
           <Overline>Ce qui précède la holding</Overline>
@@ -96,57 +116,121 @@ export default function MissionPage(): JSX.Element {
           </h2>
           <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              ISSA Capital a commencé avec Jean-Pierre Issa, né à Dakar en 1958 dans une
-              famille libanaise, qui a appris le monde dans les salles de réunion
-              d&apos;IBM et fait partie de l&apos;équipe qui a lancé Lexmark en Europe
-              dans les années 1990. Directeur de filiales dans plusieurs pays. Directeur
-              Marketing EMEA. Un homme qui a construit un patrimoine — immobilier à
-              Paris, en Normandie, au Liban — décision après décision, continent après
-              continent.
+              Jean-Pierre Issa est né à Dakar en 1958, dans une famille d&apos;origine
+              libanaise. Comme beaucoup de familles libanaises de sa génération, il
+              quitte le Liban dans les années 1970, quand la guerre civile recompose
+              les destins. Il fait ses études en France, entre dans l&apos;industrie
+              et rejoint IBM dans les années 1980 — une école de rigueur et de
+              discipline internationale. En 1991, il fait partie de l&apos;équipe
+              fondatrice qui lance Lexmark en Europe lors de sa scission d&apos;IBM :
+              Directeur de filiales dans plusieurs pays, Directeur Marketing EMEA.
+              Un parcours construit dans les salles de réunion et sur le terrain,
+              continent après continent.
             </p>
             <p>
-              Puis, en co-actionnariat avec deux partenaires, Jean-Pierre rachète 2J
-              Impression — une société française fondée en 1994 à Mérignac, spécialisée
-              dans l&apos;impression numérique industrielle d&apos;étiquettes. En trente
-              ans, il la développe jusqu&apos;à la présence dans dix-sept pays, de
-              l&apos;Europe au Brésil en passant par l&apos;Afrique. Il en est toujours
-              Co-Managing Director.
+              En 1994, avec deux associés, il rachète 2J Impression à Mérignac —
+              une structure de distribution multimarque de matériel d&apos;impression
+              numérique industrielle. L&apos;entreprise développe ses activités dans
+              17 pays, atteint 4 millions d&apos;euros de chiffre d&apos;affaires et
+              s&apos;impose comme un acteur sérieux de son segment. Co-Managing
+              Director et membre du conseil, Jean-Pierre Issa y applique la même
+              logique qu&apos;il a apprise chez IBM : construire avec méthode,
+              tenir dans la durée, décider avec rigueur.
             </p>
-            <p>
-              Thomas Issa est son fils. C&apos;est de lui qu&apos;il a tout appris sur la
-              valeur des actifs réels, la patience, et la transmission comme horizon
-              naturel de toute décision économique. ISSA Capital est la formalisation
-              juridique de ce legs — une SAS créée en 2026 pour organiser ce qui existait
-              déjà dans les convictions d&apos;une famille.
-            </p>
-            <p>
-              C&apos;est l&apos;aboutissement de trois décennies de construction
-              patrimoniale, transmis d&apos;un père à son fils, destiné à passer à la
-              génération suivante.
+            <p className="border-l-2 border-levant-500 pl-lg italic text-ink-700">
+              À ses côtés depuis le début, Sonia Issa — architecte d&apos;intérieur —
+              a donné à la famille son sens de l&apos;espace, de la forme et du
+              beau. Une sensibilité qui traverse discrètement tout ce que la famille
+              construit.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* Décision fondatrice */}
+      {/* Section 3 — Le fondateur (Thomas Issa) — biographie absorbée depuis /a-propos
+          Formulations verrouillées :
+          - Phrase-pont @creative-strategy Décision 4 (ne pas reformuler)
+          - Sortie agence "pour se consacrer à sa famille..." (verrouillée Thomas)
+          - Ellipse "Une agence de communication internationale" (pivotable si
+            Thomas valide la révélation publique future) */}
       <Section tone="default">
+        <Container width="content">
+          <div className="max-w-editorial">
+            <Overline>Le fondateur</Overline>
+            <h2 className="mt-md font-heading text-h2 text-ink-950">Thomas Issa</h2>
+            <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
+              <p>
+                Thomas Issa naît en France à la fin des années 1980, dans une famille
+                qui a appris à s&apos;adapter et à construire. Sa formation est
+                internationale dès le départ : Institut Florimont à Genève, puis
+                l&apos;Afrique du Sud, puis l&apos;université de Californie à Irvine.
+                Avant de rentrer en France, un détour par l&apos;Inde — quelques mois
+                d&apos;engagement humanitaire qui laissent une marque. Il revient
+                avec une conviction : les structures qui durent sont celles
+                qu&apos;on construit avec intention, pas avec précipitation.
+              </p>
+              <p>
+                Il rejoint ensuite Sony, puis TEOS, et travaille en conseil
+                stratégique — des postes en entreprise qui lui donnent une lecture
+                fine des organisations, de leurs angles morts et de ce qu&apos;il
+                faut pour les faire avancer. C&apos;est là qu&apos;il identifie un
+                manque : il ne trouve pas l&apos;agence de communication avec
+                laquelle il veut travailler. Alors il la crée.
+              </p>
+              <p>
+                Une agence de communication internationale qu&apos;il fonde à
+                35 ans, qui grandit rapidement jusqu&apos;à réunir plus de 35
+                experts, avec des missions dans les grandes verticales mondiales —
+                tech, luxe, logistique, biens de consommation. Parmi ses clients :
+                TikTok, Adidas, Lego. Une structure construite à partir de rien,
+                dans la complexité internationale, avec l&apos;exigence d&apos;un
+                opérateur qui sait ce qu&apos;il veut.
+              </p>
+              <p>
+                Ce qu&apos;il retient de ces années : qu&apos;on peut construire une
+                structure solide à partir de rien, à condition de choisir ses
+                engagements avec exigence. C&apos;est la même logique qu&apos;il
+                applique aujourd&apos;hui à ISSA Capital — à une autre échelle, avec
+                une autre temporalité. En 2025, il quitte l&apos;agence pour se
+                consacrer à sa famille et au développement des activités
+                d&apos;ISSA Capital. La holding est créée en 2026.
+              </p>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Section 4 — La famille (enfants) — absorbée depuis /a-propos Section D
+          Prénoms et dates validés CHECKPOINT Thomas session 4 (A3). */}
+      <Section tone="subtle">
         <Container width="editorial">
-          <Overline>La décision fondatrice</Overline>
+          <Overline>La famille</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Une décision simple.
+            Ce que tout cela construit
           </h2>
-          <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
+          <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              La famille Issa a choisi de garder le contrôle de son patrimoine —
-              indépendant, privé, organisé selon ses propres convictions.
-              L&apos;horizon est celui des générations à venir.
+              Thomas Issa est marié à une Française. Ensemble, ils ont trois enfants
+              franco-libanais : Antoine, né en 2015, Noémie en 2018, Lucas en 2023.
+              La famille est ancrée à Paris. Ces prénoms et ces dates ne sont pas
+              des détails biographiques — ils sont la raison pour laquelle ISSA
+              Capital existe. Une holding patrimoniale sans horizon transmissif
+              n&apos;est qu&apos;une structure juridique. Ici, l&apos;horizon a des
+              prénoms.
+            </p>
+            <p>
+              Ce que Jean-Pierre Issa a bâti, Thomas en a hérité la méthode. Ce que
+              Thomas construit, Antoine, Noémie et Lucas en hériteront un jour —
+              avec les racines libanaises qui traversent trois générations et la
+              rigueur de ceux qui ont appris à tenir dans la durée. C&apos;est ce
+              que la famille Issa appelle transmettre.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* L'identité */}
-      <Section tone="subtle">
+      {/* Section 5 — L'identité */}
+      <Section tone="default">
         <Container width="editorial">
           <Overline>L&apos;identité</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
@@ -159,8 +243,8 @@ export default function MissionPage(): JSX.Element {
               complètent.
             </p>
             <p>
-              L&apos;héritage libanais apporte une conception du patrimoine transmise de
-              génération en génération — une culture de la durée qui précède les
+              L&apos;héritage libanais apporte une conception du patrimoine transmise
+              de génération en génération — une culture de la durée qui précède les
               structures juridiques. L&apos;ancrage français apporte la structure et
               l&apos;accès à un marché immobilier solide.
             </p>
@@ -168,44 +252,17 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Vision 30 ans */}
-      <Section tone="elevated">
-        <Container width="editorial">
-          <Overline>La vision à trente ans</Overline>
-          <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Ce que nous voulons que nos enfants reçoivent.
-          </h2>
-          <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
-            <p>
-              Jean-Pierre Issa a construit quelque chose. Thomas l&apos;a reçu, compris,
-              et décidé de l&apos;organiser. Les trois enfants de Thomas devront, à leur
-              tour, décider de ce qu&apos;ils en font.
-            </p>
-            <p>
-              ISSA Capital est là pour que cette question ne soit jamais contrainte par
-              des erreurs de structuration, des décisions prises à court terme, ou un
-              patrimoine qui s&apos;est effrité faute d&apos;organisation.
-            </p>
-            <p>
-              Dans trente ans, la génération à venir regardera chaque décision prise
-              aujourd&apos;hui. Pas seulement pour ce qu&apos;elle aura produit
-              financièrement. Pour ce qu&apos;elle aura respecté.
-            </p>
-            <p>C&apos;est ce que nous construisons. Décision après décision.</p>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Trois filtres */}
+      {/* Section 6 — Trois filtres
+          Corrections session 6 CHECKPOINT #2 Thomas :
+          - Suppression phrase méta "Ces filtres précèdent toute analyse financière."
+          - Filtre 2 Environnement : Option B (principiel) verbatim
+          - Filtre 3 Éthique humaine : Option A (pragmatique) verbatim */}
       <Section tone="inverse">
         <Container width="editorial">
           <Overline tone="light">Nos filtres</Overline>
           <h2 className="mt-md font-heading text-h2 text-parchment-100">
             Trois filtres. Aucune exception.
           </h2>
-          <p className="mt-md text-lead text-ink-300">
-            Ces filtres précèdent toute analyse financière.
-          </p>
 
           <div className="mt-2xl space-y-xl">
             <div className="border-l-2 border-levant-500 pl-lg">
@@ -215,8 +272,8 @@ export default function MissionPage(): JSX.Element {
               <p className="mt-sm text-base text-ink-300">
                 Nous raisonnons en décennies. Un investissement est évalué sur sa
                 capacité à créer de la valeur sur vingt ou trente ans — pas sur son
-                potentiel de plus-value à horizon de sortie. ISSA Capital entre dans un
-                projet pour y rester.
+                potentiel de plus-value à horizon de sortie. ISSA Capital entre dans
+                un projet pour y rester.
               </p>
             </div>
             <div className="border-l-2 border-levant-500 pl-lg">
@@ -224,25 +281,22 @@ export default function MissionPage(): JSX.Element {
                 Préservation de l&apos;environnement
               </h3>
               <p className="mt-sm text-base text-ink-300">
-                Une opportunité d&apos;investissement dont le modèle économique repose
-                structurellement sur la dégradation de l&apos;environnement est éliminée.
-                Ce n&apos;est pas une démarche RSE — c&apos;est un critère de sélection
-                réel.
+                Ce que nous finançons doit tenir sur trente ans. Un modèle qui
+                dégrade l&apos;environnement ne tient pas.
               </p>
             </div>
             <div className="border-l-2 border-levant-500 pl-lg">
               <h3 className="font-heading text-h3 text-parchment-100">Éthique humaine</h3>
               <p className="mt-sm text-base text-ink-300">
-                ISSA Capital n&apos;investit jamais dans ce qui va à l&apos;encontre de
-                l&apos;humanité. Ce filtre est non négociable et précède toute autre
-                analyse.
+                Certains secteurs sont hors périmètre, indépendamment du dossier.
+                Ce n&apos;est pas une question d&apos;analyse.
               </p>
             </div>
           </div>
         </Container>
       </Section>
 
-      {/* Ce que nous sommes */}
+      {/* Section 7 — Ce que nous sommes (clôture) */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Ce que nous sommes</Overline>
@@ -251,26 +305,26 @@ export default function MissionPage(): JSX.Element {
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              ISSA Capital gère son propre patrimoine familial — pas des capitaux tiers.
-              Elle n&apos;a pas d&apos;horizon de sortie contraint, pas de logique de
-              revente à cinq ans. Son écosystème est cohérent : immobilier, tech,
-              services aux professionnels.
+              ISSA Capital gère son propre patrimoine familial — pas des capitaux
+              tiers. Elle n&apos;a pas d&apos;horizon de sortie contraint, pas de
+              logique de revente à cinq ans. Son écosystème est cohérent :
+              immobilier, tech, services aux professionnels.
             </p>
             <p>
-              La famille fondatrice est libanaise. C&apos;est une réalité qui compte dans
-              chaque décision.
+              La famille fondatrice est libanaise. C&apos;est une réalité qui compte
+              dans chaque décision.
             </p>
           </div>
           <div className="mt-2xl flex flex-wrap gap-lg">
             <Link
               href="/participations"
-              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
+              className="inline-flex min-h-[48px] items-center gap-sm text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
             >
               Découvrir nos participations →
             </Link>
             <Link
               href="/accompagnement"
-              className="inline-flex items-center gap-sm text-base text-levant-700 hover:text-levant-700"
+              className="inline-flex min-h-[48px] items-center gap-sm text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
             >
               Besoin d&apos;être accompagné ? →
             </Link>

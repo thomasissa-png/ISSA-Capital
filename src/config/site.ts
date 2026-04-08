@@ -26,7 +26,6 @@ export const siteConfig = {
     { label: 'Participations', href: '/participations' },
     { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Opportunités', href: '/opportunites' },
-    { label: 'À propos', href: '/a-propos' },
     { label: 'Contact', href: '/contact' },
   ],
   footerLinks: [
@@ -34,7 +33,6 @@ export const siteConfig = {
     { label: 'Participations', href: '/participations' },
     { label: 'Accompagnement', href: '/accompagnement' },
     { label: 'Opportunités', href: '/opportunites' },
-    { label: 'À propos', href: '/a-propos' },
     { label: 'Contact', href: '/contact' },
     { label: 'Mentions légales', href: '/mentions-legales' },
   ],

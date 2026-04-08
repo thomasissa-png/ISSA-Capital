@@ -120,21 +120,26 @@ export default function ParticipationsPage(): JSX.Element {
           </h2>
 
           <div className="mt-xl grid grid-cols-1 gap-xl md:grid-cols-12">
-            {/* Gradient One — holding intermédiaire */}
+            {/* Gradient One — holding intermédiaire
+                Refonte session 6 CHECKPOINT #2 Thomas : badge "Co-fondateur — 50%"
+                supprimé, titre + sous-titre + description verbatim validés. Le
+                bloc reste texte-pur, sans mention du pourcentage de détention. */}
             <div className="md:col-span-7">
               <div className="border border-ink-200 bg-parchment-50 p-xl md:p-2xl">
                 <span className="inline-block border border-levant-500 bg-levant-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-levant-700">
-                  Co-fondateur — 50%
+                  Participation phare
                 </span>
-                <h3 className="mt-md font-heading text-h2 text-ink-950">Gradient One</h3>
-                <p className="mt-xs text-sm text-ink-500">
-                  Holding intermédiaire — depuis 2020
+                <h3 className="mt-md font-heading text-h2 leading-[1.15] text-ink-950">
+                  Gradient One — co-fondée par Thomas Issa et deux associés.
+                </h3>
+                <p className="mt-md font-heading text-lead italic text-levant-700">
+                  Première décision formelle d&apos;une famille qui construit depuis
+                  trois décennies.
                 </p>
                 <p className="mt-lg text-base leading-relaxed text-ink-700">
-                  Gradient One est la structure intermédiaire d&apos;ISSA Capital —
-                  elle porte et agrège les participations opérationnelles co-fondées
-                  depuis 2020. C&apos;est par elle que l&apos;écosystème
-                  entrepreneurial de la holding prend corps.
+                  Ce que Jean-Pierre Issa a transmis à son fils, Thomas l&apos;a
+                  structuré — avec deux associés. Gradient One est le premier acte
+                  de cet héritage mis en forme.
                 </p>
                 <p className="mt-md text-xs italic text-ink-500">
                   Gradient One n&apos;a pas de site public.

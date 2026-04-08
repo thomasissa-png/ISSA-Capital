@@ -81,7 +81,11 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 2 — Chapeau mission + passerelle /a-propos */}
+      {/* Section 2 — Chapeau mission
+          Session 6 Phase 5 : /a-propos a été fusionnée dans /mission (biographie
+          Thomas, Sonia, famille absorbées). Le second lien "Découvrir la famille
+          fondatrice" pointait vers /a-propos — il est supprimé car redondant
+          avec "Lire notre mission" qui mène désormais à la page unifiée. */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
@@ -111,47 +115,34 @@ export default function HomePage(): JSX.Element {
               Lire notre mission
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
-            <Link
-              href="/a-propos"
-              className="inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
-            >
-              Découvrir la famille fondatrice
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
           </div>
         </Container>
       </Section>
 
-      {/* Section 3 — Key stats */}
+      {/* Section 3 — Participation phare (Gradient One)
+          Refonte session 6 (CHECKPOINT #2 Thomas) : la section Key stats avec
+          stat 50% a été transformée en bloc narratif texte-pur. La stat 50%
+          est supprimée intégralement — Thomas a refusé le gros chiffre dans
+          la grille. Titre + sous-titre + description verbatim validés. */}
       <Section tone="inverse">
-        <Container width="content">
-          <div className="grid grid-cols-1 gap-xl md:grid-cols-3 md:divide-x md:divide-ink-800">
-            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-display leading-none text-levant-500">50%</p>
-              <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
-                Gradient One
-              </p>
-              <p className="mt-xs font-body text-xs text-ink-400">
-                Holding intermédiaire — co-fondée en 2020
-              </p>
-            </div>
-            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-display leading-none text-levant-500">2020</p>
-              <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
-                Première participation
-              </p>
-            </div>
-            <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-display leading-none text-levant-500">4</p>
-              <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
-                Participations opérationnelles
-              </p>
-            </div>
-          </div>
+        <Container width="editorial">
+          <Overline tone="light">Participation phare</Overline>
+          <h2 className="mt-md font-heading text-h2 leading-[1.15] text-parchment-100">
+            Gradient One — co-fondée par Thomas Issa et deux associés.
+          </h2>
+          <p className="mt-lg font-heading text-lead italic text-levant-500">
+            Première décision formelle d&apos;une famille qui construit depuis trois
+            décennies.
+          </p>
+          <p className="mt-lg max-w-[640px] text-base leading-relaxed text-ink-300">
+            Ce que Jean-Pierre Issa a transmis à son fils, Thomas l&apos;a structuré —
+            avec deux associés. Gradient One est le premier acte de cet héritage mis
+            en forme.
+          </p>
         </Container>
       </Section>
 
-      {/* Section 4 — Écosystème aperçu (ex-Section 5 — Section 4 Filiation migrée vers /a-propos) */}
+      {/* Section 4 — Écosystème aperçu (teaser 3 participations, cartographie complète sur /participations) */}
       <Section tone="default">
         <Container width="content">
           <div className="mb-2xl">
@@ -176,7 +167,7 @@ export default function HomePage(): JSX.Element {
               {
                 name: 'Gradient One',
                 sector: 'Holding intermédiaire',
-                desc: "Co-fondée en 2020. 50% ISSA Capital — porte les participations opérationnelles de l'écosystème.",
+                desc: "Co-fondée en 2020. Porte les participations opérationnelles de l'écosystème.",
               },
               {
                 name: 'Versi Immobilier',
@@ -185,8 +176,8 @@ export default function HomePage(): JSX.Element {
               },
               {
                 name: 'Versi Invest',
-                sector: 'Acquisitions & accompagnement',
-                desc: 'Acquisitions immobilières et accompagnement de partenaires investisseurs.',
+                sector: 'Co-acquisitions & accompagnement',
+                desc: "Conseil en investissement immobilier et co-investissement sur sélection. Versi Invest accompagne les investisseurs privés dans l'analyse, la structuration et le suivi d'opérations — ticket adapté, fiscalité optimisée, horizon de sortie défini dès l'entrée.",
               },
             ].map((p) => (
               <article
@@ -224,11 +215,11 @@ export default function HomePage(): JSX.Element {
               },
               {
                 title: 'Préservation de l’environnement',
-                desc: "Toute opportunité dont le modèle économique repose sur la dégradation de l'environnement est éliminée, quelle que soit sa rentabilité.",
+                desc: "Ce que nous finançons doit tenir sur trente ans. Un modèle qui dégrade l'environnement ne tient pas.",
               },
               {
                 title: 'Éthique humaine',
-                desc: "ISSA Capital n'investit jamais dans ce qui va à l'encontre de l'humanité. Ce filtre est non négociable.",
+                desc: "Certains secteurs sont hors périmètre, indépendamment du dossier. Ce n'est pas une question d'analyse.",
               },
             ].map((f) => (
               <div key={f.title} className="border-l-2 border-levant-500 pl-lg">

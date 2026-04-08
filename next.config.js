@@ -41,6 +41,19 @@ const nextConfig = {
       },
     ];
   },
+  // Redirects 301 — session 6 Phase 5 : /a-propos a été fusionnée dans /mission
+  // (refonte absorbant biographie Thomas, Sonia Issa, section famille).
+  // La redirection permanente préserve le SEO et assure la continuité des liens
+  // externes pointant vers /a-propos.
+  async redirects() {
+    return [
+      {
+        source: '/a-propos',
+        destination: '/mission',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

@@ -3,11 +3,15 @@ import path from 'node:path';
 
 /**
  * Boucle visuelle — gate G26.
- * Capture les 7 pages sur les 3 projets Playwright (iphone-13, ipad, desktop-chrome)
+ * Capture les pages sur les 3 projets Playwright (iphone-13, ipad, desktop-chrome)
  * et stocke les baselines dans tests/screenshots/[project]/[page].png.
  *
  * Première exécution : crée les baselines (à valider visuellement à l'oeil).
  * Exécutions suivantes : comparaison pixel-diff via les snapshots Playwright natifs.
+ *
+ * Session 6 Phase 5 : la page /a-propos a été fusionnée dans /mission — elle est
+ * retirée de la liste. La redirection 301 /a-propos → /mission est testée
+ * séparément (tests E2E routing).
  */
 
 const pages = [
@@ -16,7 +20,6 @@ const pages = [
   { name: 'accompagnement', path: '/accompagnement' },
   { name: 'opportunites', path: '/opportunites' },
   { name: 'participations', path: '/participations' },
-  { name: 'a-propos', path: '/a-propos' },
   { name: 'contact', path: '/contact' },
   { name: 'mentions-legales', path: '/mentions-legales' },
 ];

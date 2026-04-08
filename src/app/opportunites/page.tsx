@@ -140,11 +140,11 @@ export default function OpportunitesPage(): JSX.Element {
               Ce que nous ne faisons jamais
             </p>
             <p className="mt-sm text-base text-ink-700">
-              Ces deux filtres précèdent toute analyse, sans exception. Préservation de
-              l&apos;environnement — ISSA Capital n&apos;entre pas dans un projet dont
-              le modèle repose sur la dégradation environnementale. Éthique humaine —
-              ISSA Capital n&apos;investit jamais dans ce qui va à l&apos;encontre de
-              l&apos;humanité.
+              Ces deux filtres précèdent toute analyse, sans exception. Préservation
+              de l&apos;environnement — ce que nous finançons doit tenir sur trente
+              ans. Un modèle qui dégrade l&apos;environnement ne tient pas. Éthique
+              humaine — certains secteurs sont hors périmètre, indépendamment du
+              dossier. Ce n&apos;est pas une question d&apos;analyse.
             </p>
           </div>
         </Container>
