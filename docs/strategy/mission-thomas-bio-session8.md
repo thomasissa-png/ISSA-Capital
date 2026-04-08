@@ -113,6 +113,45 @@ La suppression de l'Afrique du Sud dans V2 est assumée : cette étape biographi
 
 ---
 
+## Section 7 — Validation V1+ session 8
+
+**Question Thomas (verbatim)** : *"est-ce que ça vaut la peine de mettre des chiffres ? Que j'ai monté TEOS de 0 à 8 millions en 4 ans et l'agence de 0 à 4 millions en 3 ans ?"*
+
+---
+
+### Scores des 5 critères
+
+| Critère | V1+ (2 chiffres) | V1++ (1 chiffre TEOS) | V1+++ (vitesse qualitative) |
+|---|---|---|---|
+| Reflet des succès | 7/10 | 7/10 | 7/10 |
+| Cohérence VITRINE | 6/10 | 7/10 | 9/10 |
+| Différenciation /mission vs /accompagnement | 4/10 | 4/10 | 8/10 |
+| Fluidité narrative | 5/10 | 7/10 | 9/10 |
+| Résolution blocage Karim P1 | 6/10 | 6/10 | 8/10 |
+| **Score global** | **5.6/10** | **6.2/10** | **8.2/10** |
+
+---
+
+### Verdict : **Option C — V1+++**
+
+Ni V1+ ni V1++ ne passent le seuil 8/10. Le blocage principal est le critère 3 : /accompagnement dit déjà exactement "0 à 8 millions d'euros de chiffre d'affaires en 4 ans" pour TEOS (lignes 196-200). Répéter ce chiffre sur /mission crée une redondance directe qui fragilise la stratégie éditoriale des deux pages — /mission doit poser POURQUOI Thomas, /accompagnement doit dire QUOI il a fait.
+
+La solution n'est pas de supprimer les chiffres, c'est de les rendre **non-redondants** : signaler la vitesse d'exécution et l'échelle de TEOS en mode qualitatif-narratif ("bâtie de zéro en moins d'un an et déployée dans sept régions"), sans répéter le chiffre financier déjà présent sur /accompagnement. Ce signal suffit pour résoudre le "silhouette sans relief" de Karim.
+
+---
+
+### Verbatim final retenu — V1+++
+
+> "Thomas Issa a grandi dans cette logique, avec une jeunesse en Afrique du Sud qui lui a appris que les marchés se construisent loin de chez soi. Après quinze ans chez Sony Europe — dont la co-fondation de TEOS, bâtie de zéro en moins d'un an et déployée dans sept régions du monde — puis la direction d'une agence internationale de quarante experts, il est arrivé à une conviction : les structures qui durent sont celles qu'on bâtit avec intention, pas sous contrainte d'un calendrier de sortie. En 2025, il quitte l'agence pour se consacrer à sa famille. En 2026, ISSA Capital prend forme."
+
+**Ce qui change vs V1 de session 8** : "TEOS, une solution déployée dans sept régions du monde" → "TEOS, bâtie de zéro en moins d'un an et déployée dans sept régions du monde". Un seul ajout de 7 mots qui dit la vitesse de construction sans répéter le chiffre financier de /accompagnement.
+
+**Ce qui ne change pas** : structure V1, Afrique du Sud, "quarante experts" sans chiffre financier agence, conviction patrimoniale, closure 2025/2026.
+
+**Blockers résiduels** : aucun. Le chiffre financier TEOS reste sur /accompagnement (source de vérité unique). /mission porte l'identité de constructeur (vitesse, étendue), /accompagnement porte les preuves chiffrées.
+
+---
+
 **Handoff → @fullstack**
 
 - Fichiers produits : `docs/strategy/mission-thomas-bio-session8.md`
