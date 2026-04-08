@@ -21,7 +21,7 @@ export const dynamic = 'force-static';
 // un title "absolute" via l'objet pour neutraliser le template sur la home.
 export const metadata: Metadata = {
   title: {
-    absolute: 'ISSA Capital — Holding patrimoniale famille libanaise',
+    absolute: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
   },
   description:
     "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ISSA Capital — Holding patrimoniale famille libanaise',
+    title: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
     description:
       "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
     images: [siteConfig.ogImage],
@@ -73,7 +73,7 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 2 — Chapeau mission */}
+      {/* Section 2 — Chapeau mission + passerelle /a-propos */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
@@ -91,14 +91,28 @@ export default function HomePage(): JSX.Element {
               Une holding indépendante, dont la famille Issa est le seul actionnaire, et
               dont l&apos;horizon est intergénérationnel.
             </p>
+            <p>
+              ISSA Capital est l&apos;aboutissement de trois décennies de construction
+              familiale — une famille d&apos;origine libanaise qui a appris à construire,
+              à tenir, et à transmettre.
+            </p>
           </div>
-          <Link
-            href="/mission"
-            className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
-          >
-            Lire notre mission
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
+          <div className="mt-xl flex flex-col gap-md sm:flex-row sm:flex-wrap sm:gap-xl">
+            <Link
+              href="/mission"
+              className="inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+            >
+              Lire notre mission
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/a-propos"
+              className="inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
+            >
+              Découvrir la famille fondatrice
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          </div>
         </Container>
       </Section>
 
@@ -107,7 +121,7 @@ export default function HomePage(): JSX.Element {
         <Container width="content">
           <div className="grid grid-cols-1 gap-xl md:grid-cols-3 md:divide-x md:divide-ink-800">
             <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-6xl leading-none text-levant-500">50%</p>
+              <p className="font-heading text-display leading-none text-levant-500">50%</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Gradient One
               </p>
@@ -116,13 +130,13 @@ export default function HomePage(): JSX.Element {
               </p>
             </div>
             <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-6xl leading-none text-levant-500">2020</p>
+              <p className="font-heading text-display leading-none text-levant-500">2020</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Première participation
               </p>
             </div>
             <div className="border-b border-ink-800 px-xl pb-xl text-center last:border-b-0 last:pb-0 md:border-b-0 md:pb-0 md:text-left">
-              <p className="font-heading text-6xl leading-none text-levant-500">4</p>
+              <p className="font-heading text-display leading-none text-levant-500">4</p>
               <p className="mt-sm font-body text-sm uppercase tracking-wider text-ink-300">
                 Participations opérationnelles
               </p>
@@ -131,42 +145,13 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 4 — Filiation Jean-Pierre Issa */}
-      <Section tone="subtle">
-        <Container width="editorial">
-          <Overline>Trois décennies avant la holding</Overline>
-          <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
-            Ce qu&apos;ISSA Capital a hérité.
-          </h2>
-          <p className="mt-lg max-w-[640px] font-body text-lead text-ink-700">
-            Jean-Pierre Issa est né à Dakar en 1958, dans une famille libanaise. Il a
-            construit sa carrière chez IBM, puis rejoint l&apos;équipe qui a lancé Lexmark
-            en Europe dans les années 1990 — Directeur de filiales dans plusieurs pays,
-            Directeur Marketing EMEA. Il a aussi racheté 2J Impression en co-actionnariat :
-            une société fondée en 1994 à Mérignac, spécialisée dans l&apos;impression
-            numérique industrielle, aujourd&apos;hui présente dans dix-sept pays.
-          </p>
-          <p className="mt-lg max-w-[640px] font-body text-lead text-ink-700">
-            Thomas Issa est son fils. ISSA Capital est la formalisation de ce qu&apos;il a
-            regardé fonctionner pendant des décennies — construire, tenir, transmettre.
-          </p>
-          <Link
-            href="/mission"
-            className="mt-xl inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
-          >
-            Lire la mission
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        </Container>
-      </Section>
-
-      {/* Section 5 — Écosystème aperçu */}
+      {/* Section 4 — Écosystème aperçu (ex-Section 5 — Section 4 Filiation migrée vers /a-propos) */}
       <Section tone="default">
         <Container width="content">
           <div className="mb-2xl">
             <Overline>Notre écosystème</Overline>
             <h2 className="mt-md font-heading text-h2 text-ink-950">
-              Un écosystème construit depuis 2020.
+              Un écosystème cohérent.
             </h2>
             <p className="mt-md max-w-editorial text-lead text-ink-700">
               Participations directes et indirectes — immobilier, tech, services aux
@@ -214,7 +199,7 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 6 — Trois filtres */}
+      {/* Section 5 — Trois filtres */}
       <Section tone="subtle">
         <Container width="content">
           <div className="mb-2xl">
@@ -251,7 +236,7 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 7 — Deux portes d'entrée symétriques (Karim ↔ Leila) */}
+      {/* Section 6 — Deux portes d'entrée symétriques (Karim ↔ Leila) */}
       <Section tone="inverse">
         <Container width="content">
           <div className="mb-2xl text-center">

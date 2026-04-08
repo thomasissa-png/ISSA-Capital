@@ -114,12 +114,10 @@ export default function AccompagnementPage(): JSX.Element {
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Thomas Issa n&apos;est pas un cabinet de gestion de patrimoine. Il ne vend
-              pas de produits financiers, pas de fonds, pas d&apos;assurance-vie. Il
-              accompagne des fondateurs et des investisseurs sur des sujets où il a
-              lui-même pris des décisions difficiles : structurer une holding, investir
-              dans l&apos;immobilier en direct, co-fonder des participations, déployer
-              une stratégie internationale depuis zéro.
+              Thomas Issa accompagne des fondateurs et des investisseurs sur des sujets
+              où il a lui-même pris des décisions difficiles : structurer une holding,
+              investir dans l&apos;immobilier en direct, co-fonder des participations,
+              déployer une stratégie internationale depuis zéro.
             </p>
             <p>
               Deux formats uniquement : une mission ponctuelle délimitée, ou un rôle
@@ -264,9 +262,8 @@ export default function AccompagnementPage(): JSX.Element {
               ))}
             </ul>
             <p>
-              Ce ne sont pas des précautions — ce sont des critères. Ils permettent à
-              Thomas de consacrer son attention aux projets où il peut apporter une
-              contribution substantielle.
+              Ces critères permettent à Thomas de consacrer son attention aux projets où
+              il apporte une vraie valeur.
             </p>
           </div>
         </Container>

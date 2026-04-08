@@ -16,6 +16,7 @@ const pages = [
   { name: 'accompagnement', path: '/accompagnement' },
   { name: 'opportunites', path: '/opportunites' },
   { name: 'participations', path: '/participations' },
+  { name: 'a-propos', path: '/a-propos' },
   { name: 'contact', path: '/contact' },
   { name: 'mentions-legales', path: '/mentions-legales' },
 ];

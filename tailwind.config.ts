@@ -57,10 +57,13 @@ const config: Config = {
         body: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       fontSize: {
-        display: ['clamp(2.75rem, 6vw, 4.5rem)', { lineHeight: '1.08', letterSpacing: '-0.03em' }],
-        h1: ['clamp(2.25rem, 4.5vw, 3.5rem)', { lineHeight: '1.15', letterSpacing: '-0.025em' }],
-        h2: ['clamp(1.75rem, 3.2vw, 2.5rem)', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
-        h3: ['clamp(1.375rem, 2.4vw, 1.875rem)', { lineHeight: '1.33', letterSpacing: '-0.015em' }],
+        // Option B retenue session 4 (Bloc 4) — voir docs/design/typography-scale-audit.md
+        // Réduction d'un cran : registre éditorial premium aligné family offices référence
+        // (Rothschild, Lombard Odier, Pictet). display 72px → 52px, h2 40px → 32px, h3 30px → 26px.
+        display: ['clamp(2.25rem, 4.5vw, 3.25rem)', { lineHeight: '1.1', letterSpacing: '-0.03em' }],
+        h1: ['clamp(1.875rem, 3.8vw, 2.75rem)', { lineHeight: '1.15', letterSpacing: '-0.025em' }],
+        h2: ['clamp(1.5rem, 2.8vw, 2rem)', { lineHeight: '1.22', letterSpacing: '-0.02em' }],
+        h3: ['clamp(1.25rem, 2.1vw, 1.625rem)', { lineHeight: '1.35', letterSpacing: '-0.015em' }],
         h4: ['clamp(1.125rem, 1.8vw, 1.375rem)', { lineHeight: '1.45', letterSpacing: '-0.01em' }],
         lead: ['clamp(1.125rem, 1.6vw, 1.25rem)', { lineHeight: '1.6', letterSpacing: '-0.005em' }],
         base: ['1rem', { lineHeight: '1.75', letterSpacing: '0em' }],

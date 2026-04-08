@@ -77,9 +77,9 @@ export default function MissionPage(): JSX.Element {
                 Horizons intergénérationnels.
               </h1>
               <p className="mt-lg max-w-[560px] text-lead text-ink-700">
-                Ce que nous construisons, et pourquoi. Une holding patrimoniale née de
-                trois décennies de convictions familiales — organisée en 2026 pour
-                traverser les générations.
+                Ce que nous construisons, et pourquoi. L&apos;aboutissement de trois
+                décennies de construction patrimoniale — organisé pour traverser les
+                générations.
               </p>
               <div className="mt-xl h-[2px] w-12 bg-levant-500" />
             </div>
@@ -96,13 +96,13 @@ export default function MissionPage(): JSX.Element {
           </h2>
           <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              ISSA Capital n&apos;a pas commencé en mars 2026. Elle a commencé bien avant
-              — avec Jean-Pierre Issa, né à Dakar en 1958 dans une famille libanaise, qui
-              a appris le monde dans les salles de réunion d&apos;IBM et fait partie de
-              l&apos;équipe qui a lancé Lexmark en Europe dans les années 1990. Directeur
-              de filiales dans plusieurs pays. Directeur Marketing EMEA. Un homme qui a
-              construit un patrimoine — immobilier à Paris, en Normandie, au Liban —
-              décision après décision, continent après continent.
+              ISSA Capital a commencé avec Jean-Pierre Issa, né à Dakar en 1958 dans une
+              famille libanaise, qui a appris le monde dans les salles de réunion
+              d&apos;IBM et fait partie de l&apos;équipe qui a lancé Lexmark en Europe
+              dans les années 1990. Directeur de filiales dans plusieurs pays. Directeur
+              Marketing EMEA. Un homme qui a construit un patrimoine — immobilier à
+              Paris, en Normandie, au Liban — décision après décision, continent après
+              continent.
             </p>
             <p>
               Puis, en co-actionnariat avec deux partenaires, Jean-Pierre rachète 2J
@@ -120,10 +120,9 @@ export default function MissionPage(): JSX.Element {
               déjà dans les convictions d&apos;une famille.
             </p>
             <p>
-              Ce n&apos;est pas l&apos;histoire d&apos;un entrepreneur tech qui crée une
-              holding pour diversifier ses revenus. C&apos;est l&apos;aboutissement de
-              trois décennies de construction patrimoniale, transmis d&apos;un père à son
-              fils, destiné à passer à la génération suivante.
+              C&apos;est l&apos;aboutissement de trois décennies de construction
+              patrimoniale, transmis d&apos;un père à son fils, destiné à passer à la
+              génération suivante.
             </p>
           </div>
         </Container>
@@ -138,14 +137,9 @@ export default function MissionPage(): JSX.Element {
           </h2>
           <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
             <p>
-              Ne pas confier le patrimoine familial à des logiques qui lui sont
-              étrangères. Pas à un fonds à calendrier contraint, pas à des structures
-              conçues pour être revendues.
-            </p>
-            <p>
-              La famille Issa a construit sa propre structure — indépendante, privée,
-              dont elle est le seul actionnaire. L&apos;horizon est celui des générations
-              à venir.
+              La famille Issa a choisi de garder le contrôle de son patrimoine —
+              indépendant, privé, organisé selon ses propres convictions.
+              L&apos;horizon est celui des générations à venir.
             </p>
           </div>
         </Container>
@@ -210,8 +204,7 @@ export default function MissionPage(): JSX.Element {
             Trois filtres. Aucune exception.
           </h2>
           <p className="mt-md text-lead text-ink-300">
-            Ces filtres ne sont pas une politique de communication. Ce sont les critères
-            qui précèdent toute analyse financière.
+            Ces filtres précèdent toute analyse financière.
           </p>
 
           <div className="mt-2xl space-y-xl">

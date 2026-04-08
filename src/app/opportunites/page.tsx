@@ -60,10 +60,9 @@ export default function OpportunitesPage(): JSX.Element {
       <Section tone="elevated">
         <Container width="editorial">
           <p className="text-base leading-relaxed text-ink-700">
-            Cette page est faite pour les apporteurs d&apos;affaires et les fondateurs
-            qui cherchent un partenaire capitalistique sérieux. Pas un fonds. Pas un
-            comité d&apos;investissement qui se réunit tous les 6 mois. Une holding
-            familiale qui décide vite sur les dossiers qualifiés.
+            Cette page s&apos;adresse aux apporteurs d&apos;affaires et aux fondateurs
+            qui cherchent un actionnaire de long terme : une holding familiale, sans
+            comité trimestriel, qui décide sur les dossiers qualifiés.
           </p>
         </Container>
       </Section>

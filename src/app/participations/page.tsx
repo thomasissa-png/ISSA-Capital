@@ -34,20 +34,25 @@ type Filiale = {
   date?: string;
   url?: string;
   note?: string;
+  featured?: boolean;
 };
 
+// Ordre d'affichage : Versi Invest en tête (participation phare — décision Thomas Bloc 4).
+// Versi Invest porte la stratégie d'acquisitions immobilières et d'accompagnement
+// partenaires ; Versimo et Immocrew sont des participations d'écosystème plus secondaires.
 const filiales: ReadonlyArray<Filiale> = [
-  {
-    name: 'Versi Immobilier',
-    activity: 'Marchand de biens — marché secondaire résidentiel',
-    role: 'Actionnaire co-gérant (via Gradient One)',
-    date: '2025',
-  },
   {
     name: 'Versi Invest',
     activity: 'Acquisitions immobilières et accompagnement de partenaires',
     role: 'Co-gérant (via Gradient One)',
     date: '2026',
+    featured: true,
+  },
+  {
+    name: 'Versi Immobilier',
+    activity: 'Marchand de biens — marché secondaire résidentiel',
+    role: 'Actionnaire co-gérant (via Gradient One)',
+    date: '2025',
   },
   {
     name: 'Immocrew',
@@ -155,8 +160,17 @@ export default function ParticipationsPage(): JSX.Element {
             {filiales.map((f) => (
               <article
                 key={f.name}
-                className="flex flex-col border border-ink-200 bg-white p-xl"
+                className={
+                  f.featured
+                    ? 'flex flex-col border-2 border-levant-500 bg-white p-xl md:col-span-2 md:p-2xl'
+                    : 'flex flex-col border border-ink-200 bg-white p-xl'
+                }
               >
+                {f.featured ? (
+                  <span className="mb-md inline-block self-start border border-levant-500 bg-levant-100 px-md py-2xs text-xs font-medium uppercase tracking-wider text-levant-700">
+                    Participation phare
+                  </span>
+                ) : null}
                 <h3 className="font-heading text-h3 text-ink-950">{f.name}</h3>
                 <p className="mt-md text-sm text-ink-700">{f.activity}</p>
                 <dl className="mt-lg space-y-sm text-sm">

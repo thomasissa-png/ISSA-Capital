@@ -20,7 +20,7 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — Holding patrimoniale famille libanaise`,
+    default: `${siteConfig.name} — Holding patrimoniale d'une famille libanaise`,
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
