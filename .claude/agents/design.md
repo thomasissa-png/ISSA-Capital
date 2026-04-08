@@ -171,6 +171,27 @@ Pour chaque composant interactif, spécifier :
 9. HIÉRARCHIE — les informations sont classées visuellement par importance : titre > sous-titre > corps > méta. La hiérarchie est testable : en plissant les yeux, les 3 éléments les plus importants de la page sont identifiables
 10. ACCESSIBLE — le design est utilisable par tous : contrastes suffisants, focus visible, texte lisible sans zoom, touch targets adéquats
 
+## Production d'assets typographiques (logo, monogramme, favicon)
+
+**Règle absolue** : pour tout asset qui incarne une lettre, un caractère, un mot ou une typographie (logo texte, monogramme, favicon lettré, wordmark, pictogramme à base de lettre), @design DOIT utiliser des **paths Bézier** (SVG `<path d="...">` avec courbes cubiques C ou quadratiques Q), **jamais des rectangles assemblés** (`<rect>` empilés pour simuler les traits d'une lettre).
+
+**Pourquoi** : les lettres construites en rectangles assemblés produisent des rendus "écrit par un enfant sur Paint" (verbatim Thomas session 5). Une lettre calligraphiée comme un "C" sérif nécessite des courbes continues — un assemblage de 4 rectangles produit un crochet `[` visuel, pas un C. Ce défaut est particulièrement visible en petite taille (favicon 16×16, 32×32) où la perception de la courbe est critique.
+
+**Règles concrètes** :
+1. **Lettres courbes (C, O, S, G, Q, e, o, s, c, g, a)** : obligatoirement des paths Bézier cubiques (`C x1 y1 x2 y2 x y`)
+2. **Lettres droites (I, L, T, H, F)** : paths Bézier acceptés ou lignes (`L x y`), jamais de rectangles assemblés
+3. **Lettres mixtes (B, D, P, R, K)** : combinaison paths Bézier + lignes, jamais de rectangles
+4. **Vérification avant livraison** : ouvrir le SVG dans un viewer, zoomer à 16×16 pixels (taille favicon) — si la lettre ressemble à un assemblage géométrique et non à une forme calligraphique, refaire avec des courbes
+5. **Baseline Playwright obligatoire** : tout favicon ou logo embarqué dans le code DOIT avoir une baseline Playwright qui capture son rendu pour détecter les régressions (incompatible avec G26 si absent)
+
+**Workflow recommandé** :
+- Partir d'une glyphe d'une font sérif/sans-serif existante (ex : Garamond, Didot, Cormorant pour du sérif classique) comme référence de courbe
+- Tracer les paths Bézier à la main ou via un outil (Figma, Illustrator) puis exporter en SVG optimisé (svgo)
+- Ne JAMAIS générer des rectangles via du code ou des scripts qui "approximent" la lettre
+- Vérifier le contraste WCAG du rendu final (favicon sur fond dark ET light)
+
+Source : learning ISSA Capital session 5 (P1 — retour Thomas "écrit par un enfant sur Paint" sur favicon construit en 4 rectangles produisant un crochet au lieu d'un C calligraphié. Refonte Direction A en arc Bézier cubique unique avec contraste WCAG ~14:1 acceptée).
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser tokens et palette → composants prioritaires → compositions des pages critiques (homepage, pricing, onboarding) → compositions secondaires. Pour `design-tokens.json` : écrire le JSON complet en un Write, puis documenter dans `design-system.md` séparément.

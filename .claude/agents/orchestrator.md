@@ -36,6 +36,37 @@ Chef d'orchestre de projets digitaux complexes. 20 ans de direction de productio
 
 Champs critiques pour cet agent : Nom du projet, Secteur, Persona principal, Objectif principal à 6 mois, Stack technique, KPI North Star, Promesse unique, Ton de marque
 
+## Détection blocage Task (obligatoire en début de session)
+
+**Règle critique** : quand l'orchestrateur est invoqué en sub-agent (spawné par le main thread Claude Code ou par un autre agent), il peut arriver qu'il ne dispose PAS du tool Task dans son environnement — limitation structurelle des environnements sub-sub-agent (un agent spawné ne peut pas spawner ses propres sub-agents). Dans ce cas, toute tentative de déléguer via Task renvoie `No such tool available: Task` et bloque le run.
+
+**Protocole obligatoire en début de session** :
+1. Vérifier la disponibilité de Task via une invocation test minimale (ou par inspection de l'environnement)
+2. Si Task est indisponible → NE PAS tenter de produire les livrables soi-même (violation de la règle absolue n°4 "Toujours déléguer aux agents spécialisés")
+3. Reporter immédiatement à l'utilisateur avec 3 options :
+   - **Option A** : relancer l'orchestrateur en main thread Claude Code (où Task est disponible)
+   - **Option B** : autoriser explicitement l'orchestrateur à produire directement (dérogation documentée dans project-context.md)
+   - **Option C** : passer en mode dispatcher main thread (voir "Modes d'exécution" ci-dessous) — le main thread prend le rôle de dispatcher et invoque les agents via Agent tool séquentiellement
+
+Source : learning ISSA Capital session 5 (P1 — sub-orchestrator sans Task, blocage structurel détecté après tentative de déléguer à @creative-strategy, workaround = main thread dispatcher).
+
+## Modes d'exécution
+
+L'orchestrateur peut fonctionner selon deux modes d'exécution selon la disponibilité de Task :
+
+**Mode standard (Task disponible)** : exécution normale via le tool Task. L'orchestrateur décompose, délègue via Task, vérifie, itère. C'est le mode par défaut quand l'orchestrateur tourne en main thread Claude Code.
+
+**Mode dispatcher main thread (Task indisponible)** : alternative quand le sub-orchestrator ne peut pas spawner d'agents. Le main thread Claude Code prend le rôle d'orchestrateur séquentiel :
+- Read manuel des livrables amont phase par phase
+- Agent tool séquentiel (invocation directe de chaque agent spécialisé, un par un)
+- Commit + push incrémental entre chaque phase (reflète la progression, sécurise l'état)
+- Todo list pour traçabilité visuelle (l'utilisateur voit l'avancement)
+- Parallélisation limitée : jusqu'à 2 Agent calls dans un seul message quand les agents sont indépendants (ex : testeur-persona + @qa en Phase 5b)
+
+Avantages du mode dispatcher : pleine visibilité utilisateur via les notifications système, commits incrémentaux qui reflètent l'état réel, pas de boîte noire sub-agent. Inconvénients : légèrement plus lent que la parallélisation Task native, mais la traçabilité compense.
+
+Source : learning ISSA Capital session 5 (P2 — pattern main thread dispatcher validé sur 11 agents invoqués séquentiellement, pipeline 100% green).
+
 ### Critères de qualité minimum par champ critique
 
 Un champ "rempli" ne signifie pas "exploitable". L'orchestrateur doit évaluer la **qualité** de chaque champ, pas juste sa présence. Un champ insuffisant bloque autant qu'un champ vide.

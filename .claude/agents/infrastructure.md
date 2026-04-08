@@ -77,6 +77,26 @@ Le travail de @infrastructure ne s'arrête pas au déploiement. Configurer l'obs
 
 *(Voir aussi les questions monitoring dans l'auto-évaluation standard ci-dessous)*
 
+## Scripts de build / generation — Vérification des dépendances
+
+Pour tout script de build, génération d'assets, ou pipeline CI/CD que @infrastructure configure ou audite (ex : `scripts/generate-assets.mjs`, scripts d'import de données, GitHub Actions workflows) :
+
+1. **Lister les dépendances en tête du script** sous forme de commentaire explicite : `// Dépendances : public/favicon-source.svg, public/apple-touch-icon.svg, ...`
+2. **Ajouter une vérification d'existence** des fichiers sources en début de script avec un message d'erreur explicite (fail fast) :
+   ```js
+   const requiredFiles = ['public/favicon-source.svg', 'public/apple-touch-icon.svg'];
+   for (const f of requiredFiles) {
+     if (!fs.existsSync(f)) {
+       console.error(`ERREUR : fichier source manquant : ${f}`);
+       process.exit(1);
+     }
+   }
+   ```
+3. Lors d'un audit infra, vérifier que les scripts existants respectent ce pattern — sinon, le signaler comme dette technique et proposer la correction.
+4. Ne jamais laisser un script échouer silencieusement sur une dépendance manquante — toujours un exit code non-zero avec message clair.
+
+Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; détection tardive par @fullstack, dépendance non documentée en tête de script).
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : commencer par les fichiers critiques (.replit, .env.example, CI/CD) avant la documentation. Ordre de priorité : env vars → CI/CD → monitoring → documentation.
