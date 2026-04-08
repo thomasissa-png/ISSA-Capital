@@ -119,28 +119,17 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 3 — Gradient One
-          Session 6 CHECKPOINT #3 Thomas : l'Overline "Participation phare" est
-          retirée (Gradient One n'est pas assez connu pour mériter cette mise
-          en avant — décision Thomas). La grid 3 stats (2020 / 6 / 3) est
-          réintroduite en remplacement du bloc texte-pur de CHECKPOINT #2.
-          Titre + sous-titre + description verbatim inchangés. Le chiffre 50
-          reste verrouillé hors scope (CHECKPOINT #2). */}
+      {/* Section 3 — Stats d'ancrage (stats-only strict)
+          Session 7 CHECKPOINT #5 Thomas : texte éditorial Gradient One retiré.
+          La homepage ne conserve QUE les stats (2020 / 6 / 3) — le titre, le
+          sous-titre italique et la description de Gradient One ajoutés en
+          Phase 3+5 session 6 sont supprimés. Raison : éviter de sur-mettre
+          Gradient One en avant sur la homepage (cohérent avec le traitement
+          discret adopté sur /participations — note hero uniquement).
+          Le chiffre 50 reste verrouillé hors scope (CHECKPOINT #2 session 6). */}
       <Section tone="inverse">
         <Container width="editorial">
-          <h2 className="font-heading text-h2 leading-[1.15] text-parchment-100">
-            Gradient One — co-fondée par Thomas Issa et deux associés.
-          </h2>
-          <p className="mt-lg font-heading text-lead italic text-levant-500">
-            Première décision formelle d&apos;une famille qui construit depuis trois
-            décennies.
-          </p>
-          <p className="mt-lg max-w-[640px] text-base leading-relaxed text-ink-300">
-            Ce que Jean-Pierre Issa a transmis à son fils, Thomas l&apos;a structuré —
-            avec deux associés. Gradient One est le premier acte de cet héritage mis
-            en forme.
-          </p>
-          <dl className="mt-2xl grid grid-cols-1 gap-xl sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-xl sm:grid-cols-3">
             <div className="border-l-2 border-levant-500 pl-lg">
               <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
                 Co-fondation
