@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital</title>
+  <!--
+    Favicon ISSA Capital — Refonte Session 5 (2026-04-08)
+    Direction A : sérif classique, C en courbe de Bézier cubique (corrige l'aspect "Paint" v1)
+    Composition : lettre I (sérif) + lettre C (arc Bézier) + filet ocre signature
+    Couleurs :
+      Fond     : ink-950    #0A0A0A  (primitive.color.ink.950)
+      Glyphes  : parchment-100 #F5F0E8 (primitive.color.parchment.100)
+      Accent   : levant-500   #C4935A  (primitive.color.levant.500)
+    Géométrie :
+      Hauteur capitale : y=112 à y=400 (288px)
+      I : fût 40px, empattements 96px de large, 28px de haut — centré sur x=120
+      C : Re=144px, Ri=88px (épaisseur 56px), sérifs 28px, centre (298,256)
+          Bézier k≈0.5523 → Re×k=80, Ri×k=49
+  -->
+
+  <!-- Fond -->
+  <rect width="512" height="512" fill="#0A0A0A"/>
+
+  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
+  <path d="
+    M 72,112 L 168,112 L 168,140 L 140,140
+    L 140,372 L 168,372 L 168,400
+    L 72,400 L 72,372 L 100,372
+    L 100,140 L 72,140 Z
+  " fill="#F5F0E8"/>
+
+  <!--
+    Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux)
+    Contour : sérif haut droit → arc extérieur (Re=144) → sérif bas droit
+              → retour arc intérieur (Ri=88) → sérif haut intérieur → ferme
+    Sérifs : 28px de haut, x=298 à x=440
+    Arc extérieur  : (298,112) → via (378,112)+(154,176) → (154,256)
+                     (154,256) → via (154,336)+(218,400) → (298,400)
+    Arc intérieur  : (298,372) → via (249,372)+(210,305) → (210,256)
+                     (210,256) → via (210,207)+(249,140) → (298,140)
+  -->
+  <path d="
+    M 440,112
+    L 298,112
+    C 378,112 154,176 154,256
+    C 154,336 218,400 298,400
+    L 440,400
+    L 440,372
+    L 298,372
+    C 249,372 210,305 210,256
+    C 210,207 249,140 298,140
+    L 440,140
+    Z
+  " fill="#F5F0E8"/>
+
+  <!-- Filet ocre levantin — signature graphique du système ISSA Capital -->
+  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+
+</svg>
