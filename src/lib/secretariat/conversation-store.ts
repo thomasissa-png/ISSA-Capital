@@ -41,12 +41,32 @@ export interface PendingDraft {
   createdAt: number; // epoch ms
 }
 
+/**
+ * Photo jointe à une conversation, en attente d'intégration dans un appel Claude.
+ * Stockée en base64 pour envoi multimodal.
+ */
+export interface PhotoAttachment {
+  /** Image encodée en base64 */
+  base64: string;
+  /** Type MIME (image/jpeg, image/png, etc.) */
+  mimeType: string;
+  /** Légende envoyée par l'utilisateur (champ caption Telegram) */
+  caption?: string;
+  /** Timestamp d'ajout (epoch ms) */
+  timestamp: number;
+}
+
+/** Limite de photos par CR — au-delà, les photos supplémentaires sont ignorées */
+const MAX_PHOTOS_PER_CONVERSATION = 10;
+
 interface ConversationEntry {
   chatId: number;
   messages: ConversationMessage[];
   lastActivityAt: number; // epoch ms
   /** Draft CR en attente de validation (null si pas de draft pending) */
   pendingDraft?: PendingDraft | null;
+  /** Photos en attente d'intégration dans le prochain appel Claude */
+  photos?: PhotoAttachment[];
 }
 
 type StoreData = Record<string, ConversationEntry>;
@@ -218,6 +238,89 @@ export function clearPendingDraft(chatId: number): void {
 
   if (entry) {
     entry.pendingDraft = null;
+    entry.lastActivityAt = Date.now();
+    saveStore(store);
+  }
+}
+
+// ============================================================
+// Photos en attente — stockage temporaire pour appel Claude
+// ============================================================
+
+/**
+ * Ajoute une photo en attente pour un chat_id.
+ * Retourne false si la limite de 10 photos est atteinte.
+ */
+export function addPhoto(
+  chatId: number,
+  base64: string,
+  mimeType: string,
+  caption?: string,
+): boolean {
+  const store = loadStore();
+  const key = String(chatId);
+
+  if (!store[key]) {
+    store[key] = {
+      chatId,
+      messages: [],
+      lastActivityAt: Date.now(),
+    };
+  }
+
+  const entry = store[key];
+  if (!entry.photos) {
+    entry.photos = [];
+  }
+
+  if (entry.photos.length >= MAX_PHOTOS_PER_CONVERSATION) {
+    return false;
+  }
+
+  entry.photos.push({
+    base64,
+    mimeType,
+    caption,
+    timestamp: Date.now(),
+  });
+  entry.lastActivityAt = Date.now();
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Récupère les photos en attente pour un chat_id.
+ * Retourne un tableau vide si aucune photo en attente.
+ */
+export function getPhotos(chatId: number): PhotoAttachment[] {
+  const store = loadStore();
+  const key = String(chatId);
+  const entry = store[key];
+
+  if (!entry) return [];
+
+  // TTL check
+  if (Date.now() - entry.lastActivityAt > TTL_MS) {
+    delete store[key];
+    saveStore(store);
+    return [];
+  }
+
+  return entry.photos ?? [];
+}
+
+/**
+ * Vide les photos en attente pour un chat_id.
+ * Appelé après génération du CR (photos intégrées dans l'appel Claude).
+ */
+export function clearPhotos(chatId: number): void {
+  const store = loadStore();
+  const key = String(chatId);
+  const entry = store[key];
+
+  if (entry) {
+    entry.photos = [];
     entry.lastActivityAt = Date.now();
     saveStore(store);
   }

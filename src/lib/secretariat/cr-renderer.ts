@@ -129,6 +129,21 @@ export function renderCrForTelegram(cr: CRDraft, reference?: string): string {
     lines.push('');
   }
 
+  // Annexes photographiques (si présentes)
+  const annexes = cr.annexes_photographiques;
+  if (annexes && annexes.length > 0) {
+    lines.push('---');
+    lines.push('');
+    lines.push('*ANNEXES PHOTOGRAPHIQUES*');
+    lines.push('');
+    for (const annexe of annexes) {
+      lines.push(`Photo ${annexe.numero} — ${annexe.legende}`);
+    }
+    lines.push('');
+    lines.push(`(${annexes.length} photo${annexes.length > 1 ? 's' : ''} jointe${annexes.length > 1 ? 's' : ''} au CR original)`);
+    lines.push('');
+  }
+
   lines.push('---');
   lines.push(
     `Établi par Thomas Issa, Président — ${entiteNomComplet(cr.entite)}`,
@@ -226,6 +241,24 @@ export function renderCrForCraft(
     sections.push('## 4. Suites à donner');
     sections.push('');
     sections.push(cr.section_4_suites_a_donner);
+    sections.push('');
+  }
+
+  // Annexes photographiques (si présentes)
+  const annexes = cr.annexes_photographiques;
+  if (annexes && annexes.length > 0) {
+    sections.push('---');
+    sections.push('');
+    sections.push('## Annexes photographiques');
+    sections.push('');
+    sections.push('| # | Description | Source |');
+    sections.push('|---|---|---|');
+    const dateAnnexe = dateFormatFr(cr.date_reunion);
+    for (const annexe of annexes) {
+      sections.push(
+        `| ${annexe.numero} | ${annexe.legende} | Photo Thomas Issa, ${dateAnnexe} |`,
+      );
+    }
     sections.push('');
   }
 

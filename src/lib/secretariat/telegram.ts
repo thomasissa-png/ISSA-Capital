@@ -86,6 +86,113 @@ export async function sendTelegramMessage(
 }
 
 /**
+ * Résultat du téléchargement d'une photo Telegram.
+ */
+export interface TelegramPhotoResult {
+  success: boolean;
+  /** Image encodée en base64 pour l'API Claude */
+  base64?: string;
+  /** Type MIME de l'image (image/jpeg par défaut) */
+  mimeType?: string;
+  error?: string;
+}
+
+/**
+ * Télécharge une photo Telegram via l'API Bot (getFile + download).
+ *
+ * Flow :
+ * 1. GET getFile → récupère file_path
+ * 2. GET file/{file_path} → récupère le binaire
+ * 3. Convertit en base64 pour l'API Claude multimodale
+ *
+ * @param fileId Le file_id de la photo (prendre le dernier du tableau photo[] pour la meilleure résolution)
+ */
+export async function downloadTelegramPhoto(
+  fileId: string,
+): Promise<TelegramPhotoResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || token === '__TO_FILL__') {
+    return { success: false, error: 'TELEGRAM_BOT_TOKEN manquant' };
+  }
+
+  // Étape 1 : récupérer le file_path via getFile
+  const getFileUrl = `${TELEGRAM_API_BASE}/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`;
+
+  const controller1 = new AbortController();
+  const timer1 = setTimeout(() => controller1.abort(), TIMEOUT_MS);
+
+  let filePath: string;
+  try {
+    const response = await fetch(getFileUrl, { signal: controller1.signal });
+    clearTimeout(timer1);
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      return {
+        success: false,
+        error: `Telegram getFile ${response.status}: ${errorBody.slice(0, 200)}`,
+      };
+    }
+
+    const data = (await response.json()) as {
+      ok: boolean;
+      result?: { file_path?: string };
+    };
+
+    if (!data.ok || !data.result?.file_path) {
+      return { success: false, error: 'Telegram getFile : file_path absent' };
+    }
+
+    filePath = data.result.file_path;
+  } catch (err) {
+    clearTimeout(timer1);
+    return {
+      success: false,
+      error: `getFile erreur : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  // Étape 2 : télécharger le fichier binaire
+  const downloadUrl = `${TELEGRAM_API_BASE}/file/bot${token}/${filePath}`;
+
+  const controller2 = new AbortController();
+  const timer2 = setTimeout(() => controller2.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(downloadUrl, { signal: controller2.signal });
+    clearTimeout(timer2);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Telegram download ${response.status}`,
+      };
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+    // Déduire le type MIME depuis l'extension
+    let mimeType = 'image/jpeg';
+    if (filePath.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (filePath.endsWith('.gif')) {
+      mimeType = 'image/gif';
+    } else if (filePath.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    }
+
+    return { success: true, base64, mimeType };
+  } catch (err) {
+    clearTimeout(timer2);
+    return {
+      success: false,
+      error: `download erreur : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+/**
  * Envoie un aperçu de CR avec boutons inline Valider/Modifier/Annuler.
  *
  * Utilise l'inline keyboard Telegram :

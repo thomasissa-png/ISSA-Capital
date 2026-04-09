@@ -37,6 +37,15 @@ export const TelegramChatSchema = z
   .passthrough();
 export type TelegramChat = z.infer<typeof TelegramChatSchema>;
 
+export const TelegramPhotoSizeSchema = z.object({
+  file_id: z.string(),
+  file_unique_id: z.string(),
+  width: z.number().int(),
+  height: z.number().int(),
+  file_size: z.number().int().optional(),
+});
+export type TelegramPhotoSize = z.infer<typeof TelegramPhotoSizeSchema>;
+
 export const TelegramMessageSchema = z
   .object({
     message_id: z.number().int(),
@@ -44,6 +53,8 @@ export const TelegramMessageSchema = z
     chat: TelegramChatSchema,
     date: z.number().int(),
     text: z.string().optional(),
+    photo: z.array(TelegramPhotoSizeSchema).optional(),
+    caption: z.string().optional(),
   })
   .passthrough();
 export type TelegramMessage = z.infer<typeof TelegramMessageSchema>;
@@ -95,6 +106,12 @@ export const ParticipantSchema = z.object({
 });
 export type Participant = z.infer<typeof ParticipantSchema>;
 
+export const AnnexePhotographiqueSchema = z.object({
+  numero: z.number().int(),
+  legende: z.string().min(1, 'légende requise'),
+});
+export type AnnexePhotographique = z.infer<typeof AnnexePhotographiqueSchema>;
+
 export const CRDraftSchema = z.object({
   reference_placeholder: z.literal('[REF_TO_BE_GENERATED]'),
   entite: EntiteSchema,
@@ -117,6 +134,7 @@ export const CRDraftSchema = z.object({
     .string()
     .min(20, 'section_3 doit contenir au moins 20 caractères'),
   section_4_suites_a_donner: z.string().nullable(),
+  annexes_photographiques: z.array(AnnexePhotographiqueSchema).nullable().optional(),
 });
 export type CRDraft = z.infer<typeof CRDraftSchema>;
 

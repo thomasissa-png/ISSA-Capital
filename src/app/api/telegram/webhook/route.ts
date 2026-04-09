@@ -28,6 +28,7 @@ import {
   sendTelegramMessage,
   sendTelegramConfirmation,
   answerCallbackQuery,
+  downloadTelegramPhoto,
 } from '@/lib/secretariat/telegram';
 import {
   renderCrForTelegram,
@@ -44,7 +45,11 @@ import {
   getPendingDraft,
   clearPendingDraft,
   clearConversation,
+  addPhoto,
+  getPhotos,
+  clearPhotos,
 } from '@/lib/secretariat/conversation-store';
+import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { publishToCraft } from '@/lib/secretariat/craft-publisher';
 
@@ -180,6 +185,7 @@ const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 async function generateCR(
   messageText: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  photos: PhotoAttachment[] = [],
 ): Promise<{
   success: boolean;
   status?: 'needs_clarification' | 'ready';
@@ -236,6 +242,55 @@ Tu disposes d'un outil de recherche web. Utilise-le AUTOMATIQUEMENT pour :
 Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou d'entreprise apparaît sans adresse complète, cherche automatiquement.
 `;
 
+    // Construire le contenu du message utilisateur (texte seul ou multimodal avec photos)
+    type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    type TextBlock = { type: 'text'; text: string };
+    type ImageBlock = {
+      type: 'image';
+      source: { type: 'base64'; media_type: ImageMediaType; data: string };
+    };
+    type ContentBlock = TextBlock | ImageBlock;
+
+    let userContent: string | ContentBlock[];
+
+    if (photos.length > 0) {
+      // Message multimodal : photos + texte
+      const contentParts: ContentBlock[] = [];
+
+      for (const photo of photos) {
+        // Cast mimeType en union littérale acceptée par l'API Anthropic
+        const validMediaTypes: ImageMediaType[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const mediaType: ImageMediaType = validMediaTypes.includes(photo.mimeType as ImageMediaType)
+          ? (photo.mimeType as ImageMediaType)
+          : 'image/jpeg';
+
+        contentParts.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: photo.base64,
+          },
+        });
+        // Si la photo avait une légende, l'ajouter comme contexte
+        if (photo.caption) {
+          contentParts.push({
+            type: 'text',
+            text: `[Légende photo : ${photo.caption}]`,
+          });
+        }
+      }
+
+      contentParts.push({
+        type: 'text',
+        text: enrichedMessage,
+      });
+
+      userContent = contentParts;
+    } else {
+      userContent = enrichedMessage;
+    }
+
     let message;
     try {
       message = await client.messages.create(
@@ -252,7 +307,7 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
           ],
           messages: [
             ...conversationHistory,
-            { role: 'user' as const, content: enrichedMessage },
+            { role: 'user' as const, content: userContent },
           ],
         },
         { signal: controller.signal },
@@ -388,8 +443,16 @@ export async function POST(request: Request): Promise<Response> {
       // Sauvegarder le message utilisateur dans l'historique
       storeMessage(chatId, 'user', text);
 
-      // Appel Claude avec l'historique complet
-      const result = await generateCR(text, claudeHistory);
+      // Récupérer les photos en attente (envoyées avant ce message texte)
+      const pendingPhotos = getPhotos(chatId);
+
+      // Appel Claude avec l'historique complet + photos en attente
+      const result = await generateCR(text, claudeHistory, pendingPhotos);
+
+      // Vider les photos après l'appel Claude (intégrées dans la requête)
+      if (pendingPhotos.length > 0) {
+        clearPhotos(chatId);
+      }
 
       if (!result.success) {
         const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
@@ -421,13 +484,100 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ ok: true });
     }
 
-    // 3b. Message sans texte (photo, sticker, etc.)
-    if (update.message !== undefined && update.message.text === undefined) {
+    // 3b. Message avec photo(s)
+    if (update.message?.photo !== undefined && update.message.photo.length > 0) {
+      const chatId = update.message.chat.id;
+
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
+        return Response.json({ ok: true });
+      }
+
+      // Prendre la dernière entrée du tableau photo (meilleure résolution)
+      const photoArray = update.message.photo;
+      const bestPhoto = photoArray[photoArray.length - 1];
+      if (!bestPhoto) {
+        return Response.json({ ok: true });
+      }
+      const caption = update.message.caption;
+
+      // Télécharger la photo via l'API Telegram
+      const photoResult = await downloadTelegramPhoto(bestPhoto.file_id);
+
+      if (!photoResult.success || !photoResult.base64) {
+        console.error('[telegram-webhook] échec téléchargement photo :', photoResult.error);
+        await sendTelegramMessage(
+          chatId,
+          `Erreur lors du téléchargement de la photo : ${photoResult.error ?? 'inconnue'}. Réessaie.`,
+        );
+        return Response.json({ ok: true });
+      }
+
+      // Stocker la photo en attente
+      const added = addPhoto(chatId, photoResult.base64, photoResult.mimeType ?? 'image/jpeg', caption);
+
+      if (!added) {
+        await sendTelegramMessage(
+          chatId,
+          'Limite de 10 photos atteinte pour ce CR. Les photos supplémentaires sont ignorées.',
+        );
+        return Response.json({ ok: true });
+      }
+
+      const photoCount = getPhotos(chatId).length;
+
+      // Si la photo a un caption, traiter comme un message texte + photo
+      if (caption && caption.trim().length > 0) {
+        const history = getConversation(chatId);
+        const claudeHistory = toClaudeMessages(history);
+
+        storeMessage(chatId, 'user', caption);
+
+        const pendingPhotos = getPhotos(chatId);
+        const result = await generateCR(caption, claudeHistory, pendingPhotos);
+
+        // Vider les photos après l'appel Claude
+        clearPhotos(chatId);
+
+        if (!result.success) {
+          const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
+          storeMessage(chatId, 'assistant', errorMsg);
+          await sendTelegramMessage(chatId, errorMsg);
+          return Response.json({ ok: true });
+        }
+
+        if (result.status === 'needs_clarification') {
+          const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+          storeMessage(chatId, 'assistant', question);
+          await sendTelegramMessage(chatId, question);
+          return Response.json({ ok: true });
+        }
+
+        if (result.crText && result.crDraft) {
+          const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+          storeMessage(chatId, 'assistant', result.crText);
+          setPendingDraft(chatId, result.crDraft, result.crText);
+          await sendTelegramConfirmation(chatId, previewText);
+        }
+
+        return Response.json({ ok: true });
+      }
+
+      // Pas de caption — confirmer la réception et attendre le message texte
+      await sendTelegramMessage(
+        chatId,
+        `Photo reçue (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
+      );
+      return Response.json({ ok: true });
+    }
+
+    // 3b-bis. Message sans texte ni photo (sticker, vidéo, etc.)
+    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0)) {
       const chatId = update.message.chat.id;
       if (isAllowedChatId(chatId)) {
         await sendTelegramMessage(
           chatId,
-          'Envoie le contenu de la réunion en texte (les médias ne sont pas encore supportés).',
+          'Envoie le contenu de la réunion en texte, ou des photos avec légende.',
         );
       }
       return Response.json({ ok: true });
