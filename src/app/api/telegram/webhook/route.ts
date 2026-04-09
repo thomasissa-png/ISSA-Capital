@@ -329,11 +329,38 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
       return { success: false, error: 'Réponse Claude vide' };
     }
 
-    // Nettoyer le JSON : Claude envoie parfois ```json ... ``` autour du JSON
-    let cleanJson = rawText;
+    // Extraction du JSON depuis la réponse Claude.
+    // Claude peut mélanger du texte libre (web search, réflexion) avec le JSON.
+    // Stratégie : chercher dans l'ordre :
+    //   1. Un bloc ```json ... ```
+    //   2. Un objet JSON brut { ... } (le dernier de la réponse)
+    //   3. Si aucun JSON trouvé mais du texte → traiter comme clarification en langage naturel
+
+    let cleanJson: string | null = null;
+
+    // Stratégie 1 : bloc markdown ```json ... ```
     const jsonBlockMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
     if (jsonBlockMatch?.[1]) {
       cleanJson = jsonBlockMatch[1].trim();
+    }
+
+    // Stratégie 2 : dernier objet JSON brut { ... } dans le texte
+    if (!cleanJson) {
+      const jsonObjMatch = rawText.match(/\{[\s\S]*"status"\s*:\s*"(?:needs_clarification|ready)"[\s\S]*\}/);
+      if (jsonObjMatch?.[0]) {
+        cleanJson = jsonObjMatch[0].trim();
+      }
+    }
+
+    // Stratégie 3 : aucun JSON → texte libre = clarification naturelle
+    if (!cleanJson) {
+      // Claude a répondu en texte libre (souvent après un web search raté)
+      // On traite ça comme une clarification
+      return {
+        success: true,
+        status: 'needs_clarification',
+        clarificationQuestion: rawText.slice(0, 4000),
+      };
     }
 
     // Parser le JSON et valider via Zod
@@ -341,6 +368,16 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
     try {
       parsed = JSON.parse(cleanJson);
     } catch {
+      // JSON malformé/tronqué → extraire le texte lisible comme clarification
+      // Chercher du texte avant le JSON cassé
+      const textBeforeJson = rawText.split('{')[0]?.trim();
+      if (textBeforeJson && textBeforeJson.length > 20) {
+        return {
+          success: true,
+          status: 'needs_clarification',
+          clarificationQuestion: textBeforeJson.slice(0, 4000),
+        };
+      }
       return { success: false, error: `Réponse Claude non-JSON : ${cleanJson.slice(0, 200)}` };
     }
 
