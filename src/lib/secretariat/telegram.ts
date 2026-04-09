@@ -276,6 +276,89 @@ export async function sendTelegramConfirmation(
 }
 
 /**
+ * Envoie un document (PDF, etc.) à un chat Telegram via sendDocument.
+ *
+ * Utilise multipart/form-data pour transmettre le fichier binaire.
+ * Timeout explicite 15s (fichiers plus lourds que du texte).
+ *
+ * @param chatId ID du chat Telegram
+ * @param pdfBuffer Buffer contenant le fichier à envoyer
+ * @param filename Nom du fichier (ex: "IC-CR-2026-0003.pdf")
+ * @param caption Légende optionnelle (max 1024 chars, tronquée si nécessaire)
+ */
+export async function sendTelegramDocument(
+  chatId: number,
+  pdfBuffer: Buffer,
+  filename: string,
+  caption?: string,
+): Promise<TelegramSendResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || token === '__TO_FILL__') {
+    return { success: false, error: 'TELEGRAM_BOT_TOKEN manquant' };
+  }
+
+  const url = `${TELEGRAM_API_BASE}/bot${token}/sendDocument`;
+
+  // Construire le FormData multipart
+  const formData = new FormData();
+  formData.append('chat_id', String(chatId));
+
+  // Créer un Blob à partir du Buffer pour l'API fetch
+  const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+  formData.append('document', blob, filename);
+
+  if (caption) {
+    const safeCaption = caption.length > 1024 ? `${caption.slice(0, 1012)}… [tronqué]` : caption;
+    formData.append('caption', safeCaption);
+  }
+
+  const DOCUMENT_TIMEOUT_MS = 15_000;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DOCUMENT_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (response.ok) {
+        return { success: true };
+      }
+
+      if (response.status >= 500 && attempt === 1) {
+        await new Promise((r) => setTimeout(r, 1_000));
+        continue;
+      }
+
+      const errorBody = await response.text().catch(() => '');
+      return {
+        success: false,
+        error: `Telegram sendDocument ${response.status}: ${errorBody.slice(0, 200)}`,
+      };
+    } catch (err) {
+      clearTimeout(timer);
+
+      if (attempt === 1) {
+        await new Promise((r) => setTimeout(r, 1_000));
+        continue;
+      }
+
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  return { success: false, error: 'Échec sendDocument après 2 tentatives' };
+}
+
+/**
  * Acquitte un callback_query Telegram (retire le spinner du bouton).
  */
 export async function answerCallbackQuery(
