@@ -134,13 +134,13 @@ export function renderCrForTelegram(cr: CRDraft, reference?: string): string {
   if (annexes && annexes.length > 0) {
     lines.push('---');
     lines.push('');
-    lines.push('*ANNEXES PHOTOGRAPHIQUES*');
+    lines.push(`ANNEXES PHOTOGRAPHIQUES — ${annexes.length} photo${annexes.length > 1 ? 's' : ''} jointe${annexes.length > 1 ? 's' : ''}`);
     lines.push('');
     for (const annexe of annexes) {
       lines.push(`Photo ${annexe.numero} — ${annexe.legende}`);
     }
     lines.push('');
-    lines.push(`(${annexes.length} photo${annexes.length > 1 ? 's' : ''} jointe${annexes.length > 1 ? 's' : ''} au CR original)`);
+    lines.push(`Toutes prises par Thomas Issa, ${dateFormatFr(cr.date_reunion)}`);
     lines.push('');
   }
 
@@ -244,21 +244,23 @@ export function renderCrForCraft(
     sections.push('');
   }
 
-  // Annexes photographiques (si présentes)
+  // Annexes photographiques (si présentes) — format liste (@design session 9 : pas de tableau)
   const annexes = cr.annexes_photographiques;
   if (annexes && annexes.length > 0) {
+    const dateAnnexe = dateFormatFr(cr.date_reunion);
     sections.push('---');
     sections.push('');
-    sections.push('## Annexes photographiques');
+    sections.push(`## Annexes photographiques — ${annexes.length} documents joints`);
     sections.push('');
-    sections.push('| # | Description | Source |');
-    sections.push('|---|---|---|');
-    const dateAnnexe = dateFormatFr(cr.date_reunion);
     for (const annexe of annexes) {
-      sections.push(
-        `| ${annexe.numero} | ${annexe.legende} | Photo Thomas Issa, ${dateAnnexe} |`,
-      );
+      const fileRef = `${cr.entite}-CR-${cr.date_reunion}_photo_${String(annexe.numero).padStart(2, '0')}.jpg`;
+      sections.push(`**Photo ${annexe.numero}** — ${annexe.legende}`);
+      sections.push(`*Auteur : Thomas Issa — ${dateAnnexe} — Réf. fichier : ${fileRef}*`);
+      sections.push('');
     }
+    sections.push(
+      `*Fichiers conservés dans la GED ISSA Capital, dossier ${reference}, accès restreint Président.*`,
+    );
     sections.push('');
   }
 

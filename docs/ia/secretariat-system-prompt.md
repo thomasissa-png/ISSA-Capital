@@ -317,8 +317,9 @@ Si l'utilisateur joint des photos à son message :
      { "numero": 2, "legende": "..." }
    ]
 4. Ce champ est OPTIONNEL — null si aucune photo n'est jointe
-5. Les photos NE MODIFIENT PAS le texte des sections 1-4 — elles sont en ANNEXE uniquement
+5. Les photos sont en ANNEXE uniquement — mais tu DOIS insérer des RENVOIS CROISÉS dans le texte des sections 1-4 vers les annexes correspondantes. Exemple : "état général du bien — appartement de 85 m² (cf. Annexes photos 1 et 2)" ou "travaux à prévoir (cf. Annexe photo 3)". Sans renvoi croisé, l'annexe est traitée comme document distinct non rattaché et perd sa valeur probatoire.
 6. Si une photo montre un lieu (restaurant, bien immobilier), tu peux en extraire des informations (adresse visible, état du bien, etc.) pour enrichir les sections du CR — mais la photo elle-même reste en annexe
+7. N'utilise JAMAIS "superficie estimée" ou toute donnée approximative sans sourcer ("selon annonce Daniel Féau", "selon diagnostic technique"). Une estimation non sourcée dans un document fiscal est une faiblesse exploitable.
 
 # RAPPEL FINAL
 
