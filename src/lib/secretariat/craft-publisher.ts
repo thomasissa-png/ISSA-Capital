@@ -3,15 +3,22 @@
  *
  * Utilise l'API Craft Link (même endpoint que le serveur Express).
  *
+ * Stratégie de publication : 1 sous-page par CR.
+ *  1. Tenter de créer un bloc de type "page" (sous-page Craft) via POST /blocks
+ *     avec blocks: [{ type: "page", title: "..." }] — certaines API Craft le supportent.
+ *  2. Si l'API ne supporte pas le type "page" (4xx), fallback : ajouter le CR comme
+ *     bloc texte avec un séparateur visuel fort (═══ + titre + ═══) pour distinguer
+ *     chaque CR dans la page unique.
+ *
  * Source de vérité API Craft :
  *   - secretariat/src/server/services/craft.ts (implémentation Express de référence)
  *   - Endpoint : POST {CRAFT_BASE_URL}/blocks
  *   - Auth : Authorization: Bearer {CRAFT_API_TOKEN}  (clé pdk_...)
- *   - Body : { "markdown": "...", "position": { "position": "end" } }
  *
  * Env vars :
  *   CRAFT_BASE_URL — ex: https://connect.craft.do/links/EgdwyOCC09S/api/v1
  *   CRAFT_API_TOKEN — clé pdk_...
+ *   CRAFT_PAGE_ID — ID de la page parente (optionnel)
  */
 
 const TIMEOUT_MS = 15_000;
@@ -32,7 +39,108 @@ export interface CraftPublishResult {
 }
 
 /**
- * Publie un CR sur Craft via l'API Link /blocks.
+ * Tente de publier un CR comme sous-page Craft.
+ * Si l'API ne supporte pas la création de sous-page, retourne null pour signaler
+ * le fallback sur l'ajout en bloc texte.
+ */
+async function tryPublishAsSubpage(
+  baseUrl: string,
+  token: string,
+  pageId: string | undefined,
+  params: CraftPublishParams,
+): Promise<CraftPublishResult | null> {
+  const url = `${baseUrl.replace(/\/$/, '')}/blocks`;
+
+  // Tenter la création d'un bloc de type "page" (sous-page)
+  // Le contenu sera le markdown du CR précédé du titre.
+  const payload: Record<string, unknown> = {
+    blocks: [
+      {
+        type: 'page',
+        title: params.title,
+        markdown: params.markdown,
+      },
+    ],
+    position: {
+      position: 'end',
+      ...(pageId ? { pageId } : {}),
+    },
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (response.ok) {
+      try {
+        const data = (await response.json()) as Record<string, unknown>;
+        const craftDocId =
+          (data.id as string) ??
+          (data.blockId as string) ??
+          (data.documentId as string) ??
+          undefined;
+        const craftUrl =
+          (data.url as string) ??
+          (data.permalink as string) ??
+          (data.webUrl as string) ??
+          undefined;
+
+        return {
+          success: true,
+          craftDocId: craftDocId ?? undefined,
+          craftUrl: craftUrl ?? undefined,
+        };
+      } catch {
+        return { success: true };
+      }
+    }
+
+    // 4xx = l'API ne supporte pas le type "page" → retourner null pour fallback
+    if (response.status >= 400 && response.status < 500) {
+      return null;
+    }
+
+    // 5xx = erreur serveur, pas un problème de compatibilité
+    const errorBody = await response.text().catch(() => '');
+    return {
+      success: false,
+      error: `Craft subpage API ${response.status}: ${errorBody.slice(0, 200)}`,
+    };
+  } catch (err) {
+    clearTimeout(timer);
+
+    const isAbort =
+      err instanceof Error &&
+      (err.name === 'AbortError' || err.message.includes('aborted'));
+
+    if (isAbort) {
+      // Timeout sur la tentative sous-page — fallback
+      return null;
+    }
+
+    // Erreur réseau → fallback
+    return null;
+  }
+}
+
+/**
+ * Publie un CR sur Craft, en privilégiant la création d'une sous-page séparée.
+ *
+ * Flow :
+ *  1. Tenter la publication comme sous-page (1 page par CR)
+ *  2. Si échec (API non supportée) → fallback : bloc texte avec séparateur fort
  */
 export async function publishToCraft(
   params: CraftPublishParams,
@@ -53,21 +161,37 @@ export async function publishToCraft(
     };
   }
 
-  // pageId : ID de la page Craft parente où les CR sont ajoutés
-  // Si non configuré, tenter sans (certains Craft Links ont une page par défaut)
   const pageId = process.env.CRAFT_PAGE_ID;
+  const effectivePageId = pageId && pageId !== '__TO_FILL__' ? pageId : undefined;
 
-  const fullMarkdown = `# ${params.title}\n\n**Réf.** ${params.reference}\n\n${params.markdown}`;
+  // Tentative 1 : sous-page dédiée
+  const subpageResult = await tryPublishAsSubpage(
+    baseUrl,
+    token,
+    effectivePageId,
+    params,
+  );
+
+  // Si la sous-page a réussi ou a échoué définitivement (5xx), retourner le résultat
+  if (subpageResult !== null) {
+    return subpageResult;
+  }
+
+  // Tentative 2 (fallback) : bloc texte avec séparateur visuel fort
+  // Le séparateur crée une rupture visuelle claire entre les CR successifs
+  const separator = '\n\n---\n\n';
+  const fullMarkdown =
+    `${separator}# ${params.title}\n\n` +
+    `**Réf.** ${params.reference}\n\n` +
+    `${params.markdown}`;
 
   const url = `${baseUrl.replace(/\/$/, '')}/blocks`;
 
-  // Format Craft API validé par Replit :
-  // { blocks: [{ type: "text", markdown: "..." }], position: { position: "end", pageId: "..." } }
   const payload: Record<string, unknown> = {
     blocks: [{ type: 'text', markdown: fullMarkdown }],
     position: {
       position: 'end',
-      ...(pageId && pageId !== '__TO_FILL__' ? { pageId } : {}),
+      ...(effectivePageId ? { pageId: effectivePageId } : {}),
     },
   };
 
@@ -91,7 +215,6 @@ export async function publishToCraft(
       clearTimeout(timer);
 
       if (response.ok) {
-        // Tenter de parser la réponse pour extraire l'ID et l'URL
         try {
           const data = (await response.json()) as Record<string, unknown>;
           const craftDocId =
@@ -111,7 +234,6 @@ export async function publishToCraft(
             craftUrl: craftUrl ?? undefined,
           };
         } catch {
-          // Réponse non-JSON mais status OK — on considère le succès
           return { success: true };
         }
       }
@@ -122,7 +244,6 @@ export async function publishToCraft(
         continue;
       }
 
-      // Erreur définitive (4xx ou retries épuisés)
       const errorBody = await response.text().catch(() => '');
       return {
         success: false,
@@ -146,7 +267,6 @@ export async function publishToCraft(
         };
       }
 
-      // Erreur réseau → retry si première tentative
       if (attempt < MAX_ATTEMPTS) {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         continue;

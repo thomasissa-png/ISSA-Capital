@@ -27,6 +27,7 @@ import type { CRDraft } from '@/lib/secretariat/types';
 import {
   sendTelegramMessage,
   sendTelegramConfirmation,
+  sendTelegramDocument,
   answerCallbackQuery,
   downloadTelegramPhoto,
 } from '@/lib/secretariat/telegram';
@@ -52,6 +53,7 @@ import {
 import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { publishToCraft } from '@/lib/secretariat/craft-publisher';
+import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -687,18 +689,56 @@ export async function POST(request: Request): Promise<Response> {
           // 3. Construire le titre Craft
           const craftTitle = buildCraftTitle(pendingDraft.cr);
 
-          // 4. Publier sur Craft
+          // 4. Générer le PDF du CR
+          let pdfBuffer: Buffer | null = null;
+          try {
+            pdfBuffer = await generateCrPdf({
+              cr: pendingDraft.cr,
+              reference,
+              dateEtablissement,
+            });
+          } catch (pdfErr) {
+            console.error(
+              '[telegram-webhook] erreur génération PDF :',
+              pdfErr instanceof Error ? pdfErr.message : String(pdfErr),
+            );
+            // On continue sans PDF — la publication Craft reste prioritaire
+          }
+
+          // 5. Envoyer le PDF sur Telegram (avant la publication Craft pour feedback rapide)
+          if (pdfBuffer) {
+            const pdfFilename = `${reference.replace(/\//g, '-')}.pdf`;
+            const pdfCaption = `${craftTitle}\nRéf. ${reference}`;
+            const docResult = await sendTelegramDocument(
+              callbackChatId,
+              pdfBuffer,
+              pdfFilename,
+              pdfCaption,
+            );
+            if (!docResult.success) {
+              console.error(
+                '[telegram-webhook] erreur envoi PDF Telegram :',
+                docResult.error,
+              );
+              // On continue — le PDF n'est pas bloquant
+            }
+          }
+
+          // 6. Publier sur Craft (sous-page dédiée ou fallback séparateur)
           const craftResult = await publishToCraft({
             markdown: craftMarkdown,
             title: craftTitle,
             reference,
           });
 
-          // 5. Envoyer la confirmation sur Telegram
+          // 7. Envoyer la confirmation textuelle sur Telegram
           if (craftResult.success) {
             let confirmMsg = `CR validé et publié sur Craft.\n\nRéférence : ${reference}`;
             if (craftResult.craftUrl) {
               confirmMsg += `\nURL : ${craftResult.craftUrl}`;
+            }
+            if (!pdfBuffer) {
+              confirmMsg += '\n\n⚠️ Le PDF n\'a pas pu être généré.';
             }
             await sendTelegramMessage(callbackChatId, confirmMsg);
           } else {
@@ -707,11 +747,12 @@ export async function POST(request: Request): Promise<Response> {
             const warnMsg =
               `CR validé avec la référence ${reference}.\n\n` +
               `⚠️ La publication sur Craft a échoué : ${craftResult.error ?? 'erreur inconnue'}.\n` +
-              'Le CR est sauvegardé localement. La publication Craft pourra être retentée.';
+              'Le CR est sauvegardé localement. La publication Craft pourra être retentée.' +
+              (pdfBuffer ? '\n\nLe PDF a été envoyé ci-dessus.' : '');
             await sendTelegramMessage(callbackChatId, warnMsg);
           }
 
-          // 6. Nettoyer la conversation et le draft
+          // 8. Nettoyer la conversation et le draft
           clearPendingDraft(callbackChatId);
           clearConversation(callbackChatId);
         } catch (err) {

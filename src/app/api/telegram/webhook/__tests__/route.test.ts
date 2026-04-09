@@ -17,12 +17,15 @@ const mocks = vi.hoisted(() => ({
   // Telegram
   sendTelegramMessage: vi.fn().mockResolvedValue({ success: true }),
   sendTelegramConfirmation: vi.fn().mockResolvedValue({ success: true }),
+  sendTelegramDocument: vi.fn().mockResolvedValue({ success: true }),
   answerCallbackQuery: vi.fn().mockResolvedValue({ success: true }),
   downloadTelegramPhoto: vi.fn().mockResolvedValue({
     success: true,
     base64: 'abc',
     mimeType: 'image/jpeg',
   }),
+  // PDF generator
+  generateCrPdf: vi.fn().mockResolvedValue(Buffer.from('fake-pdf-content')),
   // Craft publisher
   publishToCraft: vi.fn().mockResolvedValue({
     success: true,
@@ -83,8 +86,13 @@ vi.mock('@anthropic-ai/sdk', () => ({
 vi.mock('@/lib/secretariat/telegram', () => ({
   sendTelegramMessage: mocks.sendTelegramMessage,
   sendTelegramConfirmation: mocks.sendTelegramConfirmation,
+  sendTelegramDocument: mocks.sendTelegramDocument,
   answerCallbackQuery: mocks.answerCallbackQuery,
   downloadTelegramPhoto: mocks.downloadTelegramPhoto,
+}));
+
+vi.mock('@/lib/secretariat/pdf-generator', () => ({
+  generateCrPdf: mocks.generateCrPdf,
 }));
 
 vi.mock('@/lib/secretariat/craft-publisher', () => ({
@@ -292,8 +300,10 @@ describe('POST /api/telegram/webhook', () => {
     });
     mocks.sendTelegramMessage.mockResolvedValue({ success: true });
     mocks.sendTelegramConfirmation.mockResolvedValue({ success: true });
+    mocks.sendTelegramDocument.mockResolvedValue({ success: true });
     mocks.answerCallbackQuery.mockResolvedValue({ success: true });
     mocks.fetchRecentCRs.mockResolvedValue('');
+    mocks.generateCrPdf.mockResolvedValue(Buffer.from('fake-pdf-content'));
   });
 
   // ----------------------------------------------------------
@@ -500,6 +510,18 @@ describe('POST /api/telegram/webhook', () => {
 
     // La référence séquentielle est générée
     expect(mocks.getNextReference).toHaveBeenCalledWith('IC');
+
+    // Le PDF est généré
+    expect(mocks.generateCrPdf).toHaveBeenCalledOnce();
+    const pdfArgs = mocks.generateCrPdf.mock.calls[0] as [{ cr: typeof VALID_CR_DRAFT; reference: string; dateEtablissement: string }];
+    expect(pdfArgs[0].reference).toBe('IC-CR-2026-0001');
+    expect(pdfArgs[0].cr).toEqual(VALID_CR_DRAFT);
+
+    // Le PDF est envoyé sur Telegram
+    expect(mocks.sendTelegramDocument).toHaveBeenCalledOnce();
+    const docArgs = mocks.sendTelegramDocument.mock.calls[0] as [number, Buffer, string, string];
+    expect(docArgs[0]).toBe(12345);
+    expect(docArgs[2]).toBe('IC-CR-2026-0001.pdf');
 
     // Publication sur Craft
     expect(mocks.publishToCraft).toHaveBeenCalledOnce();
