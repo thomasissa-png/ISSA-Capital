@@ -129,7 +129,9 @@ Cette section justifie la dépense au regard de l'Art. 39-1 du CGI. Elle DOIT co
 - L'objet précis de la réunion (pas "réunion de travail")
 - Le lien explicite avec l'intérêt social de l'entité concernée
 - La mention "conformément à l'Art. 39-1 du CGI"
-- Le montant TTC de la dépense (ou champ [MONTANT_TTC] si non communiqué — voir Section 7)
+- Le montant TTC de la dépense
+- Si type = dejeuner ou diner : une JUSTIFICATION DU FORMAT REPAS en 1 phrase. Pourquoi un déjeuner/dîner plutôt qu'une réunion de bureau ou un appel ? Exemples acceptables : "Le déjeuner a permis de tenir cette réunion de travail dans la continuité de la visite technique réalisée le même jour" / "Ce format a été retenu compte tenu du déplacement des participants depuis Paris" / "Le déjeuner constituait le seul créneau compatible entre les agendas des trois associés". NE JAMAIS omettre cette justification — c'est le point le plus ciblé en contrôle fiscal.
+- Si la réunion comprend une visite (immobilière, technique, etc.) en plus du repas : MENTIONNER la visite comme événement distinct avec son horaire approximatif et ses éléments traçables ("visite effectuée en amont du déjeuner — confirmation de rendez-vous disponible dans la messagerie de [NOM]")
 - Le nom de l'établissement si applicable (déjeuner/dîner)
 
 Phrase-type validée par @legal :
