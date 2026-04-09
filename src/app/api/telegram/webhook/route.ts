@@ -499,8 +499,10 @@ export async function POST(request: Request): Promise<Response> {
       // Récupérer les photos en attente (envoyées avant ce message texte)
       const pendingPhotos = getPhotos(chatId);
 
-      // Accusé de réception si le message est long (probable CR, pas une clarification courte)
-      if (text.length > 50 || pendingPhotos.length > 0) {
+      // Accusé de réception UNIQUEMENT si c'est le premier message de la conversation
+      // (pas une réponse à une clarification) ET le message est substantiel
+      const isFirstMessage = history.length === 0;
+      if (isFirstMessage && (text.length > 80 || pendingPhotos.length > 0)) {
         await sendTelegramMessage(chatId, 'Un instant, je prépare le compte rendu…');
       }
 
