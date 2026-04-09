@@ -499,6 +499,11 @@ export async function POST(request: Request): Promise<Response> {
       // Récupérer les photos en attente (envoyées avant ce message texte)
       const pendingPhotos = getPhotos(chatId);
 
+      // Accusé de réception si le message est long (probable CR, pas une clarification courte)
+      if (text.length > 50 || pendingPhotos.length > 0) {
+        await sendTelegramMessage(chatId, 'Un instant, je prépare le compte rendu…');
+      }
+
       // Appel Claude avec l'historique complet + photos en attente
       const result = await generateCR(text, claudeHistory, pendingPhotos);
 
