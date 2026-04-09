@@ -1,22 +1,21 @@
 /**
  * POST /api/telegram/webhook
  *
- * Route handler Next.js (App Router) pour recevoir les webhooks Telegram.
+ * Route handler Next.js (App Router) pour le secrétariat ISSA Capital.
  *
- * Flow MVP :
+ * Flow complet :
  *  1. Vérifier le secret token (X-Telegram-Bot-Api-Secret-Token) via timingSafeEqual
  *  2. Parser le body JSON via Zod (TelegramUpdateSchema)
  *  3. Vérifier le chat_id contre la whitelist (TELEGRAM_ALLOWED_CHAT_IDS)
- *  4. Envoyer le message texte à Claude avec le system prompt fiscal
- *  5. Si Claude retourne needs_clarification -> renvoyer la question
- *     Si Claude retourne ready -> formater le CR et renvoyer
- *  6. Toujours retourner 200 OK (Telegram retente agressivement sinon)
+ *  4. Envoyer le message à Claude avec system prompt fiscal + contacts + historique Craft
+ *  5. Claude peut faire des recherches web (adresses, entreprises)
+ *  6. Si needs_clarification → renvoyer la question (conversation multi-tours)
+ *     Si ready → envoyer aperçu CR + boutons Valider/Modifier/Annuler
+ *  7. Valider → référence IC-CR-YYYY-XXXX + publication Craft + confirmation
+ *  8. Toujours retourner 200 OK (Telegram retente agressivement sinon)
  *
- * Pas de session multi-messages dans ce MVP : chaque message = un appel Claude
- * complet. Thomas envoie le contenu de la réunion en un seul message, Claude
- * génère le CR en une passe.
- *
- * Choix de rendu : SSR force-dynamic (webhook temps réel, pas de cache)
+ * Mémoire : historique de conversation persisté en JSON (24h TTL, 20 messages max).
+ * Contacts récurrents injectés dans le prompt. Recherche web automatique.
  */
 
 import { readFileSync } from 'node:fs';
