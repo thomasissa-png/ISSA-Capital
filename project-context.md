@@ -648,9 +648,9 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 10. Crons (backup quotidien + RFC3161 backfill hebdo)
 11. UptimeRobot + alerte coût Anthropic
 
-### 🔴 PROPAGATION P1/P2 NON-PROPAGÉE — gate bloquante reprise session 9
+### ✅ PROPAGATION P1/P2 — DONE (session 9 Phase 0, 2026-04-09)
 
-11 learnings session 7-8 ajoutés dans `docs/lessons-learned.md` dont 7 avec statut propagation = `non-propagé`. Propager dans les agents concernés AVANT tout nouveau travail en session 9.
+8 learnings session 7-8 propagés dans 10 fichiers agents (CLAUDE.md, orchestrator.md, fullstack.md, infrastructure.md, creative-strategy.md, copywriter.md, design.md, ia.md, legal.md, product-manager.md). Statut propagation mis à jour dans `docs/lessons-learned.md`.
 
 ### Décisions Thomas verrouillées session 7-8
 

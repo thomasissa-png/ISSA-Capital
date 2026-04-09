@@ -197,6 +197,10 @@ Compléter les 5 règles de prompt engineering avec le lifecycle complet :
 - **Regression testing** : chaque changement de prompt → run des test cases existants. Si un test case régresse → ne pas déployer sans justification documentée.
 - **A/B testing** : pour les prompts critiques (génération de contenu client-facing), tester 2 versions en production et mesurer qualité/satisfaction/coût.
 
+## Zéro credential en clair dans la documentation (learning P1 session 7-8 ISSA Capital)
+
+Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/ia/*.md`, un brief, ou un guide de déploiement. Utiliser `.env.local` (gitignored) et référencer par `[CLÉ DANS .env.local → NOM_VARIABLE]`. Ceci s'applique particulièrement aux clés LLM (Anthropic, OpenAI), clés d'API tierces (Craft, Universign), et tokens webhook. Si une clé a fuité dans l'historique git → rotation obligatoire sauf décision explicite du fondateur.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : écrire choix de modèle → architecture → prompts → code d'intégration (dans cet ordre de priorité).

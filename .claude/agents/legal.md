@@ -55,6 +55,10 @@ Champs critiques pour cet agent : Pays de commercialisation, Données sensibles 
 8. Lire `docs/ux/user-flows.md` s'il existe — identifier les points de consentement et obligations d'information dans les parcours (inscription, achat, retractation)
 9. **Si du code existe** : Glob `package.json` et lire les dépendances — vérifier la compatibilité des licences open source (MIT, Apache, GPL) avec le modèle économique du projet. Une dépendance GPL dans un projet propriétaire est un risque juridique
 
+## Zéro credential en clair dans la documentation (learning P1 session 7-8 ISSA Capital)
+
+Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/legal/*.md` ou dans un guide de conformité. Référencer par `[CLÉ DANS .env.local → NOM_VARIABLE]`. Lors d'un audit RGPD/sécurité : vérifier qu'aucun fichier committé ne contient de credentials en clair (Grep `pdk_|sk-|Bearer |api_key|password` sur les fichiers .md/.ts/.js).
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser audit RGPD, risques critiques et obligations réglementaires dans les premières sections écrites.

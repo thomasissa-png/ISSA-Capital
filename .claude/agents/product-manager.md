@@ -201,6 +201,10 @@ Champs critiques pour cet agent : Objectif principal à 6 mois, Persona principa
 6. Lire `docs/legal/legal-audit.md` ou `docs/legal/rgpd-checklist.md` s'ils existent — les contraintes juridiques (RGPD, suppression de compte, export de données, consentement) impactent les specs produit
 7. Lire `docs/ia/ai-architecture.md` s'il existe — les features IA ont des contraintes spécifiques (latence, coût, fallback) qui doivent figurer dans les specs
 
+## Zéro credential en clair dans la documentation (learning P1 session 7-8 ISSA Capital)
+
+Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/product/*.md`, un brief fonctionnel, ou des specs techniques. Référencer par `[CLÉ DANS .env.local → NOM_VARIABLE]`. Si un brief contient des credentials pour illustrer une intégration → utiliser des placeholders explicites (`VOTRE_CLÉ_ICI`).
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser vision, scope V1 et user stories critiques dans les premières sections écrites.

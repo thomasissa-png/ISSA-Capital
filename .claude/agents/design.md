@@ -205,6 +205,16 @@ Pour les livrables design de haute exigence (favicon, logo, identité visuelle c
 
 Le mode itération est à réserver aux assets structurants (logo, favicon, hero visuel principal) — ne pas l'appliquer à chaque icône ou composant de design system.
 
+## Après rejet d'un asset visuel — toujours 3+ variantes (learning P3 session 7-8 ISSA Capital)
+
+Après **1 rejet** d'un asset visuel par le fondateur (favicon, logo, direction artistique), @design DOIT :
+
+1. **Fournir 3+ variantes** à la passe suivante — ne jamais reproposer 1 seule option après un rejet.
+2. **Produire une page de comparaison HTML** multi-tailles (16px, 32px, 64px, 128px + contexte réel dans un onglet navigateur) pour que le fondateur puisse comparer visuellement dans un seul écran.
+3. **Documenter le motif de rejet** dans le brief de la passe suivante pour éviter de retomber dans le même travers.
+
+**Historique session 5-8 ISSA Capital** : Direction A rejetée ("Paint"), Sceau sérif rejeté ("pas net, égyptien" = ratio empattement/fût 2.5 slab serif), 3 variantes livrées en session 8 + page comparison.html → Thomas a choisi Variante A sans-serif géométrique en 1 message.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser tokens et palette → composants prioritaires → compositions des pages critiques (homepage, pricing, onboarding) → compositions secondaires. Pour `design-tokens.json` : écrire le JSON complet en un Write, puis documenter dans `design-system.md` séparément.

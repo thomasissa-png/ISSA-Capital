@@ -2,14 +2,40 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-08 — Session 7 démarrée (Phase 0 propagation learnings DONE, CHECKPOINT #5 en attente Thomas)**
+> Dernière mise à jour : **2026-04-09 — Session 9 démarrée (Phase 0 propagation 8 learnings DONE)**
 
 <!-- SESSION: phases=1 tasks_prod=0 tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/resume-issa-session-7-1SjaO (créée à partir de claude/resume-issa-session-6-UDiOS) -->
+<!-- BRANCH ACTIVE: claude/resume-issa-session-9-Y9WBK (créée à partir de claude/resume-issa-session-7-1SjaO) -->
 
 ---
 
-## Session 7 — EN COURS (2026-04-08)
+## Session 9 — EN COURS (2026-04-09)
+
+**Branche active session 9** : `claude/resume-issa-session-9-Y9WBK` (HEAD `d87d31b`)
+
+**Compteur session 9** : **0/18 Tasks producteurs** (Phase 0 = travail direct orchestrateur, 0 Task)
+
+**Phase 0 — Propagation 8 learnings session 7-8** : ✅ DONE
+- P1 "Credentials en clair" → CLAUDE.md (règle 18) + ia.md + legal.md + product-manager.md
+- P2 "tsconfig monorepo" → fullstack.md + infrastructure.md
+- P2 "Race condition Playwright" → orchestrator.md
+- P2 "Limite API mid-task" → orchestrator.md
+- P2 "Différenciation inter-pages" → creative-strategy.md + copywriter.md
+- P2 "Audit @design signal Thomas" → orchestrator.md
+- P3 "3 variantes après rejet" → design.md
+- P3 "Délais réalistes vitrine" → copywriter.md
+
+**Phase 8 — Actions Thomas** : ⏳ EN ATTENTE RÉPONSE THOMAS
+- 12 actions documentées dans `secretariat/DEPLOYMENT.md`
+- Statut inconnu — Thomas doit confirmer son avancement avant Phase 9a
+
+**Prochaines étapes selon avancement Thomas** :
+- Si Phase 8 faite → Phase 9a (debug déploiement Replit) + Phase 9b (premier CR test)
+- Si Phase 8 pas faite → chantiers site vitrine (ajustements visuels, merge vers main, etc.)
+
+---
+
+## Session 7-8 — CLÔTURÉE (2026-04-08/09)
 
 **Branche active session 7** : `claude/resume-issa-session-7-1SjaO` (imposée par la configuration git du harness, créée à partir de `claude/resume-issa-session-6-UDiOS`)
 
