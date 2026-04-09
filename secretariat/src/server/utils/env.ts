@@ -97,6 +97,10 @@ const envSchema = z.object({
     .transform((val) => Number.parseInt(val, 10))
     .pipe(z.number().int().positive().max(720)),
 
+  // --- Telegram Bot API (connecteur d'entrée alternatif à WhatsApp) ---
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
+
   // --- Phase 6 — Universign RFC 3161 (horodatage qualifié) ---
   // OPTIONNEL : si absent ou placeholder `__TO_FILL__`, le service Universign
   // throw `UniversignNotConfiguredError` et le publisher continue sans token

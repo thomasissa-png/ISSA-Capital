@@ -39,6 +39,7 @@ import { draftsRouter } from './routes/drafts';
 import { healthRouter } from './routes/health';
 import { publishRouter } from './routes/publish';
 import { publishedRouter } from './routes/published';
+import { telegramRouter } from './routes/telegram';
 import { whatsappRouter } from './routes/whatsapp';
 import { getEnv } from './utils/env';
 import { getLogger } from './utils/logger';
@@ -163,6 +164,9 @@ export function buildApp(): Application {
   // Signature HMAC vérifiée via middleware dédié (verifyMetaSignature) dans
   // le router — le rawBody est capturé en amont par `express.json({ verify })`.
   app.use('/api/whatsapp', whatsappRouter);
+  // Telegram Bot API webhook — connecteur d'entrée alternatif à WhatsApp.
+  // Secret token vérifié via header X-Telegram-Bot-Api-Secret-Token dans le router.
+  app.use('/api/telegram', telegramRouter);
   // Phase 5 — admin web `/admin`. Cookie-parser + auth JWT + CRUD 4 modules +
   // UI vanilla statique. Monté en dernier avant 404 handler pour que le
   // cookie-parser du sous-router ne pollue pas les autres routes.
