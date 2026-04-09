@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, useEffect, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -63,6 +63,24 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
   const [opportunityType, setOpportunityType] = useState<string>('');
   const locationRequired =
     variant === 'opportunite' && opportunityType === 'immobilier_residentiel';
+
+  // Pré-sélection du sujet via hash (#contact-opportunite / #contact-accompagnement)
+  const [subject, setSubject] = useState<string>('');
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#contact-opportunite') {
+      setSubject('opportunite');
+    } else if (hash === '#contact-accompagnement') {
+      setSubject('accompagnement');
+    }
+    // Scroll vers la section contact si hash correspond
+    if (hash.startsWith('#contact')) {
+      const el = document.getElementById('contact');
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -210,12 +228,27 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
           ) : null}
         </div>
 
-        {/*
-          C13 : champ Sujet retiré du variant 'contact'.
-          Raisonnement : demander au visiteur de catégoriser son message avant d'écrire
-          est une friction de funnel incompatible avec la posture vitrine patrimoniale.
-          La nature de la demande émerge du champ Message libre.
-        */}
+        {/* Champ Sujet — variant contact : pré-sélectionné via hash CTA hero */}
+        {variant === 'contact' ? (
+          <div>
+            <label htmlFor="subject" className={labelClass}>
+              Sujet
+            </label>
+            <select
+              id="subject"
+              name="subject"
+              className={inputClass}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            >
+              <option value="">— Choisir un sujet</option>
+              <option value="opportunite">Présenter une opportunité d&apos;affaires</option>
+              <option value="accompagnement">Être accompagné</option>
+              <option value="presse">Presse</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        ) : null}
 
         {variant === 'opportunite' ? (
           <>

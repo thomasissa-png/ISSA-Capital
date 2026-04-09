@@ -62,10 +62,18 @@ export default function HomePage(): JSX.Element {
             La holding patrimoniale de la famille Issa, établie en France.
             Patrimoine, participations, transmission.
           </p>
-          {/* C2 : un seul bouton — suppressi du flex wrapper, centré via text-center parent */}
-          <div className="mt-2xl">
-            <Button href="#contact" variant="primary-inverse" size="lg">
-              Nous écrire
+          {/* 2 CTAs : scroll vers le formulaire avec pré-sélection du sujet */}
+          <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
+            <Button href="#contact-opportunite" variant="primary-inverse" size="lg">
+              Présenter une opportunité d&apos;affaires
+            </Button>
+            <Button
+              href="#contact-accompagnement"
+              variant="ghost"
+              size="lg"
+              className="border border-parchment-100/40 bg-transparent text-parchment-100 hover:bg-parchment-100/10 active:bg-parchment-100/20"
+            >
+              Être accompagné
             </Button>
           </div>
         </Container>
@@ -83,8 +91,9 @@ export default function HomePage(): JSX.Element {
           <div className="mt-xl space-y-lg text-lead text-ink-700">
             <p>
               ISSA Capital est la holding patrimoniale de la famille Issa,
-              établie en France. Sa raison d&apos;être : structurer ce qui s&apos;est
-              construit sur trois décennies, le faire fructifier, le transmettre.
+              établie en France. Sa raison d&apos;être&nbsp;: structurer ce qui
+              s&apos;est construit sur trois décennies, le faire fructifier,
+              le transmettre.
             </p>
             <p>
               Une structure indépendante, dont les Issa sont les seuls actionnaires, et
