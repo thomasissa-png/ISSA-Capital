@@ -68,6 +68,34 @@ const envSchema = z.object({
   WHATSAPP_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_WEBHOOK_SECRET: z.string().optional(),
   WHATSAPP_WHITELIST_E164: z.string().optional(),
+
+  // --- Admin Web (Phase 5) ---
+  // JWT_SECRET doit faire >= 32 caractères en production. En dev/test on
+  // fallback sur une valeur fixe pour ne pas casser les tests Phase 1-4
+  // (qui n'ont pas besoin d'auth admin). Le fallback est suffisamment long
+  // pour passer la contrainte min(32).
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT_SECRET doit faire au moins 32 caractères')
+    .optional()
+    .transform(
+      (v) => v ?? 'dev-only-jwt-secret-NEVER-use-in-production-change-me-please',
+    ),
+  // Hash bcrypt du mot de passe admin (généré via scripts/generate-admin-hash.ts).
+  // Optionnel en dev/test : si absent, la route /admin/login retourne 503
+  // plutôt que de laisser le serveur crasher au démarrage.
+  ADMIN_PASSWORD_HASH: z
+    .string()
+    .refine((v) => v.length === 0 || v.startsWith('$2'), {
+      message: 'ADMIN_PASSWORD_HASH doit être un hash bcrypt (commence par "$2")',
+    })
+    .optional(),
+  // Durée de vie de la session admin en heures (cookie + JWT exp).
+  ADMIN_SESSION_TTL_HOURS: z
+    .string()
+    .default('24')
+    .transform((val) => Number.parseInt(val, 10))
+    .pipe(z.number().int().positive().max(720)),
 });
 
 export type Env = z.infer<typeof envSchema>;

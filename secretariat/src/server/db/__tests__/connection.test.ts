@@ -103,8 +103,10 @@ describe('db connection + migrations', () => {
     initDatabase();
     const db = getDb();
 
+    // Vérifie que la migration 1 est bien enregistrée (peut coexister avec
+    // des migrations ultérieures 002+, 003+ selon la phase active).
     const row = db
-      .prepare('SELECT version, applied_at FROM schema_version ORDER BY version DESC LIMIT 1')
+      .prepare('SELECT version, applied_at FROM schema_version WHERE version = 1')
       .get() as { version: number; applied_at: string } | undefined;
 
     expect(row).toBeDefined();

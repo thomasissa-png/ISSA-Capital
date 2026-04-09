@@ -31,11 +31,13 @@ import { closeDatabase, initDatabase } from './db/connection';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { draftRateLimit } from './middleware/rateLimitDraft';
 import { publishRateLimit } from './middleware/rateLimitPublish';
+import { adminRouter } from './routes/admin';
 import { draftRouter } from './routes/draft';
 import { draftsRouter } from './routes/drafts';
 import { healthRouter } from './routes/health';
 import { publishRouter } from './routes/publish';
 import { publishedRouter } from './routes/published';
+import { whatsappRouter } from './routes/whatsapp';
 import { getEnv } from './utils/env';
 import { getLogger } from './utils/logger';
 
@@ -73,7 +75,18 @@ export function buildApp(): Application {
   // --- Body parsing ---
   // Limite 1 MB (aucun upload binaire en Phase 1 ; les messages WhatsApp
   // entrants sont du JSON léger).
-  app.use(express.json({ limit: '1mb' }));
+  //
+  // `verify` capture le raw body UTF-8 sur `req.rawBody` — indispensable au
+  // middleware verifyMetaSignature (HMAC-SHA256 sur bytes exacts reçus).
+  // Cf docs/ia/secretariat-architecture.md §7.2 et middleware/verifyMetaSignature.ts.
+  app.use(
+    express.json({
+      limit: '1mb',
+      verify: (req, _res, buf) => {
+        (req as express.Request & { rawBody?: string }).rawBody = buf.toString('utf8');
+      },
+    }),
+  );
 
   // --- Rate limiting global ---
   // 100 req / 15 min par IP en dev. En prod le rate limiting fin par numéro
@@ -106,6 +119,14 @@ export function buildApp(): Application {
   // Phase 4 — lecture des CR publiés (liste + détail). Pas de rate limit
   // dédié : lecture en local SQLite, pas d'appel externe.
   app.use('/api/published', publishedRouter);
+  // Phase 2 — webhooks WhatsApp Cloud API (GET handshake + POST messages).
+  // Signature HMAC vérifiée via middleware dédié (verifyMetaSignature) dans
+  // le router — le rawBody est capturé en amont par `express.json({ verify })`.
+  app.use('/api/whatsapp', whatsappRouter);
+  // Phase 5 — admin web `/admin`. Cookie-parser + auth JWT + CRUD 4 modules +
+  // UI vanilla statique. Monté en dernier avant 404 handler pour que le
+  // cookie-parser du sous-router ne pollue pas les autres routes.
+  app.use('/admin', adminRouter);
 
   // --- 404 + error handler (DOIVENT être montés en dernier) ---
   app.use(notFoundHandler);
