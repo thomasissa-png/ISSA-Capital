@@ -36,7 +36,7 @@ import {
   buildCraftTitle,
 } from '@/lib/secretariat/cr-renderer';
 import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
-import { fetchRecentCRs } from '@/lib/secretariat/craft-reader';
+// craft-reader retiré — remplacé par cr-history (historique local)
 import {
   getConversation,
   appendMessage as storeMessage,
@@ -53,6 +53,7 @@ import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
+import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -206,8 +207,8 @@ async function generateCR(
       contactsBlock,
     );
 
-    // Récupérer les derniers CR depuis Craft (contexte historique)
-    const recentCRs = await fetchRecentCRs();
+    // Récupérer l'historique des CR validés (mémoire longue)
+    const recentCRs = formatHistoryForPrompt(10);
 
     // Injecter la date/heure actuelle pour que Claude comprenne "aujourd'hui", "hier", etc.
     const now = new Date();
@@ -748,7 +749,10 @@ export async function POST(request: Request): Promise<Response> {
           }
           await sendTelegramMessage(callbackChatId, confirmMsg);
 
-          // 8. Nettoyer la conversation et le draft
+          // 8. Sauvegarder le CR dans l'historique (mémoire longue d'Anya)
+          saveCrToHistory(pendingDraft.cr, reference, dateEtablissement);
+
+          // 9. Nettoyer la conversation et le draft
           clearPendingDraft(callbackChatId);
           clearConversation(callbackChatId);
         } catch (err) {
