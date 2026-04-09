@@ -95,8 +95,7 @@ export async function uploadToDrive(
       fields: 'id,webViewLink',
     } as unknown as Parameters<typeof drive.files.create>[0]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (response as any).data as { id?: string; webViewLink?: string } | undefined;
+    const data = (response as unknown as { data?: { id?: string; webViewLink?: string } }).data;
     const fileId = data?.id ?? undefined;
     const webViewLink = data?.webViewLink ?? undefined;
 
