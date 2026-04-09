@@ -11,32 +11,51 @@
  * (même logique, adaptée de SQLite vers fichier JSON)
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Entite } from './types';
 
-const COUNTER_PATH = resolve(process.cwd(), '.cr-counter.json');
+// Même répertoire /tmp que le conversation store
+const COUNTER_DIR = '/tmp/issa-secretariat';
+const COUNTER_PATH = resolve(COUNTER_DIR, 'cr-counter.json');
 
-/**
- * Structure interne du fichier compteur.
- * Clé = "{entite}-{year}" (ex: "IC-2026"), valeur = dernier numéro utilisé.
- */
 type CounterData = Record<string, number>;
 
-function loadCounters(): CounterData {
+let inMemoryCounters: CounterData | null = null;
+
+function ensureDir(): void {
   try {
+    if (!existsSync(COUNTER_DIR)) {
+      mkdirSync(COUNTER_DIR, { recursive: true });
+    }
+  } catch {
+    // best effort
+  }
+}
+
+function loadCounters(): CounterData {
+  if (inMemoryCounters !== null) {
+    return inMemoryCounters;
+  }
+
+  try {
+    ensureDir();
     if (existsSync(COUNTER_PATH)) {
       const raw = readFileSync(COUNTER_PATH, 'utf8');
-      return JSON.parse(raw) as CounterData;
+      inMemoryCounters = JSON.parse(raw) as CounterData;
+      return inMemoryCounters;
     }
   } catch {
     console.warn('[reference-counter] fichier corrompu, reset');
   }
-  return {};
+  inMemoryCounters = {};
+  return inMemoryCounters;
 }
 
 function saveCounters(data: CounterData): void {
+  inMemoryCounters = data;
   try {
+    ensureDir();
     writeFileSync(COUNTER_PATH, JSON.stringify(data, null, 2), 'utf8');
   } catch (err) {
     console.error('[reference-counter] erreur écriture :', err);

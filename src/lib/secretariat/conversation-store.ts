@@ -13,11 +13,14 @@
  * boutons inline Telegram (Valider/Modifier/Annuler).
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CRDraft } from './types';
 
-const STORE_PATH = resolve(process.cwd(), '.conversations.json');
+// Utiliser /tmp pour la persistence (garanti accessible sur Replit et serverless)
+// + fallback mémoire si le fichier n'est pas accessible
+const STORE_DIR = '/tmp/issa-secretariat';
+const STORE_PATH = resolve(STORE_DIR, 'conversations.json');
 const MAX_MESSAGES_PER_CONVERSATION = 20;
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
@@ -75,20 +78,48 @@ type StoreData = Record<string, ConversationEntry>;
 // Persistence
 // ============================================================
 
-function loadStore(): StoreData {
+// Cache mémoire — survit entre les requêtes tant que le process tourne
+let inMemoryStore: StoreData | null = null;
+
+function ensureDir(): void {
   try {
+    if (!existsSync(STORE_DIR)) {
+      mkdirSync(STORE_DIR, { recursive: true });
+    }
+  } catch {
+    // /tmp peut ne pas être disponible dans certains environnements
+  }
+}
+
+function loadStore(): StoreData {
+  // Priorité 1 : cache mémoire (toujours à jour)
+  if (inMemoryStore !== null) {
+    return inMemoryStore;
+  }
+
+  // Priorité 2 : fichier disque (survit aux restarts)
+  try {
+    ensureDir();
     if (existsSync(STORE_PATH)) {
       const raw = readFileSync(STORE_PATH, 'utf8');
-      return JSON.parse(raw) as StoreData;
+      inMemoryStore = JSON.parse(raw) as StoreData;
+      return inMemoryStore;
     }
   } catch {
     console.warn('[conversation-store] fichier corrompu, reset');
   }
-  return {};
+
+  inMemoryStore = {};
+  return inMemoryStore;
 }
 
 function saveStore(data: StoreData): void {
+  // Toujours mettre à jour le cache mémoire
+  inMemoryStore = data;
+
+  // Tenter de persister sur disque (best effort)
   try {
+    ensureDir();
     writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), 'utf8');
   } catch (err) {
     console.error('[conversation-store] erreur écriture :', err);
