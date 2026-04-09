@@ -77,11 +77,18 @@ function formatParticipants(participants: readonly Participant[]): string {
 /**
  * Rend un CR en texte lisible pour Telegram (pas de markdown Craft,
  * juste un format clair et structuré pour lecture mobile).
+ *
+ * @param cr Le draft CR structuré
+ * @param reference Référence séquentielle optionnelle (ex: "IC-CR-2026-0003").
+ *   Si fournie, affichée dans l'en-tête du CR.
  */
-export function renderCrForTelegram(cr: CRDraft): string {
+export function renderCrForTelegram(cr: CRDraft, reference?: string): string {
   const lines: string[] = [];
 
   lines.push(`*COMPTE RENDU DE RÉUNION*`);
+  if (reference) {
+    lines.push(`*Réf.* ${reference}`);
+  }
   lines.push('');
   lines.push(`*Entité* : ${entiteNomComplet(cr.entite)}`);
   lines.push(`*Date* : ${dateFormatFr(cr.date_reunion)}`);
