@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital — Variante A Sans-serif géométrique</title>
+  <!--
+    Variante A — Sans-serif géométrique (référence : Futura Bold / Avenir Black)
+    Session 8 — Refonte typographique post-rejet Direction 1 session 7
+    Update Thomas : lettres IC re-centrées (+6.5 unités horizontales) — le bloc
+    géométrique était collé à gauche dans la v1, maintenant centré dans le sceau.
+
+    Concept : lettres IC géométriques pures — aucun empattement, aucun ornement.
+    Le I est une barre verticale simple à extrémités plates.
+    Le C est un arc de cercle ouvert sur la droite construit en Bézier cubique k=0.5523.
+    Signal : modernité, précision, intemporalité.
+
+    Géométrie (viewBox 64×64) :
+      Centre  : (32, 32)
+      Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
+      Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
+
+    Lettres IC — bloc centré 20.5→43.5 (largeur 23), centre 32
+      I sans-serif : barre verticale x=20.5→24 (3.5px large), y=18→46
+      Espacement tracking : 8.5px entre I et C (32.5 - 24)
+      C géométrique : centre optique x=43.5, Re=11, Ri=7
+
+    I géométrique :
+      Simple barre verticale, largeur 3.5px, hauteur complète caps 28px
+      Path L uniquement (ligne droite)
+      x= 20.5 → 24, y= 18 → 46
+
+    C géométrique (Bézier cubique, k=0.5523) :
+      Centre optique (43.5, 32), Re=11, Ri=7
+      Arc extérieur : (43.5, 21) → arc gauche → (32.5, 32) → arc gauche → (43.5, 43)
+      Arc intérieur : (43.5, 25) → arc gauche → (36.5, 32) → arc gauche → (43.5, 39)
+
+    Lisibilité 16px : NETTE — le I est une barre pure, le C est un arc lisse sans détail parasite
+  -->
+
+  <!-- Fond circulaire — ink-950 #0A0A0A -->
+  <circle cx="32" cy="32" r="31.5" fill="#0A0A0A"/>
+
+  <!-- Contour extérieur sceau — levant-500 #C4935A -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#C4935A" stroke-width="2.5"/>
+
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
+
+  <!--
+    I géométrique — barre verticale pure, sans empattement
+    Largeur 3.5px, bord gauche x=20.5, bord droit x=24
+    y=18 → y=46 (hauteur caps 28px)
+  -->
+  <path
+    d="M 20.5,18 L 24,18 L 24,46 L 20.5,46 Z"
+    fill="#F5F0E8"
+  />
+
+  <!--
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (43.5, 32)
+    Arc extérieur Re=11, arc intérieur Ri=7
+    Bézier cubique k=0.5523
+  -->
+  <path
+    d="M 43.5,21
+       C 37.425,21 32.5,26.925 32.5,32
+       C 32.5,37.075 37.425,43 43.5,43
+       L 43.5,39
+       C 39.634,39 36.5,35.866 36.5,32
+       C 36.5,28.134 39.634,25 43.5,25
+       Z"
+    fill="#F5F0E8"
+  />
+
+</svg>

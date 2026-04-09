@@ -1,39 +1,72 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Favicon vectoriel ISSA Capital — file-based icon Next.js App Router
-    Direction A — Session 5 (2026-04-08) : sérif classique, C en Bézier cubique
-    Corrige l'ancien favicon rectangulaire "aspect Paint" (retour Thomas P1)
-    Fond : ink-950 #0A0A0A | Glyphes : parchment-100 #F5F0E8 | Accent : levant-500 #C4935A
-    viewBox 512×512 — Next.js re-rasterise automatiquement aux tailles demandées
+    Favicon ISSA Capital — Variante A sans-serif géométrique (session 8)
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
+    Remplace la Direction 1 "Sceau sérif classique" produite en session 7.
+
+    Concept : monogramme IC géométrique pur inscrit dans un sceau circulaire.
+    Signal : modernité, précision, intemporalité — holding patrimoniale libanaise.
+    Référence typographique : Futura Bold / Avenir Black (sans empattement).
+    Update session 8 : lettres IC re-centrées (+6.5 unités horizontales) — le bloc
+    géométrique était collé à gauche dans la v1, maintenant centré dans le sceau.
+
+    Couleurs (tokens primitifs — docs/design/design-tokens.json) :
+      Fond sceau  : ink-950       #0A0A0A  (primitive.color.ink.950)
+      Glyphes IC  : parchment-100 #F5F0E8  (primitive.color.parchment.100)
+      Contour     : levant-500    #C4935A  (primitive.color.levant.500)
+
+    Géométrie (viewBox 64×64) :
+      Centre  : (32, 32)
+      Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
+      Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
+
+    Lettres IC — bloc centré 20.5→43.5 (largeur 23), centre 32
+      I sans-serif : barre verticale x=20.5→24 (3.5px large), y=18→46
+      Espacement tracking : 8.5px entre I et C (32.5 - 24)
+      C géométrique : centre optique x=43.5, Re=11, Ri=7
+
+    I géométrique : barre verticale pure, hauteur caps 28px (path L uniquement)
+    C géométrique : arc de cercle Bézier cubique k=0.5523, ouverture droite
+
+    Lisibilité 16px : NETTE — le I est une barre pure, le C est un arc lisse sans détail parasite
+    Conformité Bézier : I en L (droite), C en courbes C cubiques. Pas de rect.
   -->
 
-  <!-- Fond -->
-  <rect width="512" height="512" fill="#0A0A0A"/>
+  <!-- Fond circulaire plein — ink-950 -->
+  <circle cx="32" cy="32" r="31.5" fill="#0A0A0A"/>
 
-  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
-  <path d="
-    M 72,112 L 168,112 L 168,140 L 140,140
-    L 140,372 L 168,372 L 168,400
-    L 72,400 L 72,372 L 100,372
-    L 100,140 L 72,140 Z
-  " fill="#F5F0E8"/>
+  <!-- Contour extérieur du sceau — levant-500 -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#C4935A" stroke-width="2.5"/>
 
-  <!-- Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux) -->
-  <path d="
-    M 440,112
-    L 298,112
-    C 378,112 154,176 154,256
-    C 154,336 218,400 298,400
-    L 440,400
-    L 440,372
-    L 298,372
-    C 249,372 210,305 210,256
-    C 210,207 249,140 298,140
-    L 440,140
-    Z
-  " fill="#F5F0E8"/>
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
 
-  <!-- Filet ocre levantin — signature graphique -->
-  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+  <!--
+    I géométrique — barre verticale pure, sans empattement
+    Largeur 3.5px, bord gauche x=20.5, bord droit x=24
+    y=18 → y=46 (hauteur caps 28px)
+  -->
+  <path
+    d="M 20.5,18 L 24,18 L 24,46 L 20.5,46 Z"
+    fill="#F5F0E8"
+  />
+
+  <!--
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (43.5, 32)
+    Arc extérieur Re=11, arc intérieur Ri=7
+    Bézier cubique k=0.5523
+  -->
+  <path
+    d="M 43.5,21
+       C 37.425,21 32.5,26.925 32.5,32
+       C 32.5,37.075 37.425,43 43.5,43
+       L 43.5,39
+       C 39.634,39 36.5,35.866 36.5,32
+       C 36.5,28.134 39.634,25 43.5,25
+       Z"
+    fill="#F5F0E8"
+  />
+
 </svg>

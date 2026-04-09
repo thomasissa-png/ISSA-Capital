@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>ISSA Capital — Administration</title>
+    <link rel="stylesheet" href="/admin/static/css/admin.css" />
+  </head>
+  <body class="dashboard-body">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <strong>ISSA Capital</strong>
+        <span class="topbar-subtitle">Secrétariat — Administration</span>
+      </div>
+      <div class="topbar-actions">
+        <span id="user-label" class="user-label"></span>
+        <button id="logout-btn" class="btn btn-ghost">Déconnexion</button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs" role="tablist">
+      <a href="#contacts" class="nav-tab" data-tab="contacts">Contacts</a>
+      <a href="#cr" class="nav-tab" data-tab="cr">CR publiés</a>
+      <a href="#drafts" class="nav-tab" data-tab="drafts">Brouillons</a>
+      <a href="#logs" class="nav-tab" data-tab="logs">Logs</a>
+      <a href="#settings" class="nav-tab" data-tab="settings">Paramètres</a>
+    </nav>
+
+    <main id="app" class="app-main">
+      <div class="loading">Chargement...</div>
+    </main>
+
+    <!-- Templates HTML pour chaque module -->
+    <template id="tpl-contacts">
+      <section class="module">
+        <header class="module-header">
+          <h2>Contacts</h2>
+          <div class="module-actions">
+            <input
+              type="search"
+              id="contacts-search"
+              class="input-search"
+              placeholder="Rechercher (nom, email, téléphone, société)"
+            />
+            <button class="btn btn-primary" id="contacts-new">+ Nouveau</button>
+          </div>
+        </header>
+        <div id="contacts-list" class="table-wrapper">
+          <div class="loading">Chargement...</div>
+        </div>
+      </section>
+    </template>
+
+    <template id="tpl-contact-form">
+      <form class="contact-form" id="contact-form">
+        <h3 id="contact-form-title">Nouveau contact</h3>
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">Prénom *</span>
+            <input name="prenom" required />
+          </label>
+          <label class="field">
+            <span class="field-label">Nom *</span>
+            <input name="nom" required />
+          </label>
+          <label class="field">
+            <span class="field-label">Titre</span>
+            <input name="titre" />
+          </label>
+          <label class="field">
+            <span class="field-label">Société</span>
+            <input name="societe" />
+          </label>
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input name="email" type="email" />
+          </label>
+          <label class="field">
+            <span class="field-label">Téléphone</span>
+            <input name="telephone" />
+          </label>
+          <fieldset class="field field-full">
+            <legend class="field-label">Entités visibles</legend>
+            <label><input type="checkbox" name="entites" value="IC" /> IC</label>
+            <label><input type="checkbox" name="entites" value="GO" /> GO</label>
+            <label><input type="checkbox" name="entites" value="VI" /> VI</label>
+            <label><input type="checkbox" name="entites" value="VV" /> VV</label>
+          </fieldset>
+          <label class="field field-full">
+            <span class="field-label">
+              <input type="checkbox" name="whatsappAuthorized" />
+              Autorisé WhatsApp
+            </span>
+          </label>
+          <label class="field field-full">
+            <span class="field-label">Notes</span>
+            <textarea name="notes" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="contact-cancel">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+        <p class="error-message" id="contact-error" hidden></p>
+      </form>
+    </template>
+
+    <template id="tpl-cr">
+      <section class="module">
+        <header class="module-header">
+          <h2>CR publiés</h2>
+          <div class="module-actions">
+            <select id="cr-entity" class="input-select">
+              <option value="">Toutes entités</option>
+              <option value="IC">IC</option>
+              <option value="GO">GO</option>
+              <option value="VI">VI</option>
+              <option value="VV">VV</option>
+            </select>
+            <input type="date" id="cr-from" class="input-date" />
+            <input type="date" id="cr-to" class="input-date" />
+          </div>
+        </header>
+        <div id="cr-list" class="table-wrapper">
+          <div class="loading">Chargement...</div>
+        </div>
+      </section>
+    </template>
+
+    <template id="tpl-drafts">
+      <section class="module">
+        <header class="module-header">
+          <h2>Brouillons en cours</h2>
+          <div class="module-actions">
+            <select id="drafts-status" class="input-select">
+              <option value="">Tous statuts</option>
+              <option value="needs_clarification">En clarification</option>
+              <option value="ready">Prêts</option>
+              <option value="abandoned">Abandonnés</option>
+            </select>
+          </div>
+        </header>
+        <div id="drafts-list" class="table-wrapper">
+          <div class="loading">Chargement...</div>
+        </div>
+      </section>
+    </template>
+
+    <template id="tpl-logs">
+      <section class="module">
+        <header class="module-header">
+          <h2>Logs</h2>
+        </header>
+        <div class="logs-subtabs">
+          <button class="btn btn-ghost logs-tab" data-logs-tab="access">
+            Accès
+          </button>
+          <button class="btn btn-ghost logs-tab" data-logs-tab="generation">
+            Génération LLM
+          </button>
+        </div>
+        <div id="logs-stats" class="logs-stats"></div>
+        <div id="logs-list" class="table-wrapper">
+          <div class="loading">Chargement...</div>
+        </div>
+      </section>
+    </template>
+
+    <template id="tpl-settings">
+      <section class="module">
+        <header class="module-header">
+          <h2>Paramètres</h2>
+        </header>
+
+        <section class="settings-block">
+          <h3>Whitelist WhatsApp</h3>
+          <div id="whitelist-list">
+            <div class="loading">Chargement...</div>
+          </div>
+          <form class="inline-form" id="whitelist-form">
+            <input
+              name="phoneE164"
+              placeholder="+33612345678"
+              required
+              pattern="^\+[1-9][0-9]{7,14}$"
+            />
+            <input name="displayName" placeholder="Nom affiché" required />
+            <label><input type="checkbox" name="IC" /> IC</label>
+            <label><input type="checkbox" name="GO" /> GO</label>
+            <label><input type="checkbox" name="VI" /> VI</label>
+            <label><input type="checkbox" name="VV" /> VV</label>
+            <button type="submit" class="btn btn-primary">Ajouter</button>
+          </form>
+        </section>
+
+        <section class="settings-block">
+          <h3>Signature PNG</h3>
+          <div id="signature-preview"></div>
+          <label class="btn btn-primary" style="display: inline-block">
+            Téléverser PNG
+            <input
+              type="file"
+              id="signature-file"
+              accept="image/png"
+              style="display: none"
+            />
+          </label>
+          <button type="button" class="btn btn-ghost" id="signature-delete">
+            Supprimer
+          </button>
+          <p class="hint">PNG transparent, max 500 KB.</p>
+        </section>
+
+        <section class="settings-block">
+          <h3>Alerte coût mensuel</h3>
+          <form class="inline-form" id="cost-alert-form">
+            <label class="field">
+              <span class="field-label">Seuil (EUR / mois)</span>
+              <input
+                type="number"
+                name="threshold"
+                min="1"
+                max="10000"
+                step="0.5"
+                required
+              />
+            </label>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </form>
+        </section>
+
+        <section class="settings-block">
+          <h3>Entités actives</h3>
+          <form class="inline-form" id="entities-form">
+            <label><input type="checkbox" name="IC" /> IC</label>
+            <label><input type="checkbox" name="GO" /> GO</label>
+            <label><input type="checkbox" name="VI" /> VI</label>
+            <label><input type="checkbox" name="VV" /> VV</label>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </form>
+        </section>
+      </section>
+    </template>
+
+    <script src="/admin/static/js/admin.js"></script>
+  </body>
+</html>

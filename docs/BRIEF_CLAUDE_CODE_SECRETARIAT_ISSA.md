@@ -45,10 +45,11 @@ Construire et déployer sur Replit une **application web Node.js/Express** avec 
 
 ### Craft API — ISSA Capital
 - **Base URL** : `https://connect.craft.do/links/EgdwyOCC09S/api/v1`
-- **Clé** : à stocker dans Replit Secrets sous le nom `CRAFT_IC_KEY`
-- **Valeur de la clé** : `pdk_9b7bbef8-4907-d7b6-b0a2-cc509648352a`
+- **Clé** : stockée dans `secretariat/.env.local` sous `CRAFT_IC_KEY` (gitignored — voir `secretariat/.env.example` pour le template)
 - **Auth header** : `Authorization: Bearer {CRAFT_IC_KEY}`
 - **Content-Type** : `application/json`
+
+> Note sécurité session 7 : la valeur en clair de la clé est purgée de ce fichier. Elle reste dans `.env.local` local (gitignored) et dans les Replit Secrets. La clé est toujours valide (décision Thomas session 7 — pas de rotation). L'historique git contient encore la valeur antérieure — à rotate en cas de leak suspect.
 
 ---
 

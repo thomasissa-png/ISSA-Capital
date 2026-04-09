@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital</title>
+  <!--
+    Safari Pinned Tab — SVG monochrome
+    Variante A sans-serif géométrique (session 8)
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
+    Remplace la Direction 1 "Sceau sérif classique" produite en session 7.
+
+    Règles Safari Pinned Tab :
+    - 1 seule couleur (#000000 — Safari applique sa propre couleur via mask)
+    - Fond transparent (pas de rect/circle de fond)
+    - Forme pleine — pas de stroke (les strokes fins disparaissent en miniature)
+    - Référencé dans layout.tsx : <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#C4935A"/>
+      (Safari remplace #000000 par la couleur spécifiée dans color=)
+
+    Concept : sceau circulaire en anneau + monogramme IC géométrique plein.
+    Même géométrie que favicon-source.svg (Variante A centrée), converti en
+    anneaux pleins via fill-rule="evenodd" pour survivre à la réduction Safari.
+
+    Géométrie (viewBox 512×512) — centre (256, 256), k=0.5523 :
+      Anneau principal sceau : R_ext=252, R_int=232 (épaisseur 20)
+      Anneau décoratif       : R_ext=211.2, R_int=204.8 (épaisseur 6.4)
+      Lettre I : barre verticale x=164→192, y=144→368
+      Lettre C : arc Bézier centre (348,256), Re=88, Ri=56
+
+    Correction session 8 : le fichier session 7 avait un bug de centrage
+    (cy=252 au lieu de 256). Corrigé en reprenant les coordonnées exactes
+    de favicon-source.svg (centre 256,256).
+  -->
+
+  <!--
+    Anneau principal du sceau — fill-rule evenodd
+    Cercle extérieur R=252 (top 4, right 508, bottom 508, left 4)
+    Cercle intérieur R=232 (top 24, right 488, bottom 488, left 24)
+    Bézier cubique k=0.5523 :
+      R=252 → k×R = 139.18
+      R=232 → k×R = 128.13
+  -->
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M 256,4
+       C 395.18,4 508,116.82 508,256
+       C 508,395.18 395.18,508 256,508
+       C 116.82,508 4,395.18 4,256
+       C 4,116.82 116.82,4 256,4
+       Z
+       M 256,24
+       C 127.87,24 24,127.87 24,256
+       C 24,384.13 127.87,488 256,488
+       C 384.13,488 488,384.13 488,256
+       C 488,127.87 384.13,24 256,24
+       Z"
+    fill="#000000"
+  />
+
+  <!--
+    Anneau décoratif intérieur — fill-rule evenodd
+    Cercle extérieur R=211.2 (top 44.8, right 467.2)
+    Cercle intérieur R=204.8 (top 51.2, right 460.8)
+    Bézier cubique k=0.5523 :
+      R=211.2 → k×R = 116.65
+      R=204.8 → k×R = 113.11
+  -->
+  <path
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M 256,44.8
+       C 372.65,44.8 467.2,139.35 467.2,256
+       C 467.2,372.65 372.65,467.2 256,467.2
+       C 139.35,467.2 44.8,372.65 44.8,256
+       C 44.8,139.35 139.35,44.8 256,44.8
+       Z
+       M 256,51.2
+       C 142.89,51.2 51.2,142.89 51.2,256
+       C 51.2,369.11 142.89,460.8 256,460.8
+       C 369.11,460.8 460.8,369.11 460.8,256
+       C 460.8,142.89 369.11,51.2 256,51.2
+       Z"
+    fill="#000000"
+  />
+
+  <!--
+    I géométrique — barre verticale pure, sans empattement
+    Même géométrie que favicon-source.svg : x=164→192, y=144→368
+    Path L uniquement (ligne droite) — conforme règle Bézier
+  -->
+  <path
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
+    fill="#000000"
+  />
+
+  <!--
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Même géométrie que favicon-source.svg
+    Centre optique (348, 256), Re=88, Ri=56, Bézier cubique k=0.5523
+  -->
+  <path
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
+       Z"
+    fill="#000000"
+  />
+
+</svg>

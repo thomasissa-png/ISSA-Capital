@@ -2,9 +2,39 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-08 — Session 6 CLÔTURÉE proprement (Phases 1-6 DONE, Phase 7 + Phase 4 reportées session 7 avec 2 décisions Thomas en attente)**
+> Dernière mise à jour : **2026-04-08 — Session 7 démarrée (Phase 0 propagation learnings DONE, CHECKPOINT #5 en attente Thomas)**
 
-<!-- SESSION: phases=7 tasks_prod=15 tasks_consult=0 -->
+<!-- SESSION: phases=1 tasks_prod=0 tasks_consult=0 -->
+<!-- BRANCH ACTIVE: claude/resume-issa-session-7-1SjaO (créée à partir de claude/resume-issa-session-6-UDiOS) -->
+
+---
+
+## Session 7 — EN COURS (2026-04-08)
+
+**Branche active session 7** : `claude/resume-issa-session-7-1SjaO` (imposée par la configuration git du harness, créée à partir de `claude/resume-issa-session-6-UDiOS`)
+
+**Compteur session 7** : **0/18 Tasks producteurs** (Phase 0 propagation learnings = 0 Task, travail direct orchestrateur)
+
+**Phase 0 — Propagation des 8 learnings session 6** : ✅ DONE
+- L1 (P1) Date factuelle 2J 1994→2016 : CLAUDE.md règle 2 (déjà propagée session 6) + copywriter.md + creative-strategy.md (ajout section "Vérification des faits biographiques")
+- L2 (P2) Parcours bio incomplet : n/a local (`templates/` inexistant) — propagé indirectement via copywriter.md point 3 "Enfance et jeunesse comptent"
+- L3 (P2) Mode itération jusqu'à N/10 : creative-strategy.md + copywriter.md + design.md (nouvelle section dans chaque)
+- L4 (P2) Pre-commit WIP Stop hook : orchestrator.md section "Gestion Stop hook + Tasks en background"
+- L5 (P2) Parallélisation CS project-context.md : orchestrator.md + creative-strategy.md (nouvelles sections)
+- L6 (P2) Volume biographique calibré : CLAUDE.md règle commune 16 + copywriter.md + creative-strategy.md
+- L7 (P1) Anti-justifications explicites : copywriter.md section "Anti-justifications explicites" avec signaux + exemples. founder-preferences.md n/a local
+- L8 (P3) Chiffres narratifs vs factuels : CLAUDE.md règle commune 17 + creative-strategy.md + copywriter.md
+
+**Mise à jour nom de branche (règle 12 CLAUDE.md)** : ✅ DONE
+- `project-context.md` mémo de reprise actualisé (ligne 728)
+- `docs/orchestration-plan.md` (ce fichier) : section Session 7 ajoutée avec BRANCH ACTIVE
+- Pas d'`index.html` / `INSTALL.md` / `install.sh` / `update.sh` dans ce repo projet
+
+**CHECKPOINT #5 en attente Thomas** : 🔴 BLOQUANT
+- Décision 1 — Direction favicon (Sceau ⭐ / Cèdre / I monumental / libre)
+- Décision 2 — /accompagnement variante A duo opérationnel (9.5/10) vs C maison et héritier (9.4/10)
+
+**Prochaine étape** : après réponses Thomas → Phase 7 mega-passe @fullstack (1 Task consolidée) → Phase Favicon (2 Tasks) → Phase QA (2 Tasks). Budget projeté ~5/18.
 
 ---
 

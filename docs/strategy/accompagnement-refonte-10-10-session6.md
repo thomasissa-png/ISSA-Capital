@@ -546,6 +546,123 @@ Cette réponse détermine si on implémente la Variante A (opérationnel) ou la 
 - Points d'attention : un arbitrage Thomas est nécessaire AVANT implémentation @fullstack. Question verrouillée dans section 7. Ne pas implémenter sans réponse.
 - Variante de repli prête : Variante C à 9.4/10 si Jean-Pierre n'intervient pas opérationnellement.
 
+---
+
+## 8. Variante A flexible — verbatim ajusté session 7 (SOURCE DE VÉRITÉ POUR L'IMPLÉMENTATION)
+
+> Ajout @orchestrator — 2026-04-08 — CHECKPOINT #5 session 7
+> Décision Thomas (verbatim) : *"A, ça peut être aussi l'un, l'autre ou les 2 suivant les missions"*
+
+### Interprétation verrouillée
+
+Thomas valide Variante A sur le principe (Jean-Pierre ET Thomas sont opérationnels dans les missions clients), **MAIS** la composition de l'équipe mission est **flexible** selon le contexte :
+- Certaines missions = Jean-Pierre seul
+- Certaines missions = Thomas seul
+- Certaines missions = les deux ensemble
+
+Ce n'est **pas** Variante C (où Jean-Pierre serait uniquement figure tutélaire). C'est bien Variante A (Jean-Pierre est opérationnel), mais avec **flexibilité de composition**.
+
+**Implication narrative** : la promesse passe de "duo systématique" à "duo flexible". Les 2 bios distinctes sont conservées, l'architecture 8 sections est conservée, mais les formulations qui sous-entendent "systématiquement ensemble" doivent être ajustées.
+
+### Les 4 passages à remplacer dans le verbatim Variante A (sections 3.1 à 3.8 ci-dessus)
+
+**Remplacement 1 — HERO (section 3, lignes 72-74)**
+
+Verbatim session 6 (à NE PAS utiliser) :
+> Overline : Un accompagnement à deux voix
+> H1 : Jean-Pierre Issa et Thomas Issa accompagnent fondateurs et dirigeants sur ce qu'ils ont eux-mêmes construit.
+
+**Verbatim session 7 verrouillé (à utiliser dans `src/app/accompagnement/page.tsx`)** :
+> Overline : Conseil & accompagnement
+> H1 : Jean-Pierre Issa et Thomas Issa accompagnent fondateurs et dirigeants sur ce qu'ils ont eux-mêmes construit.
+
+Raison de l'ajustement : "à deux voix" sous-entend une présence systématique des deux. L'overline "Conseil & accompagnement" est sobre et n'engage pas la composition.
+
+---
+
+**Remplacement 2 — CE QUE LA LIGNÉE APPORTE (section 3, lignes 120-127 v1 + lignes 200-207 v2)**
+
+La v2 ci-dessus (section "Itération v1 → v2") reste la base, **mais** ajouter une phrase d'ancrage "flexibilité de composition" avant le paragraphe final.
+
+**Verbatim session 7 verrouillé** :
+> Overline : Ce que le duo produit
+> H2 : Une méthode héritée. Deux lectures du même sujet.
+>
+> Jean-Pierre a bâti des structures qui tiennent sur vingt ans — dans l'industrie, dans le co-actionnariat, dans l'internationalisation réelle. Thomas a traduit cette méthode dans les contextes d'aujourd'hui — holding patrimoniale, advisory tech, marchés européens. Les deux ont fait leurs erreurs pour leur propre compte, pas pour celui d'un client.
+>
+> Selon la nature de la mission, Jean-Pierre, Thomas, ou les deux interviennent directement. Le duo s'adapte au contexte — pas l'inverse. Une mission de structuration patrimoniale et d'advisory tech sera portée par Thomas. Un rachat industriel ou une question de gouvernance long terme mobilisera Jean-Pierre. Une mission qui croise les deux registres mobilisera les deux.
+>
+> Leurs structures actuelles — 2J Impression, l'écosystème ISSA Capital — suivent les mêmes logiques qu'ils transmettent. Ce n'est pas du conseil de cabinet. C'est la lecture de deux personnes qui ont la peau dans le jeu.
+
+Raison de l'ajustement : le paragraphe central (nouveau) explicite la flexibilité avant que le lecteur ne se demande "mais alors qui m'accompagne concrètement ?". Le paragraphe final reste inchangé car il parle de la méthode, pas de la composition.
+
+---
+
+**Remplacement 3 — CE QUI NE CORRESPOND PAS (section 3, lignes 133-141)**
+
+Verbatim session 6 (à NE PAS utiliser, phrase d'ouverture uniquement) :
+> Jean-Pierre et Thomas accompagnent des fondateurs et des investisseurs qui ont déjà fait leurs preuves. Ils n'accompagnent pas les premières étapes d'un projet.
+
+**Verbatim session 7 verrouillé** :
+> Le périmètre d'accompagnement ISSA Capital — qu'il soit porté par Jean-Pierre, Thomas, ou les deux — concerne des fondateurs et des investisseurs qui ont déjà fait leurs preuves. Pas les premières étapes d'un projet.
+
+Le reste de la liste (7 puces "Projets crypto/Web3 purs", "First-time founders", etc.) reste **inchangé**.
+
+---
+
+**Remplacement 4 — FORMULAIRE (section 3, lignes 164-166)**
+
+Verbatim session 6 :
+> Overline : Prenons contact
+> H2 : Si le périmètre correspond, prenons contact.
+> Corps : Chaque mission démarre par un échange — pas par un devis.
+
+**Verbatim session 7 verrouillé (inchangé — était déjà générique)** :
+> Overline : Prenons contact
+> H2 : Si le périmètre correspond, prenons contact.
+> Corps : Chaque mission démarre par un échange — pas par un devis. Selon le contexte, Jean-Pierre, Thomas, ou les deux répondront.
+
+Raison : ajout d'une seule phrase finale qui confirme la flexibilité au moment du contact, sans fermer la porte au duo ni la forcer.
+
+---
+
+### Sections INCHANGÉES par rapport à Variante A session 6
+
+Les sections suivantes du verbatim Variante A (section 3 ci-dessus) restent **inchangées** et sont implémentées telles quelles :
+
+- **[POUR QUI]** (section 3, lignes 78-84) — texte complet inchangé
+- **[JEAN-PIERRE ISSA]** (section 3, lignes 88-98) — bio complète inchangée, 4 paragraphes, domaines conservés
+- **[THOMAS ISSA]** (section 3, lignes 102-116) — bio complète inchangée, 5 paragraphes, domaines conservés, formation conservée
+- **[DEUX FORMATS]** (section 3, lignes 146-154) — 2 cartes inchangées (Mission ponctuelle + Advisoring)
+- **[SIGNATURE]** (section 3, lignes 158-159) — "Patient par choix. Exigeant par principe." inchangé
+
+### Architecture 8 sections verrouillée
+
+1. **Hero** — overline "Conseil & accompagnement" + H1 inchangé
+2. **Pour qui** — filtre Karim inchangé
+3. **Jean-Pierre Issa** — bio opérationnelle 4 paragraphes
+4. **Thomas Issa** — bio 5 paragraphes + formation
+5. **Ce que le duo produit** — section centrale AJUSTÉE (ajout paragraphe flexibilité)
+6. **Ce qui ne correspond pas** — phrase d'ouverture AJUSTÉE + liste inchangée
+7. **Deux formats** — inchangé
+8. **Signature + formulaire** — signature inchangée + formulaire AJUSTÉ (ajout 1 phrase finale)
+
+### Faits biographiques verrouillés (rappel @fullstack)
+
+- **2J Impression rachat = 2016** (PAS 1994) — ligne 94 et ligne 131 du verbatim Variante A
+- **Jean-Pierre Issa né à Dakar en 1958** — ligne 92 du verbatim Variante A
+- **Thomas : 15 ans chez Sony Europe, TEOS co-fondé, ROI 6000% première année** — ligne 106
+- **Mention Sony/TEOS/TikTok/Adidas/Lego : AUTORISÉE ici** (exception Q2 session 5) — mais coupée de la bio /mission
+- **Identité libanaise** jamais française
+- **Zéro mention nom agence Thomas** — utiliser "une agence de communication internationale" ligne 108
+- **UTF-8 réels** dans le code TSX (é è à ç ê î ô û ë ï ù) — jamais `\u00E9` ni `&eacute;` dans les strings JS
+
+### Handoff vers @fullstack (Phase 7 mega-passe session 7)
+
+@fullstack DOIT utiliser la **section 8 ci-dessus comme source de vérité** pour `src/app/accompagnement/page.tsx`. Les sections 3 (Variante A session 6) et 6 (recommandation session 6) restent utiles comme contexte mais ne sont plus la source primaire — la section 8 prévaut en cas de divergence.
+
+Score estimé Variante A flexible : **9.5/10** (identique à Variante A systématique — le score n'est pas dégradé car la flexibilité est explicitée, pas cachée).
+
 
 
 

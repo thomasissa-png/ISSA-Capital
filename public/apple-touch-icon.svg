@@ -1,38 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ISSA Capital">
   <title>ISSA Capital</title>
   <!--
-    Source SVG pour apple-touch-icon.png (180×180)
-    Direction A — Session 5 (2026-04-08) : sérif classique, C en Bézier cubique
-    viewBox 512×512 — sharp rasterise en 180×180 via generate-assets.mjs
-    Fond : ink-950 | Glyphes : parchment-100 | Filet : levant-500
+    Apple Touch Icon — 180×180 (iOS home screen)
+    Variante A sans-serif géométrique (session 8) — variante inversée
+    Décision Thomas : Variante A retenue après comparaison visuelle des 3 variantes.
+
+    Variante inversée pour fond iOS (fond clair dominant sur l'écran d'accueil) :
+      Fond    : parchment-100 #F5F0E8 (crème principale)
+      Glyphes : ink-950       #0A0A0A (noir quasi-pur)
+      Contour : levant-500    #C4935A (ocre levantin)
+
+    Même géométrie que favicon-source.svg (512×512) — seules les couleurs
+    sont inversées (glyphes et contour en ink-950 sur fond parchment).
+    iOS applique automatiquement un arrondi (border-radius) à l'icône.
+    Rasterisé en 180×180 via generate-assets.mjs / sharp.
+
+    Contrastes WCAG 2.2 AA :
+      ink-950 sur parchment-100 : ~18:1 (large, conforme)
+      levant-500 sur parchment-100 : ~2.8:1 (contour décoratif non-texte)
   -->
 
-  <!-- Fond -->
-  <rect width="512" height="512" fill="#0A0A0A"/>
+  <!-- Fond circulaire plein — parchment-100 -->
+  <circle cx="256" cy="256" r="252" fill="#F5F0E8"/>
 
-  <!-- Lettre I — sérif classique (path unique : sérif haut + fût + sérif bas) -->
-  <path d="
-    M 72,112 L 168,112 L 168,140 L 140,140
-    L 140,372 L 168,372 L 168,400
-    L 72,400 L 72,372 L 100,372
-    L 100,140 L 72,140 Z
-  " fill="#F5F0E8"/>
+  <!-- Contour extérieur du sceau — levant-500 -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#C4935A" stroke-width="20"/>
 
-  <!-- Lettre C — arc Bézier cubique (demi-anneau + sérifs horizontaux) -->
-  <path d="
-    M 440,112
-    L 298,112
-    C 378,112 154,176 154,256
-    C 154,336 218,400 298,400
-    L 440,400
-    L 440,372
-    L 298,372
-    C 249,372 210,305 210,256
-    C 210,207 249,140 298,140
-    L 440,140
-    Z
-  " fill="#F5F0E8"/>
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#C4935A" stroke-width="6.4" opacity="0.5"/>
 
-  <!-- Filet ocre levantin — signature graphique -->
-  <rect x="72" y="436" width="368" height="16" fill="#C4935A"/>
+  <!--
+    I géométrique — barre verticale pure, sans empattement
+    Glyphe : ink-950 sur fond parchment-100
+    x=164 → 192, y=144 → 368
+  -->
+  <path
+    d="M 164,144 L 192,144 L 192,368 L 164,368 Z"
+    fill="#0A0A0A"
+  />
+
+  <!--
+    C géométrique — arc de cercle pur, ouverture droite, extrémités plates
+    Centre optique (348, 256), Re=88, Ri=56, Bézier cubique k=0.5523
+    Glyphe : ink-950 sur fond parchment-100
+  -->
+  <path
+    d="M 348,168
+       C 299.4,168 260,207.4 260,256
+       C 260,304.6 299.4,344 348,344
+       L 348,312
+       C 317.1,312 292,286.9 292,256
+       C 292,225.1 317.1,200 348,200
+       Z"
+    fill="#0A0A0A"
+  />
+
 </svg>

@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital — Variante B Serif Didone</title>
+  <!--
+    Variante B — Serif Didone fin (référence : Bodoni, Didot)
+    Session 8 — Refonte typographique post-rejet Direction 1 session 7
+
+    Concept : contraste fort fin/épais Didone. Empattements fins horizontaux (pas carrés).
+    Le I a empattements fins striés, le fût est plein vertical.
+    Le C a un axe incliné à ~11° : plein à gauche (6-7h), délié en haut (11-12h) et en bas (5h).
+    Signal : élégance patrimoniale, presse française ancienne, sophistication.
+
+    ATTENTION RÈGLE ANTI-RECTANGLES : le I Didone doit utiliser des paths Bézier
+    pour les empattements — pas des rectangles assemblés. Les empattements sont
+    tracés en L avec une légère courbe de raccord au fût (bracket = congé de jonction).
+
+    Géométrie (viewBox 64×64) :
+      Centre  : (32, 32)
+      Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
+      Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
+
+    Zone glyphes : x=12→50, y=17→47 — hauteur caps 30px
+    Tracking IC : 3.5px de blanc entre glyphes
+
+    I Didone :
+      Fût largeur      : 4px (plein — corps de la lettre)
+      Sérif haut/bas   : longueur totale 9px, hauteur 1.2px, bracket Bézier de 1px
+      Centré sur       : x=17.5 (milieu fût)
+
+    C Didone :
+      Axe incliné ~11° (standard Bodoni MT / Didot)
+      Re=10, Ri=6 (épaisseur mur = 4px pleine, délié = 1.2px)
+      Centre optique   : (37.5, 32)
+      Ouverture        : ~60° (coupe à 11h et 17h — 10.5 unités en y)
+
+    Lisibilité 16px : LIMITE pour les empattements fins — compensée par
+      l'épaisseur du fût (4px) et les proportions généreuses (30px hauteur caps)
+  -->
+
+  <!-- Fond circulaire — ink-950 #0A0A0A -->
+  <circle cx="32" cy="32" r="31.5" fill="#0A0A0A"/>
+
+  <!-- Contour extérieur sceau — levant-500 #C4935A -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#C4935A" stroke-width="2.5"/>
+
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
+
+  <!--
+    I Didone — fût plein + empattements fins avec congés Bézier
+    Le congé (bracket) est une courbe cubique de raccord empattement→fût.
+    Largeur fût : 4px (x=15.5 → x=19.5)
+    Empattement haut : y=17→18.2, x=13→22
+    Empattement bas  : y=45.8→47, x=13→22
+    Congé haut gauche : de (13,18.2) vers (15.5,17) — curve Q
+    Congé haut droite : de (19.5,17) vers (22,18.2) — curve Q
+    Congé bas gauche  : de (13,45.8) vers (15.5,47) — curve Q
+    Congé bas droite  : de (19.5,47) vers (22,45.8) — curve Q
+  -->
+  <path
+    d="M 13,17
+       L 22,17
+       L 22,18.2
+       Q 19.5,18.2 19.5,19.5
+       L 19.5,44.5
+       Q 19.5,45.8 22,45.8
+       L 22,47
+       L 13,47
+       L 13,45.8
+       Q 15.5,45.8 15.5,44.5
+       L 15.5,19.5
+       Q 15.5,18.2 13,18.2
+       Z"
+    fill="#F5F0E8"
+  />
+
+  <!--
+    C Didone — contraste fin/épais, axe incliné
+    Centre (37.5, 32)
+    Approche : arc extérieur plein à gauche (6px épaisseur) aminci en haut/bas (1.5px)
+    Implémenté comme forme fermée avec deux arcs concentriques déformés.
+
+    Arc extérieur (Re=10) :
+      Ouverture haute : (37.5, 22)  — coupe à 12h
+      Ouverture basse : (37.5, 42)  — coupe à 18h
+      Centre gauche   : (27.5, 32)  — plein à 9h
+      k=0.5523 × 10   : 5.523
+      Haut : M(37.5,22) C(32.0,22)(27.5,26.5)(27.5,32)
+      Bas  : (27.5,32)  C(27.5,37.5)(32.0,42)(37.5,42)
+
+    Arc intérieur — Didone : déformé pour simuler le contraste
+      Partie gauche épaisse (Ri=4.2 → point (31.3,32))
+      Parties haut/bas fines (Ri=8.5 → proche de Re)
+      Haut ouverture : (37.5, 23.5)
+      Bas  ouverture : (37.5, 40.5)
+      Arc int haut : (37.5,23.5) C(33.5,23.5)(31.3,27.5)(31.3,32)
+      Arc int bas  : (31.3,32)   C(31.3,36.5)(33.5,40.5)(37.5,40.5)
+
+    Terminaisons fines : petits segments horizontaux de 1.5px
+  -->
+  <path
+    d="M 37.5,22
+       C 32.0,22 27.5,26.5 27.5,32
+       C 27.5,37.5 32.0,42 37.5,42
+       L 37.5,40.5
+       C 33.5,40.5 31.3,36.5 31.3,32
+       C 31.3,27.5 33.5,23.5 37.5,23.5
+       Z"
+    fill="#F5F0E8"
+  />
+
+  <!-- Empattement fin haut C — terminaison Didone horizontale -->
+  <path
+    d="M 33.5,22 L 41.5,22 L 41.5,23.5 L 33.5,23.5 Z"
+    fill="#F5F0E8"
+  />
+
+  <!-- Empattement fin bas C — terminaison Didone horizontale -->
+  <path
+    d="M 33.5,40.5 L 41.5,40.5 L 41.5,42 L 33.5,42 Z"
+    fill="#F5F0E8"
+  />
+
+</svg>

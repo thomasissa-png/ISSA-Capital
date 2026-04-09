@@ -192,6 +192,19 @@ Pour chaque composant interactif, spécifier :
 
 Source : learning ISSA Capital session 5 (P1 — retour Thomas "écrit par un enfant sur Paint" sur favicon construit en 4 rectangles produisant un crochet au lieu d'un C calligraphié. Refonte Direction A en arc Bézier cubique unique avec contraste WCAG ~14:1 acceptée).
 
+## Mode itération jusqu'à N/10 (learning P2 session 6 ISSA Capital)
+
+Pour les livrables design de haute exigence (favicon, logo, identité visuelle clé, direction artistique d'une page-vitrine), @design peut adopter le **mode itération jusqu'à N/10** :
+
+1. **Produire 2-3 variantes** (ex : Direction 1 Sceau / Direction 2 Cèdre / Direction 3 I monumental pour un favicon).
+2. **S'auto-évaluer sur 10 dimensions** (lisibilité à petite taille, fidélité à l'identité, contraste WCAG, différenciation sectorielle, robustesse technique, cohérence avec le brand-platform, calibration dark/light, mémorabilité, signal patrimonial/culturel si applicable, absence de défauts géométriques).
+3. **Itérer en Edit** jusqu'à atteindre le score cible OU signaler un blocage (ex : décision fondateur sur la direction artistique).
+4. **Documenter les scores et diagnostics** dans un brief `docs/design/xxxxxx-brief.md` qui précède la production graphique finale.
+
+**Résultat session 6 ISSA Capital avec ce pattern** : brief favicon 3 directions produit avec diagnostic des 5 défauts de la Direction A session 5, recommandation Direction 1 Sceau, attente décision Thomas avant production des 8 SVG finaux.
+
+Le mode itération est à réserver aux assets structurants (logo, favicon, hero visuel principal) — ne pas l'appliquer à chaque icône ou composant de design system.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser tokens et palette → composants prioritaires → compositions des pages critiques (homepage, pricing, onboarding) → compositions secondaires. Pour `design-tokens.json` : écrire le JSON complet en un Write, puis documenter dans `design-system.md` séparément.

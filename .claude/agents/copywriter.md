@@ -209,3 +209,67 @@ Lire chaque phrase à haute voix en imaginant le fondateur pragmatique. Si ça s
 ## Anti-règle identité culturelle
 
 Ne JAMAIS écrire "famille française" / "équipe française" pour un projet où la double identité culturelle est verrouillée dans project-context.md. Lire project-context.md section "Identité familiale" avant toute production. Pour ISSA Capital spécifiquement : famille LIBANAISE, SAS française à Nanterre — toujours mentionner les racines libanaises, jamais "famille française".
+
+## Vérification des faits biographiques (learning P1 session 6 ISSA Capital)
+
+Pour tout fait biographique, date de fondation, date de rachat, lieu de naissance, titre de poste ou étape de parcours qui apparaît dans le copy, @copywriter DOIT :
+
+1. **Source de vérité unique** : ne prendre les faits QUE dans la section "Identité" / "Identité familiale" / "Faits biographiques verrouillés" de `project-context.md`. Ne jamais réutiliser un fait hérité d'un livrable antérieur sans le revérifier dans project-context.md.
+2. **Jamais de fait déduit** : si un fait n'est pas dans project-context.md mais dans un site web, un CV LinkedIn, un registre public, le marquer `[HYPOTHÈSE : ...]` et demander validation avant de l'écrire en dur.
+3. **Enfance et jeunesse comptent** : inclure explicitement les périodes pré-universitaires (enfance, lycée, premier pays de résidence) — pas juste le parcours professionnel. Un CV qui commence à l'université est incomplet.
+4. **Exemple de drift** : "2J Impression rachat 1994" traité comme fait acquis pendant 3 sessions avant correction Thomas en "2016". "Parcours Thomas" mentionnait "Florimont → US → Inde" en omettant "Afrique du Sud dans la jeunesse". Ces deux erreurs ont contaminé plusieurs livrables copy + TSX. La règle "source de vérité unique + validation fondateur" aurait évité ces drifts.
+
+## Anti-justifications explicites (learning P1 session 6 ISSA Capital — préférence fondateur)
+
+Une marque sûre d'elle ne se justifie pas, elle existe. @copywriter DOIT détecter et éliminer les phrases qui ressemblent à des transcriptions verbatim de décisions internes plutôt qu'à du copy public.
+
+**Signaux d'alerte (si détecté → reformuler ou supprimer) :**
+- "Dans les deux cas : [explication d'une règle]"
+- "Pas de X, mais Y" (négation frontale d'une attente client)
+- "Ce que nous ne faisons pas : [liste]"
+- "La mission commence par [processus]"
+- Toute phrase qui ressemble à une réponse FAQ collée sur la page
+- Transcription verbatim Thomas/agent en mode décision interne ("On a décidé que...")
+- Phrases qui expliquent une absence ("Pas de tarif affiché", "Pas de calendrier imposé", "Pas d'équipe dédiée")
+
+**Exemples réels détectés session 6 ISSA Capital (corrigés) :**
+- AVANT : "Dans les deux cas : aucun tarif affiché. La mission commence par un échange de qualification."
+- APRÈS : déplacé dans l'intro du formulaire sous forme incarnée, pas en justification frontale.
+
+**Règle opérationnelle** : après avoir rédigé une section, relire à voix haute et demander : "Est-ce que cette phrase AFFIRME une identité ou EXPLIQUE/JUSTIFIE un choix ?" Si elle explique/justifie, reformuler en affirmation ou supprimer.
+
+## Volume biographique calibré (learning P2 session 6 ISSA Capital)
+
+Le volume de texte biographique doit être calibré sur la **valeur pour le persona**, pas sur la disponibilité des faits. Un fondateur qui a fait 5 étapes marquantes n'a pas besoin de 5 paragraphes — **1 phrase pivot suffit si elle est juste**.
+
+**Règles de condensation :**
+- **Bio fondateur** : maximum 4 phrases en version RICHE (vitrine). Version INT : 2-3 phrases. Version MIN : 1 phrase pivot.
+- **Pas de CV déroulé** : éviter la liste exhaustive "Florimont puis Irvine puis Sony puis TEOS puis TikTok puis Adidas...". Sélectionner les 2-3 étapes qui construisent la thèse du projet, couper le reste.
+- **Pas de musée biographique** : une vitrine raconte une identité, pas une carrière. Si une étape n'apporte rien au persona, la couper même si elle est "vraie".
+- **Test de coupe** : pour chaque phrase bio, se demander "si je retire cette phrase, est-ce que le persona comprend encore pourquoi ce fondateur est crédible pour ce projet ?" Si oui → couper.
+
+Exemple concret session 6 ISSA Capital : la version RICHE v2 /mission a coupé "Florimont / Irvine / Sony / TEOS / TikTok / Adidas / Lego" pour garder uniquement "une jeunesse en Afrique du Sud, l'Institut Florimont à Genève, l'université de Californie à Irvine, un détour par l'Inde, puis le retour en France" — 4 phrases au lieu de 10.
+
+## Chiffres narratifs vs chiffres factuels (learning P3 session 6 ISSA Capital)
+
+**Les chiffres doivent raconter, pas prouver.** Un pourcentage juridique brut (50%, 30%, 20%) n'a pas sa place dans une vitrine — il est utile en due diligence, pas en landing. Les ratios de capital, les ratios d'équité, les pourcentages de détention sont **anti-vitrine** car ils transforment le récit en tableau de bord et peuvent créer des perceptions indésirables (ex : "50% = contrôle financier" sur un écosystème familial qui veut raconter un héritage).
+
+**Règles :**
+- **OUI aux stats narratives** : "2020 / Co-fondation", "6 Participations", "3 Générations", "20 ans devant" — elles racontent un horizon, un rythme, une filiation.
+- **NON aux pourcentages juridiques bruts** sans contexte narratif : "50% du capital", "30% détenu par", "20% d'actionnariat".
+- **Règle de substitution** : si un chiffre semble nécessaire mais qu'il est un pourcentage juridique, chercher une alternative narrative (année, nombre d'entités, nombre de générations, durée).
+
+Exemple session 6 ISSA Capital : stat "50%" détention Gradient One refusée par Thomas → remplacée par grid "2020 Co-fondation / 6 Participations / 3 Générations".
+
+## Mode itération jusqu'à N/10 (learning P2 session 6 ISSA Capital)
+
+Pour les livrables copy de haute exigence (vitrine institutionnelle, pages stratégiques, bios fondateurs), @copywriter peut adopter le **mode itération jusqu'à N/10** :
+
+1. **Produire 2-3 variantes** par page ou par section (MIN / INT / RICHE, ou A / B / C).
+2. **S'auto-évaluer sur 10 dimensions** cohérentes avec le projet (ex : fidélité mission, concision, voix marque, identité culturelle, persona, simplicité P0, crédibilité, cohérence cross-pages, anti-justification, VITRINE vs funnel).
+3. **Itérer en Edit** jusqu'à atteindre le score cible (9/10 ou 10/10) OU signaler un **blocage structurel** qui nécessite une décision fondateur (ex : question business non tranchée).
+4. **Documenter le score final** et les dimensions où le livrable a buté — transparence sur les compromis.
+
+Ce pattern a produit sur ISSA Capital session 6 : /mission RICHE v2 = 10/10, /participations Variante A = 9.6/10 (non 10/10 car cosmétique, volonté d'éviter la démonstration), /accompagnement Variante A = 9.5/10 (blocage business).
+
+**Attention** : le mode itération est coûteux en temps. À réserver aux livrables client-facing de haute exigence, pas à chaque page.

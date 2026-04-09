@@ -9,28 +9,33 @@ import { siteConfig } from '@/config/site';
 /**
  * /mission — page éditoriale. Rendu statique (SSG) — contenu 100% statique.
  *
- * Refonte session 6 (CHECKPOINT #2 Thomas) : fusion /mission + /a-propos.
- * La page absorbe la biographie Thomas complète, la section famille (enfants
- * Antoine/Noémie/Lucas), et Sonia Issa depuis /a-propos. Structure en 7 sections
- * (voir docs/copy/mission-page-fusion-copy.md) :
+ * Refonte session 6 Version RICHE v2 (CHECKPOINT #5 session 7 — Thomas arbitre
+ * Sonia gardée, feedback "beaucoup trop de détails, concentrons-nous sur la
+ * mission"). Architecture 6 sections :
  *
  *   1. Hero — ancrage identitaire libanais
- *   2. Ce qui précède la holding — Jean-Pierre Issa + Sonia
- *   3. Le fondateur — Thomas Issa (biographie complète)
- *   4. La famille — enfants, horizon transmissif
- *   5. L'identité — racines libanaises, ancrage français
- *   6. Trois filtres — corrections session 6 (Filtre 2 Option B, Filtre 3 Option A)
- *   7. Ce que nous sommes — clôture, 2 liens sobres
+ *   2. Ce qui précède la holding — Jean-Pierre (bio resserrée, sans dates exactes
+ *      ni titres, sans 2J Impression) + Sonia (1 phrase italique, gardée)
+ *   3. Le fondateur — Thomas Issa (1 § unique, sans écoles, sans employeurs
+ *      précédents ni noms de clients, sans prénoms enfants)
+ *   4. L'horizon — NOUVELLE section : "Ce que tout cela construit"
+ *   5. Trois filtres — corrections session 6 (Filtre 2 Option B, Filtre 3 Option A)
+ *   6. Ce que nous sommes — clôture fusionnée avec identité (racines libanaises
+ *      + ancrage français en §2)
  *
- * Décisions verrouillées CHECKPOINT #2 :
- * - Filtre 2 "Préservation environnement" = Option B (principiel)
- * - Filtre 3 "Éthique humaine" = Option A (pragmatique)
- * - Biographie Thomas verbatim (phrase-pont Décision 4 @creative-strategy,
- *   sortie agence, ellipse "Une agence de communication internationale")
- * - Prénoms et dates enfants : Antoine 2015, Noémie 2018, Lucas 2023
+ * Suppressions par rapport à la v1 session 6 :
+ * - Thomas §§ écoles, employeurs précédents, noms de clients (ces mentions
+ *   restent uniquement sur /accompagnement — exception Q2 session 5)
+ * - Section 4 "La famille" : prénoms enfants et dates retirés
+ * - Jean-Pierre §2 : 2J Impression et chiffres retirés (restent uniquement
+ *   sur /accompagnement)
+ * - JSON-LD Person : champ des formations (écoles) supprimé
  *
- * Source copy : docs/copy/mission-page-fusion-copy.md
- * Source architecture : refonte fusion Phase 5 session 6
+ * Sonia Issa : CONSERVÉE (1 phrase italique en Section 2, décision Thomas
+ * session 6 question finale livrable mission-refonte-10-10).
+ *
+ * Source copy : docs/strategy/mission-refonte-10-10-session6.md (section
+ * Handoff lignes 498-568 — verbatim final retenu Version RICHE v2).
  */
 
 export const dynamic = 'force-static';
@@ -59,10 +64,6 @@ const personJsonLd = {
     name: siteConfig.legalName,
     url: siteConfig.url,
   },
-  alumniOf: [
-    { '@type': 'CollegeOrUniversity', name: 'Institut Florimont, Genève' },
-    { '@type': 'CollegeOrUniversity', name: 'University of California, Irvine' },
-  ],
   knowsLanguage: ['fr', 'en', 'ar'],
   sameAs: ['https://www.linkedin.com/in/thomasissa'],
 };
@@ -107,7 +108,12 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 2 — Ce qui précède la holding (Jean-Pierre Issa + Sonia) */}
+      {/* Section 2 — Ce qui précède la holding (Jean-Pierre Issa + Sonia)
+          Version RICHE v2 : bio Jean-Pierre resserrée à 1 paragraphe de 4 phrases,
+          sans dates exactes (1958/1970/1980/1991) ni titres précis (Directeur de
+          filiales / Directeur Marketing EMEA). Le §2 sur 2J Impression/Mérignac
+          est retiré de /mission — il reste uniquement sur /accompagnement.
+          Sonia Issa : phrase italique conservée (décision Thomas session 6). */}
       <Section tone="elevated">
         <Container width="editorial">
           <Overline>Ce qui précède la holding</Overline>
@@ -116,26 +122,13 @@ export default function MissionPage(): JSX.Element {
           </h2>
           <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              Jean-Pierre Issa est né à Dakar en 1958, dans une famille d&apos;origine
-              libanaise. Comme beaucoup de familles libanaises de sa génération, il
-              quitte le Liban dans les années 1970, quand la guerre civile recompose
-              les destins. Il fait ses études en France, entre dans l&apos;industrie
-              et rejoint IBM dans les années 1980 — une école de rigueur et de
-              discipline internationale. En 1991, il fait partie de l&apos;équipe
-              fondatrice qui lance Lexmark en Europe lors de sa scission d&apos;IBM :
-              Directeur de filiales dans plusieurs pays, Directeur Marketing EMEA.
-              Un parcours construit dans les salles de réunion et sur le terrain,
-              continent après continent.
-            </p>
-            <p>
-              En 2016, avec deux associés, il rachète 2J Impression à Mérignac —
-              une structure de distribution multimarque de matériel d&apos;impression
-              numérique industrielle. L&apos;entreprise développe ses activités dans
-              17 pays, atteint 4 millions d&apos;euros de chiffre d&apos;affaires et
-              s&apos;impose comme un acteur sérieux de son segment. Co-Managing
-              Director et membre du conseil, Jean-Pierre Issa y applique la même
-              logique qu&apos;il a apprise chez IBM : construire avec méthode,
-              tenir dans la durée, décider avec rigueur.
+              Jean-Pierre Issa est né dans une famille d&apos;origine libanaise. Il
+              entre dans l&apos;industrie dans les années 1980, chez IBM, puis fait
+              partie de l&apos;équipe fondatrice qui lance Lexmark en Europe. Il
+              construit ensuite sa propre structure avec ses associés — une
+              entreprise déployée dans plusieurs dizaines de pays, construite avec
+              méthode, tenue dans la durée. Un parcours cohérent : entrer pour
+              rester, décider avec rigueur, transmettre ce qui a été appris.
             </p>
             <p className="border-l-2 border-levant-500 pl-lg italic text-ink-700">
               À ses côtés depuis le début, Sonia Issa — architecte d&apos;intérieur —
@@ -147,12 +140,11 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 3 — Le fondateur (Thomas Issa) — biographie absorbée depuis /a-propos
-          Formulations verrouillées :
-          - Phrase-pont @creative-strategy Décision 4 (ne pas reformuler)
-          - Sortie agence "pour se consacrer à sa famille..." (verrouillée Thomas)
-          - Ellipse "Une agence de communication internationale" (pivotable si
-            Thomas valide la révélation publique future) */}
+      {/* Section 3 — Le fondateur (Thomas Issa)
+          Version RICHE v2 : 1 § unique. Coupés de /mission : écoles, employeurs
+          précédents, noms de clients, nom de l'agence, prénoms enfants. Ces
+          mentions restent UNIQUEMENT sur /accompagnement (exception Q2
+          session 5). "Afrique du Sud" reste comme ancrage de jeunesse. */}
       <Section tone="default">
         <Container width="content">
           <div className="max-w-editorial">
@@ -160,100 +152,48 @@ export default function MissionPage(): JSX.Element {
             <h2 className="mt-md font-heading text-h2 text-ink-950">Thomas Issa</h2>
             <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
               <p>
-                Thomas Issa naît en France à la fin des années 1980, dans une famille
-                qui a appris à s&apos;adapter et à construire. Sa formation est
-                internationale dès le départ : une jeunesse en Afrique du Sud,
-                puis l&apos;Institut Florimont à Genève, puis l&apos;université de
-                Californie à Irvine. Avant de rentrer en France, un détour par
-                l&apos;Inde — quelques mois d&apos;engagement humanitaire qui
-                laissent une marque. Il revient avec une conviction : les
-                structures qui durent sont celles qu&apos;on construit avec
-                intention, pas avec précipitation.
-              </p>
-              <p>
-                Il rejoint ensuite Sony, puis TEOS, et travaille en conseil
-                stratégique — des postes en entreprise qui lui donnent une lecture
-                fine des organisations, de leurs angles morts et de ce qu&apos;il
-                faut pour les faire avancer. C&apos;est là qu&apos;il identifie un
-                manque : il ne trouve pas l&apos;agence de communication avec
-                laquelle il veut travailler. Alors il la crée.
-              </p>
-              <p>
-                Une agence de communication internationale qu&apos;il fonde à
-                35 ans, qui grandit rapidement jusqu&apos;à réunir plus de 35
-                experts, avec des missions dans les grandes verticales mondiales —
-                tech, luxe, logistique, biens de consommation. Parmi ses clients :
-                TikTok, Adidas, Lego. Une structure construite à partir de rien,
-                dans la complexité internationale, avec l&apos;exigence d&apos;un
-                opérateur qui sait ce qu&apos;il veut.
-              </p>
-              <p>
-                Ce qu&apos;il retient de ces années : qu&apos;on peut construire une
-                structure solide à partir de rien, à condition de choisir ses
-                engagements avec exigence. C&apos;est la même logique qu&apos;il
-                applique aujourd&apos;hui à ISSA Capital — à une autre échelle, avec
-                une autre temporalité. En 2025, il quitte l&apos;agence pour se
-                consacrer à sa famille et au développement des activités
-                d&apos;ISSA Capital. La holding est créée en 2026.
+                Thomas Issa a grandi dans cette logique, avec une jeunesse en
+                Afrique du Sud qui lui a appris que les marchés se construisent
+                loin de chez soi. Après quinze ans chez Sony Europe — dont la
+                co-fondation de TEOS, bâtie de zéro en moins d&apos;un an et
+                déployée dans sept régions du monde — puis la direction
+                d&apos;une agence internationale de quarante experts, il est
+                arrivé à une conviction : les structures qui durent sont celles
+                qu&apos;on bâtit avec intention, pas sous contrainte d&apos;un
+                calendrier de sortie. En 2025, il quitte l&apos;agence pour se
+                consacrer à sa famille. En 2026, ISSA Capital prend forme.
               </p>
             </div>
           </div>
         </Container>
       </Section>
 
-      {/* Section 4 — La famille (enfants) — absorbée depuis /a-propos Section D
-          Prénoms et dates validés CHECKPOINT Thomas session 4 (A3). */}
+      {/* Section 4 — L'horizon (NOUVELLE section Version RICHE v2)
+          Remplace l'ancienne Section 4 "La famille" qui nommait les enfants
+          et citait les dates. La nouvelle section parle de la transmission
+          sans révéler d'information biographique sur les enfants. L'ancienne
+          Section 5 "L'identité" est fusionnée dans Section 6 "Ce que nous sommes"
+          (voir ci-dessous). */}
       <Section tone="subtle">
         <Container width="editorial">
-          <Overline>La famille</Overline>
+          <Overline>L&apos;horizon</Overline>
           <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Ce que tout cela construit
+            Ce que tout cela construit.
           </h2>
           <div className="mt-xl space-y-lg text-base leading-relaxed text-ink-800">
             <p>
-              Thomas Issa est marié à une Française. Ensemble, ils ont trois enfants
-              franco-libanais : Antoine, né en 2015, Noémie en 2018, Lucas en 2023.
-              La famille est ancrée à Paris. Ces prénoms et ces dates ne sont pas
-              des détails biographiques — ils sont la raison pour laquelle ISSA
-              Capital existe. Une holding patrimoniale sans horizon transmissif
-              n&apos;est qu&apos;une structure juridique. Ici, l&apos;horizon a des
-              prénoms.
-            </p>
-            <p>
-              Ce que Jean-Pierre Issa a bâti, Thomas en a hérité la méthode. Ce que
-              Thomas construit, Antoine, Noémie et Lucas en hériteront un jour —
-              avec les racines libanaises qui traversent trois générations et la
-              rigueur de ceux qui ont appris à tenir dans la durée. C&apos;est ce
-              que la famille Issa appelle transmettre.
+              ISSA Capital n&apos;existe pas pour gérer un actif. Elle existe parce
+              que Thomas Issa a des enfants, et que ce qu&apos;il construit
+              aujourd&apos;hui doit être transmissible demain. Ce que Jean-Pierre a
+              bâti, Thomas en a hérité la méthode. Ce que Thomas construit, ses
+              enfants en hériteront — avec les racines libanaises qui traversent
+              trois générations. L&apos;horizon de la holding, c&apos;est le leur.
             </p>
           </div>
         </Container>
       </Section>
 
-      {/* Section 5 — L'identité */}
-      <Section tone="default">
-        <Container width="editorial">
-          <Overline>L&apos;identité</Overline>
-          <h2 className="mt-md font-heading text-h2 text-ink-950">
-            Racines libanaises. Ancrée en France.
-          </h2>
-          <div className="mt-lg space-y-md text-base leading-relaxed text-ink-700">
-            <p>
-              La famille Issa est d&apos;origine libanaise. ISSA Capital est une SAS
-              française, domiciliée à Nanterre. Ces deux faits coexistent — ils se
-              complètent.
-            </p>
-            <p>
-              L&apos;héritage libanais apporte une conception du patrimoine transmise
-              de génération en génération — une culture de la durée qui précède les
-              structures juridiques. L&apos;ancrage français apporte la structure et
-              l&apos;accès à un marché immobilier solide.
-            </p>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Section 6 — Trois filtres
+      {/* Section 5 — Trois filtres
           Corrections session 6 CHECKPOINT #2 Thomas :
           - Suppression phrase méta "Ces filtres précèdent toute analyse financière."
           - Filtre 2 Environnement : Option B (principiel) verbatim
@@ -297,7 +237,9 @@ export default function MissionPage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 7 — Ce que nous sommes (clôture) */}
+      {/* Section 6 — Ce que nous sommes (clôture — fusionnée avec l'ancienne
+          Section 5 "L'identité" conformément Version RICHE v2 : §2 remplacé par
+          le verbatim fusion racines libanaises + ancrage français). */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Ce que nous sommes</Overline>
@@ -312,8 +254,9 @@ export default function MissionPage(): JSX.Element {
               immobilier, tech, services aux professionnels.
             </p>
             <p>
-              La famille fondatrice est libanaise. C&apos;est une réalité qui compte
-              dans chaque décision.
+              La famille fondatrice est d&apos;origine libanaise. ISSA Capital est
+              une SAS française, domiciliée à Nanterre. Ces deux réalités
+              coexistent — elles se complètent.
             </p>
           </div>
           <div className="mt-2xl flex flex-wrap gap-lg">

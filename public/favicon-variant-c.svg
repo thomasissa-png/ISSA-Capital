@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ISSA Capital">
+  <title>ISSA Capital — Variante C Humanist sans</title>
+  <!--
+    Variante C — Humanist sans (référence : Optima, Gill Sans, Frutiger)
+    Session 8 — Refonte typographique post-rejet Direction 1 session 7
+
+    Concept : entre géométrique et calligraphique. Léger variation d'épaisseur —
+    le I s'élargit légèrement aux extrémités (terminaisons évasées, pas d'empattement francs).
+    Le C a une légère différence de poids haut/bas vs gauche, rappelant le geste calligraphique
+    de la plume inclinée, mais sans empattement formalisé.
+    Signal : qualité patrimoniale contemporaine, chaleur discrète, modernité ancrée.
+
+    I Humanist (référence : Optima) :
+      Fût semi-bold : 4.5px au centre, évasé à 6px aux extrémités (terminaisons)
+      Terminaisons  : pas d'empattement carré, mais légère évase Bézier (flare serif)
+      Centré sur    : x=17.75 (milieu optique)
+
+    C Humanist (référence : Optima / Frutiger) :
+      Légère modulation : plus épais à gauche (5.5px) que en haut/bas (3px)
+      Arc extérieur : Re=10.5, centre (37.5, 32)
+      Arc intérieur : légèrement décentré vers la droite pour simuler la modulation
+      Ouverture : ~65° (coupe à ~10h40 et ~17h20)
+
+    Géométrie (viewBox 64×64) :
+      Centre  : (32, 32)
+      Sceau   : fond R=31.5 ink-950, contour R=30 stroke 2.5 levant-500
+      Cercle intérieur décoratif : R=26 stroke 0.8 levant-500 opacity=0.5
+
+    Zone glyphes : x=12→51, y=17→47 — hauteur caps 30px
+
+    Lisibilité 16px : NETTE — épaisseur suffisante sans détail parasite
+    Signal : la chaleur calligraphique est perceptible sans être décorative
+  -->
+
+  <!-- Fond circulaire — ink-950 #0A0A0A -->
+  <circle cx="32" cy="32" r="31.5" fill="#0A0A0A"/>
+
+  <!-- Contour extérieur sceau — levant-500 #C4935A -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#C4935A" stroke-width="2.5"/>
+
+  <!-- Cercle intérieur décoratif — levant-500 atténué -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#C4935A" stroke-width="0.8" opacity="0.5"/>
+
+  <!--
+    I Humanist — fût à terminaisons évasées (flare / stress calligraphique)
+    Corps central (y=20→44) : largeur 4.5px, x=15.5→20
+    Terminaison haute (y=17→20) : évasement Bézier de 4.5px → 6px
+    Terminaison basse (y=44→47) : évasement Bézier de 4.5px → 6px
+    Centré sur x=17.75
+
+    L'évasement est obtenu par une courbe Q (quadratique) :
+    Point de contrôle à x=14.5/21 pour tirer les bords vers l'extérieur
+  -->
+  <path
+    d="M 14.75,17
+       Q 14.75,17 15.5,20
+       L 15.5,44
+       Q 14.75,47 14.75,47
+       L 20.75,47
+       Q 20.75,47 20,44
+       L 20,20
+       Q 20.75,17 20.75,17
+       Z"
+    fill="#F5F0E8"
+  />
+
+  <!--
+    C Humanist — modulation optima-like, légère variation épaisseur
+    Centre (37.5, 32), Re=10.5, Ri modulation :
+      Gauche (9h) : Ri=5 → épaisseur mur = 5.5px
+      Haut/bas    : Ri=7.5 → épaisseur mur = 3px
+    Ouverture : de y=22.5 (haut) à y=41.5 (bas) — ~65° de coupe
+    k=0.5523 × Re=10.5 : 5.8
+
+    Arc ext haut : M(37.5,22.5) C(31.7,22.5)(27,27.2)(27,32)
+    Arc ext bas  : (27,32) C(27,36.8)(31.7,41.5)(37.5,41.5)
+    Arc int bas  : (37.5,39) C(34.2,39)(30,36.0)(30,32) — légèrement décentré
+    Arc int haut : (30,32) C(30,28.0)(34.2,25)(37.5,25)
+
+    Terminaisons : extrémités plates propres (coupe horizontale)
+  -->
+  <path
+    d="M 37.5,22.5
+       C 31.7,22.5 27,27.2 27,32
+       C 27,36.8 31.7,41.5 37.5,41.5
+       L 37.5,39
+       C 34.2,39 30,36.0 30,32
+       C 30,28.0 34.2,25 37.5,25
+       Z"
+    fill="#F5F0E8"
+  />
+
+</svg>
