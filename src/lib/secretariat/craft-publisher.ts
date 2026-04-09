@@ -53,12 +53,23 @@ export async function publishToCraft(
     };
   }
 
+  // pageId : ID de la page Craft parente où les CR sont ajoutés
+  // Si non configuré, tenter sans (certains Craft Links ont une page par défaut)
+  const pageId = process.env.CRAFT_PAGE_ID;
+
   const fullMarkdown = `# ${params.title}\n\n**Réf.** ${params.reference}\n\n${params.markdown}`;
 
   const url = `${baseUrl.replace(/\/$/, '')}/blocks`;
+
+  // Format validé par Replit : position DOIT inclure pageId
+  const position: Record<string, string> = { position: 'end' };
+  if (pageId && pageId !== '__TO_FILL__') {
+    position['pageId'] = pageId;
+  }
+
   const bodyJson = JSON.stringify({
     markdown: fullMarkdown,
-    position: { position: 'end' },
+    position,
   });
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
