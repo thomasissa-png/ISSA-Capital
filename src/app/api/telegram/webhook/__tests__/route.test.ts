@@ -360,4 +360,240 @@ describe('POST /api/telegram/webhook', () => {
     expect(args[0]).toBe(12345);
     expect(args[1]).toContain('prêt');
   });
+
+  // ----------------------------------------------------------
+  // 6. "annule" → clearConversation appelé
+  // ----------------------------------------------------------
+  it('annule la conversation quand le message est "annule"', async () => {
+    // Simuler une conversation en cours
+    mocks.getConversation.mockReturnValue([
+      { role: 'user', content: 'Déjeuner avec Karim', timestamp: Date.now() },
+    ]);
+    mocks.getPendingDraft.mockReturnValue(null);
+
+    const res = await POST(makeRequest(textMessage('annule')));
+    expect(res.status).toBe(200);
+
+    expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
+    expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const msg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(msg).toContain('annulée');
+  });
+
+  // ----------------------------------------------------------
+  // 7. "stop" → clearConversation appelé
+  // ----------------------------------------------------------
+  it('annule la conversation quand le message est "stop"', async () => {
+    // Simuler un draft en attente
+    mocks.getPendingDraft.mockReturnValue({
+      cr: VALID_CR_DRAFT,
+      previewText: 'aperçu',
+      createdAt: Date.now(),
+    });
+
+    const res = await POST(makeRequest(textMessage('stop')));
+    expect(res.status).toBe(200);
+
+    expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
+    expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const msg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(msg).toContain('annulée');
+  });
+
+  // ----------------------------------------------------------
+  // 8. Message texte → Claude needs_clarification → question renvoyée
+  // ----------------------------------------------------------
+  it('renvoie la question de clarification quand Claude demande des précisions', async () => {
+    mocks.create.mockResolvedValueOnce(
+      claudeResponseClarification('Avec quelle entité ce déjeuner a-t-il eu lieu ?'),
+    );
+
+    const res = await POST(makeRequest(textMessage('Déjeuner avec Karim hier')));
+    expect(res.status).toBe(200);
+
+    // Vérifie que le message utilisateur est sauvegardé dans l'historique
+    expect(mocks.appendMessage).toHaveBeenCalledWith(12345, 'user', 'Déjeuner avec Karim hier');
+
+    // Vérifie que la question de clarification est envoyée
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('entité');
+
+    // Vérifie que la réponse assistant est sauvegardée dans l'historique
+    expect(mocks.appendMessage).toHaveBeenCalledWith(
+      12345,
+      'assistant',
+      expect.stringContaining('entité'),
+    );
+
+    // Pas de boutons de confirmation envoyés
+    expect(mocks.sendTelegramConfirmation).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // 9. Message texte → Claude ready → aperçu + boutons
+  // ----------------------------------------------------------
+  it('envoie un aperçu avec boutons quand Claude génère un CR complet', async () => {
+    mocks.create.mockResolvedValueOnce(claudeResponseReady());
+
+    const res = await POST(makeRequest(textMessage('Déjeuner avec Karim Benmoussa au Voltaire')));
+    expect(res.status).toBe(200);
+
+    // Le draft est stocké en attente de validation
+    expect(mocks.setPendingDraft).toHaveBeenCalledWith(
+      12345,
+      VALID_CR_DRAFT,
+      expect.stringContaining('COMPTE RENDU'),
+    );
+
+    // L'aperçu avec boutons est envoyé
+    expect(mocks.sendTelegramConfirmation).toHaveBeenCalledOnce();
+    const confirmArgs = mocks.sendTelegramConfirmation.mock.calls[0] as [number, string];
+    expect(confirmArgs[0]).toBe(12345);
+    expect(confirmArgs[1]).toContain('Vérifie le CR');
+
+    // Pas de sendTelegramMessage simple (le preview passe par sendTelegramConfirmation)
+    expect(mocks.sendTelegramMessage).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // 10. Message texte → Claude texte libre (pas JSON) → clarification
+  // ----------------------------------------------------------
+  it('traite une réponse Claude en texte libre comme une clarification', async () => {
+    mocks.create.mockResolvedValueOnce(
+      claudeResponseFreeText(
+        "Je ne trouve pas d'information sur ce restaurant. Peux-tu me donner l'adresse exacte ?",
+      ),
+    );
+
+    const res = await POST(makeRequest(textMessage('Déjeuner au restaurant machin')));
+    expect(res.status).toBe(200);
+
+    // Le texte libre est traité comme clarification et envoyé tel quel
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('adresse exacte');
+
+    // Pas de boutons de confirmation
+    expect(mocks.sendTelegramConfirmation).not.toHaveBeenCalled();
+    // Pas de draft stocké
+    expect(mocks.setPendingDraft).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // 11. Callback "validate" avec draft → publishToCraft + confirmation
+  // ----------------------------------------------------------
+  it('publie sur Craft et confirme quand le callback "validate" est reçu avec un draft', async () => {
+    mocks.getPendingDraft.mockReturnValue({
+      cr: VALID_CR_DRAFT,
+      previewText: 'Aperçu du CR',
+      createdAt: Date.now(),
+    });
+
+    const res = await POST(makeRequest(callbackQuery('validate')));
+    expect(res.status).toBe(200);
+
+    // Le callback est acquitté
+    expect(mocks.answerCallbackQuery).toHaveBeenCalledWith('cb-123');
+
+    // La référence séquentielle est générée
+    expect(mocks.getNextReference).toHaveBeenCalledWith('IC');
+
+    // Publication sur Craft
+    expect(mocks.publishToCraft).toHaveBeenCalledOnce();
+    const craftArgs = mocks.publishToCraft.mock.calls[0] as [{ markdown: string; title: string; reference: string }];
+    expect(craftArgs[0].reference).toBe('IC-CR-2026-0001');
+    expect(craftArgs[0].markdown).toContain('COMPTE RENDU');
+    expect(craftArgs[0].title).toContain('CR');
+
+    // Message de confirmation envoyé
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('IC-CR-2026-0001');
+    expect(sentMsg).toContain('publié');
+
+    // Nettoyage conversation + draft
+    expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
+    expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
+  });
+
+  // ----------------------------------------------------------
+  // 12. Callback "validate" sans draft → message "aucun CR en attente"
+  // ----------------------------------------------------------
+  it('envoie un message si "validate" est reçu sans draft en attente', async () => {
+    mocks.getPendingDraft.mockReturnValue(null);
+
+    const res = await POST(makeRequest(callbackQuery('validate')));
+    expect(res.status).toBe(200);
+
+    expect(mocks.answerCallbackQuery).toHaveBeenCalledWith('cb-123');
+
+    // Pas de publication
+    expect(mocks.publishToCraft).not.toHaveBeenCalled();
+
+    // Message d'info
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('Aucun CR en attente');
+  });
+
+  // ----------------------------------------------------------
+  // 13. Callback "modify" → clearPendingDraft + message
+  // ----------------------------------------------------------
+  it('efface le draft et invite à modifier quand le callback "modify" est reçu', async () => {
+    mocks.getPendingDraft.mockReturnValue({
+      cr: VALID_CR_DRAFT,
+      previewText: 'Aperçu',
+      createdAt: Date.now(),
+    });
+
+    const res = await POST(makeRequest(callbackQuery('modify')));
+    expect(res.status).toBe(200);
+
+    expect(mocks.answerCallbackQuery).toHaveBeenCalledWith('cb-123');
+    expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
+
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('mis de côté');
+
+    // La conversation n'est PAS effacée (l'utilisateur peut continuer)
+    expect(mocks.clearConversation).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // 14. Callback "cancel" → clearConversation + message "annulé"
+  // ----------------------------------------------------------
+  it('efface tout et confirme l\'annulation quand le callback "cancel" est reçu', async () => {
+    mocks.getPendingDraft.mockReturnValue({
+      cr: VALID_CR_DRAFT,
+      previewText: 'Aperçu',
+      createdAt: Date.now(),
+    });
+
+    const res = await POST(makeRequest(callbackQuery('cancel')));
+    expect(res.status).toBe(200);
+
+    expect(mocks.answerCallbackQuery).toHaveBeenCalledWith('cb-123');
+    expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
+    expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
+
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('annulé');
+  });
+
+  // ----------------------------------------------------------
+  // 15. Message non-texte (sticker) → message "envoie en texte"
+  // ----------------------------------------------------------
+  it('demande un message texte quand un sticker est envoyé', async () => {
+    const res = await POST(makeRequest(stickerMessage()));
+    expect(res.status).toBe(200);
+
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
+    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
+    expect(sentMsg).toContain('texte');
+  });
 });
