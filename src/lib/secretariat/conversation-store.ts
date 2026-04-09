@@ -17,9 +17,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CRDraft } from './types';
 
-// Utiliser /tmp pour la persistence (garanti accessible sur Replit et serverless)
-// + fallback mémoire si le fichier n'est pas accessible
-const STORE_DIR = '/tmp/issa-secretariat';
+// Répertoire persistant Replit (/home/runner/) — survit aux redéploiements
+// Fallback sur /tmp si /home/runner/ n'existe pas
+const STORE_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
 const STORE_PATH = resolve(STORE_DIR, 'conversations.json');
 const MAX_MESSAGES_PER_CONVERSATION = 20;
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h

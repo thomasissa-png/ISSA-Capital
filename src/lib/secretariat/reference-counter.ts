@@ -15,8 +15,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Entite } from './types';
 
-// Même répertoire /tmp que le conversation store
-const COUNTER_DIR = '/tmp/issa-secretariat';
+// Répertoire persistant Replit (/home/runner/) — survit aux redéploiements
+// Fallback sur /tmp si /home/runner/ n'existe pas
+const COUNTER_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
 const COUNTER_PATH = resolve(COUNTER_DIR, 'cr-counter.json');
 
 type CounterData = Record<string, number>;

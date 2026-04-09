@@ -690,11 +690,15 @@ export async function POST(request: Request): Promise<Response> {
               dateEtablissement,
             });
           } catch (pdfErr) {
-            console.error(
-              '[telegram-webhook] erreur génération PDF :',
-              pdfErr instanceof Error ? pdfErr.message : String(pdfErr),
+            const pdfErrMsg = pdfErr instanceof Error
+              ? `${pdfErr.message}\n${pdfErr.stack?.slice(0, 300) ?? ''}`
+              : String(pdfErr);
+            console.error('[telegram-webhook] erreur génération PDF :', pdfErrMsg);
+            // Envoyer l'erreur sur Telegram pour diagnostic
+            await sendTelegramMessage(
+              callbackChatId,
+              `⚠️ Erreur PDF : ${pdfErrMsg.slice(0, 500)}`,
             );
-            // On continue sans PDF — la publication Craft reste prioritaire
           }
 
           // 5. Envoyer le PDF sur Telegram (avant la publication Craft pour feedback rapide)
