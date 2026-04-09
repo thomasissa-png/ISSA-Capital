@@ -130,7 +130,7 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
         <p className="font-heading text-2xl text-ink-950">Message transmis.</p>
         <p className="mt-md text-base text-ink-700">
           {variant === 'opportunite'
-            ? 'Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées. Nous vous répondrons dans la journée.'
+            ? 'Votre proposition a été transmise. Nous étudions chaque dossier soumis et prenons contact avec les opportunités qualifiées. Nous revenons vers vous sous 72h.'
             : 'Votre message a été transmis. Nous répondons aux demandes qualifiées.'}
         </p>
       </div>

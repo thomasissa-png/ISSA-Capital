@@ -163,7 +163,7 @@ export default function OpportunitesPage(): JSX.Element {
               {
                 n: '2',
                 title: 'Analyse',
-                desc: "Nous étudions chaque dossier. Réponse dans la journée. Si votre opportunité correspond à nos critères, nous prenons contact pour un échange direct.",
+                desc: "Nous étudions chaque dossier. Réponse sous 72h. Si votre opportunité correspond à nos critères, nous prenons contact pour un échange direct.",
               },
               {
                 n: '3',
