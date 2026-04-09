@@ -26,6 +26,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { TelegramUpdateSchema, ClaudeResponseSchema } from '@/lib/secretariat/types';
 import { sendTelegramMessage, answerCallbackQuery } from '@/lib/secretariat/telegram';
 import { renderCrForTelegram } from '@/lib/secretariat/cr-renderer';
+import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
+import { fetchRecentCRs } from '@/lib/secretariat/craft-reader';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -164,8 +166,18 @@ async function generateCR(messageText: string): Promise<{
   error?: string;
 }> {
   try {
-    const systemPrompt = loadSystemPrompt();
+    let systemPrompt = loadSystemPrompt();
     const client = getAnthropicClient();
+
+    // Injecter la base de contacts récurrents dans le system prompt
+    const contactsBlock = formatContactsForPrompt();
+    systemPrompt = systemPrompt.replace(
+      '[INJECTION_DATABASE_CONTACTS_ICI]',
+      contactsBlock,
+    );
+
+    // Récupérer les derniers CR depuis Craft (contexte historique)
+    const recentCRs = await fetchRecentCRs();
 
     // Injecter la date/heure actuelle pour que Claude comprenne "aujourd'hui", "hier", etc.
     const now = new Date();
@@ -182,7 +194,7 @@ async function generateCR(messageText: string): Promise<{
       timeZone: 'Europe/Paris',
     }).format(now);
 
-    const enrichedMessage = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris)]\n\n${messageText}`;
+    const enrichedMessage = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris)]\n\n[${recentCRs}]\n\n${messageText}`;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
