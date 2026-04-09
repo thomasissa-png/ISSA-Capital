@@ -167,6 +167,23 @@ async function generateCR(messageText: string): Promise<{
     const systemPrompt = loadSystemPrompt();
     const client = getAnthropicClient();
 
+    // Injecter la date/heure actuelle pour que Claude comprenne "aujourd'hui", "hier", etc.
+    const now = new Date();
+    const dateFr = new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Europe/Paris',
+    }).format(now);
+    const heureFr = new Intl.DateTimeFormat('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Paris',
+    }).format(now);
+
+    const enrichedMessage = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris)]\n\n${messageText}`;
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
 
@@ -177,7 +194,7 @@ async function generateCR(messageText: string): Promise<{
           model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
           max_tokens: 4096,
           system: systemPrompt,
-          messages: [{ role: 'user', content: messageText }],
+          messages: [{ role: 'user', content: enrichedMessage }],
         },
         { signal: controller.signal },
       );
@@ -198,12 +215,19 @@ async function generateCR(messageText: string): Promise<{
       return { success: false, error: 'Réponse Claude vide' };
     }
 
+    // Nettoyer le JSON : Claude envoie parfois ```json ... ``` autour du JSON
+    let cleanJson = rawText;
+    const jsonBlockMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+    if (jsonBlockMatch?.[1]) {
+      cleanJson = jsonBlockMatch[1].trim();
+    }
+
     // Parser le JSON et valider via Zod
     let parsed: unknown;
     try {
-      parsed = JSON.parse(rawText);
+      parsed = JSON.parse(cleanJson);
     } catch {
-      return { success: false, error: `Réponse Claude non-JSON : ${rawText.slice(0, 200)}` };
+      return { success: false, error: `Réponse Claude non-JSON : ${cleanJson.slice(0, 200)}` };
     }
 
     const validation = ClaudeResponseSchema.safeParse(parsed);
@@ -298,10 +322,8 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Envoyer un accusé de réception immédiat
-      await sendTelegramMessage(chatId, 'Génération du CR en cours…');
-
-      // Appel Claude
+      // Appel Claude (pas d'accusé de réception — on ne sait pas encore
+      // si Claude va générer ou demander une clarification)
       const result = await generateCR(text);
 
       if (!result.success) {
