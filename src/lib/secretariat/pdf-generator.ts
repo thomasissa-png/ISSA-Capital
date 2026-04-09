@@ -165,6 +165,22 @@ export async function generateCrPdf(params: {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', (err: Error) => reject(err));
 
+    // Numérotation de page (footer centré) — chaque nouvelle page
+    let pageNumber = 1;
+    doc.on('pageAdded', () => {
+      pageNumber++;
+      doc
+        .font(FONT_REGULAR)
+        .fontSize(FONT_SIZE_SMALL - 1)
+        .fillColor(COLOR_SECONDARY)
+        .text(
+          `— ${pageNumber} —`,
+          0,
+          doc.page.height - PAGE_MARGIN / 2 - 10,
+          { align: 'center', width: doc.page.width },
+        );
+    });
+
     // ============================================================
     // CONFIDENTIEL — bandeau haut
     // ============================================================
@@ -189,6 +205,17 @@ export async function generateCrPdf(params: {
       .fontSize(FONT_SIZE_TITLE)
       .fillColor(COLOR_PRIMARY)
       .text('COMPTE RENDU DE RÉUNION PROFESSIONNELLE', PAGE_MARGIN, doc.y, {
+        width: doc.page.width - PAGE_MARGIN * 2,
+        align: 'center',
+      });
+
+    // Sous-titre entité (ancrage institutionnel immédiat)
+    doc.moveDown(0.3);
+    doc
+      .font(FONT_REGULAR)
+      .fontSize(11)
+      .fillColor(COLOR_SECONDARY)
+      .text(entiteNomComplet(cr.entite), PAGE_MARGIN, doc.y, {
         width: doc.page.width - PAGE_MARGIN * 2,
         align: 'center',
       });
@@ -309,6 +336,7 @@ export async function generateCrPdf(params: {
         doc.moveDown(0.3);
       }
 
+      doc.moveDown(0.5);
       doc
         .font(FONT_OBLIQUE)
         .fontSize(FONT_SIZE_SMALL)
@@ -353,13 +381,30 @@ export async function generateCrPdf(params: {
           width: 150,
           height: 60,
         });
-        doc.moveDown(3);
+        doc.moveDown(0.8);
       } else {
-        doc.moveDown(0.3);
+        doc.moveDown(0.8);
       }
     } catch {
-      doc.moveDown(0.3);
+      doc.moveDown(0.8);
     }
+
+    // Bloc signataire sous la signature (nom + titre)
+    doc
+      .font(FONT_BOLD)
+      .fontSize(FONT_SIZE_BODY)
+      .fillColor(COLOR_PRIMARY)
+      .text('Thomas Issa', PAGE_MARGIN, doc.y, {
+        width: doc.page.width - PAGE_MARGIN * 2,
+      });
+    doc
+      .font(FONT_REGULAR)
+      .fontSize(FONT_SIZE_SMALL)
+      .fillColor(COLOR_SECONDARY)
+      .text(`Président — ${entiteNomComplet(cr.entite)}`, PAGE_MARGIN, doc.y, {
+        width: doc.page.width - PAGE_MARGIN * 2,
+      });
+    doc.moveDown(0.8);
 
     doc
       .font(FONT_BOLD)
