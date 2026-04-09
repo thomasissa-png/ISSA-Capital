@@ -136,3 +136,148 @@ export function renderCrForTelegram(cr: CRDraft, reference?: string): string {
 
   return lines.join('\n');
 }
+
+// ============================================================
+// Rendu markdown Craft — format légal complet pour publication
+// ============================================================
+
+/**
+ * Formate un timestamp ISO complet en français : "8 avril 2026 à 14:32 UTC".
+ */
+function dateTimeFormatFr(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  const datePart = new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
+  const hours = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+  return `${datePart} à ${hours}:${minutes} UTC`;
+}
+
+/**
+ * Rend le markdown complet d'un CR au format légal pour publication Craft.
+ *
+ * Inclut frontmatter CONFIDENTIEL, header (référence, entité, participants),
+ * body (sections 1-4), footer DGFiP (signature, horodatage, RGPD).
+ *
+ * Source de vérité : secretariat/src/server/services/cr-to-craft-mapper.ts
+ * (même logique, adaptée sans dépendances Express/crypto).
+ *
+ * @param cr Le draft CR structuré
+ * @param reference Référence séquentielle (ex: "IC-CR-2026-0003")
+ * @param dateEtablissement Timestamp ISO de la publication
+ */
+export function renderCrForCraft(
+  cr: CRDraft,
+  reference: string,
+  dateEtablissement: string,
+): string {
+  const sections: string[] = [];
+
+  // Frontmatter classification
+  sections.push('---');
+  sections.push('classification: CONFIDENTIEL');
+  sections.push('---');
+  sections.push('');
+
+  // Header
+  sections.push('# COMPTE RENDU DE RÉUNION PROFESSIONNELLE');
+  sections.push('');
+  sections.push(`**Référence** : ${reference}`);
+  sections.push(`**Entité** : ${entiteNomComplet(cr.entite)}`);
+  sections.push(`**Date de la réunion** : ${dateFormatFr(cr.date_reunion)}`);
+  sections.push(`**Date d'établissement** : ${dateTimeFormatFr(dateEtablissement)}`);
+  sections.push(`**Type** : ${typeReunionLibelle(cr.type_reunion)}`);
+  sections.push(`**Lieu** : ${cr.lieu}`);
+  sections.push('**Classification** : CONFIDENTIEL — diffusion restreinte');
+  sections.push('');
+  sections.push('**Participants** :');
+  sections.push(formatParticipants(cr.participants));
+  sections.push('');
+  sections.push('---');
+  sections.push('');
+
+  // Section 1 : Objet + Art. 39-1 CGI
+  sections.push("## 1. Objet et lien avec l'intérêt social");
+  sections.push('');
+  sections.push(cr.section_1_objet_art_39_1);
+  sections.push('');
+
+  // Section 2 : Points abordés
+  sections.push('## 2. Points abordés');
+  sections.push('');
+  sections.push(cr.section_2_points_abordes);
+  sections.push('');
+
+  // Section 3 : Décisions
+  sections.push('## 3. Décisions et conclusions');
+  sections.push('');
+  sections.push(cr.section_3_decisions);
+  sections.push('');
+
+  // Section 4 : Suites à donner (conditionnelle)
+  if (cr.section_4_suites_a_donner !== null) {
+    sections.push('## 4. Suites à donner');
+    sections.push('');
+    sections.push(cr.section_4_suites_a_donner);
+    sections.push('');
+  }
+
+  // Footer DGFiP
+  sections.push('---');
+  sections.push('');
+  sections.push(
+    `En foi de quoi, le présent compte rendu a été établi et certifié exact par Thomas Issa, Président — ${entiteNomComplet(cr.entite)}.`,
+  );
+  sections.push('');
+  sections.push(`**Horodaté le** : ${dateTimeFormatFr(dateEtablissement)}`);
+  sections.push('');
+  sections.push('---');
+  sections.push('');
+  sections.push(
+    'Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément',
+  );
+  sections.push(
+    'au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale',
+  );
+  sections.push(
+    "(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : contact@issa-capital.com.",
+  );
+  sections.push('');
+  sections.push(
+    'Document établi à titre de justificatif interne — se reporter aux pièces comptables associées',
+  );
+  sections.push('(factures, notes de frais) pour la déductibilité fiscale.');
+
+  return sections.join('\n');
+}
+
+/**
+ * Construit le titre du document Craft.
+ * Format : "CR {Type} — {Premier participant} — {Date}"
+ *
+ * @example "CR Déjeuner — Karim Benmoussa — 9 avril 2026"
+ */
+export function buildCraftTitle(cr: CRDraft): string {
+  const typeName = typeReunionLibelle(cr.type_reunion);
+  // Raccourcir le libellé du type (retirer "d'affaires", "téléphonique / visioconférence", etc.)
+  const shortType = typeName
+    .replace(" d'affaires", '')
+    .replace(' téléphonique / visioconférence', '')
+    .replace(' de contrat', '');
+
+  const firstParticipant = cr.participants[0];
+  const participantName = firstParticipant
+    ? `${firstParticipant.prenom} ${firstParticipant.nom}`
+    : 'Interne';
+
+  const dateStr = dateFormatFr(cr.date_reunion);
+
+  return `CR ${shortType} — ${participantName} — ${dateStr}`;
+}
