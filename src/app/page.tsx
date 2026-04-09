@@ -21,7 +21,7 @@ export const dynamic = 'force-static';
 // un title "absolute" via l'objet pour neutraliser le template sur la home.
 export const metadata: Metadata = {
   title: {
-    absolute: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
+    absolute: "ISSA Capital — Holding patrimoniale familiale",
   },
   description:
     "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.",
@@ -42,9 +42,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
+    title: "ISSA Capital — Holding patrimoniale familiale",
     description:
-      "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
+      "Holding patrimoniale de la famille Issa, aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
     images: [siteConfig.ogImage],
   },
 };
@@ -55,14 +55,14 @@ export default function HomePage(): JSX.Element {
       {/* Section 1 — Hero principal */}
       <Section tone="inverse" className="py-4xl md:py-5xl">
         <Container width="editorial" className="text-center">
-          <Overline tone="light">Holding patrimoniale — famille libanaise</Overline>
+          <Overline tone="light">Holding patrimoniale familiale</Overline>
           <h1 className="mt-lg font-heading text-display leading-[1.08] text-parchment-100">
             Racines libanaises.
             <br />
             Exigences sans exception.
           </h1>
           <p className="mx-auto mt-xl max-w-[520px] font-body text-lead text-ink-300">
-            La holding patrimoniale d&apos;une famille libanaise, établie en France.
+            La holding patrimoniale de la famille Issa, établie en France.
             Patrimoine, participations, transmission.
           </p>
           <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
@@ -94,7 +94,7 @@ export default function HomePage(): JSX.Element {
           </h2>
           <div className="mt-lg space-y-md text-lead text-ink-700">
             <p>
-              ISSA Capital est la holding patrimoniale d&apos;une famille libanaise,
+              ISSA Capital est la holding patrimoniale de la famille Issa,
               établie en France. Sa raison d&apos;être : structurer ce qui s&apos;est
               construit sur trois décennies, le faire fructifier, le transmettre.
             </p>

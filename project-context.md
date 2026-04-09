@@ -171,15 +171,20 @@ Pareil : l'offre de conseil existe, elle est documentée sobrement, mais ce n'es
   - **❌ NE PAS détailler** Suisse / Afrique du Sud / Inde — trop biographique pour un site de holding, garder en réserve pour interviews presse ou bio Marc.
 - **Implication pour les agents** :
   - @creative-strategy : intégrer l'identité libanaise dans le brand-platform, les références culturelles, les holdings de référence (inclure du Moyen-Orient / Liban si pertinent)
-  - @copywriter : ne JAMAIS écrire "famille française". Possible de jouer sur "famille libanaise enracinée en France", "héritage libanais, ancrage français", ou équivalent — à arbitrer
+  - @copywriter : ne JAMAIS écrire "famille française" NI "famille libanaise" (retour Jean-Pierre session 9). Formulations autorisées : "famille Issa", "famille aux racines libanaises", "d'origine libanaise" (bio uniquement), "héritage libanais"
   - @design : références visuelles peuvent inclure des codes esthétiques moyen-orientaux subtils (typographie, motifs, palettes) si cohérent avec le ton premium élégant
   - @seo / @geo : potentiel de différenciation sur les requêtes "holding familiale libanaise France" / "famille libanaise patrimoine France"
 - **Anti-règle #1** : ne JAMAIS écrire "famille française", "famille issue de France", ou équivalent. C'est une erreur factuelle ET une perte d'asset différenciant.
-- **Précision identitaire #2 (ajoutée Thomas 2026-04-07)** : **au présent**, préférer **"racines libanaises"** ou **"d'origine libanaise"** plutôt que "famille libanaise". Raison : Thomas est marié à une française, ses enfants sont franco-libanais — "famille libanaise" au présent devient imprécise pour la génération actuelle. "Racines libanaises" est plus juste ET plus poétique (évoque la transmission, la profondeur, l'héritage).
-- **Exception narrative** : **au passé**, quand on décrit Jean-Pierre ou Sonia (nés dans une famille libanaise, partis du Liban en 1970s), "famille libanaise" reste factuellement vrai et autorisé.
-- **Règle copywriter** :
-  - **Présent** (ISSA Capital, la famille Issa aujourd'hui) → "racines libanaises" / "d'origine libanaise" / "famille aux racines libanaises" / "famille enracinée en France"
-  - **Passé** (Jean-Pierre, Sonia, années 70, exode, parents) → "famille libanaise" autorisé
+- **Précision identitaire #2 (ajoutée Thomas 2026-04-07, RENFORCÉE par Jean-Pierre 2026-04-09)** : **NE PLUS ÉCRIRE "famille libanaise"** nulle part dans les livrables client-facing. Retour Jean-Pierre Issa : *"On n'est pas tout à fait libanais comme on a pas tous la nationalité même si on vient du Liban… Gardons la tagline avec racines, mais enlevons quand on peut enlever, et reformulons sinon pour ne pas dire famille libanaise."*
+- **Formulations AUTORISÉES** : "racines libanaises" (tagline OK), "d'origine libanaise" (factuel, bio Jean-Pierre/Sonia), "héritage libanais" (culturel), "famille Issa" (neutre), "famille aux racines libanaises" (nuancé)
+- **Formulations INTERDITES** : "famille libanaise" (présuppose la nationalité), "famille française" (anti-règle #1 inchangée)
+- **Exception narrative restreinte** : "dans une famille d'origine libanaise" autorisé UNIQUEMENT dans les bios passées de Jean-Pierre et Sonia (fait historique). Jamais "famille libanaise" sans "d'origine".
+- **Règle copywriter mise à jour session 9** :
+  - **Tagline / baseline** → "Racines libanaises. Exigences sans exception." = GARDER (validé Jean-Pierre)
+  - **Metadata / SEO** → "Holding patrimoniale familiale" (pas "d'une famille libanaise")
+  - **Body copy** → "la famille Issa" ou "de la famille Issa" au lieu de "d'une famille libanaise"
+  - **Bio Jean-Pierre/Sonia** → "d'origine libanaise" autorisé (factuel, passé)
+  - **Registre poétique/éditorial** → "héritage libanais", "racines libanaises" autorisé
 
 ---
 
@@ -363,8 +368,8 @@ Compte tenu du profil Thomas (15+ ans corporate premium Sony, co-founder TEOS à
 - Variantes B et C écartées.
 
 ### Promesse unique — VERROUILLÉE 2026-04-07 (Thomas a tranché : variante A reformulée libanaise)
-- **Promesse officielle** : "La holding patrimoniale d'une **famille libanaise** qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
-- Cette formulation intègre l'identité libanaise comme asset (voir section "Identité familiale"). Les variantes B et C de l'hypothèse H3 sont écartées.
+- **Promesse officielle** : "La holding patrimoniale de la **famille Issa**, aux racines libanaises, qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
+- Reformulation session 9 suite retour Jean-Pierre (2026-04-09) : "famille libanaise" → "famille Issa, aux racines libanaises". Les variantes B et C de l'hypothèse H3 sont écartées.
 - **Ton de marque** : premium élégant, sobre, intemporel, éditorial. Pas de tape-à-l'œil. Référence : maisons de gestion patrimoniale haut de gamme, holdings familiales européennes type Agache / Artémis / Berkshire (texte minimaliste)
 - **3 mots qui DÉFINISSENT la marque** : Famille — Transmission — Long-terme
 - **3 mots qui ne DÉFINISSENT PAS la marque** : Spéculatif — Tape-à-l'œil — Court-termiste
@@ -766,7 +771,7 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 
 - **Principe directeur #0** : VITRINE pas conversion. Zéro CTA agressif.
 - **Règle absolue** : Simplicité > Démonstration > Élégance (P0 verrouillée).
-- **Identité libanaise** (jamais française).
+- **Identité** : jamais "famille française", jamais "famille libanaise" (retour Jean-Pierre session 9). Autorisé : "racines libanaises", "d'origine libanaise", "famille Issa".
 - **Caractères UTF-8 réels** dans le code (é è à ç).
 - **Mention TikTok / Adidas / Lego / Sony AUTORISÉE** (exception explicite Q2 session 5).
 - **Zéro mention du nom de l'agence Thomas** (commence par S, finit par i, 6 lettres) → "Une agence de communication internationale".

@@ -16,8 +16,7 @@ import { siteConfig } from '@/config/site';
  * Architecture 4 sections (par domaine d'activité, pas par organigramme) :
  *   1. Immobilier en direct — Patrimoine IDF + Versi Immobilier
  *   2. Accompagnement et co-investissement — Gradient One + Versi Invest
- *   3. Technologie au service de l'immobilier — Immocrew + Versimo +
- *      Calendrier Tempo
+ *   3. Technologie au service de l'immobilier — Immocrew + Versimo
  *   4. Une thèse, pas un portefeuille — éditoriale + liens sortie
  *
  * Gradient One disparaît comme structure de page. Elle est définie une seule
@@ -32,7 +31,7 @@ export const dynamic = 'force-static';
 export const metadata: Metadata = {
   title: 'Participations',
   description:
-    "L'écosystème immobilier d'ISSA Capital construit depuis 2020 : Patrimoine résidentiel IDF, Versi Immobilier, Gradient One, Versi Invest, Immocrew, Versimo, Calendrier Tempo.",
+    "L'écosystème immobilier d'ISSA Capital construit depuis 2020 : Patrimoine résidentiel IDF, Versi Immobilier, Gradient One, Versi Invest, Immocrew, Versimo.",
   alternates: { canonical: `${siteConfig.url}/participations` },
   openGraph: {
     title: 'Participations — ISSA Capital',
@@ -216,8 +215,7 @@ export default function ParticipationsPage(): JSX.Element {
           - Immocrew déplacé depuis Section 2 (outil marketing pour
             mandataires — dimension produit numérique).
           - Versimo (inchangé — home staging virtuel par IA).
-          - Calendrier Tempo (nouvelle participation — outil web grand
-            public de suivi du calendrier Tempo EDF). */}
+          */}
       <Section tone="default">
         <Container width="content">
           <div className="mb-2xl max-w-editorial">
@@ -231,7 +229,7 @@ export default function ParticipationsPage(): JSX.Element {
               public.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-xl md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
             {/* Bloc A — Immocrew (déplacé depuis Section 2) */}
             <article className="flex flex-col border border-ink-200 bg-white p-xl">
               <h3 className="font-heading text-h3 text-ink-950">Immocrew</h3>
@@ -285,41 +283,6 @@ export default function ParticipationsPage(): JSX.Element {
               </div>
             </article>
 
-            {/* Bloc C — Calendrier Tempo (nouvelle participation) */}
-            <article className="flex flex-col border border-ink-200 bg-white p-xl">
-              <h3 className="font-heading text-h3 text-ink-950">
-                Calendrier Tempo
-              </h3>
-              <p className="mt-xs text-sm text-ink-500">
-                Outil web — calendrier des jours Tempo EDF
-              </p>
-              <p className="mt-lg text-base leading-relaxed text-ink-700">
-                Outil web grand public de suivi du calendrier Tempo EDF.
-                Participation détenue par ISSA Capital.
-              </p>
-              <dl className="mt-auto space-y-sm pt-lg text-sm">
-                <div className="flex gap-md">
-                  <dt className="w-24 text-ink-500">Rôle</dt>
-                  <dd className="text-ink-800">Actionnaire</dd>
-                </div>
-                <div className="flex gap-md">
-                  <dt className="w-24 text-ink-500">Entrée</dt>
-                  <dd className="text-ink-800">2026</dd>
-                </div>
-              </dl>
-              <div className="mt-md">
-                <a
-                  href="https://www.calendrier-tempo.fr/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-sm text-sm text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
-                >
-                  calendrier-tempo.fr
-                  <ExternalLink size={14} aria-hidden="true" />
-                  <span className="sr-only"> (nouvelle fenêtre)</span>
-                </a>
-              </div>
-            </article>
           </div>
         </Container>
       </Section>
