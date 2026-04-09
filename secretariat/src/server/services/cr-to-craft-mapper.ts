@@ -192,7 +192,7 @@ export function renderCrMarkdown(params: {
 }): string {
   const { cr, reference, dateEtablissement } = params;
   const signatureUrl = params.signaturePngUrl ?? '[signature à uploader via admin]';
-  const rfc3161 = params.rfc3161Token ?? '[non horodaté — Phase 6]';
+  const rfc3161 = params.rfc3161Token ?? '⚠️ NON HORODATÉ — ce CR n\'a pas de preuve d\'antériorité qualifiée. Configurer Universign (UNIVERSIGN_API_KEY) avant usage fiscal.';
 
   const sections: string[] = [];
 
