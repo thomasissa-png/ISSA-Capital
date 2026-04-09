@@ -91,9 +91,10 @@ export function Button(props: ButtonProps): JSX.Element {
     <button className={classes} disabled={loading || (rest as AsButton).disabled} {...rest}>
       {loading ? (
         <span className="inline-flex items-center gap-2">
+          {/* C15 : motion-safe: conditionne l'animation à prefers-reduced-motion: no-preference */}
           <span
             aria-hidden="true"
-            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+            className="inline-block h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-current border-t-transparent"
           />
           <span>Envoi en cours…</span>
         </span>

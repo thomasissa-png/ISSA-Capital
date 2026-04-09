@@ -159,11 +159,13 @@ export default function HomePage(): JSX.Element {
                 desc: 'Conseil en investissement immobilier et co-investissement sur sélection.',
               },
             ].map((p) => (
+              /* C8 : border-ink-100 (plus subtil que ink-200), duration-normal = token 300ms vs défaut Tailwind 150ms */
               <article
                 key={p.name}
-                className="border border-ink-200 bg-white p-xl transition-colors hover:border-levant-500"
+                className="border border-ink-100 bg-white p-xl transition-colors duration-normal hover:border-levant-500"
               >
-                <p className="overline text-levant-700">{p.sector}</p>
+                {/* C7 : classes primitives explicites — la classe .overline n'existe pas dans la config Tailwind */}
+                <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-levant-700">{p.sector}</p>
                 <h3 className="mt-sm font-heading text-h4 text-ink-950">{p.name}</h3>
                 <p className="mt-sm text-sm text-ink-600">{p.desc}</p>
               </article>
@@ -173,11 +175,20 @@ export default function HomePage(): JSX.Element {
       </Section>
 
       {/* Section 5 — Trois filtres */}
-      <Section tone="subtle">
+      {/*
+        C10 : tone="inverse" au lieu de "subtle".
+        Raisonnement : Section 4 (default=parchment-100) et Section 5 (subtle=parchment-50)
+        sont visuellement quasi identiques — parchment-100 vs parchment-50, différence imperceptible.
+        Sequence avant : inverse→default→inverse→default→subtle→elevated (deux sections parchment consécutives).
+        Sequence après : inverse→default→inverse→default→inverse→elevated (alternance propre, rythme marqué).
+        C11 : adaptation des couleurs texte pour le fond inverse.
+        ink-300 (#ADADAD) sur ink-950 (#0A0A0A) = ratio 6.3:1. PASS WCAG AA.
+      */}
+      <Section tone="inverse">
         <Container width="content">
           <div className="mb-2xl">
-            <Overline>Nos filtres de décision</Overline>
-            <h2 className="mt-md font-heading text-h2 text-ink-950">
+            <Overline tone="light">Nos filtres de décision</Overline>
+            <h2 className="mt-md font-heading text-h2 text-parchment-100">
               Trois filtres. Aucune exception.
             </h2>
           </div>
@@ -197,17 +208,26 @@ export default function HomePage(): JSX.Element {
               },
             ].map((f) => (
               <div key={f.title} className="border-l-2 border-levant-500 pl-lg">
-                <h3 className="font-heading text-h4 text-ink-950">{f.title}</h3>
-                <p className="mt-sm text-base text-ink-700">{f.desc}</p>
+                <h3 className="font-heading text-h4 text-parchment-100">{f.title}</h3>
+                <p className="mt-sm text-base text-ink-300">{f.desc}</p>
               </div>
             ))}
           </div>
         </Container>
       </Section>
 
-      {/* Section 6 — Contact (remplace "Deux façons d'entrer en relation") */}
+      {/* Section 6 — Contact */}
+      {/*
+        C12 : ajout de l'Overline comme repère de section avant le formulaire.
+        Toutes les autres sections ont Overline + H2. La section Contact ne doit pas faire exception.
+        L'Overline "Entrer en relation" positionne la section, le heading "Nous écrire." est l'invitation.
+        Les deux coexistent sans redondance car ils ont des niveaux sémantiques différents.
+      */}
       <Section tone="elevated" id="contact">
         <Container width="editorial">
+          <div className="mb-2xl">
+            <Overline>Entrer en relation</Overline>
+          </div>
           <ContactForm
             variant="contact"
             heading="Nous écrire."

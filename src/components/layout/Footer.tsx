@@ -35,7 +35,8 @@ export function Footer(): JSX.Element {
           </div>
 
           <nav aria-label="Pied de page" className="md:col-span-4">
-            <p className="overline text-ink-400">Navigation</p>
+            {/* C14 : .overline n'est pas une classe Tailwind valide — classes primitives explicites */}
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-ink-400">Navigation</p>
             <ul className="mt-md space-y-sm">
               {siteConfig.footerLinks.map((link) => (
                 <li key={link.href}>
@@ -51,7 +52,8 @@ export function Footer(): JSX.Element {
           </nav>
 
           <div className="md:col-span-3">
-            <p className="overline text-ink-400">Mention légale</p>
+            {/* C14 : idem — .overline invalide → classes primitives */}
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-ink-400">Mention légale</p>
             <p className="mt-md text-xs leading-relaxed text-ink-300">
               Les informations publiées sur ce site ne constituent pas une offre de titres
               financiers, une invitation à investir, ni un démarchage financier au sens des

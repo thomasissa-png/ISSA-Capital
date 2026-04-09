@@ -149,7 +149,8 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
           {heading}
         </h2>
       ) : null}
-      {intro ? <div className="mt-sm text-sm text-ink-700">{intro}</div> : null}
+      {/* text-base au lieu de text-sm — l'intro d'une section d'invitation mérite le corps standard (16px) */}
+      {intro ? <div className="mt-md text-base text-ink-700">{intro}</div> : null}
 
       <div className="mt-xl space-y-lg">
         {/* Honeypot — hors viewport, invisible pour les humains */}
@@ -209,22 +210,12 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
           ) : null}
         </div>
 
-        {variant === 'contact' ? (
-          <div>
-            <label htmlFor="subject" className={labelClass}>
-              Sujet <span aria-hidden="true">*</span>
-            </label>
-            <select id="subject" name="subject" required className={inputClass} defaultValue="">
-              <option value="" disabled>
-                Choisir un sujet
-              </option>
-              <option value="opportunite">Opportunité d&apos;affaires</option>
-              <option value="accompagnement">Accompagnement / conseil</option>
-              <option value="presse">Demande presse</option>
-              <option value="autre">Autre</option>
-            </select>
-          </div>
-        ) : null}
+        {/*
+          C13 : champ Sujet retiré du variant 'contact'.
+          Raisonnement : demander au visiteur de catégoriser son message avant d'écrire
+          est une friction de funnel incompatible avec la posture vitrine patrimoniale.
+          La nature de la demande émerge du champ Message libre.
+        */}
 
         {variant === 'opportunite' ? (
           <>
