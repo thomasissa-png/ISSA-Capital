@@ -28,6 +28,11 @@ import { sendTelegramMessage, answerCallbackQuery } from '@/lib/secretariat/tele
 import { renderCrForTelegram } from '@/lib/secretariat/cr-renderer';
 import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
 import { fetchRecentCRs } from '@/lib/secretariat/craft-reader';
+import {
+  getConversation,
+  appendMessage as storeMessage,
+  toClaudeMessages,
+} from '@/lib/secretariat/conversation-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -158,7 +163,10 @@ function isAllowedChatId(chatId: number): boolean {
 const ANTHROPIC_TIMEOUT_MS = 60_000;
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 
-async function generateCR(messageText: string): Promise<{
+async function generateCR(
+  messageText: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+): Promise<{
   success: boolean;
   status?: 'needs_clarification' | 'ready';
   clarificationQuestion?: string;
@@ -206,7 +214,10 @@ async function generateCR(messageText: string): Promise<{
           model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
           max_tokens: 4096,
           system: systemPrompt,
-          messages: [{ role: 'user', content: enrichedMessage }],
+          messages: [
+            ...conversationHistory,
+            { role: 'user' as const, content: enrichedMessage },
+          ],
         },
         { signal: controller.signal },
       );
@@ -334,25 +345,34 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Appel Claude (pas d'accusé de réception — on ne sait pas encore
-      // si Claude va générer ou demander une clarification)
-      const result = await generateCR(text);
+      // Récupérer l'historique de conversation pour ce chat
+      const history = getConversation(chatId);
+      const claudeHistory = toClaudeMessages(history);
+
+      // Sauvegarder le message utilisateur dans l'historique
+      storeMessage(chatId, 'user', text);
+
+      // Appel Claude avec l'historique complet
+      const result = await generateCR(text, claudeHistory);
 
       if (!result.success) {
-        await sendTelegramMessage(
-          chatId,
-          `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`,
-        );
+        const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
+        storeMessage(chatId, 'assistant', errorMsg);
+        await sendTelegramMessage(chatId, errorMsg);
         return Response.json({ ok: true });
       }
 
       if (result.status === 'needs_clarification') {
-        await sendTelegramMessage(chatId, result.clarificationQuestion ?? 'Peux-tu préciser ?');
+        const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+        // Sauvegarder la réponse dans l'historique pour le prochain échange
+        storeMessage(chatId, 'assistant', question);
+        await sendTelegramMessage(chatId, question);
         return Response.json({ ok: true });
       }
 
       // status === 'ready' — envoyer le CR
       if (result.crText) {
+        storeMessage(chatId, 'assistant', result.crText);
         await sendTelegramMessage(chatId, result.crText);
       }
 

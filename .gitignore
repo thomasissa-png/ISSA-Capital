@@ -32,6 +32,9 @@ yarn-error.log*
 .env*.local
 .env.local
 
+# conversation store (données runtime secrétariat)
+.conversations.json
+
 # vercel
 .vercel
 
