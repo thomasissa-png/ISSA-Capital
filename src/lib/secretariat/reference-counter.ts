@@ -21,7 +21,18 @@ const COUNTER_PATH = resolve(COUNTER_DIR, 'cr-counter.json');
 
 type CounterData = Record<string, number>;
 
-let inMemoryCounters: CounterData | null = null;
+const COUNTER_GLOBAL_KEY = '__issa_cr_counter__' as const;
+
+function getGlobalCounters(): CounterData {
+  if (!(COUNTER_GLOBAL_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[COUNTER_GLOBAL_KEY] = {};
+  }
+  return (globalThis as Record<string, unknown>)[COUNTER_GLOBAL_KEY] as CounterData;
+}
+
+function setGlobalCounters(data: CounterData): void {
+  (globalThis as Record<string, unknown>)[COUNTER_GLOBAL_KEY] = data;
+}
 
 function ensureDir(): void {
   try {
@@ -34,26 +45,28 @@ function ensureDir(): void {
 }
 
 function loadCounters(): CounterData {
-  if (inMemoryCounters !== null) {
-    return inMemoryCounters;
+  const cached = getGlobalCounters();
+  if (Object.keys(cached).length > 0) {
+    return cached;
   }
 
   try {
     ensureDir();
     if (existsSync(COUNTER_PATH)) {
       const raw = readFileSync(COUNTER_PATH, 'utf8');
-      inMemoryCounters = JSON.parse(raw) as CounterData;
-      return inMemoryCounters;
+      const parsed = JSON.parse(raw) as CounterData;
+      setGlobalCounters(parsed);
+      return parsed;
     }
   } catch {
     console.warn('[reference-counter] fichier corrompu, reset');
   }
-  inMemoryCounters = {};
-  return inMemoryCounters;
+  setGlobalCounters({});
+  return {};
 }
 
 function saveCounters(data: CounterData): void {
-  inMemoryCounters = data;
+  setGlobalCounters(data);
   try {
     ensureDir();
     writeFileSync(COUNTER_PATH, JSON.stringify(data, null, 2), 'utf8');

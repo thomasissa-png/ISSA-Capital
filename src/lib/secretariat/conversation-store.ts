@@ -75,11 +75,23 @@ interface ConversationEntry {
 type StoreData = Record<string, ConversationEntry>;
 
 // ============================================================
-// Persistence
+// Persistence — globalThis pour survivre aux re-évaluations Next.js
 // ============================================================
 
-// Cache mémoire — survit entre les requêtes tant que le process tourne
-let inMemoryStore: StoreData | null = null;
+// Next.js en dev (et parfois en prod sur Replit) ré-évalue les modules
+// entre les requêtes. `let` est réinitialisé. `globalThis` persiste.
+const GLOBAL_KEY = '__issa_conversation_store__' as const;
+
+function getGlobalStore(): StoreData {
+  if (!(GLOBAL_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[GLOBAL_KEY] = {};
+  }
+  return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as StoreData;
+}
+
+function setGlobalStore(data: StoreData): void {
+  (globalThis as Record<string, unknown>)[GLOBAL_KEY] = data;
+}
 
 function ensureDir(): void {
   try {
@@ -92,30 +104,32 @@ function ensureDir(): void {
 }
 
 function loadStore(): StoreData {
-  // Priorité 1 : cache mémoire (toujours à jour)
-  if (inMemoryStore !== null) {
-    return inMemoryStore;
+  // Priorité 1 : globalThis (survit aux re-évaluations de module)
+  const cached = getGlobalStore();
+  if (Object.keys(cached).length > 0) {
+    return cached;
   }
 
-  // Priorité 2 : fichier disque (survit aux restarts)
+  // Priorité 2 : fichier disque (survit aux restarts complets)
   try {
     ensureDir();
     if (existsSync(STORE_PATH)) {
       const raw = readFileSync(STORE_PATH, 'utf8');
-      inMemoryStore = JSON.parse(raw) as StoreData;
-      return inMemoryStore;
+      const parsed = JSON.parse(raw) as StoreData;
+      setGlobalStore(parsed);
+      return parsed;
     }
   } catch {
     console.warn('[conversation-store] fichier corrompu, reset');
   }
 
-  inMemoryStore = {};
-  return inMemoryStore;
+  setGlobalStore({});
+  return {};
 }
 
 function saveStore(data: StoreData): void {
-  // Toujours mettre à jour le cache mémoire
-  inMemoryStore = data;
+  // Toujours mettre à jour globalThis
+  setGlobalStore(data);
 
   // Tenter de persister sur disque (best effort)
   try {

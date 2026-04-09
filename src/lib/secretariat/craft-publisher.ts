@@ -61,16 +61,17 @@ export async function publishToCraft(
 
   const url = `${baseUrl.replace(/\/$/, '')}/blocks`;
 
-  // Format validé par Replit : position DOIT inclure pageId
-  const position: Record<string, string> = { position: 'end' };
-  if (pageId && pageId !== '__TO_FILL__') {
-    position['pageId'] = pageId;
-  }
+  // Format Craft API validé par Replit :
+  // { blocks: [{ type: "text", markdown: "..." }], position: { position: "end", pageId: "..." } }
+  const payload: Record<string, unknown> = {
+    blocks: [{ type: 'text', markdown: fullMarkdown }],
+    position: {
+      position: 'end',
+      ...(pageId && pageId !== '__TO_FILL__' ? { pageId } : {}),
+    },
+  };
 
-  const bodyJson = JSON.stringify({
-    markdown: fullMarkdown,
-    position,
-  });
+  const bodyJson = JSON.stringify(payload);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const controller = new AbortController();
