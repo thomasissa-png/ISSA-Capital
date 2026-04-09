@@ -33,7 +33,6 @@ import {
 } from '@/lib/secretariat/telegram';
 import {
   renderCrForTelegram,
-  renderCrForCraft,
   buildCraftTitle,
 } from '@/lib/secretariat/cr-renderer';
 import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
@@ -52,7 +51,6 @@ import {
 } from '@/lib/secretariat/conversation-store';
 import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
-import { publishToCraft } from '@/lib/secretariat/craft-publisher';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 
@@ -680,17 +678,10 @@ export async function POST(request: Request): Promise<Response> {
           const reference = getNextReference(pendingDraft.cr.entite);
           const dateEtablissement = new Date().toISOString();
 
-          // 2. Rendre le markdown Craft (format légal complet)
-          const craftMarkdown = renderCrForCraft(
-            pendingDraft.cr,
-            reference,
-            dateEtablissement,
-          );
-
-          // 3. Construire le titre Craft
+          // 2. Construire le titre du document
           const craftTitle = buildCraftTitle(pendingDraft.cr);
 
-          // 4. Générer le PDF du CR
+          // 3. Générer le PDF du CR
           let pdfBuffer: Buffer | null = null;
           try {
             pdfBuffer = await generateCrPdf({
@@ -743,20 +734,10 @@ export async function POST(request: Request): Promise<Response> {
             }
           }
 
-          // 7. Publier sur Craft (best effort, non bloquant)
-          const craftResult = await publishToCraft({
-            markdown: craftMarkdown,
-            title: craftTitle,
-            reference,
-          });
-
-          // 8. Envoyer la confirmation textuelle sur Telegram
+          // 7. Envoyer la confirmation textuelle sur Telegram
           let confirmMsg = `CR validé.\n\nRéférence : ${reference}`;
           if (driveLink) {
             confirmMsg += `\nDrive : ${driveLink}`;
-          }
-          if (craftResult.success && craftResult.craftUrl) {
-            confirmMsg += `\nCraft : ${craftResult.craftUrl}`;
           }
           if (!pdfBuffer) {
             confirmMsg += '\n\n⚠️ Le PDF n\'a pas pu être généré.';

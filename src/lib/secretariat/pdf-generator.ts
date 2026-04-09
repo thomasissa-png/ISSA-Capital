@@ -341,7 +341,23 @@ export async function generateCrPdf(params: {
         },
       );
 
-    doc.moveDown(0.3);
+    // Signature manuscrite PNG (si configurée)
+    const signaturePath = process.env.SIGNATURE_PNG_PATH;
+    if (signaturePath) {
+      try {
+        doc.moveDown(0.5);
+        doc.image(signaturePath, PAGE_MARGIN, doc.y, {
+          width: 150,
+          height: 60,
+        });
+        doc.moveDown(3);
+      } catch {
+        // Fichier signature absent ou illisible — on continue sans
+        doc.moveDown(0.3);
+      }
+    } else {
+      doc.moveDown(0.3);
+    }
 
     doc
       .font(FONT_BOLD)
