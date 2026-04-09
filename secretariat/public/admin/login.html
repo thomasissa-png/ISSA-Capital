@@ -39,64 +39,6 @@
       </footer>
     </main>
 
-    <script>
-      (function () {
-        var form = document.getElementById('login-form');
-        var errorEl = document.getElementById('error-message');
-        var submitBtn = document.getElementById('submit-btn');
-
-        // Si déjà authentifié, rediriger vers le dashboard
-        fetch('/admin/api/me', { credentials: 'same-origin' })
-          .then(function (r) {
-            if (r.ok) {
-              window.location.href = '/admin/dashboard.html';
-            }
-          })
-          .catch(function () {
-            // pas grave — on reste sur login
-          });
-
-        form.addEventListener('submit', function (event) {
-          event.preventDefault();
-          errorEl.hidden = true;
-          errorEl.textContent = '';
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Connexion...';
-
-          var password = document.getElementById('password').value;
-
-          fetch('/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ password: password }),
-          })
-            .then(function (res) {
-              return res.json().then(function (body) {
-                return { status: res.status, body: body };
-              });
-            })
-            .then(function (result) {
-              if (result.status === 200 && result.body.success) {
-                window.location.href = '/admin/dashboard.html';
-              } else {
-                var msg =
-                  (result.body && result.body.error) ||
-                  'Connexion impossible, réessayer.';
-                errorEl.textContent = msg;
-                errorEl.hidden = false;
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Se connecter';
-              }
-            })
-            .catch(function () {
-              errorEl.textContent = 'Erreur réseau — vérifier la connexion.';
-              errorEl.hidden = false;
-              submitBtn.disabled = false;
-              submitBtn.textContent = 'Se connecter';
-            });
-        });
-      })();
-    </script>
+    <script src="/admin/static/js/login.js"></script>
   </body>
 </html>

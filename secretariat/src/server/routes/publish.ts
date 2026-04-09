@@ -35,6 +35,11 @@ import { AppError } from '../middleware/errorHandler';
 import { publishToCraft } from '../services/craft';
 import { mapCrToCraftPayload } from '../services/cr-to-craft-mapper';
 import { CRDraftSchema, type CRDraft } from '../services/anthropic.types';
+import {
+  requestTimestamp,
+  UniversignNotConfiguredError,
+  type TimestampResult,
+} from '../services/universign';
 import { getEnv } from '../utils/env';
 import { getLogger } from '../utils/logger';
 
@@ -257,6 +262,40 @@ publishRouter.post(
       '[publish] publication Craft en cours',
     );
 
+    // --- 6b. Horodatage RFC 3161 (Phase 6) ---
+    // On demande un timestamp token à la TSA Universign AVANT Craft pour
+    // figer l'empreinte du markdown. Fallback safe : si la TSA n'est pas
+    // configurée ou échoue, on publie quand même et un job backfill pourra
+    // re-tenter plus tard (les colonnes rfc3161_* restent NULL).
+    let timestampResult: TimestampResult | null = null;
+    try {
+      timestampResult = await requestTimestamp(
+        payload.internalMetadata.markdownSha256,
+      );
+      log.info(
+        {
+          draftId,
+          reference,
+          provider: timestampResult.provider,
+          attempts: timestampResult.attempts,
+          durationMs: timestampResult.durationMs,
+        },
+        '[publish] timestamp RFC 3161 obtenu',
+      );
+    } catch (err) {
+      if (err instanceof UniversignNotConfiguredError) {
+        log.warn(
+          { draftId, reference },
+          '[publish] Universign non configuré — publication sans timestamp',
+        );
+      } else {
+        log.error(
+          { draftId, reference, err: err instanceof Error ? err.message : String(err) },
+          '[publish] échec timestamp RFC 3161 — publication continue sans',
+        );
+      }
+    }
+
     // --- 7. Appel Craft ---
     const result = await publishToCraft(payload);
 
@@ -335,8 +374,8 @@ publishRouter.post(
             reference, draft_id, entite, type_reunion, date_reunion,
             date_etablissement, markdown, markdown_sha256,
             craft_document_id, craft_url, craft_filename,
-            rfc3161_token, rfc3161_provider, published_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            rfc3161_token, rfc3161_provider, rfc3161_requested_at, published_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).run(
           reference,
           draftId,
@@ -349,8 +388,9 @@ publishRouter.post(
           craftDocId,
           craftUrl,
           payload.internalTitle,
-          null, // rfc3161_token — Phase 6
-          null, // rfc3161_provider — Phase 6
+          timestampResult?.token ?? null,
+          timestampResult?.provider ?? null,
+          timestampResult?.requestedAt ?? null,
           draft.user_phone,
         );
 

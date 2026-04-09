@@ -228,11 +228,18 @@ describe('routes /api/whatsapp/webhook', () => {
     const { resetEnvForTests } = await import('../../utils/env');
     const { resetLoggerForTests } = await import('../../utils/logger');
     const { resetDbForTests, initDatabase } = await import('../../db/connection');
+    const { resetRateLimitForTests } = await import(
+      '../../middleware/rateLimitWhatsApp'
+    );
 
     resetEnvForTests();
     resetLoggerForTests();
     resetDbForTests();
     initDatabase();
+    // Reset in-memory rate limit counters entre chaque test
+    // (sinon les tests qui enchaînent >5 messages pour le même phone sont
+    // bloqués par la limite 5/min héritée du test précédent).
+    resetRateLimitForTests();
   });
 
   afterEach(async () => {

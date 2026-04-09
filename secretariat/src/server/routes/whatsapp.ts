@@ -28,6 +28,7 @@ import { Router, type Request, type Response } from 'express';
 import { getDb } from '../db/connection';
 import { verifyMetaSignature } from '../middleware/verifyMetaSignature';
 import { checkWhitelist, toE164 } from '../middleware/whitelistGuard';
+import { checkWhatsAppRateLimit } from '../middleware/rateLimitWhatsApp';
 import { generateCR } from '../services/anthropic';
 import {
   appendMessage,
@@ -619,6 +620,22 @@ whatsappRouter.post(
         const contact = checkWhitelist(phoneE164);
         if (contact === null) {
           // Silent block : logué dans access_logs via checkWhitelist
+          continue;
+        }
+
+        // Rate limit 5/min, 20/h par numéro E.164 (Phase 6)
+        const rateLimit = checkWhatsAppRateLimit(phoneE164);
+        if (!rateLimit.allowed) {
+          // Silent block : logué dans access_logs via checkWhatsAppRateLimit
+          log.warn(
+            {
+              phoneE164,
+              reason: rateLimit.reason,
+              count1min: rateLimit.count1min,
+              count1hour: rateLimit.count1hour,
+            },
+            '[whatsapp] message rate-limited, silent drop',
+          );
           continue;
         }
 

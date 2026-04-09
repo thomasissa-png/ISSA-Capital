@@ -38,6 +38,7 @@ import { draftsPublishedRouter } from './drafts-published';
 import { loginRouter } from './login';
 import { logsRouter } from './logs';
 import { settingsRouter } from './settings';
+import { twoFactorRouter } from './two-factor';
 
 export const adminRouter = Router();
 
@@ -99,7 +100,19 @@ adminRouter.get('/api/me', authJwt, (req: Request, res: Response): void => {
 });
 
 // Routes API protégées
+//
+// IMPORTANT — ordre de mount :
+// /api/2fa DOIT être monté AVANT /api (catch-all de drafts-published) sinon
+// Express matche d'abord le prefix /api et applique authJwt+requireAdmin,
+// ce qui casse la route publique /api/2fa/verify-login (flow login étape 2).
+//
+// twoFactorRouter gère son auth en interne : authJwt+requireAdmin est attaché
+// par route dans two-factor.ts (/status, /generate, /enable, /disable,
+// /backup-codes/regenerate). Seul /verify-login est public.
+adminRouter.use('/api/2fa', twoFactorRouter);
+
 adminRouter.use('/api/contacts', authJwt, requireAdmin, contactsRouter);
 adminRouter.use('/api', authJwt, requireAdmin, draftsPublishedRouter);
 adminRouter.use('/api/logs', authJwt, requireAdmin, logsRouter);
 adminRouter.use('/api/settings', authJwt, requireAdmin, settingsRouter);
+

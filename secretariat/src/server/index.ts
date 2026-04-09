@@ -28,6 +28,8 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 import { closeDatabase, initDatabase } from './db/connection';
+import { warnIfProductionDbNotEncrypted } from './db/encryption';
+import { accessLogger } from './middleware/accessLogger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { draftRateLimit } from './middleware/rateLimitDraft';
 import { publishRateLimit } from './middleware/rateLimitPublish';
@@ -51,10 +53,38 @@ export function buildApp(): Application {
 
   const app = express();
 
-  // --- Sécurité headers ---
-  // helmet applique des headers de sécurité par défaut (CSP, HSTS, etc.)
-  // Phase 6 durcira la CSP. En Phase 1 on garde les defaults.
-  app.use(helmet());
+  // --- Sécurité headers (Phase 6 — CSP strict) ---
+  // CSP durcie en Phase 6 pour :
+  //  - defaultSrc 'self' : rien n'est chargé hors origin
+  //  - scriptSrc 'self' : pas de scripts inline (login.html externalisé en
+  //    /admin/static/js/login.js Phase 6)
+  //  - styleSrc 'self' + 'unsafe-inline' : gardé car le dashboard vanilla
+  //    utilise quelques styles inline légers ; admissible, pas de JS via style.
+  //  - imgSrc 'self' + data: : data: indispensable pour le QR code 2FA
+  //    (qrcode lib retourne une data URL base64 PNG)
+  //  - objectSrc 'none' + frameAncestors 'none' : clickjacking impossible
+  //  - upgradeInsecureRequests : force HTTPS en prod
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      // Admin UI vanilla : pas d'embed cross-origin nécessaire
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // --- CORS ---
   // En Phase 1 l'API n'a pas encore de front (admin web = Phase 5).
@@ -106,6 +136,16 @@ export function buildApp(): Application {
     next();
   });
 
+  // --- Access logger (Phase 6) ---
+  // Insère une ligne dans access_logs pour chaque requête API non exclue
+  // (cf middleware/accessLogger.ts pour la liste des exclusions). Monté
+  // AVANT les routes pour pouvoir attacher l'event `finish` à la réponse,
+  // mais APRÈS les middlewares d'auth admin ? Non : l'auth admin est
+  // appliquée sous /admin par le sous-router, donc req.admin est populé
+  // à ce moment-là. Le middleware accessLogger lit req.admin dans son
+  // listener `finish` qui s'exécute APRÈS le sous-router → tout est OK.
+  app.use(accessLogger);
+
   // --- Routes ---
   app.use('/api/health', healthRouter);
   // Phase 3 — génération CR via Anthropic. Rate limit dédié (20 req / 15 min / IP)
@@ -151,6 +191,10 @@ function startServer(): void {
     log.fatal({ err }, 'échec initialisation DB — arrêt');
     process.exit(1);
   }
+
+  // Warn loud si la DB n'est pas chiffrée en production (Phase 6 prep).
+  // Non-fatal : permet un premier déploiement avant la migration SQLCipher.
+  warnIfProductionDbNotEncrypted();
 
   const app = buildApp();
   const server = app.listen(env.PORT, () => {

@@ -96,6 +96,42 @@ const envSchema = z.object({
     .default('24')
     .transform((val) => Number.parseInt(val, 10))
     .pipe(z.number().int().positive().max(720)),
+
+  // --- Phase 6 — Universign RFC 3161 (horodatage qualifié) ---
+  // OPTIONNEL : si absent ou placeholder `__TO_FILL__`, le service Universign
+  // throw `UniversignNotConfiguredError` et le publisher continue sans token
+  // (log warn + access_logs.action = `rfc3161_skipped`). Permet un dev local
+  // sans compte Universign tout en restant strict en prod (Thomas renseigne
+  // la clé dans Replit Secrets).
+  UNIVERSIGN_API_KEY: z.string().optional(),
+  // URL de l'endpoint Universign (TSA). Par défaut la prod Universign ; on
+  // garde la possibilité de pointer sur un sandbox via env override.
+  UNIVERSIGN_API_URL: z
+    .string()
+    .optional()
+    .default('https://ws.universign.eu/tsa/post/'),
+
+  // --- Phase 6 — Backups SQLite (cron local + upload optionnel) ---
+  // Aucune lib cloud n'est installée en Phase 6 (aws-sdk / b2-node-js restent
+  // en commentaire dans le job). Ces flags sont prêts pour Phase 8 quand
+  // Thomas décidera le provider.
+  BACKUP_S3_ENABLED: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+  BACKUP_B2_ENABLED: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+  // Nombre de backups locaux conservés (rotation FIFO).
+  BACKUP_LOCAL_RETENTION: z
+    .string()
+    .optional()
+    .default('30')
+    .transform((val) => Number.parseInt(val, 10))
+    .pipe(z.number().int().positive().max(365)),
 });
 
 export type Env = z.infer<typeof envSchema>;

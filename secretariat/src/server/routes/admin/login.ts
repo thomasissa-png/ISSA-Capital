@@ -25,8 +25,10 @@ import { z } from 'zod';
 import { ADMIN_COOKIE_NAME } from '../../middleware/authJwt';
 import { AppError } from '../../middleware/errorHandler';
 import { generateJwt, verifyPassword } from '../../services/auth';
+import { isEnabled as isTwoFactorEnabled } from '../../services/totp';
 import { getEnv } from '../../utils/env';
 import { getLogger } from '../../utils/logger';
+import { generateTempToken } from './two-factor';
 
 export const loginRouter = Router();
 
@@ -97,7 +99,26 @@ loginRouter.post(
         }
 
         // V1 : un seul compte — sub="thomas", role="admin"
-        const { token, maxAgeMs } = generateJwt('thomas', 'admin');
+        const sub = 'thomas';
+
+        // --- Phase 6 : si la 2FA est activée, retourner un temp_token au
+        // lieu du JWT final. Le client doit ensuite appeler
+        // POST /admin/api/2fa/verify-login avec { temp_token, code }.
+        if (isTwoFactorEnabled(sub)) {
+          const tempToken = generateTempToken(sub);
+          log.info(
+            { ip: req.ip, sub },
+            '[admin/login] auth OK — 2FA requis',
+          );
+          res.status(200).json({
+            success: true,
+            requires_2fa: true,
+            temp_token: tempToken,
+          });
+          return;
+        }
+
+        const { token, maxAgeMs } = generateJwt(sub, 'admin');
 
         res.cookie(ADMIN_COOKIE_NAME, token, {
           httpOnly: true,
@@ -110,7 +131,7 @@ loginRouter.post(
         log.info({ ip: req.ip }, '[admin/login] authentification réussie');
         res.status(200).json({
           success: true,
-          admin: { sub: 'thomas', role: 'admin' },
+          admin: { sub, role: 'admin' },
           expiresInMs: maxAgeMs,
         });
       } catch (err) {

@@ -120,9 +120,33 @@ const BasePagination = {
 const AccessQuerySchema = z.object({
   ...BasePagination,
   user: z.string().max(50).optional(),
-  action: z.enum(['read', 'create', 'update', 'delete', 'publish']).optional(),
+  action: z
+    .enum([
+      'read',
+      'create',
+      'update',
+      'delete',
+      'publish',
+      'generate',
+      'cancel',
+      'api_request',
+      'whatsapp_blocked',
+      'rate_limited',
+    ])
+    .optional(),
   entity: z.enum(['IC', 'GO', 'VI', 'VV']).optional(),
+  // Par défaut, on N'INCLUT PAS les logs d'infrastructure (accessLogger,
+  // rate limits, whitelist blocked) — trop bruyants pour l'audit utilisateur.
+  // L'admin peut les réactiver via `?include_infra=true` pour debug.
+  include_infra: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
 });
+
+/** Actions considérées comme "infrastructure" — exclues du feed par défaut. */
+const INFRA_ACTIONS = ['api_request', 'whatsapp_blocked', 'rate_limited'] as const;
 
 const GenerationQuerySchema = z.object({
   ...BasePagination,
@@ -142,7 +166,8 @@ logsRouter.get(
       next(parsed.error);
       return;
     }
-    const { page, limit, from, to, user, action, entity } = parsed.data;
+    const { page, limit, from, to, user, action, entity, include_infra } =
+      parsed.data;
     const offset = (page - 1) * limit;
     const db = getDb();
 
@@ -156,6 +181,14 @@ logsRouter.get(
     if (action !== undefined) {
       where.push('action = ?');
       params.push(action);
+    } else if (!include_infra) {
+      // Par défaut : on exclut les actions "infrastructure" (api_request,
+      // whatsapp_blocked, rate_limited) qui polluent le feed d'audit utilisateur.
+      const placeholders = INFRA_ACTIONS.map(() => '?').join(', ');
+      where.push(`action NOT IN (${placeholders})`);
+      for (const a of INFRA_ACTIONS) {
+        params.push(a);
+      }
     }
     if (entity !== undefined) {
       where.push('entite = ?');
