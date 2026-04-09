@@ -49,7 +49,8 @@ export default function HomePage(): JSX.Element {
   return (
     <>
       {/* Section 1 — Hero principal */}
-      <Section tone="inverse" className="py-4xl md:py-5xl">
+      {/* C1 : py-3xl mobile (64px), py-5xl desktop (128px) — mobile-first proportionné. */}
+      <Section tone="inverse" className="py-3xl md:py-5xl">
         <Container width="editorial" className="text-center">
           <Overline tone="light">Holding patrimoniale familiale</Overline>
           <h1 className="mt-lg font-heading text-display leading-[1.08] text-parchment-100">
@@ -61,7 +62,8 @@ export default function HomePage(): JSX.Element {
             La holding patrimoniale de la famille Issa, établie en France.
             Patrimoine, participations, transmission.
           </p>
-          <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
+          {/* C2 : un seul bouton — suppressi du flex wrapper, centré via text-center parent */}
+          <div className="mt-2xl">
             <Button href="#contact" variant="primary-inverse" size="lg">
               Nous écrire
             </Button>
@@ -70,13 +72,15 @@ export default function HomePage(): JSX.Element {
       </Section>
 
       {/* Section 2 — Notre raison d'être */}
+      {/* C3 : text-h2 au lieu de text-h3 — section narrative principale, titre le plus imposant après le hero */}
+      {/* C4 : space-y-lg (24px) au lieu de space-y-md (16px) — respiration éditoriale entre paragraphes */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
-          <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
+          <h2 className="mt-lg font-heading text-h2 text-ink-950">
             Une holding née d&apos;une lignée.
           </h2>
-          <div className="mt-lg space-y-md text-lead text-ink-700">
+          <div className="mt-xl space-y-lg text-lead text-ink-700">
             <p>
               ISSA Capital est la holding patrimoniale de la famille Issa,
               établie en France. Sa raison d&apos;être : structurer ce qui s&apos;est
@@ -86,18 +90,16 @@ export default function HomePage(): JSX.Element {
               Une structure indépendante, dont les Issa sont les seuls actionnaires, et
               dont l&apos;horizon est intergénérationnel.
             </p>
-            <p>
-              Elle est l&apos;aboutissement de trois décennies de construction
-              patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
-            </p>
           </div>
         </Container>
       </Section>
 
       {/* Section 3 — Stats */}
-      <Section tone="inverse">
+      {/* C5/C16 : py-3xl md:py-5xl — valorise les 3 chiffres, leur donne l'espace d'une déclaration */}
+      {/* C6 : gap-2xl en colonne mobile (48px) donne à chaque chiffre son propre espace de respiration */}
+      <Section tone="inverse" className="py-3xl md:py-5xl">
         <Container width="editorial">
-          <dl className="grid grid-cols-1 gap-xl sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-2xl sm:grid-cols-3 sm:gap-xl">
             <div className="border-l-2 border-levant-500 pl-lg">
               <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
                 Co-fondation
@@ -144,7 +146,7 @@ export default function HomePage(): JSX.Element {
               {
                 name: 'Gradient One',
                 sector: 'Holding intermédiaire',
-                desc: "Co-fondée en 2020. Porte les participations opérationnelles et financières de la famille Issa — immobilier, tech, services aux professionnels.",
+                desc: "Holding intermédiaire co-fondée en 2020. Détient Versi Immobilier, Versi Invest, Immocrew et Versimo.",
               },
               {
                 name: 'Versi Immobilier',
@@ -191,7 +193,7 @@ export default function HomePage(): JSX.Element {
               },
               {
                 title: 'Éthique humaine',
-                desc: "Certains secteurs sont hors périmètre, indépendamment du dossier. Ce n\u2019est pas une question d\u2019analyse.",
+                desc: "Certains secteurs sont hors périmètre, indépendamment du dossier.",
               },
             ].map((f) => (
               <div key={f.title} className="border-l-2 border-levant-500 pl-lg">
@@ -206,18 +208,10 @@ export default function HomePage(): JSX.Element {
       {/* Section 6 — Contact (remplace "Deux façons d'entrer en relation") */}
       <Section tone="elevated" id="contact">
         <Container width="editorial">
-          <div className="mb-xl">
-            <Overline>Entrer en relation</Overline>
-          </div>
           <ContactForm
             variant="contact"
             heading="Nous écrire."
-            intro={
-              <>
-                Vous pouvez nous adresser une demande, une proposition ou une question.
-                Nous répondons aux messages qualifiés.
-              </>
-            }
+            intro="Une question, une proposition, un dossier. Écrivez-nous."
           />
         </Container>
       </Section>
