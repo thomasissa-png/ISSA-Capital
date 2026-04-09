@@ -11,6 +11,8 @@
  *  - Footer : formule de clôture + mention RGPD + Art. 39-1
  */
 
+import { existsSync } from 'node:fs';
+import { resolve as pathResolve } from 'node:path';
 import PDFDocument from 'pdfkit';
 import type { CRDraft } from './types';
 import {
@@ -341,21 +343,21 @@ export async function generateCrPdf(params: {
         },
       );
 
-    // Signature manuscrite PNG (si configurée)
-    const signaturePath = process.env.SIGNATURE_PNG_PATH;
-    if (signaturePath) {
-      try {
+    // Signature manuscrite PNG — embarquée dans le repo
+    const signaturePath = process.env.SIGNATURE_PNG_PATH
+      ?? pathResolve(process.cwd(), 'docs', 'signature thomas.png');
+    try {
+      if (existsSync(signaturePath)) {
         doc.moveDown(0.5);
         doc.image(signaturePath, PAGE_MARGIN, doc.y, {
           width: 150,
           height: 60,
         });
         doc.moveDown(3);
-      } catch {
-        // Fichier signature absent ou illisible — on continue sans
+      } else {
         doc.moveDown(0.3);
       }
-    } else {
+    } catch {
       doc.moveDown(0.3);
     }
 
