@@ -259,7 +259,7 @@ export function renderCrForCraft(
       sections.push('');
     }
     sections.push(
-      `*Fichiers conservés dans la GED ISSA Capital, dossier ${reference}, accès restreint Président.*`,
+      `*Fichiers conservés dans la GED ${entiteNomComplet(cr.entite)}, dossier ${reference}, accès restreint Président.*`,
     );
     sections.push('');
   }
@@ -276,7 +276,7 @@ export function renderCrForCraft(
   sections.push('---');
   sections.push('');
   sections.push(
-    'Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément',
+    `Ce document contient des données à caractère personnel traitées par ${entiteNomComplet(cr.entite)} conformément`,
   );
   sections.push(
     'au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale',

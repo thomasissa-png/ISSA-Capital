@@ -154,7 +154,7 @@ export async function generateCrPdf(params: {
       },
       info: {
         Title: `CR ${reference} — ${entiteNomComplet(cr.entite)}`,
-        Author: 'Thomas Issa — ISSA Capital SAS',
+        Author: `Thomas Issa — ${entiteNomComplet(cr.entite)}`,
         Subject: `Compte rendu ${typeReunionLibelle(cr.type_reunion)} — ${dateFormatFr(cr.date_reunion)}`,
         Keywords: `CR, ${cr.entite}, ${reference}, confidentiel`,
         Creator: 'Secrétariat ISSA Capital',
@@ -342,7 +342,7 @@ export async function generateCrPdf(params: {
         .fontSize(FONT_SIZE_SMALL)
         .fillColor(COLOR_SECONDARY)
         .text(
-          `Fichiers conservés dans la GED ISSA Capital, dossier ${reference}, accès restreint Président.`,
+          `Fichiers conservés dans la GED ${entiteNomComplet(cr.entite)}, dossier ${reference}, accès restreint Président.`,
           PAGE_MARGIN,
           doc.y,
           { width: doc.page.width - PAGE_MARGIN * 2 },
@@ -426,7 +426,7 @@ export async function generateCrPdf(params: {
       .fontSize(FONT_SIZE_SMALL - 1)
       .fillColor(COLOR_SECONDARY)
       .text(
-        'Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément ' +
+        `Ce document contient des données à caractère personnel traitées par ${entiteNomComplet(cr.entite)} conformément ` +
           'au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale ' +
           `(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : ${params.cr.entite === 'IC' ? 'contact@issa-capital.com' : 'contact@versi.fr'}.`,
         PAGE_MARGIN,
