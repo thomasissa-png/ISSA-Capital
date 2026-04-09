@@ -365,7 +365,7 @@ export async function generateCrPdf(params: {
       .text(
         'Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément ' +
           'au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale ' +
-          "(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : contact@issa-capital.com.",
+          `(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : ${params.cr.entite === 'IC' ? 'contact@issa-capital.com' : 'contact@versi.fr'}.`,
         PAGE_MARGIN,
         doc.y,
         {

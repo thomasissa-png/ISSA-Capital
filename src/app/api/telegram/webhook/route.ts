@@ -54,6 +54,7 @@ import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { publishToCraft } from '@/lib/secretariat/craft-publisher';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
+import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -724,33 +725,43 @@ export async function POST(request: Request): Promise<Response> {
             }
           }
 
-          // 6. Publier sur Craft (sous-page dédiée ou fallback séparateur)
+          // 6. Upload PDF sur Google Drive
+          let driveLink: string | undefined;
+          if (pdfBuffer) {
+            const pdfFilename = `${reference.replace(/\//g, '-')}.pdf`;
+            const driveResult = await uploadToDrive(
+              pdfBuffer,
+              pdfFilename,
+              pendingDraft.cr.entite,
+              craftTitle,
+            );
+            if (driveResult.success) {
+              driveLink = driveResult.webViewLink;
+              console.info(`[telegram-webhook] PDF uploadé sur Drive : ${driveResult.fileId}`);
+            } else {
+              console.warn('[telegram-webhook] échec upload Drive :', driveResult.error);
+            }
+          }
+
+          // 7. Publier sur Craft (best effort, non bloquant)
           const craftResult = await publishToCraft({
             markdown: craftMarkdown,
             title: craftTitle,
             reference,
           });
 
-          // 7. Envoyer la confirmation textuelle sur Telegram
-          if (craftResult.success) {
-            let confirmMsg = `CR validé et publié sur Craft.\n\nRéférence : ${reference}`;
-            if (craftResult.craftUrl) {
-              confirmMsg += `\nURL : ${craftResult.craftUrl}`;
-            }
-            if (!pdfBuffer) {
-              confirmMsg += '\n\n⚠️ Le PDF n\'a pas pu être généré.';
-            }
-            await sendTelegramMessage(callbackChatId, confirmMsg);
-          } else {
-            // Craft a échoué — on valide quand même le CR localement
-            // mais on prévient que la publication Craft n'a pas marché
-            const warnMsg =
-              `CR validé avec la référence ${reference}.\n\n` +
-              `⚠️ La publication sur Craft a échoué : ${craftResult.error ?? 'erreur inconnue'}.\n` +
-              'Le CR est sauvegardé localement. La publication Craft pourra être retentée.' +
-              (pdfBuffer ? '\n\nLe PDF a été envoyé ci-dessus.' : '');
-            await sendTelegramMessage(callbackChatId, warnMsg);
+          // 8. Envoyer la confirmation textuelle sur Telegram
+          let confirmMsg = `CR validé.\n\nRéférence : ${reference}`;
+          if (driveLink) {
+            confirmMsg += `\nDrive : ${driveLink}`;
           }
+          if (craftResult.success && craftResult.craftUrl) {
+            confirmMsg += `\nCraft : ${craftResult.craftUrl}`;
+          }
+          if (!pdfBuffer) {
+            confirmMsg += '\n\n⚠️ Le PDF n\'a pas pu être généré.';
+          }
+          await sendTelegramMessage(callbackChatId, confirmMsg);
 
           // 8. Nettoyer la conversation et le draft
           clearPendingDraft(callbackChatId);

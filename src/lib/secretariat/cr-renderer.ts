@@ -282,7 +282,7 @@ export function renderCrForCraft(
     'au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale',
   );
   sections.push(
-    "(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : contact@issa-capital.com.",
+    `(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : ${cr.entite === 'IC' ? 'contact@issa-capital.com' : 'contact@versi.fr'}.`,
   );
   sections.push('');
   sections.push(
