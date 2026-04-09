@@ -61,42 +61,46 @@ export function Header(): JSX.Element {
           {siteConfig.name}
         </Link>
 
-        <ul className="hidden items-center gap-xl md:flex">
-          {siteConfig.nav.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={handleNavClick}
-                  className={cn(
-                    'font-body text-sm transition-colors',
-                    active
-                      ? 'text-ink-950 underline underline-offset-4 decoration-levant-500'
-                      : 'text-ink-700 hover:text-ink-950',
-                  )}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {siteConfig.nav.length > 0 && (
+          <ul className="hidden items-center gap-xl md:flex">
+            {siteConfig.nav.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={handleNavClick}
+                    className={cn(
+                      'font-body text-sm transition-colors',
+                      active
+                        ? 'text-ink-950 underline underline-offset-4 decoration-levant-500'
+                        : 'text-ink-700 hover:text-ink-950',
+                    )}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-        <button
-          type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-md text-ink-950 hover:bg-parchment-200 md:hidden"
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav"
-          aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-          onClick={() => setMobileOpen((o) => !o)}
-        >
-          {mobileOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
-        </button>
+        {siteConfig.nav.length > 0 && (
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-ink-950 hover:bg-parchment-200 md:hidden"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            onClick={() => setMobileOpen((o) => !o)}
+          >
+            {mobileOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+          </button>
+        )}
       </nav>
 
-      {mobileOpen ? (
+      {mobileOpen && siteConfig.nav.length > 0 ? (
         <div
           id="mobile-nav"
           className="border-t border-ink-100 bg-parchment-100 md:hidden"

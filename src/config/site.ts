@@ -21,19 +21,8 @@ export const siteConfig = {
   tvaIntra: 'FR50102356094',
   capital: '1 047 562,00 €',
   ogImage: '/og-image.png',
-  nav: [
-    { label: 'Mission', href: '/mission' },
-    { label: 'Participations', href: '/participations' },
-    { label: 'Opportunités', href: '/opportunites' },
-    { label: 'Accompagnement', href: '/accompagnement' },
-    { label: 'Contact', href: '/contact' },
-  ],
+  nav: [] as readonly { label: string; href: string }[],
   footerLinks: [
-    { label: 'Mission', href: '/mission' },
-    { label: 'Participations', href: '/participations' },
-    { label: 'Opportunités', href: '/opportunites' },
-    { label: 'Accompagnement', href: '/accompagnement' },
-    { label: 'Contact', href: '/contact' },
     { label: 'Mentions légales', href: '/mentions-legales' },
   ],
 } as const;
