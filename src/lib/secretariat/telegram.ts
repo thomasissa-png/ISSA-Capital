@@ -33,7 +33,6 @@ export async function sendTelegramMessage(
   const body = JSON.stringify({
     chat_id: chatId,
     text: safeText,
-    parse_mode: 'Markdown',
   });
 
   for (let attempt = 1; attempt <= 2; attempt++) {
