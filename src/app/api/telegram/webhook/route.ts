@@ -473,6 +473,22 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
+      // Commandes d'abandon — annule la conversation en cours
+      const cancelKeywords = ['annule', 'annuler', 'laisse tomber', 'oublie', 'stop', 'cancel', 'non merci'];
+      const normalizedText = text.trim().toLowerCase();
+      if (cancelKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+        const hadDraft = getPendingDraft(chatId) !== null;
+        const hadHistory = getConversation(chatId).length > 0;
+        clearPendingDraft(chatId);
+        clearConversation(chatId);
+        if (hadDraft || hadHistory) {
+          await sendTelegramMessage(chatId, 'Conversation annulée. Envoie un nouveau message quand tu veux.');
+        } else {
+          await sendTelegramMessage(chatId, 'Rien en cours. Envoie le contenu d\'une réunion pour commencer.');
+        }
+        return Response.json({ ok: true });
+      }
+
       // Récupérer l'historique de conversation pour ce chat
       const history = getConversation(chatId);
       const claudeHistory = toClaudeMessages(history);
