@@ -1,26 +1,26 @@
 /**
  * Publication de CR sur Craft — version Next.js.
  *
- * Publie un document markdown sur l'espace Craft configuré via POST /blocks.
- * Timeout 15s, 1 retry sur 5xx, fallback gracieux si Craft non configuré.
+ * Utilise l'API Craft Link (même endpoint que le serveur Express).
  *
  * Source de vérité API Craft :
  *   - secretariat/src/server/services/craft.ts (implémentation Express de référence)
- *   - Endpoint : POST {CRAFT_IC_BASE_URL}/blocks
- *   - Auth : Authorization: Bearer {CRAFT_IC_KEY}
+ *   - Endpoint : POST {CRAFT_BASE_URL}/blocks
+ *   - Auth : Authorization: Bearer {CRAFT_API_TOKEN}  (clé pdk_...)
  *   - Body : { "markdown": "...", "position": { "position": "end" } }
+ *
+ * Env vars :
+ *   CRAFT_BASE_URL — ex: https://connect.craft.do/links/EgdwyOCC09S/api/v1
+ *   CRAFT_API_TOKEN — clé pdk_...
  */
 
 const TIMEOUT_MS = 15_000;
-const MAX_ATTEMPTS = 2; // 1 tentative initiale + 1 retry
+const MAX_ATTEMPTS = 2;
 const RETRY_DELAY_MS = 2_000;
 
 export interface CraftPublishParams {
-  /** Markdown complet du CR à publier */
   markdown: string;
-  /** Titre du document (ex: "CR Déjeuner — Karim Benmoussa — 9 avril 2026") */
   title: string;
-  /** Référence séquentielle (ex: "IC-CR-2026-0003") */
   reference: string;
 }
 
@@ -32,38 +32,30 @@ export interface CraftPublishResult {
 }
 
 /**
- * Publie un CR sur l'espace Craft via l'API blocks.
- *
- * Comportement :
- * - Si CRAFT_API_TOKEN ou CRAFT_SPACE_ID manquant → retourne success: false
- *   avec message explicite (ne bloque pas le flow)
- * - Retry 1x sur erreur 5xx ou réseau
- * - Timeout 15s par tentative
+ * Publie un CR sur Craft via l'API Link /blocks.
  */
 export async function publishToCraft(
   params: CraftPublishParams,
 ): Promise<CraftPublishResult> {
   const token = process.env.CRAFT_API_TOKEN;
-  const spaceId = process.env.CRAFT_SPACE_ID;
+  const baseUrl = process.env.CRAFT_BASE_URL;
 
-  // Vérification config — ne pas bloquer si Craft n'est pas configuré
   if (!token || token === '__TO_FILL__') {
     return {
       success: false,
       error: 'Publication Craft désactivée — CRAFT_API_TOKEN non configuré',
     };
   }
-  if (!spaceId || spaceId === '__TO_FILL__') {
+  if (!baseUrl || baseUrl === '__TO_FILL__') {
     return {
       success: false,
-      error: 'Publication Craft désactivée — CRAFT_SPACE_ID non configuré',
+      error: 'Publication Craft désactivée — CRAFT_BASE_URL non configuré',
     };
   }
 
-  // Préparer le markdown avec le titre en en-tête pour Craft
   const fullMarkdown = `# ${params.title}\n\n**Réf.** ${params.reference}\n\n${params.markdown}`;
 
-  const url = `https://www.craft.do/api/v1/spaces/${spaceId}/documents`;
+  const url = `${baseUrl.replace(/\/$/, '')}/blocks`;
   const bodyJson = JSON.stringify({
     markdown: fullMarkdown,
     position: { position: 'end' },
