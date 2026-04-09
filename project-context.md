@@ -599,6 +599,70 @@ Checkpoint Phase 0 stratégique : Thomas a tranché toutes les hypothèses. Phas
 
 ---
 
+## Mémo de reprise — Session 9 (clôture sessions 7-8 le 2026-04-09)
+
+### État à la clôture session 8
+- **Branche active session 7-8** : `claude/resume-issa-session-7-1SjaO` (HEAD commit `2efe806`)
+- **Site vitrine** : Pipeline G28 vert (tsc 0 / lint 0 / vitest 7/7 / build 15/15 / Playwright 21/21)
+- **Secrétariat ISSA** : Pipeline vert (tsc 0 / 254/254 tests / build OK). Toutes les Phases code livrées (1-7). Deployment guide dans `secretariat/DEPLOYMENT.md`.
+- **Compteur producteurs session 7-8** : 18/18 Tasks (ALERTE ROUGE atteinte)
+
+### Chantiers livrés session 7-8
+
+**Site vitrine** :
+- Phase 7 mega-passe : homepage stats-only, /mission RICHE v2, /participations Variante A, /accompagnement Variante A flexible
+- Favicon Variante A (sans-serif géométrique Futura-like) centrée dans sceau circulaire (ink-950 + parchment-100 + levant-500)
+- Bio Thomas /mission V1+++ : "TEOS bâtie de zéro en moins d'un an, déployée dans sept régions du monde" + "agence internationale de quarante experts"
+- /participations : Gradient One en encart dédié, Calendrier Tempo ajouté (2026), grille 3 colonnes section tech
+- /opportunites : section S2 fantôme supprimée (fusionnée Hero), tone S4 elevated, tone S7 subtle
+- Menu : ordre Opportunités → Accompagnement inversé
+- Délais réponse : "dans la journée" → "sous 72h"
+- Formulaire contact : "Thomas Issa" → "l'un des membres de la famille", placeholder "Antoine Vasseur"
+- TEOS /accompagnement : "ROI 6000%" → "0 à 8 M€ de CA en 4 ans"
+- Formation Thomas : quadrilingue → bilingue
+- Paragraphe agence : "Depuis 2018... 35 experts" → "Depuis 2020... 40 experts"
+- "Depuis 2020, il co-fonde ISSA Capital" → "Depuis 2026"
+- Parenthèse "— 2J Impression, l'écosystème ISSA Capital —" retirée
+
+**Secrétariat ISSA (sous-dossier `secretariat/`)** :
+- Phase 1 : Express + SQLite 8 tables + env.ts Zod + logger Pino + health endpoint (20 tests)
+- Phase 2 : WhatsApp Cloud API — webhooks + HMAC + whitelist + sessions 24h + dispatcher (36 tests)
+- Phase 3 : Anthropic SDK + prompt caching + routes draft/drafts + validation Zod (32 tests)
+- Phase 4 : Craft API + mapper CR→Markdown + routes publish/published + référence IC-CR-YYYY-XXXX (46 tests)
+- Phase 5 : Admin web /admin — auth JWT bcrypt + 5 modules CRUD + UI vanilla HTML/CSS/JS (66 tests)
+- Phase 6 : SQLCipher prep + 2FA TOTP speakeasy + Universign RFC 3161 + helmet CSP + accessLogger + backup cron + rate-limit WhatsApp (49 tests)
+- Phase 7 : 5 tests E2E full-flow (happy path + cancel + non-whitelist + rate-limit + HTTP publish)
+
+### Phase 8 — Actions Thomas (NON DÉMARRÉES)
+
+Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.md` :
+1. DPA Anthropic + DPA Replit + vérification DPF
+2. Email RGPD Art. 13 → Carl + Maxime
+3. NDA + mandat Carl + Maxime
+4. Compte Universign + clé API
+5. Numéro WhatsApp Business pro + vérification Meta (24-48h)
+6. Adresse dpo@issa-capital.com
+7. Déploiement Replit (Secrets, volume persistant, migrations, seed)
+8. Webhook Meta configuré
+9. Activation 2FA admin + changement mot de passe allezpsg
+10. Crons (backup quotidien + RFC3161 backfill hebdo)
+11. UptimeRobot + alerte coût Anthropic
+
+### 🔴 PROPAGATION P1/P2 NON-PROPAGÉE — gate bloquante reprise session 9
+
+11 learnings session 7-8 ajoutés dans `docs/lessons-learned.md` dont 7 avec statut propagation = `non-propagé`. Propager dans les agents concernés AVANT tout nouveau travail en session 9.
+
+### Décisions Thomas verrouillées session 7-8
+
+- Favicon : Variante A sans-serif géométrique centrée (retenue après Direction A rejeté session 5 + Sceau sérif rejeté session 7)
+- /accompagnement : Variante A flexible ("l'un, l'autre ou les deux selon la mission")
+- Bio Thomas /mission V1+++ (pas de chiffre financier sur /mission, réservé à /accompagnement)
+- Calendrier Tempo : date 2026, rôle Actionnaire
+- Placeholder ContactForm : "Antoine Vasseur" (pas de Dupont/Lemoine)
+- Délais réponse : sous 72h (pas dans la journée)
+
+---
+
 ## Mémo de reprise — Session 7 (clôture session 6 le 2026-04-08)
 
 ### État à la clôture session 6
