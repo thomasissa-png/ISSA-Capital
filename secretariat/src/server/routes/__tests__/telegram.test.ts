@@ -137,15 +137,15 @@ const VALID_CR = {
       qualite_relation: 'Conseiller',
     },
   ],
-  objet: 'Déjeuner de travail stratégie Q3',
+  objet: 'Déjeuner de travail sur la stratégie Q3',
   montant_ttc_eur: 180,
   etablissement_nom: 'Le Voltaire',
   section_1_objet_art_39_1:
-    'La présente réunion avait pour objet la revue stratégique.',
+    "La présente réunion, tenue le 8 avril 2026 au restaurant Le Voltaire, avait pour objet la revue stratégique de la participation ISSA Capital dans le cadre de l'Art. 39-1 du CGI.",
   section_2_points_abordes:
-    'Les échanges ont porté sur les points suivants.',
+    'Les échanges ont porté sur les points suivants : calendrier Q3, allocation ressources, suivi prospects.',
   section_3_decisions:
-    'Il a été convenu de lancer la phase pilote.',
+    "À l'issue de cet échange, il a été convenu de lancer la phase pilote le 15 juin.",
   section_4_suites_a_donner: null,
 };
 
@@ -509,6 +509,7 @@ describe('routes /api/telegram/webhook', () => {
       // Pipeline complet : contenu → terminer → valider
       await send('Déjeuner avec Karim');
       await send('terminer');
+
       await send('valider');
 
       expect(mockPublishToCraft).toHaveBeenCalledTimes(1);
