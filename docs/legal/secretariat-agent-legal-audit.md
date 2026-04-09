@@ -266,7 +266,7 @@ Cette distinction est parfaitement acceptable fiscalement et même recommandée 
 ```
 Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément
 au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale (Art. 39-1 CGI).
-Conservation : 10 ans. Droits d'accès et de rectification : dpo@issa-capital.com.
+Conservation : 10 ans. Droits d'accès et de rectification : contact@issa-capital.com.
 ```
 
 Cette mention est discrète (3 lignes), conforme à l'Art. 13 RGPD (information des personnes concernées), et directement intégrable dans le template markdown du CR.
@@ -292,7 +292,7 @@ Justification :
 **Droit à l'effacement vs obligation fiscale** : l'Art. 17.3.b du RGPD prévoit explicitement que le droit à l'effacement ne s'applique pas lorsque le traitement est nécessaire "au respect d'une obligation légale". L'Art. L.102 B LPF constitue une telle obligation légale.
 
 **Réponse type formalisée pour refus d'effacement** (à conserver dans les documents de gouvernance ISSA Capital) :
-> "En réponse à votre demande d'effacement de vos données personnelles, ISSA Capital SAS vous informe que les informations vous concernant sont conservées dans le cadre d'une obligation légale de conservation comptable et fiscale (Art. L.102 B du Livre des Procédures Fiscales, 10 ans). Cette obligation légale fait obstacle à l'exercice du droit à l'effacement conformément à l'Art. 17.3.b du Règlement (UE) 2016/679. À l'expiration de cette durée, vos données seront supprimées. Pour toute question : dpo@issa-capital.com."
+> "En réponse à votre demande d'effacement de vos données personnelles, ISSA Capital SAS vous informe que les informations vous concernant sont conservées dans le cadre d'une obligation légale de conservation comptable et fiscale (Art. L.102 B du Livre des Procédures Fiscales, 10 ans). Cette obligation légale fait obstacle à l'exercice du droit à l'effacement conformément à l'Art. 17.3.b du Règlement (UE) 2016/679. À l'expiration de cette durée, vos données seront supprimées. Pour toute question : contact@issa-capital.com."
 
 ---
 
@@ -336,7 +336,7 @@ L'Art. 13 RGPD impose d'informer les personnes concernées **au moment de la col
 - Durée : 10 ans
 - Droits : accès, rectification, effacement (sous réserve obligation fiscale)
 - Transferts hors UE : Anthropic USA, Replit USA (avec mécanisme de transfert applicable)
-- Contact DPO : dpo@issa-capital.com
+- Contact DPO : contact@issa-capital.com
 
 ### Décision 4 : Thomas peut-il lire les CR de Carl/Maxime sans consentement explicite ? OUI, sous conditions
 
@@ -399,7 +399,7 @@ Horodaté le [TIMESTAMP_UTC] — Token RFC 3161 : [TOKEN_HASH]
 
 Ce document contient des données à caractère personnel traitées par ISSA Capital SAS
 conformément au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle
-et preuve fiscale (Art. 39-1 CGI). Conservation : 10 ans. Droits : dpo@issa-capital.com.
+et preuve fiscale (Art. 39-1 CGI). Conservation : 10 ans. Droits : contact@issa-capital.com.
 Document établi à titre de justificatif interne — se reporter aux pièces comptables
 associées (factures, notes de frais) pour la déductibilité fiscale.
 ---
@@ -436,7 +436,7 @@ Ces actions sont **bloquantes** pour la mise en production. L'agent secrétariat
 
 ### Priorité 3 — Recommandé (non bloquant)
 
-- [ ] **adresse dpo@issa-capital.com** : créer cette adresse email (ou rediriger vers Thomas) pour recevoir les demandes RGPD des personnes concernées.
+- [ ] **adresse contact@issa-capital.com** : créer cette adresse email (ou rediriger vers Thomas) pour recevoir les demandes RGPD des personnes concernées.
 - [ ] **Consultation avocat fiscaliste** : faire valider la conformité du format CR Art. 39-1 par un avocat fiscaliste ou un expert-comptable, notamment pour les réunions avec des charges importantes (> 500 €/réunion). [À VÉRIFIER PAR AVOCAT FISCALISTE pour les cas limites]
 
 ---
@@ -470,7 +470,7 @@ Pour @fullstack (implémentation backend) :
 Pour @moi (arbitrage Thomas) :
 - **3 actions bloquantes avant mise en production** : DPA Anthropic, DPA Replit, information RGPD Carl/Maxime + mandat signé
 - **Horodatage RFC 3161** : coût < 10 €/mois (Universign) — budget à valider
-- **dpo@issa-capital.com** : créer cette adresse ou rediriger vers Thomas
+- **contact@issa-capital.com** : créer cette adresse ou rediriger vers Thomas
 - **Validation avocat fiscaliste recommandée** pour les CR de réunions avec charges > 500 €
 
 **Points d'attention — validation avocat obligatoire**

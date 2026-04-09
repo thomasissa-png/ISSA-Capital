@@ -239,7 +239,7 @@ Conformément à la règle CLAUDE.md n°5, ce plan ne mesure PAS en jours-homme 
 - [ ] **Upload signature PNG** : scanner la signature manuscrite, exporter en PNG transparent, uploader via le module 4 admin. Vérifier le rendu dans un CR de test. *(10 min)*
 - [ ] **Compte Universign créé** : créer un compte sur universign.com, récupérer l'API key, l'ajouter dans Replit Secrets. *(15 min)*
 - [ ] **Numéro WhatsApp pro acquis** : acquérir un numéro pro dédié, le vérifier dans Meta Business Manager, créer la WABA. *(1-2h, peut prendre 24-48h pour la vérification Meta)*
-- [ ] **Adresse `dpo@issa-capital.com` créée** : créer une adresse email ou rediriger vers Thomas (action @infrastructure). *(15 min)*
+- [ ] **Adresse `contact@issa-capital.com` créée** : créer une adresse email ou rediriger vers Thomas (action @infrastructure). *(15 min)*
 - [ ] **Vérification DPF Anthropic** : vérifier l'inscription d'Anthropic sur dataprivacyframework.gov. *(5 min)*
 
 **Total estimé Thomas** : ~3-4h cumulées + délais externes (Meta, signatures).

@@ -418,7 +418,7 @@ En foi de quoi, le présent compte rendu a été établi et certifié exact par 
 
 Ce document contient des données à caractère personnel traitées par ISSA Capital SAS conformément
 au Règlement (UE) 2016/679 (RGPD). Finalité : documentation professionnelle et preuve fiscale
-(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : dpo@issa-capital.com.
+(Art. 39-1 CGI). Conservation : 10 ans. Droits d'accès et de rectification : contact@issa-capital.com.
 
 Document établi à titre de justificatif interne — se reporter aux pièces comptables associées
 (factures, notes de frais) pour la déductibilité fiscale.

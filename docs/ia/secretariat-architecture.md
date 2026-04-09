@@ -868,7 +868,7 @@ Response: { status: "ok", version: "1.0.0", timestamp: ISO }
 | 5 | Mandat + NDA Carl/Maxime | Rédiger + signer (cf @legal Bloc 5) | Thomas — Phase 8 |
 | 6 | Noms de famille Carl/Maxime | Compléter `secretariat-contacts-database.md` | Thomas — avant whitelisting |
 | 7 | Numéros WhatsApp Thomas/Carl/Maxime | Compléter database contacts | Thomas — avant Phase 6 |
-| 8 | Adresse `dpo@issa-capital.com` | Créer ou rediriger vers Thomas | Thomas — Phase 6 |
+| 8 | Adresse `contact@issa-capital.com` | Créer ou rediriger vers Thomas | Thomas — Phase 6 |
 | 9 | SQLCipher vs volume chiffré Replit | Décision technique sur le mode de chiffrement at rest | @fullstack — Phase 6 |
 | 10 | Backup externe SQLite | Choix bucket (B2, S3, autre) | @infrastructure — Phase 6 |
 

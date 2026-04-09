@@ -230,7 +230,7 @@ describe('renderCrMarkdown', () => {
     expect(md).toContain('**Token RFC 3161** :');
     expect(md).toContain('Conservation : 10 ans');
     expect(md).toContain('Art. 39-1 CGI');
-    expect(md).toContain('dpo@issa-capital.com');
+    expect(md).toContain('contact@issa-capital.com');
   });
 
   it('OMET la Section 4 entièrement si section_4_suites_a_donner est null', () => {

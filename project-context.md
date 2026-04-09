@@ -641,7 +641,7 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 3. NDA + mandat Carl + Maxime
 4. Compte Universign + clé API
 5. Numéro WhatsApp Business pro + vérification Meta (24-48h)
-6. Adresse dpo@issa-capital.com
+6. Adresse contact@issa-capital.com
 7. Déploiement Replit (Secrets, volume persistant, migrations, seed)
 8. Webhook Meta configuré
 9. Activation 2FA admin + changement mot de passe allezpsg

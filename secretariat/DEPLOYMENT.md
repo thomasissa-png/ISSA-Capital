@@ -82,7 +82,7 @@
 5. Délai Meta : 24-48h pour la vérification
 6. Une fois vérifié → générer les credentials (voir §9.2)
 
-### 8.9 — Adresse `dpo@issa-capital.com` (15 min)
+### 8.9 — Adresse `contact@issa-capital.com` (15 min)
 
 - Créer une adresse email ou rediriger vers Thomas
 - Action infrastructure (Gandi / OVH / Google Workspace selon le DNS actuel)
