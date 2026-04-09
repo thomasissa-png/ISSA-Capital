@@ -43,7 +43,7 @@ export const CONTACTS: Contact[] = [
     titre: 'Co-fondateur',
     societe: 'Gradient One / Versi',
     entitesVisibles: ['GO', 'VI', 'VV'],
-    notes: 'Co-fondateur Versi (2022) avec Thomas et Maxime. Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC.',
+    notes: 'Co-fondateur Versi (2022). Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC. NON responsable immobilier — c\'est Maxime qui gère l\'immobilier.',
   },
   {
     prenom: 'Maxime',
@@ -51,7 +51,7 @@ export const CONTACTS: Contact[] = [
     titre: 'Co-fondateur',
     societe: 'Gradient One / Versi',
     entitesVisibles: ['GO', 'VI', 'VV'],
-    notes: 'Co-fondateur Versi (2022) avec Thomas et Carl. Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC.',
+    notes: 'Co-fondateur Versi (2022). Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC. RESPONSABLE de la partie immobilière (Versi Immobilier, Versi Invest, projets immo). Les actions immobilières lui sont attribuées en priorité.',
   },
   {
     prenom: 'Martin',
