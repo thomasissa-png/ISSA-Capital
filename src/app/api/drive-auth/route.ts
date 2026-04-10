@@ -28,8 +28,8 @@ export async function GET(request: Request): Promise<Response> {
     );
   }
 
+  const redirectUri = 'https://issa-capital.com/api/drive-auth';
   const url = new URL(request.url);
-  const redirectUri = `${url.origin}/api/drive-auth`;
   const code = url.searchParams.get('code');
 
   // Étape 1 : pas de code → rediriger vers Google pour autorisation
