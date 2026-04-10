@@ -412,7 +412,8 @@ export async function generateCrPdf(params: {
     try {
       if (existsSync(signaturePath)) {
         doc.moveDown(0.5);
-        doc.image(signaturePath, PAGE_MARGIN, doc.y, {
+        // Signature décalée à droite (dans l'espace vide, pas sur le texte)
+        doc.image(signaturePath, PAGE_MARGIN + 200, doc.y, {
           width: 150,
           height: 60,
         });

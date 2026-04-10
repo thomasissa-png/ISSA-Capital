@@ -550,7 +550,16 @@ async function generateCRFromVoice(
       timeZone: 'Europe/Paris',
     }).format(now);
 
-    const contextPrefix = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris)]\n\n[${recentCRs}]`;
+    // Calculer hier, avant-hier pour que Claude ne demande JAMAIS de préciser
+    const yesterday = new Date(now.getTime() - 86400000);
+    const dayBefore = new Date(now.getTime() - 2 * 86400000);
+    const hierFr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).format(yesterday);
+    const avantHierFr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).format(dayBefore);
+    const hierIso = yesterday.toISOString().split('T')[0];
+    const avantHierIso = dayBefore.toISOString().split('T')[0];
+    const todayIso = now.toISOString().split('T')[0];
+
+    const contextPrefix = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris). Aujourd'hui = ${todayIso}. Hier = ${hierFr} (${hierIso}). Avant-hier = ${avantHierFr} (${avantHierIso}). Si l'utilisateur dit "aujourd'hui", "hier", "avant-hier", "ce midi", "lundi dernier", etc., CALCULE la date toi-même à partir de ces repères. Ne demande JAMAIS de préciser la date si tu peux la déduire.]\n\n[${recentCRs}]`;
 
     const searchInstruction = `
 
@@ -815,6 +824,40 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
+      // Si un draft est en attente et Thomas dit "non" / "c'est bon" / "pas de photo"
+      // → montrer l'aperçu avec les boutons de validation
+      const noPhotoKeywords = ['non', 'no', 'pas de photo', 'c\'est bon', 'cest bon', 'sans photo', 'aucune', 'nope'];
+      const draft = getPendingDraft(chatId);
+      if (draft && noPhotoKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+        const photos = getPhotos(chatId);
+        if (photos.length > 0) {
+          // Regénérer le CR avec les photos
+          await sendTypingAction(chatId);
+          const history = getConversation(chatId);
+          const claudeHistory = toClaudeMessages(history);
+          const result = await generateCR(
+            `Regénère le CR en intégrant les ${photos.length} photos jointes en annexes photographiques.`,
+            claudeHistory,
+            photos,
+          );
+          clearPhotos(chatId);
+          if (result.crText && result.crDraft) {
+            setPendingDraft(chatId, result.crDraft, result.crText);
+            const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+            await sendTelegramConfirmation(chatId, previewText);
+          } else {
+            // Fallback : utiliser le draft original sans photos
+            const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+            await sendTelegramConfirmation(chatId, previewText);
+          }
+        } else {
+          // Pas de photos → montrer l'aperçu directement
+          const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+          await sendTelegramConfirmation(chatId, previewText);
+        }
+        return Response.json({ ok: true });
+      }
+
       // Récupérer l'historique de conversation pour ce chat
       const history = getConversation(chatId);
       const claudeHistory = toClaudeMessages(history);
@@ -858,16 +901,16 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // status === 'ready' — envoyer l'aperçu avec boutons de validation
+      // status === 'ready' — stocker le draft, PUIS demander s'il y a des photos
       if (result.crText && result.crDraft) {
-        const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
         storeMessage(chatId, 'assistant', result.crText);
-
-        // Stocker le draft en attente de validation
         setPendingDraft(chatId, result.crDraft, result.crText);
 
-        // Envoyer l'aperçu avec les boutons inline Valider/Modifier/Annuler
-        await sendTelegramConfirmation(chatId, previewText);
+        // Demander s'il y a des photos à joindre AVANT de montrer l'aperçu
+        await sendTelegramMessage(
+          chatId,
+          'CR prêt. Des photos à joindre au compte rendu ? Si oui, envoie-les maintenant. Sinon, réponds « non ».',
+        );
       }
 
       return Response.json({ ok: true });
@@ -921,11 +964,20 @@ export async function POST(request: Request): Promise<Response> {
         storeMessage(chatId, 'user', caption);
       }
 
-      const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
-      await sendTelegramMessage(
-        chatId,
-        `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
-      );
+      // Message adapté selon qu'on est en phase "ajout photos" (draft en attente) ou non
+      const hasDraft = getPendingDraft(chatId) !== null;
+      if (hasDraft) {
+        await sendTelegramMessage(
+          chatId,
+          `Photo reçue (${photoCount}/10). Envoie d'autres photos, ou réponds « non » pour générer le CR.`,
+        );
+      } else {
+        const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
+        await sendTelegramMessage(
+          chatId,
+          `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
+        );
+      }
       return Response.json({ ok: true });
     }
 

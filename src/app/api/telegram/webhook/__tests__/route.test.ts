@@ -447,7 +447,7 @@ describe('POST /api/telegram/webhook', () => {
   // ----------------------------------------------------------
   // 9. Message texte → Claude ready → aperçu + boutons
   // ----------------------------------------------------------
-  it('envoie un aperçu avec boutons quand Claude génère un CR complet', async () => {
+  it('stocke le draft et demande les photos quand Claude génère un CR complet', async () => {
     mocks.create.mockResolvedValueOnce(claudeResponseReady());
 
     const res = await POST(makeRequest(textMessage('Déjeuner avec Karim Benmoussa au Voltaire')));
@@ -460,14 +460,13 @@ describe('POST /api/telegram/webhook', () => {
       expect.stringContaining('COMPTE RENDU'),
     );
 
-    // L'aperçu avec boutons est envoyé
-    expect(mocks.sendTelegramConfirmation).toHaveBeenCalledOnce();
-    const confirmArgs = mocks.sendTelegramConfirmation.mock.calls[0] as [number, string];
-    expect(confirmArgs[0]).toBe(12345);
-    expect(confirmArgs[1]).toContain('Vérifie le CR');
+    // Anya demande s'il y a des photos (nouveau flow)
+    expect(mocks.sendTelegramMessage).toHaveBeenCalled();
+    const lastCall = mocks.sendTelegramMessage.mock.calls[mocks.sendTelegramMessage.mock.calls.length - 1] as [number, string];
+    expect(lastCall[1]).toContain('photos');
 
-    // Pas de sendTelegramMessage simple (le preview passe par sendTelegramConfirmation)
-    expect(mocks.sendTelegramMessage).not.toHaveBeenCalled();
+    // Pas encore de sendTelegramConfirmation (on attend la réponse "non" de Thomas)
+    expect(mocks.sendTelegramConfirmation).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------
