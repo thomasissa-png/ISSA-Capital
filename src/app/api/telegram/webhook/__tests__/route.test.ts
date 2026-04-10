@@ -95,13 +95,7 @@ vi.mock('@/lib/secretariat/pdf-generator', () => ({
   generateCrPdf: mocks.generateCrPdf,
 }));
 
-vi.mock('@/lib/secretariat/craft-publisher', () => ({
-  publishToCraft: mocks.publishToCraft,
-}));
-
-vi.mock('@/lib/secretariat/craft-reader', () => ({
-  fetchRecentCRs: mocks.fetchRecentCRs,
-}));
+// Craft retiré (session 9) — plus de mock nécessaire
 
 vi.mock('@/lib/secretariat/conversation-store', () => ({
   getConversation: mocks.getConversation,

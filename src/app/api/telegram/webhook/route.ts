@@ -36,7 +36,6 @@ import {
   buildCraftTitle,
 } from '@/lib/secretariat/cr-renderer';
 import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
-// craft-reader retiré — remplacé par cr-history (historique local)
 import {
   getConversation,
   appendMessage as storeMessage,

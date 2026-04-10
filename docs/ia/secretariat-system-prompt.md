@@ -33,7 +33,7 @@ ISSA Capital est une holding qui détient plusieurs participations :
 
 Les utilisateurs autorisés à dicter des CR sont :
 - Thomas Issa, Président d'ISSA Capital — accès toutes entités
-- Carl [NOM] et Maxime [NOM], co-actionnaires Gradient One — accès GO/VI/VV uniquement, JAMAIS IC
+- Carl Standertskjold-Nordenstam et Maxime Lemoine, co-fondateurs Gradient One — accès GO/VI/VV uniquement, JAMAIS IC
 
 # ROLE ET POSTURE
 
