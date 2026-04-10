@@ -19,6 +19,7 @@ const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
 interface BackupData {
   counter: Record<string, number>;
   history: unknown[];
+  contacts?: unknown[];
   lastBackupAt: string;
 }
 
@@ -59,11 +60,13 @@ export async function backupToGoogleDrive(): Promise<void> {
   try {
     const counterPath = resolve(DATA_DIR, 'cr-counter.json');
     const historyPath = resolve(DATA_DIR, 'cr-history.json');
+    const contactsPath = resolve(DATA_DIR, 'contacts.json');
 
     const counter = existsSync(counterPath) ? JSON.parse(readFileSync(counterPath, 'utf8')) : {};
     const history = existsSync(historyPath) ? JSON.parse(readFileSync(historyPath, 'utf8')) : [];
+    const dynamicContacts = existsSync(contactsPath) ? JSON.parse(readFileSync(contactsPath, 'utf8')) : [];
 
-    const backup: BackupData = { counter, history, lastBackupAt: new Date().toISOString() };
+    const backup: BackupData = { counter, history, contacts: dynamicContacts, lastBackupAt: new Date().toISOString() };
     const content = JSON.stringify(backup, null, 2);
 
     // Chercher si le fichier existe déjà
@@ -162,6 +165,10 @@ export async function restoreFromGoogleDrive(): Promise<boolean> {
     }
     if (data.history) {
       writeFileSync(historyPath, JSON.stringify(data.history, null, 2), 'utf8');
+    }
+    if (data.contacts) {
+      const contactsPath = resolve(DATA_DIR, 'contacts.json');
+      writeFileSync(contactsPath, JSON.stringify(data.contacts, null, 2), 'utf8');
     }
 
     console.info(`[backup] données restaurées depuis Drive (backup du ${data.lastBackupAt})`);

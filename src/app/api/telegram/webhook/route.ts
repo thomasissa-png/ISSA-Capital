@@ -37,7 +37,7 @@ import {
   renderCrForTelegram,
   buildCraftTitle,
 } from '@/lib/secretariat/cr-renderer';
-import { formatContactsForPrompt } from '@/lib/secretariat/contacts';
+import { formatContactsForPrompt, addContact } from '@/lib/secretariat/contacts';
 import {
   getConversation,
   appendMessage as storeMessage,
@@ -472,6 +472,31 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
     }
 
     const response = validation.data;
+
+    // Traiter l'ajout d'un nouveau contact (si Claude en a détecté un)
+    const rawParsed = parsed as Record<string, unknown>;
+    const newContact = rawParsed['new_contact'] as {
+      prenom?: string;
+      nom?: string;
+      titre?: string;
+      societe?: string;
+      entites_visibles?: string[];
+      notes?: string;
+    } | null | undefined;
+
+    if (newContact?.prenom && newContact?.nom && newContact?.titre && newContact?.societe) {
+      const added = addContact({
+        prenom: newContact.prenom,
+        nom: newContact.nom,
+        titre: newContact.titre,
+        societe: newContact.societe,
+        entitesVisibles: newContact.entites_visibles ?? ['IC', 'GO', 'VI', 'VV'],
+        notes: newContact.notes,
+      });
+      if (added) {
+        console.info(`[contacts] nouveau contact ajouté : ${newContact.prenom} ${newContact.nom}`);
+      }
+    }
 
     if (response.status === 'needs_clarification') {
       return {
