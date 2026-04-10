@@ -756,9 +756,14 @@ const RESTORE_KEY = '__issa_drive_restored__' as const;
 
 export async function POST(request: Request): Promise<Response> {
   // 0. Restaurer les données depuis Drive au premier appel après un redéploiement
+  // BLOQUANT — on attend que la restauration soit terminée avant de traiter
   if (!(RESTORE_KEY in globalThis)) {
     (globalThis as Record<string, unknown>)[RESTORE_KEY] = true;
-    restoreFromGoogleDrive().catch(() => {});
+    try {
+      await restoreFromGoogleDrive();
+    } catch {
+      // Si la restauration échoue, on continue — données vierges
+    }
   }
 
   // 1. Vérification du secret

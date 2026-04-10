@@ -337,21 +337,27 @@ export async function generateCrPdf(params: {
         if (photoData) {
           try {
             const imgBuffer = Buffer.from(photoData.base64, 'base64');
-            const maxWidth = doc.page.width - PAGE_MARGIN * 2;
-            const maxPhotoWidth = Math.min(400, maxWidth);
+            const contentWidth = doc.page.width - PAGE_MARGIN * 2;
+            const maxPhotoWidth = Math.min(350, contentWidth);
+            const maxPhotoHeight = 300;
 
-            // Vérifier s'il reste assez de place sur la page pour l'image
-            // Sinon, passer à la page suivante
-            const remainingHeight = doc.page.height - PAGE_MARGIN - doc.y;
-            if (remainingHeight < 200) {
+            // Nouvelle page si pas assez de place (légende + image + marge)
+            const spaceNeeded = maxPhotoHeight + 40;
+            const spaceLeft = doc.page.height - PAGE_MARGIN - doc.y;
+            if (spaceLeft < spaceNeeded) {
               doc.addPage();
             }
 
-            doc.image(imgBuffer, PAGE_MARGIN, doc.y, {
-              fit: [maxPhotoWidth, 500],
-              align: 'center',
+            // Insérer l'image — centrer horizontalement
+            const imageY = doc.y;
+            const imageX = PAGE_MARGIN + (contentWidth - maxPhotoWidth) / 2;
+            doc.image(imgBuffer, imageX, imageY, {
+              fit: [maxPhotoWidth, maxPhotoHeight],
             });
-            doc.moveDown(1);
+
+            // Avancer le curseur Y manuellement (pdfkit ne le fait pas avec fit)
+            // On prend la hauteur max possible comme estimation sûre
+            doc.y = imageY + maxPhotoHeight + 15;
           } catch (imgErr) {
             // Si l'image ne peut pas être insérée, noter l'erreur et continuer
             doc
@@ -388,7 +394,14 @@ export async function generateCrPdf(params: {
 
     // ============================================================
     // Footer — formule de clôture
+    // Vérifier qu'il reste assez de place (signature + mentions = ~200px)
     // ============================================================
+
+    const footerSpaceNeeded = 200;
+    const footerSpaceLeft = doc.page.height - PAGE_MARGIN - doc.y;
+    if (footerSpaceLeft < footerSpaceNeeded) {
+      doc.addPage();
+    }
 
     drawRule(doc);
 
