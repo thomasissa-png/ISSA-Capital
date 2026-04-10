@@ -1177,6 +1177,10 @@ export async function POST(request: Request): Promise<Response> {
               console.info(`[telegram-webhook] PDF uploadé sur Drive : ${driveResult.fileId}`);
             } else {
               console.warn('[telegram-webhook] échec upload Drive :', driveResult.error);
+              await sendTelegramMessage(
+                callbackChatId,
+                `⚠️ Upload Drive échoué : ${driveResult.error?.slice(0, 300) ?? 'erreur inconnue'}`,
+              );
             }
           }
 

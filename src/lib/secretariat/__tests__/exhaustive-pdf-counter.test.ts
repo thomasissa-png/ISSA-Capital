@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { existsSync, unlinkSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { generateCrPdf } from '../pdf-generator';
 import { getNextReference } from '../reference-counter';
@@ -124,19 +124,6 @@ describe('TEST EXHAUSTIF — PDF photos + compteur', () => {
   // ============================================================
 
   const entites: Array<'IC' | 'GO' | 'VI' | 'VV'> = ['IC', 'GO', 'VI', 'VV'];
-  const entiteNames: Record<string, string> = {
-    IC: 'ISSA Capital SAS',
-    GO: 'Gradient One',
-    VI: 'Versi Immobilier',
-    VV: 'Versi Invest',
-  };
-  const entiteEmails: Record<string, string> = {
-    IC: 'contact@issa-capital.com',
-    GO: 'contact@versi.fr',
-    VI: 'contact@versi.fr',
-    VV: 'contact@versi.fr',
-  };
-
   for (const entite of entites) {
     it(`PDF entité ${entite} — génération sans crash avec 2 photos`, async () => {
       const cr = makeCR(entite, 2);
