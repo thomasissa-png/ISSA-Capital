@@ -1,22 +1,20 @@
 /**
- * Backup/restore des données Anya sur Google Drive.
+ * Backup/restore des données Anya sur Google Drive via OAuth2.
  *
- * Les fichiers JSON locaux (/home/runner/issa-data/) sont effacés à chaque
- * redéploiement Replit. Ce module sauvegarde et restaure les données
- * critiques (compteur CR + historique) sur Google Drive.
- *
- * Le fichier _anya-data-backup.json est stocké dans le dossier ISSA Capital
- * sur Drive. Il contient le compteur de références et l'historique des CR.
+ * Sauvegarde le compteur de références + l'historique CR dans un fichier
+ * _anya-data-backup.json sur Google Drive. Restaure au premier appel
+ * après un redéploiement Replit.
  */
 
-import { google } from 'googleapis';
-import { Readable } from 'node:stream';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const BACKUP_FILENAME = '_anya-data-backup.json';
-const BACKUP_FOLDER_ID = '1AUUB3Kx2hOil0GNIC858dD_ndUQ4VAOx'; // ISSA Capital folder
+const BACKUP_FOLDER_ID = '1AUUB3Kx2hOil0GNIC858dD_ndUQ4VAOx';
 const DATA_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const DRIVE_API = 'https://www.googleapis.com/upload/drive/v3/files';
+const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
 
 interface BackupData {
   counter: Record<string, number>;
@@ -24,17 +22,28 @@ interface BackupData {
   lastBackupAt: string;
 }
 
-function getAuth() {
-  const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!json || json === '__TO_FILL__') return null;
+async function getAccessToken(): Promise<string | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) return null;
 
   try {
-    const creds = JSON.parse(json) as { client_email: string; private_key: string };
-    return new google.auth.JWT({
-      email: creds.client_email,
-      key: creds.private_key,
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
     });
+
+    if (!response.ok) return null;
+    const data = (await response.json()) as { access_token?: string };
+    return data.access_token ?? null;
   } catch {
     return null;
   }
@@ -42,60 +51,64 @@ function getAuth() {
 
 /**
  * Sauvegarde le compteur et l'historique sur Google Drive.
- * Appelé après chaque validation de CR.
  */
 export async function backupToGoogleDrive(): Promise<void> {
-  const auth = getAuth();
-  if (!auth) return;
+  const accessToken = await getAccessToken();
+  if (!accessToken) return;
 
   try {
     const counterPath = resolve(DATA_DIR, 'cr-counter.json');
     const historyPath = resolve(DATA_DIR, 'cr-history.json');
 
-    const counter = existsSync(counterPath)
-      ? JSON.parse(readFileSync(counterPath, 'utf8'))
-      : {};
-    const history = existsSync(historyPath)
-      ? JSON.parse(readFileSync(historyPath, 'utf8'))
-      : [];
+    const counter = existsSync(counterPath) ? JSON.parse(readFileSync(counterPath, 'utf8')) : {};
+    const history = existsSync(historyPath) ? JSON.parse(readFileSync(historyPath, 'utf8')) : [];
 
-    const backup: BackupData = {
-      counter,
-      history,
-      lastBackupAt: new Date().toISOString(),
-    };
-
-    const drive = google.drive({ version: 'v3', auth });
+    const backup: BackupData = { counter, history, lastBackupAt: new Date().toISOString() };
     const content = JSON.stringify(backup, null, 2);
-    const stream = new Readable();
-    stream.push(content);
-    stream.push(null);
 
-    // Chercher si le fichier backup existe déjà
-    const existing = await drive.files.list({
-      q: `name = '${BACKUP_FILENAME}' and '${BACKUP_FOLDER_ID}' in parents and trashed = false`,
-      fields: 'files(id)',
-    } as unknown as Parameters<typeof drive.files.list>[0]);
+    // Chercher si le fichier existe déjà
+    const searchUrl = `${DRIVE_FILES_API}?q=name='${BACKUP_FILENAME}' and '${BACKUP_FOLDER_ID}' in parents and trashed=false&fields=files(id)`;
+    const searchRes = await fetch(searchUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-    const files = (existing as unknown as { data: { files?: { id: string }[] } }).data.files;
-    const existingFileId = files?.[0]?.id;
+    let existingFileId: string | undefined;
+    if (searchRes.ok) {
+      const searchData = (await searchRes.json()) as { files?: { id: string }[] };
+      existingFileId = searchData.files?.[0]?.id;
+    }
 
     if (existingFileId) {
       // Mettre à jour le fichier existant
-      await drive.files.update({
-        fileId: existingFileId,
-        media: { mimeType: 'application/json', body: stream },
-      } as unknown as Parameters<typeof drive.files.update>[0]);
+      await fetch(`${DRIVE_API}/${existingFileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: content,
+      });
     } else {
       // Créer un nouveau fichier
-      await drive.files.create({
-        requestBody: {
-          name: BACKUP_FILENAME,
-          parents: [BACKUP_FOLDER_ID],
-          mimeType: 'application/json',
+      const boundary = '===issa_backup_boundary===';
+      const metadata = JSON.stringify({
+        name: BACKUP_FILENAME,
+        parents: [BACKUP_FOLDER_ID],
+        mimeType: 'application/json',
+      });
+      const body = Buffer.from(
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`,
+        'utf-8',
+      );
+
+      await fetch(`${DRIVE_API}?uploadType=multipart`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': `multipart/related; boundary=${boundary}`,
         },
-        media: { mimeType: 'application/json', body: stream },
-      } as unknown as Parameters<typeof drive.files.create>[0]);
+        body,
+      });
     }
 
     console.info('[backup] données sauvegardées sur Google Drive');
@@ -106,49 +119,43 @@ export async function backupToGoogleDrive(): Promise<void> {
 
 /**
  * Restaure le compteur et l'historique depuis Google Drive.
- * Appelé au démarrage si les fichiers locaux n'existent pas.
  */
 export async function restoreFromGoogleDrive(): Promise<boolean> {
-  const auth = getAuth();
-  if (!auth) return false;
-
   const counterPath = resolve(DATA_DIR, 'cr-counter.json');
   const historyPath = resolve(DATA_DIR, 'cr-history.json');
 
   // Si les fichiers locaux existent déjà, pas besoin de restaurer
-  if (existsSync(counterPath) && existsSync(historyPath)) {
-    return true;
-  }
+  if (existsSync(counterPath) && existsSync(historyPath)) return true;
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) return false;
 
   try {
-    const drive = google.drive({ version: 'v3', auth });
+    // Chercher le fichier backup
+    const searchUrl = `${DRIVE_FILES_API}?q=name='${BACKUP_FILENAME}' and '${BACKUP_FOLDER_ID}' in parents and trashed=false&fields=files(id)`;
+    const searchRes = await fetch(searchUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-    // Trouver le fichier backup
-    const result = await drive.files.list({
-      q: `name = '${BACKUP_FILENAME}' and '${BACKUP_FOLDER_ID}' in parents and trashed = false`,
-      fields: 'files(id)',
-    } as unknown as Parameters<typeof drive.files.list>[0]);
-
-    const files = (result as unknown as { data: { files?: { id: string }[] } }).data.files;
-    const fileId = files?.[0]?.id;
+    if (!searchRes.ok) return false;
+    const searchData = (await searchRes.json()) as { files?: { id: string }[] };
+    const fileId = searchData.files?.[0]?.id;
 
     if (!fileId) {
-      console.info('[backup] aucun backup trouvé sur Drive — première utilisation');
+      console.info('[backup] aucun backup trouvé sur Drive');
       return false;
     }
 
     // Télécharger le contenu
-    const response = await drive.files.get({
-      fileId,
-      alt: 'media',
-    } as unknown as Parameters<typeof drive.files.get>[0]);
+    const downloadRes = await fetch(`${DRIVE_FILES_API}/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-    const data = (response as unknown as { data: BackupData }).data;
+    if (!downloadRes.ok) return false;
+    const data = (await downloadRes.json()) as BackupData;
 
     // Écrire les fichiers locaux
-    if (!existsSync(DATA_DIR)) {
-      mkdirSync(DATA_DIR, { recursive: true });
-    }
+    if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
     if (data.counter) {
       writeFileSync(counterPath, JSON.stringify(data.counter, null, 2), 'utf8');
@@ -160,7 +167,7 @@ export async function restoreFromGoogleDrive(): Promise<boolean> {
     console.info(`[backup] données restaurées depuis Drive (backup du ${data.lastBackupAt})`);
     return true;
   } catch (err) {
-    console.warn('[backup] échec restauration Drive :', err instanceof Error ? err.message : err);
+    console.warn('[backup] échec restauration :', err instanceof Error ? err.message : err);
     return false;
   }
 }

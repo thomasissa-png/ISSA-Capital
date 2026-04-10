@@ -19,7 +19,6 @@
     "@anthropic-ai/sdk": "^0.86.1",
     "@fontsource/eb-garamond": "^5.2.7",
     "clsx": "2.1.1",
-    "googleapis": "^171.4.0",
     "lucide-react": "0.456.0",
     "next": "^14.2.35",
     "next-plausible": "3.12.2",

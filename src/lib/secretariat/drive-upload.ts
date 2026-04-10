@@ -1,29 +1,35 @@
 /**
- * Upload PDF vers Google Drive — Secrétariat ISSA Capital.
+ * Google Drive upload via OAuth2 refresh token.
  *
- * Upload automatique des CR validés dans le dossier Drive partagé.
- * Utilise un Google Service Account (clé JSON dans env GOOGLE_SERVICE_ACCOUNT_JSON).
+ * Le Service Account ne fonctionne pas sur les Drives personnels (quota).
+ * On utilise OAuth2 avec un refresh token obtenu une seule fois par Thomas.
+ *
+ * Setup :
+ *   1. Thomas crée des credentials OAuth2 dans Google Cloud Console
+ *   2. Thomas lance le script /api/drive-auth pour autoriser et obtenir le refresh token
+ *   3. Le refresh token est stocké dans GOOGLE_REFRESH_TOKEN (Replit Secret)
+ *   4. À chaque upload, on utilise le refresh token pour obtenir un access token frais
  *
  * Env vars :
- *   GOOGLE_SERVICE_ACCOUNT_JSON — contenu JSON complet de la clé service account
- *   GOOGLE_DRIVE_FOLDER_ID — ID du dossier Drive cible (défaut : celui de Gradient One)
+ *   GOOGLE_CLIENT_ID — OAuth2 Client ID
+ *   GOOGLE_CLIENT_SECRET — OAuth2 Client Secret
+ *   GOOGLE_REFRESH_TOKEN — Refresh token (obtenu une fois via /api/drive-auth)
  */
 
-import { google } from 'googleapis';
-import { Readable } from 'node:stream';
+const DRIVE_API = 'https://www.googleapis.com/upload/drive/v3/files';
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /**
  * Mapping entité → dossier Google Drive.
- * Chaque entité a son propre dossier de CR.
  */
 const DRIVE_FOLDERS: Record<string, string> = {
-  IC: '1AUUB3Kx2hOil0GNIC858dD_ndUQ4VAOx', // ISSA Capital
-  GO: '1dapRQ5ZPeEIlTLEm5h0yGaMiuH5HYYJ0', // Gradient One
-  VI: '1loe-NKbuXm6t3_OMt8ILt_l2dW7IspIA', // Versi Immobilier
-  VV: '1mge-P2u54V3qApXKkQNi2YHb5b8K50iN', // Versi Invest
+  IC: '1AUUB3Kx2hOil0GNIC858dD_ndUQ4VAOx',
+  GO: '1dapRQ5ZPeEIlTLEm5h0yGaMiuH5HYYJ0',
+  VI: '1loe-NKbuXm6t3_OMt8ILt_l2dW7IspIA',
+  VV: '1mge-P2u54V3qApXKkQNi2YHb5b8K50iN',
 };
 
-const DEFAULT_FOLDER_ID = DRIVE_FOLDERS['IC'];
+const DEFAULT_FOLDER_ID = DRIVE_FOLDERS['IC']!;
 
 export interface DriveUploadResult {
   success: boolean;
@@ -33,14 +39,45 @@ export interface DriveUploadResult {
 }
 
 /**
- * Upload un PDF vers Google Drive.
- *
- * @param pdfBuffer Buffer du PDF à uploader
- * @param filename Nom du fichier (ex: "GO-CR-2026-0001.pdf")
- * @param title Titre du document dans Drive
+ * Obtient un access token frais via le refresh token.
  */
+async function getAccessToken(): Promise<string | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[drive] erreur refresh token :', error.slice(0, 200));
+      return null;
+    }
+
+    const data = (await response.json()) as { access_token?: string };
+    return data.access_token ?? null;
+  } catch (err) {
+    console.error('[drive] erreur obtention token :', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 /**
- * @param entiteCode Code entité (IC, GO, VI, VV) — détermine le dossier Drive cible
+ * Upload un PDF vers Google Drive via OAuth2.
  */
 export async function uploadToDrive(
   pdfBuffer: Buffer,
@@ -48,72 +85,69 @@ export async function uploadToDrive(
   entiteCode?: string,
   title?: string,
 ): Promise<DriveUploadResult> {
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson || serviceAccountJson === '__TO_FILL__') {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
     return {
       success: false,
-      error: 'Upload Drive désactivé — GOOGLE_SERVICE_ACCOUNT_JSON non configuré',
+      error: 'Upload Drive désactivé — credentials OAuth2 manquants (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN)',
     };
   }
 
-  // Sélectionner le dossier Drive selon l'entité du CR
   const folderId = (entiteCode && DRIVE_FOLDERS[entiteCode]) ?? DEFAULT_FOLDER_ID;
 
   try {
-    // Parser la clé JSON du service account
-    const credentials = JSON.parse(serviceAccountJson) as {
-      client_email: string;
-      private_key: string;
-    };
-
-    // Authentification via JWT
-    const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key,
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    // Metadata du fichier
+    const metadata = JSON.stringify({
+      name: filename,
+      description: title ?? filename,
+      parents: [folderId],
+      mimeType: 'application/pdf',
     });
 
-    const drive = google.drive({ version: 'v3', auth });
+    // Upload multipart (metadata JSON + contenu PDF)
+    const boundary = '===issa_upload_boundary===';
+    const body =
+      `--${boundary}\r\n` +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      metadata + '\r\n' +
+      `--${boundary}\r\n` +
+      'Content-Type: application/pdf\r\n\r\n';
+    const footer = `\r\n--${boundary}--`;
 
-    // Convertir le Buffer en stream lisible
-    const stream = new Readable();
-    stream.push(pdfBuffer);
-    stream.push(null);
+    const bodyBuffer = Buffer.concat([
+      Buffer.from(body, 'utf-8'),
+      pdfBuffer,
+      Buffer.from(footer, 'utf-8'),
+    ]);
 
-    // Upload du fichier
-    const response = await drive.files.create({
-      requestBody: {
-        name: filename,
-        description: title ?? filename,
-        parents: [folderId],
-        mimeType: 'application/pdf',
+    const response = await fetch(`${DRIVE_API}?uploadType=multipart&fields=id,webViewLink`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Length': String(bodyBuffer.length),
       },
-      media: {
-        mimeType: 'application/pdf',
-        body: stream,
-      },
-      fields: 'id,webViewLink',
-    } as unknown as Parameters<typeof drive.files.create>[0]);
+      body: bodyBuffer,
+    });
 
-    const data = (response as unknown as { data?: { id?: string; webViewLink?: string } }).data;
-    const fileId = data?.id ?? undefined;
-    const webViewLink = data?.webViewLink ?? undefined;
-
-    if (!fileId) {
-      return { success: false, error: 'Drive n\'a pas retourné d\'ID de fichier' };
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Drive API ${response.status}: ${errorText.slice(0, 200)}`,
+      };
     }
 
+    const data = (await response.json()) as { id?: string; webViewLink?: string };
     return {
       success: true,
-      fileId,
-      webViewLink,
+      fileId: data.id,
+      webViewLink: data.webViewLink,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('[drive-upload] erreur :', message);
     return {
       success: false,
-      error: `Erreur Drive : ${message.slice(0, 200)}`,
+      error: `Erreur Drive : ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
