@@ -64,11 +64,11 @@ export default function HomePage(): JSX.Element {
           </p>
           {/* 2 CTAs : scroll vers le formulaire avec pré-sélection du sujet */}
           <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
-            <Button href="#contact-opportunite" variant="primary-inverse" size="lg">
+            <Button href="#contact" variant="primary-inverse" size="lg">
               Présenter une opportunité d&apos;affaires
             </Button>
             <Button
-              href="#contact-accompagnement"
+              href="#contact"
               variant="ghost"
               size="lg"
               className="border border-parchment-100/40 bg-transparent text-parchment-100 hover:bg-parchment-100/10 active:bg-parchment-100/20"
