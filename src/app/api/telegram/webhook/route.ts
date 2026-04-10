@@ -840,7 +840,7 @@ export async function POST(request: Request): Promise<Response> {
             claudeHistory,
             photos,
           );
-          clearPhotos(chatId);
+          // NE PAS clearPhotos ici — on en a besoin pour le PDF quand Thomas validera
           if (result.crText && result.crDraft) {
             setPendingDraft(chatId, result.crDraft, result.crText);
             const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
@@ -1193,9 +1193,10 @@ export async function POST(request: Request): Promise<Response> {
             console.warn('[telegram-webhook] backup Drive échoué :', e),
           );
 
-          // 10. Nettoyer la conversation et le draft
+          // 10. Nettoyer la conversation, le draft et les photos
           clearPendingDraft(callbackChatId);
           clearConversation(callbackChatId);
+          clearPhotos(callbackChatId);
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.error('[telegram-webhook] erreur validation CR :', errMsg);
