@@ -138,8 +138,9 @@ export async function generateCrPdf(params: {
   cr: CRDraft;
   reference: string;
   dateEtablissement: string;
+  photos?: Array<{ base64: string; mimeType: string }>;
 }): Promise<Buffer> {
-  const { cr, reference, dateEtablissement } = params;
+  const { cr, reference, dateEtablissement, photos } = params;
 
   return new Promise<Buffer>((resolve, reject) => {
     const chunks: Uint8Array[] = [];
@@ -311,7 +312,9 @@ export async function generateCrPdf(params: {
         `Annexes photographiques — ${annexes.length} document${annexes.length > 1 ? 's' : ''} joint${annexes.length > 1 ? 's' : ''}`,
       );
 
-      for (const annexe of annexes) {
+      for (let i = 0; i < annexes.length; i++) {
+        const annexe = annexes[i];
+        if (!annexe) continue;
         const fileRef = `${cr.entite}-CR-${cr.date_reunion}_photo_${String(annexe.numero).padStart(2, '0')}.jpg`;
 
         doc
@@ -332,6 +335,44 @@ export async function generateCrPdf(params: {
             doc.y,
             { width: doc.page.width - PAGE_MARGIN * 2 },
           );
+
+        doc.moveDown(0.3);
+
+        // Insérer l'image dans le PDF si disponible
+        const photoData = photos?.[i];
+        if (photoData) {
+          try {
+            const imgBuffer = Buffer.from(photoData.base64, 'base64');
+            const maxWidth = doc.page.width - PAGE_MARGIN * 2;
+            const maxPhotoWidth = Math.min(400, maxWidth);
+
+            // Vérifier s'il reste assez de place sur la page pour l'image
+            // Sinon, passer à la page suivante
+            const remainingHeight = doc.page.height - PAGE_MARGIN - doc.y;
+            if (remainingHeight < 200) {
+              doc.addPage();
+            }
+
+            doc.image(imgBuffer, PAGE_MARGIN, doc.y, {
+              fit: [maxPhotoWidth, 500],
+              align: 'center',
+            });
+            doc.moveDown(1);
+          } catch (imgErr) {
+            // Si l'image ne peut pas être insérée, noter l'erreur et continuer
+            doc
+              .font(FONT_OBLIQUE)
+              .fontSize(FONT_SIZE_SMALL)
+              .fillColor(COLOR_SECONDARY)
+              .text(
+                `[Image non disponible — ${imgErr instanceof Error ? imgErr.message : 'format non supporté'}]`,
+                PAGE_MARGIN,
+                doc.y,
+                { width: doc.page.width - PAGE_MARGIN * 2 },
+              );
+            doc.moveDown(0.3);
+          }
+        }
 
         doc.moveDown(0.3);
       }

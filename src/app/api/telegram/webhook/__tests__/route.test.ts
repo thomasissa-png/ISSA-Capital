@@ -24,6 +24,12 @@ const mocks = vi.hoisted(() => ({
     base64: 'abc',
     mimeType: 'image/jpeg',
   }),
+  downloadTelegramFile: vi.fn().mockResolvedValue({
+    success: true,
+    base64: 'abc',
+    mimeType: 'audio/ogg',
+  }),
+  sendTypingAction: vi.fn().mockResolvedValue(undefined),
   // PDF generator
   generateCrPdf: vi.fn().mockResolvedValue(Buffer.from('fake-pdf-content')),
   // Craft publisher
@@ -89,6 +95,8 @@ vi.mock('@/lib/secretariat/telegram', () => ({
   sendTelegramDocument: mocks.sendTelegramDocument,
   answerCallbackQuery: mocks.answerCallbackQuery,
   downloadTelegramPhoto: mocks.downloadTelegramPhoto,
+  downloadTelegramFile: mocks.downloadTelegramFile,
+  sendTypingAction: mocks.sendTypingAction,
 }));
 
 vi.mock('@/lib/secretariat/pdf-generator', () => ({
@@ -553,7 +561,7 @@ describe('POST /api/telegram/webhook', () => {
   // ----------------------------------------------------------
   // 13. Callback "modify" → clearPendingDraft + message
   // ----------------------------------------------------------
-  it('efface le draft et invite à modifier quand le callback "modify" est reçu', async () => {
+  it('sauvegarde le CR précédent dans l\'historique et invite à modifier quand le callback "modify" est reçu', async () => {
     mocks.getPendingDraft.mockReturnValue({
       cr: VALID_CR_DRAFT,
       previewText: 'Aperçu',
@@ -564,11 +572,20 @@ describe('POST /api/telegram/webhook', () => {
     expect(res.status).toBe(200);
 
     expect(mocks.answerCallbackQuery).toHaveBeenCalledWith('cb-123');
+
+    // Le CR précédent est sauvegardé dans l'historique de conversation
+    // pour que Claude ait le contexte lors de la modification
+    expect(mocks.appendMessage).toHaveBeenCalledWith(
+      12345,
+      'assistant',
+      expect.stringContaining('Aperçu'),
+    );
+
     expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
 
     expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
     const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
-    expect(sentMsg).toContain('mis de côté');
+    expect(sentMsg).toContain('Que veux-tu modifier');
 
     // La conversation n'est PAS effacée (l'utilisateur peut continuer)
     expect(mocks.clearConversation).not.toHaveBeenCalled();

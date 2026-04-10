@@ -359,6 +359,125 @@ export async function sendTelegramDocument(
 }
 
 /**
+ * Envoie un indicateur "typing" (saisie en cours) sur Telegram.
+ * Appelé avant chaque appel Claude pour que l'utilisateur voie que le bot traite.
+ * L'indicateur disparaît automatiquement après ~5s ou quand un message est envoyé.
+ */
+export async function sendTypingAction(chatId: number): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || token === '__TO_FILL__') return;
+
+  await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendChatAction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+  }).catch(() => {
+    // Best effort — ne jamais bloquer le flow principal
+  });
+}
+
+/**
+ * Télécharge un fichier Telegram via l'API Bot (getFile + download).
+ *
+ * Fonctionne pour tous les types de fichiers (photos, audio, documents).
+ * Flow identique à downloadTelegramPhoto mais avec un MIME type générique.
+ *
+ * @param fileId Le file_id du fichier Telegram
+ */
+export async function downloadTelegramFile(
+  fileId: string,
+): Promise<TelegramPhotoResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || token === '__TO_FILL__') {
+    return { success: false, error: 'TELEGRAM_BOT_TOKEN manquant' };
+  }
+
+  // Étape 1 : récupérer le file_path via getFile
+  const getFileUrl = `${TELEGRAM_API_BASE}/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`;
+
+  const controller1 = new AbortController();
+  const timer1 = setTimeout(() => controller1.abort(), TIMEOUT_MS);
+
+  let filePath: string;
+  try {
+    const response = await fetch(getFileUrl, { signal: controller1.signal });
+    clearTimeout(timer1);
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      return {
+        success: false,
+        error: `Telegram getFile ${response.status}: ${errorBody.slice(0, 200)}`,
+      };
+    }
+
+    const data = (await response.json()) as {
+      ok: boolean;
+      result?: { file_path?: string };
+    };
+
+    if (!data.ok || !data.result?.file_path) {
+      return { success: false, error: 'Telegram getFile : file_path absent' };
+    }
+
+    filePath = data.result.file_path;
+  } catch (err) {
+    clearTimeout(timer1);
+    return {
+      success: false,
+      error: `getFile erreur : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  // Étape 2 : télécharger le fichier binaire
+  const downloadUrl = `${TELEGRAM_API_BASE}/file/bot${token}/${filePath}`;
+
+  const controller2 = new AbortController();
+  const timer2 = setTimeout(() => controller2.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(downloadUrl, { signal: controller2.signal });
+    clearTimeout(timer2);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Telegram download ${response.status}`,
+      };
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+    // Déduire le type MIME depuis l'extension
+    let mimeType = 'application/octet-stream';
+    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (filePath.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (filePath.endsWith('.gif')) {
+      mimeType = 'image/gif';
+    } else if (filePath.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    } else if (filePath.endsWith('.ogg') || filePath.endsWith('.oga')) {
+      mimeType = 'audio/ogg';
+    } else if (filePath.endsWith('.mp3')) {
+      mimeType = 'audio/mpeg';
+    } else if (filePath.endsWith('.m4a')) {
+      mimeType = 'audio/mp4';
+    }
+
+    return { success: true, base64, mimeType };
+  } catch (err) {
+    clearTimeout(timer2);
+    return {
+      success: false,
+      error: `download erreur : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+/**
  * Acquitte un callback_query Telegram (retire le spinner du bouton).
  */
 export async function answerCallbackQuery(
