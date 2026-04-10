@@ -905,50 +905,15 @@ export async function POST(request: Request): Promise<Response> {
 
       const photoCount = getPhotos(chatId).length;
 
-      // Si la photo a un caption, traiter comme un message texte + photo
-      if (caption && caption.trim().length > 0) {
-        const history = getConversation(chatId);
-        const claudeHistory = toClaudeMessages(history);
-
-        storeMessage(chatId, 'user', caption);
-
-        // Typing indicator avant l'appel Claude
-        await sendTypingAction(chatId);
-
-        const pendingPhotos = getPhotos(chatId);
-        const result = await generateCR(caption, claudeHistory, pendingPhotos);
-
-        // Vider les photos après l'appel Claude
-        clearPhotos(chatId);
-
-        if (!result.success) {
-          const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
-          storeMessage(chatId, 'assistant', errorMsg);
-          await sendTelegramMessage(chatId, errorMsg);
-          return Response.json({ ok: true });
-        }
-
-        if (result.status === 'needs_clarification') {
-          const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
-          storeMessage(chatId, 'assistant', question);
-          await sendTelegramMessage(chatId, question);
-          return Response.json({ ok: true });
-        }
-
-        if (result.crText && result.crDraft) {
-          const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
-          storeMessage(chatId, 'assistant', result.crText);
-          setPendingDraft(chatId, result.crDraft, result.crText);
-          await sendTelegramConfirmation(chatId, previewText);
-        }
-
-        return Response.json({ ok: true });
-      }
-
-      // Pas de caption — confirmer la réception et attendre le message texte
+      // Toujours stocker la photo et attendre un message texte.
+      // Ne PAS déclencher Claude sur le caption — quand Thomas envoie
+      // plusieurs photos groupées, Telegram les envoie comme messages
+      // séparés et le caption de la 1ère photo déclencherait Claude
+      // avant que les autres photos arrivent.
+      const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
       await sendTelegramMessage(
         chatId,
-        `Photo reçue (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
+        `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
       );
       return Response.json({ ok: true });
     }

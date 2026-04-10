@@ -33,6 +33,10 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // pdfkit a besoin de ses fichiers .afm (polices) sur le filesystem —
+  // le bundler Next.js ne les copie pas. On exclut pdfkit du bundle
+  // pour qu'il utilise ses fichiers depuis node_modules directement.
+  serverExternalPackages: ['pdfkit'],
   async headers() {
     return [
       {
