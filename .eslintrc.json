@@ -1,6 +1,6 @@
 {
   "extends": "next/core-web-vitals",
-  "ignorePatterns": ["secretariat/**"],
+  "ignorePatterns": [],
   "rules": {
     "react/no-unescaped-entities": "off",
     "@next/next/no-img-element": "warn"
