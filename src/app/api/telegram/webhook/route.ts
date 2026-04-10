@@ -584,7 +584,23 @@ async function generateCRFromVoice(
     const avantHierIso = dayBefore.toISOString().split('T')[0];
     const todayIso = now.toISOString().split('T')[0];
 
-    const contextPrefix = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris). Aujourd'hui = ${todayIso}. Hier = ${hierFr} (${hierIso}). Avant-hier = ${avantHierFr} (${avantHierIso}). Si l'utilisateur dit "aujourd'hui", "hier", "avant-hier", "ce midi", "lundi dernier", etc., CALCULE la date toi-même à partir de ces repères. Ne demande JAMAIS de préciser la date si tu peux la déduire.]\n\n[${recentCRs}]`;
+    const contextPrefix = `[HORLOGE — NE JAMAIS DEMANDER LA DATE SI TU PEUX LA DÉDUIRE.
+Maintenant : ${dateFr}, ${heureFr} (Europe/Paris).
+Aujourd'hui = ${todayIso}.
+Hier = ${hierFr} (${hierIso}).
+Avant-hier = ${avantHierFr} (${avantHierIso}).
+
+CORRESPONDANCES OBLIGATOIRES :
+- "aujourd'hui" / "ce midi" / "ce soir" / "tout à l'heure" → ${todayIso}
+- "hier" / "hier midi" / "hier soir" → ${hierIso}
+- "avant-hier" → ${avantHierIso}
+- "lundi dernier" / "mardi dernier" etc. → CALCULE à partir de ${todayIso}
+- "la semaine dernière" → semaine précédant ${todayIso}
+- "déjeuner ce midi" = déjeuner du ${todayIso}
+- "dîner ce soir" = dîner du ${todayIso}
+- "dîner hier soir" = dîner du ${hierIso}
+
+Tu ne demandes JAMAIS "quelle est la date exacte" si l'utilisateur utilise un de ces repères temporels.]\n\n[${recentCRs}]`;
 
     const searchInstruction = `
 
