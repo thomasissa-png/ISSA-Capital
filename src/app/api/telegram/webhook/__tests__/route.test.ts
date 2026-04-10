@@ -523,18 +523,13 @@ describe('POST /api/telegram/webhook', () => {
     expect(docArgs[0]).toBe(12345);
     expect(docArgs[2]).toBe('IC-CR-2026-0001.pdf');
 
-    // Publication sur Craft
-    expect(mocks.publishToCraft).toHaveBeenCalledOnce();
-    const craftArgs = mocks.publishToCraft.mock.calls[0] as [{ markdown: string; title: string; reference: string }];
-    expect(craftArgs[0].reference).toBe('IC-CR-2026-0001');
-    expect(craftArgs[0].markdown).toContain('COMPTE RENDU');
-    expect(craftArgs[0].title).toContain('CR');
+    // Publication Craft retirée (session 9) — Drive uniquement
 
     // Message de confirmation envoyé
     expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
     const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
     expect(sentMsg).toContain('IC-CR-2026-0001');
-    expect(sentMsg).toContain('publié');
+    expect(sentMsg).toContain('validé');
 
     // Nettoyage conversation + draft
     expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
