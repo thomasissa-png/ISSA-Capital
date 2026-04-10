@@ -40,6 +40,13 @@ const FONT_SIZE_SMALL = 9;
 const FONT_SIZE_LABEL = 9.5;
 const LINE_GAP = 3;
 
+/**
+ * Sécurise une valeur avant de la passer à pdfkit (qui crashe sur undefined/null).
+ */
+function safe(value: string | null | undefined): string {
+  return value ?? '';
+}
+
 // ============================================================
 // Helpers internes
 // ============================================================
@@ -227,12 +234,12 @@ export async function generateCrPdf(params: {
     // Métadonnées header
     // ============================================================
 
-    writeField(doc, 'Référence', reference);
+    writeField(doc, 'Référence', safe(reference));
     writeField(doc, 'Entité', entiteNomComplet(cr.entite));
-    writeField(doc, 'Date de la réunion', dateFormatFr(cr.date_reunion));
-    writeField(doc, "Date d'établissement", dateTimeFormatFr(dateEtablissement));
+    writeField(doc, 'Date de la réunion', dateFormatFr(safe(cr.date_reunion)));
+    writeField(doc, "Date d'établissement", dateTimeFormatFr(safe(dateEtablissement)));
     writeField(doc, 'Type', typeReunionLibelle(cr.type_reunion));
-    writeField(doc, 'Lieu', cr.lieu);
+    writeField(doc, 'Lieu', safe(cr.lieu));
 
     if (cr.montant_ttc_eur !== null) {
       writeField(doc, 'Montant TTC', `${cr.montant_ttc_eur} €`);
@@ -274,29 +281,29 @@ export async function generateCrPdf(params: {
     // ============================================================
 
     writeHeading(doc, "1. Objet et lien avec l'intérêt social");
-    writeBody(doc, cr.section_1_objet_art_39_1);
+    writeBody(doc, safe(cr.section_1_objet_art_39_1));
 
     // ============================================================
     // Section 2 : Points abordés
     // ============================================================
 
     writeHeading(doc, '2. Points abordés');
-    writeBody(doc, cr.section_2_points_abordes);
+    writeBody(doc, safe(cr.section_2_points_abordes));
 
     // ============================================================
     // Section 3 : Décisions et conclusions
     // ============================================================
 
     writeHeading(doc, '3. Décisions et conclusions');
-    writeBody(doc, cr.section_3_decisions);
+    writeBody(doc, safe(cr.section_3_decisions));
 
     // ============================================================
     // Section 4 : Suites à donner (conditionnelle)
     // ============================================================
 
-    if (cr.section_4_suites_a_donner !== null) {
+    if (cr.section_4_suites_a_donner) {
       writeHeading(doc, '4. Suites à donner');
-      writeBody(doc, cr.section_4_suites_a_donner);
+      writeBody(doc, safe(cr.section_4_suites_a_donner));
     }
 
     // ============================================================

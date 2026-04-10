@@ -905,11 +905,12 @@ export async function POST(request: Request): Promise<Response> {
 
       const photoCount = getPhotos(chatId).length;
 
-      // Toujours stocker la photo et attendre un message texte.
-      // Ne PAS déclencher Claude sur le caption — quand Thomas envoie
-      // plusieurs photos groupées, Telegram les envoie comme messages
-      // séparés et le caption de la 1ère photo déclencherait Claude
-      // avant que les autres photos arrivent.
+      // Si la photo a un caption, le sauvegarder dans l'historique de conversation
+      // pour que Claude le voie quand Thomas enverra le message texte final
+      if (caption && caption.trim().length > 0) {
+        storeMessage(chatId, 'user', caption);
+      }
+
       const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
       await sendTelegramMessage(
         chatId,
