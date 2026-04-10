@@ -55,6 +55,7 @@ import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
+import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -741,7 +742,16 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
 // POST handler
 // ============================================================
 
+// Flag global : restauration Drive déjà tentée ?
+const RESTORE_KEY = '__issa_drive_restored__' as const;
+
 export async function POST(request: Request): Promise<Response> {
+  // 0. Restaurer les données depuis Drive au premier appel après un redéploiement
+  if (!(RESTORE_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[RESTORE_KEY] = true;
+    restoreFromGoogleDrive().catch(() => {});
+  }
+
   // 1. Vérification du secret
   if (!verifyWebhookSecret(request)) {
     // On retourne quand même 200 pour ne pas que Telegram retente
@@ -1126,7 +1136,12 @@ export async function POST(request: Request): Promise<Response> {
           // 8. Sauvegarder le CR dans l'historique (mémoire longue d'Anya)
           saveCrToHistory(pendingDraft.cr, reference, dateEtablissement);
 
-          // 9. Nettoyer la conversation et le draft
+          // 9. Backup compteur + historique sur Google Drive (survit aux redéploiements)
+          backupToGoogleDrive().catch((e) =>
+            console.warn('[telegram-webhook] backup Drive échoué :', e),
+          );
+
+          // 10. Nettoyer la conversation et le draft
           clearPendingDraft(callbackChatId);
           clearConversation(callbackChatId);
         } catch (err) {
