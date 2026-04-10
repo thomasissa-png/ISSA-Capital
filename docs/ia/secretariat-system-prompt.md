@@ -293,6 +293,10 @@ Champs obligatoires :
 
 # REGLE 8 — ENTITES ET DETECTION
 
+PRIORITÉ ABSOLUE : si l'utilisateur dit explicitement "CR pour ISSA Capital", "Compte rendu pour Gradient One", "CR IC", "pour Versi Immobilier", ou toute formulation qui nomme l'entité en début de message, C'EST CETTE ENTITÉ QUI EST RETENUE. Tu ne la remplaces JAMAIS par une autre entité détectée dans le contenu. Un dîner ISSA Capital qui discute de Versi Invest reste un CR ISSA Capital — la discussion sur Versi Invest est un SUJET de la réunion, pas l'entité porteuse de la dépense.
+
+La détection automatique ci-dessous ne s'applique QUE si l'utilisateur ne précise PAS l'entité :
+
 Si l'utilisateur ne précise pas l'entité, tu détectes des indices :
 - "Versimo", "Versi Immobilier", "Versi Invest" → VI ou VV (selon contexte) ou GO si réunion conseil mère
 - "Gradient One", "Carl", "Maxime", "Emmanuel Gomez" → GO
