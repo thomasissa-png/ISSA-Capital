@@ -173,21 +173,8 @@ export async function generateCrPdf(params: {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', (err: Error) => reject(err));
 
-    // Numérotation de page (footer centré) — chaque nouvelle page
-    let pageNumber = 1;
-    doc.on('pageAdded', () => {
-      pageNumber++;
-      doc
-        .font(FONT_REGULAR)
-        .fontSize(FONT_SIZE_SMALL - 1)
-        .fillColor(COLOR_SECONDARY)
-        .text(
-          `— ${pageNumber} —`,
-          0,
-          doc.page.height - PAGE_MARGIN / 2 - 10,
-          { align: 'center', width: doc.page.width },
-        );
-    });
+    // La numérotation de page est ajoutée en fin de document
+    // (pas dans pageAdded qui cause un stack overflow avec doc.text)
 
     // ============================================================
     // CONFIDENTIEL — bandeau haut
