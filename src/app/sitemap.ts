@@ -15,7 +15,6 @@ import { siteConfig } from '@/config/site';
 
 const CONTENT_DATES = {
   accueil: '2026-04-11',
-  mentionsLegales: '2026-04-07',
 } as const;
 
 type Route = {
@@ -25,9 +24,11 @@ type Route = {
   changeFreq: 'monthly' | 'yearly';
 };
 
+// Note : /mentions-legales est noindex — elle n'est PAS dans le sitemap
+// (un sitemap doit lister uniquement les pages indexables, sinon Bing
+// pénalise pour signal contradictoire).
 const routes: ReadonlyArray<Route> = [
   { path: '', lastModified: CONTENT_DATES.accueil, priority: 1.0, changeFreq: 'monthly' },
-  { path: '/mentions-legales', lastModified: CONTENT_DATES.mentionsLegales, priority: 0.3, changeFreq: 'yearly' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -89,9 +89,8 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
-  alternates: {
-    canonical: siteConfig.url,
-  },
+  // Pas de canonical global ici — chaque page déclare son propre canonical
+  // (évite les conflits trailing slash entre layout et page).
 };
 
 export const viewport: Viewport = {
@@ -104,6 +103,8 @@ export const viewport: Viewport = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': ['Organization', 'FinancialService'],
+  '@id': `${siteConfig.url}/#organization`,
+  mainEntityOfPage: siteConfig.url,
   name: siteConfig.legalName,
   alternateName: siteConfig.name,
   url: siteConfig.url,
@@ -150,7 +151,7 @@ const organizationJsonLd = {
   ],
   contactPoint: {
     '@type': 'ContactPoint',
-    contactType: 'customer support',
+    contactType: 'investor relations',
     email: siteConfig.email,
     areaServed: 'FR',
     availableLanguage: ['French', 'English'],
