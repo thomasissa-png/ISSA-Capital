@@ -260,10 +260,10 @@ export default function LegalPage(): JSX.Element {
             8. Cookies et traceurs
           </h3>
           <p className="mt-md text-sm leading-relaxed text-ink-700">
-            Le site issa-capital.com utilise Plausible Analytics, un outil de mesure
-            d&apos;audience qui ne dépose aucun cookie sur votre terminal et ne collecte
-            aucune donnée personnelle identifiable. Aucun consentement n&apos;est requis
-            pour cet outil. Aucun autre cookie de tracking ou de publicité n&apos;est
+            Le site issa-capital.com utilise Umami Analytics, un outil de mesure
+            d&apos;audience open source qui ne dépose aucun cookie sur votre terminal et ne
+            collecte aucune donnée personnelle identifiable. Aucun consentement n&apos;est
+            requis pour cet outil. Aucun autre cookie de tracking ou de publicité n&apos;est
             utilisé sur ce site.
           </p>
         </section>

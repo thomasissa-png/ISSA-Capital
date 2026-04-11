@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import PlausibleProvider from 'next-plausible';
 import Script from 'next/script';
 import { siteConfig } from '@/config/site';
 import { Header } from '@/components/layout/Header';
@@ -140,14 +139,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }): JSX.Element {
-  const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
-
   return (
     <html lang="fr">
       <head>
-        {plausibleDomain ? (
-          <PlausibleProvider domain={plausibleDomain} trackOutboundLinks />
-        ) : null}
         <Script
           id="umami-analytics"
           src="https://cloud.umami.is/script.js"

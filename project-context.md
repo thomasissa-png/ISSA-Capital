@@ -32,7 +32,7 @@
 4. **@growth** (si invoqué) : **ne pas** appliquer les frameworks AARRR/funnel/boucles virales classiques. La "conversion" n'est pas le KPI principal.
 5. **@seo** : optimiser pour le **branding** et l'**autorité**, pas pour le trafic transactionnel. Mots-clés défensifs et de marque, pas des mots-clés d'intention d'achat.
 6. **@qa / testeurs persona** : les tests ne mesurent PAS la "conviction à soumettre". Ils mesurent la **perception de prestige**, la **crédibilité**, le **respect inspiré**, la **clarté de l'identité**.
-7. **@fullstack** : implémentation soignée mais sans features de tracking de conversion agressives. Analytics Plausible minimal. Pas de heatmaps, pas de session recording.
+7. **@fullstack** : implémentation soignée mais sans features de tracking de conversion agressives. Analytics Umami uniquement (cookieless, open source — décision Thomas session 9). Pas de heatmaps, pas de session recording.
 
 ### Révision des gates testeur-persona (GP1-GP10)
 Les gates GP1-GP10 définies dans CLAUDE.md sont calibrées "conviction + conversion". Pour ce projet, recalibrer ainsi :

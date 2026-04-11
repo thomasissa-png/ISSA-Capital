@@ -15,11 +15,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://plausible.io https://cloud.umami.is",
+      "script-src 'self' 'unsafe-inline' https://cloud.umami.is",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://plausible.io https://api.resend.com https://cloud.umami.is https://api.umami.is",
+      "connect-src 'self' https://api.resend.com https://cloud.umami.is https://api.umami.is",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
