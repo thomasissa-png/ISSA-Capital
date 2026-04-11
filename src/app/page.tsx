@@ -161,22 +161,35 @@ export default function HomePage(): JSX.Element {
                 name: 'Versi Immobilier',
                 sector: 'Marchand de biens',
                 desc: 'Marché secondaire résidentiel — acquisition, rénovation, revente.',
+                url: 'https://versi-immobilier.fr',
               },
               {
                 name: 'Versi Invest',
                 sector: 'Co-acquisitions & accompagnement',
                 desc: 'Conseil en investissement immobilier et co-investissement sur sélection.',
+                url: 'https://versi-invest.fr',
               },
             ].map((p) => (
               /* C8 : border-ink-100 (plus subtil que ink-200), duration-normal = token 300ms vs défaut Tailwind 150ms */
               <article
                 key={p.name}
-                className="border border-ink-100 bg-white p-xl transition-colors duration-normal hover:border-levant-500"
+                className="flex flex-col border border-ink-100 bg-white p-xl transition-colors duration-normal hover:border-levant-500"
               >
                 {/* C7 : classes primitives explicites — la classe .overline n'existe pas dans la config Tailwind */}
                 <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-levant-700">{p.sector}</p>
                 <h3 className="mt-sm font-heading text-h4 text-ink-950">{p.name}</h3>
-                <p className="mt-sm text-sm text-ink-600">{p.desc}</p>
+                <p className="mt-sm flex-1 text-sm text-ink-600">{p.desc}</p>
+                {p.url ? (
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-md inline-flex items-center gap-xs text-sm text-levant-700 hover:text-levant-500 focus-visible:outline-none focus-visible:underline"
+                  >
+                    {p.url.replace('https://', '')}
+                    <span aria-hidden="true">→</span>
+                  </a>
+                ) : null}
               </article>
             ))}
           </div>
