@@ -1,10 +1,62 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Overline } from '@/components/ui/Overline';
 import { Button } from '@/components/ui/Button';
 import { ContactForm } from '@/components/ui/ContactForm';
 import { siteConfig } from '@/config/site';
+
+/**
+ * FAQPage JSON-LD — pour citation par les LLM (ChatGPT, Claude, Perplexity, Gemini)
+ * et opportunité de featured snippet Google. Invisible dans le rendu.
+ */
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: "Qu'est-ce qu'ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital SAS est une holding patrimoniale familiale française fondée en 2026 par Thomas Issa. Son siège est à Nanterre (92). Elle gère le patrimoine de la famille Issa — pas de capitaux tiers — avec un horizon intergénérationnel. Elle regroupe les participations dans Gradient One (holding intermédiaire co-fondée en 2020), Versi Immobilier (marchand de biens), Versi Invest (co-investissement immobilier) et leurs filiales.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Qui dirige ISSA Capital ?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "Thomas Issa est le Président et fondateur d'ISSA Capital. Issu d'une famille d'origine libanaise, il est aussi co-fondateur de Gradient One (2020). Son parcours inclut des fonctions chez Sony, la fondation de TEOS (de 0 à 8 M€ en 4 ans) et plusieurs missions d'advisory dans la tech et l'immobilier.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Quelles sont les filiales et participations d\'ISSA Capital ?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital détient des participations dans Gradient One (holding intermédiaire, 2020), Versi Immobilier (marchand de biens résidentiel), Versi Invest (conseil et co-investissement immobilier), Immocrew (outil marketing pour mandataires) et Versimo (home staging par IA).",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: "Comment contacter ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital est joignable par email à contact@issa-capital.com. Le siège social est situé au 54 Rue Henri Barbusse, 92000 Nanterre, France.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: "Quels sont les filtres de décision d'investissement d'ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital applique trois filtres non négociables avant tout investissement : (1) horizon patrimonial long terme — évaluation sur 20 à 30 ans, pas sur le TRI à 5 ans ; (2) préservation de l'environnement — aucun modèle qui dégrade durablement l'environnement ; (3) éthique humaine — certains secteurs sont hors périmètre, indépendamment du dossier.",
+      },
+    },
+  ],
+};
 
 /**
  * Page d'accueil — version monopage light (session 9).
@@ -17,7 +69,7 @@ export const dynamic = 'force-static';
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'ISSA Capital — Holding patrimoniale familiale',
+    absolute: 'ISSA Capital — Holding patrimoniale familiale | Famille Issa, Nanterre',
   },
   description:
     "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.",
@@ -48,6 +100,12 @@ export const metadata: Metadata = {
 export default function HomePage(): JSX.Element {
   return (
     <>
+      <Script
+        id="jsonld-faq"
+        type="application/ld+json"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Section 1 — Hero principal */}
       {/* C1 : py-3xl mobile (64px), py-5xl desktop (128px) — mobile-first proportionné. */}
       <Section tone="inverse" className="py-3xl md:py-5xl">
@@ -90,10 +148,10 @@ export default function HomePage(): JSX.Element {
           </h2>
           <div className="mt-xl space-y-lg text-lead text-ink-700">
             <p>
-              ISSA Capital est la holding patrimoniale de la famille Issa,
-              établie en France. Sa raison d&apos;être&nbsp;: structurer ce qui
-              s&apos;est construit sur trois décennies, le faire fructifier,
-              le transmettre.
+              ISSA Capital SAS est la holding patrimoniale de la famille Issa,
+              fondée en 2026 et établie à Nanterre. Sa raison d&apos;être&nbsp;:
+              structurer ce qui s&apos;est construit sur trois décennies, le
+              faire fructifier, le transmettre.
             </p>
             <p>
               Une structure indépendante, dont les Issa sont les seuls actionnaires, et

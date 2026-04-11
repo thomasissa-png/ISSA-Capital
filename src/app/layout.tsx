@@ -124,7 +124,30 @@ const organizationJsonLd = {
   foundingDate: '2026',
   vatID: siteConfig.tvaIntra,
   taxID: siteConfig.siren,
-  sameAs: ['https://www.linkedin.com/in/thomasissa'],
+  sameAs: [
+    'https://www.linkedin.com/in/thomasissa',
+    'https://versi-immobilier.fr',
+    'https://versi-invest.fr',
+  ],
+  subOrganization: [
+    {
+      '@type': 'Organization',
+      name: 'Gradient One',
+      description: "Holding intermédiaire co-fondée en 2020. Détient Versi Immobilier, Versi Invest, Immocrew et Versimo.",
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versi Immobilier',
+      url: 'https://versi-immobilier.fr',
+      description: 'Marchand de biens — marché secondaire résidentiel : acquisition, rénovation, revente.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versi Invest',
+      url: 'https://versi-invest.fr',
+      description: 'Conseil en investissement immobilier et co-investissement sur sélection.',
+    },
+  ],
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer support',
