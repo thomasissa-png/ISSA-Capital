@@ -149,6 +149,13 @@ export default function RootLayout({
           <PlausibleProvider domain={plausibleDomain} trackOutboundLinks />
         ) : null}
         <Script
+          id="umami-analytics"
+          src="https://cloud.umami.is/script.js"
+          data-website-id="ecdaae22-72f5-4759-a454-6774de025c74"
+          strategy="afterInteractive"
+          defer
+        />
+        <Script
           id="jsonld-organization"
           type="application/ld+json"
           strategy="beforeInteractive"
