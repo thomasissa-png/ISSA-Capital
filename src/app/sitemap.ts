@@ -28,7 +28,10 @@ type Route = {
 // (un sitemap doit lister uniquement les pages indexables, sinon Bing
 // pénalise pour signal contradictoire).
 const routes: ReadonlyArray<Route> = [
-  { path: '', lastModified: CONTENT_DATES.accueil, priority: 1.0, changeFreq: 'monthly' },
+  // path: '/' (avec trailing slash) pour aligner sur le canonical déclaré
+  // dans page.tsx (siteConfig.url + '/'). Bing ne normalise pas — l'URL
+  // du sitemap doit être strictement identique au canonical.
+  { path: '/', lastModified: CONTENT_DATES.accueil, priority: 1.0, changeFreq: 'monthly' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

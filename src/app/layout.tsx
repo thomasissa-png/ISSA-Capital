@@ -148,6 +148,16 @@ const organizationJsonLd = {
       url: 'https://versi-invest.fr',
       description: 'Conseil en investissement immobilier et co-investissement sur sélection.',
     },
+    {
+      '@type': 'Organization',
+      name: 'Immocrew',
+      description: 'Outil marketing pour mandataires immobiliers.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versimo',
+      description: 'Home staging virtuel par IA.',
+    },
   ],
   contactPoint: {
     '@type': 'ContactPoint',
