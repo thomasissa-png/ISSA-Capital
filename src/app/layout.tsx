@@ -80,6 +80,13 @@ export const metadata: Metadata = {
   // Le mask-icon Safari (rel non-standard) est déclaré via icons.other car
   // la convention file-based ne couvre pas ce cas.
   icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
     other: [
       {
         rel: 'mask-icon',
