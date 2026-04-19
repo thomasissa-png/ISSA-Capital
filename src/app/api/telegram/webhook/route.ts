@@ -186,6 +186,49 @@ function isAllowedChatId(chatId: number): boolean {
 const ANTHROPIC_TIMEOUT_MS = 60_000;
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 
+/**
+ * Génère l'instruction temporelle dynamique pour le system prompt.
+ * Doit être appelée à chaque requête pour avoir la date/heure actuelles.
+ */
+function buildTimeInstruction(): string {
+  const now = new Date();
+  const dateFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(now);
+  const yesterday = new Date(now.getTime() - 86400000);
+  const dayBefore = new Date(now.getTime() - 2 * 86400000);
+  const hierFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(yesterday);
+  const avantHierFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(dayBefore);
+  const todayIso = now.toISOString().split('T')[0];
+  const hierIso = yesterday.toISOString().split('T')[0];
+  const avantHierIso = dayBefore.toISOString().split('T')[0];
+
+  return `
+
+# REGLE PRIORITAIRE — DATES ET HEURES
+
+Tu connais la date et l'heure actuelles. Quand l'utilisateur dit "ce matin", "ce midi", "ce soir", "hier", "hier soir", "tout à l'heure", "avant-hier" ou toute expression temporelle relative — tu CALCULES la date toi-même. Tu ne demandes JAMAIS "quelle est la date exacte".
+
+Date du jour : ${dateFr} = ${todayIso}
+Hier : ${hierFr} = ${hierIso}
+Avant-hier : ${avantHierFr} = ${avantHierIso}
+
+TABLE DE CONVERSION :
+"aujourd'hui" / "ce matin" / "ce midi" / "cet après-midi" / "ce soir" / "tout à l'heure" / "à l'instant" / "il y a une heure" → ${todayIso}
+"déjeuner ce midi" / "petit-déjeuner ce matin" / "dîner ce soir" / "réunion de ce matin" → ${todayIso}
+"hier" / "hier matin" / "hier midi" / "hier après-midi" / "hier soir" → ${hierIso}
+"avant-hier" → ${avantHierIso}
+"lundi/mardi/mercredi/jeudi/vendredi/samedi/dimanche dernier" → CALCULE depuis ${todayIso}
+`;
+}
+
 async function generateCR(
   messageText: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
@@ -212,25 +255,14 @@ async function generateCR(
     // Récupérer l'historique des CR validés (mémoire longue)
     const recentCRs = formatHistoryForPrompt(10);
 
-    // Injecter la date/heure actuelle pour que Claude comprenne "aujourd'hui", "hier", etc.
-    const now = new Date();
-    const dateFr = new Intl.DateTimeFormat('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'Europe/Paris',
-    }).format(now);
-    const heureFr = new Intl.DateTimeFormat('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Paris',
-    }).format(now);
-
-    const enrichedMessage = `[Date et heure actuelles : ${dateFr}, ${heureFr} (Europe/Paris)]\n\n[${recentCRs}]\n\n${messageText}`;
+    // Le contexte temporel (dates, "ce matin"→date ISO) est maintenant dans
+    // timeInstruction (injecté dans le system prompt). Ici on ajoute juste l'historique.
+    const enrichedMessage = `[${recentCRs}]\n\n${messageText}`;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+
+    const timeInstruction = buildTimeInstruction();
 
     // Instruction recherche web ajoutée au system prompt
     const searchInstruction = `
@@ -301,7 +333,7 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
         {
           model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
           max_tokens: 4096,
-          system: systemPrompt + searchInstruction,
+          system: systemPrompt + timeInstruction + searchInstruction,
           tools: [
             {
               type: 'web_search_20250305' as const,
@@ -407,7 +439,7 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
             {
               model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
               max_tokens: 4096,
-              system: systemPrompt + searchInstruction,
+              system: systemPrompt + timeInstruction + searchInstruction,
               messages: [
                 ...conversationHistory,
                 { role: 'user' as const, content: userContent },
@@ -561,59 +593,8 @@ async function generateCRFromVoice(
 
     const recentCRs = formatHistoryForPrompt(10);
 
-    const now = new Date();
-    const dateFr = new Intl.DateTimeFormat('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'Europe/Paris',
-    }).format(now);
-    const heureFr = new Intl.DateTimeFormat('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Paris',
-    }).format(now);
-
-    // Calculer hier, avant-hier pour que Claude ne demande JAMAIS de préciser
-    const yesterday = new Date(now.getTime() - 86400000);
-    const dayBefore = new Date(now.getTime() - 2 * 86400000);
-    const hierFr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).format(yesterday);
-    const avantHierFr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).format(dayBefore);
-    const hierIso = yesterday.toISOString().split('T')[0];
-    const avantHierIso = dayBefore.toISOString().split('T')[0];
-    const todayIso = now.toISOString().split('T')[0];
-
-    const contextPrefix = `[HORLOGE — NE JAMAIS DEMANDER LA DATE SI TU PEUX LA DÉDUIRE.
-Maintenant : ${dateFr}, ${heureFr} (Europe/Paris).
-Aujourd'hui = ${todayIso}.
-Hier = ${hierFr} (${hierIso}).
-Avant-hier = ${avantHierFr} (${avantHierIso}).
-
-CORRESPONDANCES OBLIGATOIRES :
-- "aujourd'hui" / "ce midi" / "ce soir" / "tout à l'heure" → ${todayIso}
-- "hier" / "hier midi" / "hier soir" → ${hierIso}
-- "avant-hier" → ${avantHierIso}
-- "lundi dernier" / "mardi dernier" etc. → CALCULE à partir de ${todayIso}
-- "la semaine dernière" → semaine précédant ${todayIso}
-- "déjeuner ce midi" = déjeuner du ${todayIso}
-- "dîner ce soir" = dîner du ${todayIso}
-- "dîner hier soir" = dîner du ${hierIso}
-
-Tu ne demandes JAMAIS "quelle est la date exacte" si l'utilisateur utilise un de ces repères temporels.]\n\n[${recentCRs}]`;
-
-    const searchInstruction = `
-
-# REGLE 12 — RECHERCHE WEB AUTOMATIQUE
-
-Tu disposes d'un outil de recherche web. Utilise-le AUTOMATIQUEMENT pour :
-- Trouver l'adresse exacte d'un restaurant, hôtel ou lieu mentionné par l'utilisateur (ex : "Le Voltaire Paris" → rechercher l'adresse complète)
-- Vérifier le titre ou la société d'un interlocuteur non présent dans la database contacts
-- Trouver des informations publiques sur une entreprise mentionnée dans la réunion
-- Compléter toute information factuelle vérifiable qui améliore la qualité du CR
-
-Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou d'entreprise apparaît sans adresse complète, cherche automatiquement.
-`;
+    const timeInstruction = buildTimeInstruction();
+    const searchInstruction = `\\n# REGLE 12 — RECHERCHE WEB AUTOMATIQUE\\nTu disposes d'un outil de recherche web. Utilise-le AUTOMATIQUEMENT pour trouver des adresses, vérifier des titres/sociétés, ou compléter des infos factuelles.\\n`;
 
     // Construire les content blocks : audio + texte contextuel + photos éventuelles
     type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
@@ -668,8 +649,9 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
     // Texte contextuel (date, historique CR, instruction de transcription)
     contentBlocks.push({
       type: 'text',
-      text: `${contextPrefix}\n\n[Message vocal Telegram — transcris le contenu et traite-le comme un message texte normal pour générer le CR.]`,
+      text: `${recentCRs}\n\n[Message vocal Telegram — transcris le contenu et traite-le comme un message texte normal pour générer le CR.]`,
     });
+
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
@@ -680,7 +662,7 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
         {
           model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
           max_tokens: 4096,
-          system: systemPrompt + searchInstruction,
+          system: systemPrompt + timeInstruction + searchInstruction,
           tools: [
             {
               type: 'web_search_20250305' as const,
