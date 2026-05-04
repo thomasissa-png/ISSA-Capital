@@ -4,6 +4,15 @@
 
 ## Posts LinkedIn
 
+### Règle de qualité — audit obligatoire avant soumission à Thomas
+
+Aucun contenu (post LinkedIn, email, texte, deck) ne doit être soumis à Thomas sans avoir été audité par 3 agents :
+1. **@moi** (proxy Thomas) — note ≥ 9/10
+2. **@copywriter** — note ≥ 9/10
+3. **Un persona pertinent** (Laurent investisseur, Sophie propriétaire, ou autre selon le contexte) — note ≥ 9/10
+
+Si un des 3 est < 9/10 → itérer avec les corrections proposées AVANT de montrer à Thomas. Thomas ne beta-teste pas le contenu. Il reçoit du fini.
+
 ### Avant d'écrire — 3 questions OBLIGATOIRES
 
 Avant de rédiger un post, Claude DOIT répondre à ces 3 questions. Si une réponse est "non" → ne pas rédiger, proposer un autre angle.

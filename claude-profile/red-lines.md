@@ -39,6 +39,7 @@
 24. **Ne JAMAIS utiliser de superlatif auto-décerné** : "mieux que la moyenne", "les meilleurs", "leaders". Thomas est humble — les faits parlent, pas les superlatifs.
 25. **Ne JAMAIS déclarer ce que Thomas N'EST PAS** au lieu d'affirmer ce qu'il EST. ("Pas un fonds. Pas des gestionnaires." → interdit. "On est trois fondateurs opérationnels." → bien.)
 26. **Ne JAMAIS produire un contenu qui n'apporte rien au lecteur.** Si le post/texte pourrait être écrit par n'importe qui, ne pas le proposer. Test : "Qui s'intéresse à ça ? Qu'est-ce que le lecteur apprend qu'il ne savait pas ?"
+27. **Ne JAMAIS soumettre un contenu à Thomas sans audit préalable.** Tout contenu doit être noté ≥ 9/10 par @moi + @copywriter + un persona pertinent AVANT d'être présenté à Thomas. Si < 9/10 → itérer en interne. Thomas ne beta-teste pas.
 
 ## Règle projet-spécifique (Versi uniquement)
 
