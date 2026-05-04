@@ -32,18 +32,14 @@
 - **Poser des questions quand incertain.** Après 2 tentatives échouées → poser 3 questions ciblées
 - **Pas de clôture anticipée.** Ne JAMAIS proposer de s'arrêter tant que le budget n'est pas épuisé
 
-## Design et UX
+## Design et UX (principes universels)
 
 - **Minimum de clics.** Actions séquentielles → fusionner en un bouton
 - **Feature invisible = inexistante.** Point d'entrée UI visible obligatoire
 - **Comparateur avant/après** pour toute feature IA présentée à un tiers
 - **Undo/Redo** sur tout canvas éditeur (Ctrl+Z, stack 50 opérations minimum)
-- **Hero photo = photo qui fait cliquer.** Espace de vie meublé > espace vide > détail
-- **Zéro jargon technique en UI.** "Lot" (pas "polygone"). Un marchand de biens comprend le mot en 2 secondes
 
-## Données
+## Données (principes universels)
 
 - **Zéro donnée inventée.** Chaque lieu, distance, chiffre vérifié avant commit
 - **Chiffres ronds en communication publique.** 660 639 € → 660 000 €
-- **Anonymisation adresses publiques.** "46 rue d'Arras, Lille" → "Immeuble situé à Lille (59)"
-- **Transparence financière limitée.** Prix de vente uniquement, jamais les marges

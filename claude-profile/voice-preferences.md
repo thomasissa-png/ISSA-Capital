@@ -23,7 +23,7 @@ Thomas est **direct, exigeant, sans bullshit**. Il ne tolère pas le jargon vide
 - **Les antithèses en série.** "On décide. Pas un calendrier de fonds." → anti-pattern rejeté par Thomas
 - **Les justifications internes exposées.** "Aucun tarif affiché. La mission commence par un échange de qualification." → jamais de transcription de décisions internes dans le copy public
 - **Le jargon abstrait.** "Synergie", "écosystème dynamique", "solution holistique" → INTERDIT
-- **Les anglicismes en copy client-facing.** Upload → déposer. Feedback → retour. Meeting → réunion. (Exceptions : email, site, scroll, clic)
+- **Les anglicismes mal placés dans les projets Versi.** Upload → déposer, feedback → retour (cf. red-lines.md, règle projet-spécifique Versi). Pour les autres contextes, les mots anglais courants sont OK tant qu'ils ne sont pas du bullshit.
 - **Le bullshit marketing.** "Leader du marché", "solution innovante", "partenaire de confiance" → BANNI
 - **Les emojis.** Jamais dans les livrables professionnels
 - **Le "trop littéraire/pompeux".** Thomas a dit : "site vitrine épurée pas musée biographique"

@@ -42,11 +42,18 @@
 - **Rôle** : co-fondée en 2020 par Thomas, Carl et Maxime. Détient les participations opérationnelles Versi.
 - **Pas de site public.** Pas de branding externe.
 
+## Règles projet-spécifiques (déplacées de work-preferences)
+
+- **Versi** : zéro anglicisme en copy client-facing (cf. red-lines.md point 20)
+- **Versi** : anonymisation adresses publiques. "46 rue d'Arras" → "Immeuble à Lille (59)"
+- **Versi** : transparence financière limitée — prix de vente uniquement, jamais les marges
+- **Versi** : hero photo = espace de vie meublé > espace vide > détail
+- **Versi** : zéro jargon technique en UI ("lot" pas "polygone")
+
 ## Principes transversaux (tous projets)
 
-- **Simplicité > Démonstration > Élégance** — principe universel Thomas
+- **Simplicité > Démonstration > Élégance** — cf. voice-preferences.md
 - **Animation** : fade global 300ms ease-out. Jamais démonstratif.
-- **Contenu** : chaque réalisation = histoire factuelle et narrative, pas du contenu générique. Expert, sobre, zéro emoji, zéro humour forcé.
-- **SEO** : les H1 sont du copywriting (jamais modifiés pour le SEO). L'optimisation passe par meta tags, schema.org, sitemap, llms.txt. Les FAQ en bas de page, jamais au cœur du parcours.
-- **Zéro anglicisme** en copy client-facing
+- **Contenu** : chaque réalisation = histoire factuelle et narrative, pas du contenu générique
 - **Email unique par projet** : contact@issa-capital.com (ISSA), contact@versi.fr (Versi)
+- Pour le SEO et les préférences techniques → cf. technical-preferences.md
