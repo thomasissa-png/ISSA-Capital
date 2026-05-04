@@ -2,6 +2,24 @@
 
 > Structure par type de contenu. Complète voice-preferences.md (qui dit LE TON) et brand-identity.md (qui dit LA MARQUE). Ce fichier dit LA STRUCTURE.
 
+## Principe transversal — Le storytelling avant tout
+
+Thomas pense en histoires, pas en bullet points. Quel que soit le support (post LinkedIn, email, deck, mémo), le contenu doit **raconter** quelque chose. Un moment, une décision, une tension résolue.
+
+**Ce qui fait un bon contenu Thomas** :
+- Un **moment de terrain** précis (pas un résumé d'activité)
+- Une **décision** prise (pas une description de process)
+- Un **détail concret** que seul Thomas peut connaître (pas un conseil générique)
+- Une **leçon implicite** que le lecteur déduit (pas une morale déclarée)
+
+**Ce qui fait un mauvais contenu** :
+- Un tableau de chiffres sans histoire
+- Un catalogue de features/services sans angle
+- Un conseil générique applicable par n'importe qui
+- Une annonce froide sans moment humain
+
+**Ce principe s'applique à TOUS les supports** — pas seulement LinkedIn. Un email à un investisseur raconte aussi une histoire (plus courte). Un deck raconte l'histoire d'une opportunité. Un mémo raconte l'histoire d'une décision.
+
 ## Posts LinkedIn
 
 ### Règle de qualité — audit obligatoire avant soumission à Thomas
@@ -116,28 +134,69 @@ versi-immobilier.fr
 - **Pas de blabla en ouverture.** "J'espère que vous allez bien" = interdit. Aller droit au sujet.
 - **1 email = 1 sujet.** Si 2 sujets, 2 emails.
 - **Réponse attendue claire.** Terminer par ce qu'on attend ("Peux-tu confirmer d'ici vendredi ?")
+- **Même en email, raconter.** Un email à un investisseur ne dit pas "nous avons une opportunité", il dit "on vient de visiter un immeuble de 6 lots à Roubaix, les travaux démarrent en septembre". Le concret d'abord, la demande ensuite.
+
+### Exemple email investisseur (storytelling appliqué)
+```
+Objet : Immeuble 6 lots Roubaix — travaux septembre
+
+Bonjour,
+
+On a signé la promesse vendredi sur un immeuble de 6 lots
+à Roubaix. Ancien commerce en RDC, 5 logements au-dessus.
+Travaux prévus septembre, livraison T1 2027.
+
+Le dossier est intéressant : emplacement en centre-ville,
+rendement brut estimé à 8,2% après rénovation.
+
+Je vous envoie la fiche détaillée si ça correspond
+à vos critères.
+
+Cordialement,
+Thomas Issa
+```
 
 ## Decks / Présentations
+
+### Principe clé : un deck raconte l'histoire d'une opportunité
+
+Un deck Thomas ne commence PAS par "Qui sommes-nous" ni par un organigramme. Il commence par le **bien** — l'opportunité concrète. L'équipe et la structure viennent après, quand le lecteur est déjà intéressé.
+
+Chaque slide raconte un chapitre : le lieu → ce qu'on en fait → combien ça coûte → ce que ça rapporte → pourquoi nous → comment investir.
 
 ### Principes
 - **10-15 slides max.** Au-delà, c'est un document, pas une présentation
 - **1 idée par slide.** Pas de slide à 3 paragraphes
 - **Chiffres > mots.** Un graphique ou un chiffre clé par slide quand possible
 - **Fond sombre (anthracite #1A1A1A) + texte clair** — cohérent avec l'identité Versi/ISSA
-- **Pas de clipart, pas de stock photo générique.** Photos terrain ou illustrations minimales
+- **Photos terrain > stock.** Photos du bien réel, avant/après chantier, plans architecte. Jamais de clipart ni de stock photo.
 - **Slide de couverture** : logo + titre + date. Rien d'autre.
 - **Slide finale** : coordonnées + 1 phrase de positionnement. Pas de "Merci" ni de "Questions ?"
+- **Narration slide par slide** : chaque slide doit pouvoir être lue seule et raconter quelque chose. Pas de slide qui dit juste "Équipe" avec 3 photos.
 
 ### Structure type — deck investisseur Versi
 ```
-1. Couverture (logo + "Opportunité [Nom du bien]")
-2. Le bien (localisation, photos, surface, état)
-3. L'acquisition (prix, conditions, timing)
-4. Les travaux (scope, budget, planning)
-5. La commercialisation (cible, prix de sortie, comparables)
-6. Le modèle financier (rendement, TRI, cash-flow)
-7. L'opérateur (qui est Versi, track record, équipe)
-8. La structure (véhicule juridique, répartition, gouvernance)
-9. Les risques (identifiés, mitigations)
-10. Prochaines étapes + contact
+1. Couverture (logo + "Opportunité [Nom du bien]" + date)
+2. L'accroche (1 photo hero + 1 phrase : ce qu'on en fait et pourquoi c'est intéressant)
+3. Le bien (localisation, surface, état actuel, plan masse)
+4. La transformation (plans architecte, avant/après si dispo, nombre de lots)
+5. L'acquisition (prix, conditions, timing)
+6. Les travaux (scope, budget, planning, photos chantier si en cours)
+7. La commercialisation (cible, prix de sortie, comparables marché)
+8. Le modèle financier (rendement, TRI, cash-flow — 1 tableau clair)
+9. L'opérateur (qui est Versi : 3 fondateurs, track record factuel, 5 opérations depuis 2020)
+10. La structure (véhicule juridique, répartition, ticket d'entrée, gouvernance)
+11. Les risques (identifiés + mitigations — honnêteté > sur-promesse)
+12. Prochaines étapes + contact
 ```
+
+### Exemple de narration slide "L'accroche" (slide 2)
+```
+[Photo : façade de l'immeuble, lumière naturelle]
+
+"Un ancien bureau de 250 m² à Lille.
+Personne ne voyait de logements. On a dessiné 3 lots."
+
+T2 · T3 · Duplex 126 m²
+```
+Une slide qui raconte en 3 secondes : le point de départ, la vision, le résultat.
