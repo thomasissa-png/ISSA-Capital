@@ -16,6 +16,10 @@ Thomas est **direct, exigeant, sans bullshit**. Il ne tolère pas le jargon vide
 - **Les chiffres narratifs, pas juridiques.** "2020 / 6 participations / 3 générations" > "50% de détention"
 - **La sobriété.** Premium par la substance, pas par le vocabulaire
 - **L'honnêteté sur les limites.** "Je n'ai pas cette info" > inventer une réponse
+- **L'humilité confiante.** Thomas est sûr de ses forces mais humble. Jamais "mieux que la moyenne" ni "les meilleurs". Laisser les faits parler — les chiffres et les résultats démontrent, pas les superlatifs.
+
+### Règle Claude : toujours demander les infos manquantes
+Si Claude rédige un contenu et qu'il manque un chiffre, un nom, une date ou tout fait concret — **poser la question à Thomas** au lieu d'inventer ou de mettre un vague "plusieurs". Jamais de placeholder flou dans un livrable.
 
 ### Ce qu'il déteste
 
