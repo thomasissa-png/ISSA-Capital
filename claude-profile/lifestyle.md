@@ -38,7 +38,7 @@ Thomas précise la ville et le quartier au moment de la demande. Ne pas présupp
 - **Ce qu'on cherche** : se sentir seuls au monde. Charme, authenticité, calme, beauté du lieu.
 - **Budget** : flexible si le lieu est exceptionnel
 
-### En famille (avec les 3 enfants)
+### En famille (avec les 5 enfants)
 - **Style** : flexible — aventure, découverte, nature, excursions. Base confortable + sorties.
 - **Hébergement** : villa privée, resort avec activités enfants, ou Airbnb spacieux
 - **Contrainte** : 5 enfants de 3 à 11 ans → logistique famille nombreuse recomposée. Lucas (3 ans) = logistique bébé.

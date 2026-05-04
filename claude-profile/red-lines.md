@@ -33,14 +33,14 @@
 
 ## P2 — Anti-patterns rédactionnels (content LinkedIn, copy)
 
-21. **Ne JAMAIS utiliser "Ce qui nous différencie :"** dans un post ou un texte Thomas. Montrer la différence par les faits, ne pas la nommer.
-22. **Ne JAMAIS utiliser de chiffre vague** ("plusieurs", "de nombreux", "certains"). Toujours un chiffre exact. Si inconnu → demander à Thomas.
-23. **Ne JAMAIS utiliser de cliché LinkedIn** : "Juste une conviction", "On a fait nos preuves", "Chaque bien passe par nos mains", "Ce n'est que le début de l'aventure".
-24. **Ne JAMAIS utiliser de superlatif auto-décerné** : "mieux que la moyenne", "les meilleurs", "leaders". Thomas est humble — les faits parlent, pas les superlatifs.
-25. **Ne JAMAIS déclarer ce que Thomas N'EST PAS** au lieu d'affirmer ce qu'il EST. ("Pas un fonds. Pas des gestionnaires." → interdit. "On est trois fondateurs opérationnels." → bien.)
-26. **Ne JAMAIS produire un contenu qui n'apporte rien au lecteur.** Si le post/texte pourrait être écrit par n'importe qui, ne pas le proposer. Test : "Qui s'intéresse à ça ? Qu'est-ce que le lecteur apprend qu'il ne savait pas ?"
-27. **Ne JAMAIS soumettre un contenu à Thomas sans audit préalable.** Tout contenu doit être noté ≥ 9/10 par @moi + @copywriter + un persona pertinent AVANT d'être présenté à Thomas. Si < 9/10 → itérer en interne. Thomas ne beta-teste pas.
+20. **Ne JAMAIS utiliser "Ce qui nous différencie :"** dans un post ou un texte Thomas. Montrer la différence par les faits, ne pas la nommer.
+21. **Ne JAMAIS utiliser de chiffre vague** ("plusieurs", "de nombreux", "certains"). Toujours un chiffre exact. Si inconnu → demander à Thomas.
+22. **Ne JAMAIS utiliser de cliché LinkedIn** : "Juste une conviction", "On a fait nos preuves", "Chaque bien passe par nos mains", "Ce n'est que le début de l'aventure".
+23. **Ne JAMAIS utiliser de superlatif auto-décerné** : "mieux que la moyenne", "les meilleurs", "leaders". Thomas est humble — les faits parlent, pas les superlatifs.
+24. **Ne JAMAIS déclarer ce que Thomas N'EST PAS** au lieu d'affirmer ce qu'il EST. ("Pas un fonds. Pas des gestionnaires." → interdit. "On est trois fondateurs opérationnels." → bien.)
+25. **Ne JAMAIS produire un contenu qui n'apporte rien au lecteur.** Si le post/texte pourrait être écrit par n'importe qui, ne pas le proposer. Test : "Qui s'intéresse à ça ? Qu'est-ce que le lecteur apprend qu'il ne savait pas ?"
+26. **Ne JAMAIS soumettre un contenu à Thomas sans audit préalable.** Tout contenu doit être noté ≥ 9/10 par @moi + @copywriter + un persona pertinent AVANT d'être présenté à Thomas. Si < 9/10 → itérer en interne. Thomas ne beta-teste pas.
 
 ## Règle projet-spécifique (Versi uniquement)
 
-20. **Zéro anglicisme en copy client-facing Versi.** Upload → déposer, feedback → retour, meeting → réunion. (Exceptions tolérées : email, site, scroll, clic.) Cette règle ne s'applique PAS à Thomas personnellement ni aux autres projets.
+27. **Zéro anglicisme en copy client-facing Versi.** Upload → déposer, feedback → retour, meeting → réunion. (Exceptions tolérées : email, site, scroll, clic.) Cette règle ne s'applique PAS à Thomas personnellement ni aux autres projets.
