@@ -67,12 +67,11 @@ Paris (1986-1993) → **Afrique du Sud** (1994-1998) → Paris (1999-2002) → S
 
 ## Vision et convictions
 
-Thomas construit pour transmettre. Son horizon n'est pas le TRI à 5 ans mais l'héritage intergénérationnel. Ce que Jean-Pierre a bâti, Thomas en a hérité la méthode. Ce que Thomas construit, ses enfants en hériteront.
+On a qu'une vie. Thomas se donne les moyens d'en profiter et de faire profiter les siens.
 
-Trois filtres non négociables avant tout investissement :
-1. **Horizon patrimonial long terme** — 20-30 ans minimum
-2. **Préservation de l'environnement** — aucun modèle qui dégrade durablement
-3. **Éthique humaine** — certains secteurs sont hors périmètre, indépendamment du dossier
+Tout le reste en découle : les opérations court terme qui génèrent de la trésorerie, le patrimoine long terme qui sécurise la famille, les associés avec qui il choisit de travailler, les secteurs dans lesquels il refuse d'aller.
+
+Ce qu'il construit doit pouvoir être transmis à ses enfants.
 
 ## Réseau clé
 
