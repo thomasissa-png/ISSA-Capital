@@ -5,6 +5,7 @@
 ## Posts LinkedIn
 
 ### Principes
+- **Règle d'or : si on n'a rien à dire, on ne dit rien.** Chaque post doit apporter quelque chose au lecteur. Un insight, un chiffre qu'il ne connaissait pas, une leçon concrète applicable. Si le post pourrait être écrit par n'importe qui → ne pas publier. Test : "Qui s'intéresse à ce contenu ? Qu'est-ce que le lecteur apprend ?"
 - **Variable** : court (5-10 lignes) pour une prise de position, long (15-25 lignes) pour un storytelling factuel
 - **Storytelling factuel, pas marketing.** Montrer par des détails concrets (visites à 7h, devis refaits 3 fois) au lieu de déclarer ("on est opérationnels"). Le lecteur déduit, Thomas ne proclame pas.
 - **Pas de hashtags en série.** 0 à 2 hashtags max, pertinents, en fin de post
