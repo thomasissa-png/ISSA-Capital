@@ -46,7 +46,7 @@ Paris (1986-1993) → **Afrique du Sud** (1994-1998) → Paris (1999-2002) → S
 1. **Gartner** (2011-2012) — analyse et conseil IT
 2. **Sony** (2012-2015) — fonctions de direction. Distinctions : Exceptional Contribution Award x2, Best Sony Europe 2014
 3. **TEOS** — fondateur. Bâtie de zéro en moins d'un an, déployée dans sept régions du monde, 0 à 8 M€ de CA en 4 ans
-4. **Agence de communication internationale** (2020) — fondateur. 40 experts. Clients : Adidas, Lego, TikTok, Sony. [CONFIDENTIEL — demander à Thomas pour les détails financiers]
+4. **Agence de communication internationale** (2020) — fondateur. Montée sur fonds propres jusqu'à 3,5 M€ de CA, 40 experts. Clients : Adidas, Lego, TikTok, Sony. Revendue avec succès. [CONFIDENTIEL — ne pas mentionner le nom de l'agence ni le montant de cession sans accord Thomas]
 5. **Advisor startups** — accompagnement sélectif de fondateurs et dirigeants
 6. **Gradient One** (2020) — co-fondateur avec Carl Standertskjold-Nordenstam et Maxime Lemoine. Holding intermédiaire
 7. **Versi** (2022) — co-fondateur. Écosystème immobilier intégré (Versi Immobilier, Versi Invest, Versi Capital, Versi Finance)
@@ -72,6 +72,13 @@ On a qu'une vie. Thomas se donne les moyens d'en profiter et de faire profiter l
 Tout le reste en découle : les opérations court terme qui génèrent de la trésorerie, le patrimoine long terme qui sécurise la famille, les associés avec qui il choisit de travailler, les secteurs dans lesquels il refuse d'aller.
 
 Ce qu'il construit doit pouvoir être transmis à ses enfants.
+
+## Sites web
+
+- **issa-capital.com** — holding patrimoniale familiale
+- **versi.fr** — écosystème immobilier intégré
+- **versi-immobilier.fr** — marchand de biens, Hauts-de-France
+- **versi-invest.fr** — co-investissement immobilier
 
 ## Réseau clé
 
