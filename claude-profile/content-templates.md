@@ -6,10 +6,21 @@
 
 ### Principes
 - **Variable** : court (5-10 lignes) pour une prise de position, long (15-25 lignes) pour un storytelling factuel
+- **Storytelling factuel, pas marketing.** Montrer par des détails concrets (visites à 7h, devis refaits 3 fois) au lieu de déclarer ("on est opérationnels"). Le lecteur déduit, Thomas ne proclame pas.
 - **Pas de hashtags en série.** 0 à 2 hashtags max, pertinents, en fin de post
-- **Pas de CTA agressif.** "Contactez-moi" en fin de post = interdit. Si les gens veulent te contacter, ils le feront
+- **Pas de CTA agressif.** "Contactez-moi" en fin de post = interdit. URL seule en fermeture si pertinent.
 - **Pas de selfie ni de photo posée.** Photo de terrain (chantier, bureau, lieu) > photo de soi
 - **Pas de "Chers réseau".** Attaque directe, pas de formule d'introduction
+
+### Anti-patterns LinkedIn identifiés (learnings v1→v4)
+- **"Ce qui nous différencie :"** → interdit. Ça sonne pitch deck, pas fondateur. Montrer la différence, ne pas la nommer.
+- **Antithèses défensives** ("Pas un fonds. Pas des gestionnaires.") → interdit. Thomas affirme ce qu'il EST, pas ce qu'il n'est pas.
+- **"Juste une conviction"** → cliché LinkedIn ultra-usé. Couper.
+- **"On a fait nos preuves"** → bullshit. Les preuves se montrent (chiffres, résultats), elles ne se déclarent pas.
+- **"Mieux que la moyenne"** → prétentieux sans preuve. Thomas est humble et confiant — les faits parlent.
+- **"Chaque bien passe par nos mains"** → cliché du secteur immo. Reformuler avec du concret.
+- **Formules de transition scolaires** ("Alors on a structuré", "C'est pourquoi") → couper ou reformuler naturellement.
+- **Chiffres vagues** ("plusieurs opérations", "de nombreux projets") → toujours un chiffre exact. Si inconnu, demander à Thomas.
 
 ### Sujets OK
 - Business / immobilier : deals, acquisitions, leçons de terrain, chiffres factuels
@@ -46,20 +57,27 @@
 [La leçon — ce que ça change pour la suite]
 ```
 
-### Exemple calibré sur la voix Thomas
+### Exemple validé — post long (v4, audité @copywriter 8.2 + @moi 8.5 + persona 7.5)
 ```
-On a acheté un immeuble de 6 lots à Lille il y a 14 mois.
+En 2020, on a acheté notre premier immeuble à Lille avec Carl
+et Maxime. Trois profils complémentaires et un tableur Excel.
 
-Prix d'acquisition : sous le marché. Travaux : 8 mois.
-Aujourd'hui les 6 lots sont vendus ou loués.
+On a tout appris sur le terrain. Les visites à 7h du matin.
+Les devis qu'on refait trois fois. Les artisans qu'on garde
+parce qu'ils tiennent parole, et ceux qu'on ne rappelle pas.
 
-Ce qui a fait la différence : pas le prix d'achat.
-C'est la vitesse de décision. On a signé la promesse
-en 72h pendant que 3 autres acheteurs montaient leur dossier.
+5 opérations plus tard, le constat est simple : les acheteurs
+nous recontactent. "Vous avez autre chose ?" Pas parce qu'on
+est les moins chers. Parce qu'ils savent ce qu'ils achètent.
 
-Dans l'immobilier, la meilleure analyse du monde
-ne vaut rien si tu la fais trop tard.
+On a structuré. Versi Immobilier : marchand de biens,
+Lille métropole et Hauts-de-France. Du sourcing à la remise
+des clés, rien n'est délégué.
+
+versi-immobilier.fr
 ```
+
+**Pourquoi ce post fonctionne** : storytelling factuel (pas marketing), détails concrets qui montrent le métier, preuve sociale racontée (repeat business), zéro antithèse défensive, chiffre exact (5 opérations), humilité confiante (pas de superlatif), URL seule en fermeture.
 
 ## Emails business
 
