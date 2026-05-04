@@ -2,6 +2,18 @@
 
 > Ce fichier documente l'identité de chaque projet de Thomas. À utiliser quand Claude travaille sur un de ces projets pour maintenir la cohérence de marque.
 
+## Les goûts de Thomas (avant les marques)
+
+Les marques de Thomas reflètent ses goûts personnels, pas l'inverse. Quel que soit le projet — existant ou futur — le registre de départ est le même :
+
+- **Minimaliste et sobre.** Peu d'éléments, beaucoup d'espace. Pas chargé.
+- **Premium par la substance.** La qualité se voit dans le détail (matériaux, typographie, finitions), pas dans le bling.
+- **Architectural.** Lignes nettes, grilles strictes, alignement précis. Pas de fantaisie graphique.
+- **Intemporel.** Un design qui tient dans 10 ans, pas qui suit une tendance.
+- **Ce que Thomas déteste** : flashy, startup, discount, surchargé, couleurs criardes, effets gratuits, animations démonstratives, stock photos génériques.
+
+Quand Claude travaille sur un NOUVEAU projet de Thomas (pas ISSA Capital ni Versi), il part de ces goûts comme base.
+
 ## ISSA Capital — Holding patrimoniale familiale
 
 - **Posture** : VITRINE, pas conversion. Zéro CTA agressif. Le site se suffit à lui-même.
