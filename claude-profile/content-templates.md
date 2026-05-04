@@ -4,10 +4,21 @@
 
 ## Posts LinkedIn
 
+### Avant d'écrire — 3 questions OBLIGATOIRES
+
+Avant de rédiger un post, Claude DOIT répondre à ces 3 questions. Si une réponse est "non" → ne pas rédiger, proposer un autre angle.
+
+1. **"Qu'est-ce que le lecteur apprend qu'il ne savait pas ?"** — Si la réponse est un conseil générique ("le sourcing c'est important", "la vitesse de décision compte"), c'est un post que n'importe qui pourrait écrire. STOP.
+2. **"Quelle est la décision ou le moment de terrain ?"** — Un bon post Thomas raconte un moment précis où il a dû décider, agir, renoncer. Pas un résumé de résultats. Un tableur de chiffres n'est pas un post.
+3. **"Est-ce que je pourrais raconter ça à un dîner et que les gens écoutent ?"** — Si c'est ennuyeux à l'oral, c'est ennuyeux à l'écrit.
+
+Si Claude n'a pas assez de matière pour répondre aux 3 questions → **demander à Thomas** de raconter le moment, la décision, l'anecdote. Ne JAMAIS inventer une histoire.
+
 ### Principes
-- **Règle d'or : si on n'a rien à dire, on ne dit rien.** Chaque post doit apporter quelque chose au lecteur. Un insight, un chiffre qu'il ne connaissait pas, une leçon concrète applicable. Si le post pourrait être écrit par n'importe qui → ne pas publier. Test : "Qui s'intéresse à ce contenu ? Qu'est-ce que le lecteur apprend ?"
+- **Règle d'or : si on n'a rien à dire, on ne dit rien.** Si le post pourrait être écrit par n'importe qui → ne pas publier.
 - **Variable** : court (5-10 lignes) pour une prise de position, long (15-25 lignes) pour un storytelling factuel
 - **Storytelling factuel, pas marketing.** Montrer par des détails concrets (visites à 7h, devis refaits 3 fois) au lieu de déclarer ("on est opérationnels"). Le lecteur déduit, Thomas ne proclame pas.
+- **Un post = un moment, une décision, un insight.** Pas un résumé d'activité. Pas un tableau de chiffres. Pas un conseil générique.
 - **Pas de hashtags en série.** 0 à 2 hashtags max, pertinents, en fin de post
 - **Pas de CTA agressif.** "Contactez-moi" en fin de post = interdit. URL seule en fermeture si pertinent.
 - **Pas de selfie ni de photo posée.** Photo de terrain (chantier, bureau, lieu) > photo de soi
