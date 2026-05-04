@@ -4,9 +4,9 @@
 
 ## Famille
 
-- **Thomas** (fondateur, multi-projets, Paris-Lille)
-- **Nathalie** (compagne)
-- **3 enfants** : Antoine (11 ans), Noémie (7 ans), Lucas (3 ans)
+- **Thomas Issa** (fondateur, multi-projets, Paris-Lille)
+- **Nathalie Kervarec** (conjointe)
+- **5 enfants** (famille recomposée) : Antoine (11 ans), Naomie (11 ans), Noémie (7 ans), Nolan (8 ans), Lucas (3 ans)
 
 ## Restaurants
 
@@ -41,7 +41,7 @@ Thomas précise la ville et le quartier au moment de la demande. Ne pas présupp
 ### En famille (avec les 3 enfants)
 - **Style** : flexible — aventure, découverte, nature, excursions. Base confortable + sorties.
 - **Hébergement** : villa privée, resort avec activités enfants, ou Airbnb spacieux
-- **Contrainte** : Lucas a 3 ans → logistique bébé (lit, chaise haute, etc.)
+- **Contrainte** : 5 enfants de 3 à 11 ans → logistique famille nombreuse recomposée. Lucas (3 ans) = logistique bébé.
 
 ### Destinations qui attirent
 - **Méditerranée** : Grèce, Italie, Espagne, Portugal, Croatie

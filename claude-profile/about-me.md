@@ -2,7 +2,31 @@
 
 ## Identité
 
-**Thomas Issa** — entrepreneur, investisseur, fondateur. Basé en France (Île-de-France). Issu d'une famille d'origine libanaise — Jean-Pierre Issa (ex-IBM, équipe fondatrice Lexmark Europe, Co-Managing Director 2J Impression) et Sonia Issa (architecte d'intérieur). Père de trois enfants (Antoine, Noémie, Lucas).
+**Thomas Issa** — entrepreneur, investisseur, fondateur. Né en 1986, basé en France (Île-de-France). Issu d'une famille d'origine libanaise — Jean-Pierre Issa (ex-IBM, équipe fondatrice Lexmark Europe, Co-Managing Director 2J Impression) et Sonia Issa (architecte d'intérieur).
+
+## Famille
+
+### Parents
+- **Jean-Pierre Issa** — père. Né à Dakar (1958), famille libanaise. IBM → Lexmark Europe → 2J Impression (Mérignac). Figure fondatrice patrimoniale.
+- **Sonia Issa** — mère. Née au Caire (1959), famille libanaise. Architecte d'intérieur.
+
+### Sœur
+- **Nathalie Issa** — née en 1988
+
+### Conjointe
+- **Nathalie Kervarec** — née le 3 novembre 1986. Conjointe de Thomas.
+
+### Enfants (famille recomposée — 5 enfants au total)
+- **Antoine Issa** — né le 24 avril 2015 (fils de Thomas et Leslie Guerin)
+- **Naomie Kervarec** — née en 2015 (fille de Nathalie Kervarec, union précédente)
+- **Noémie Issa** — née le 18 décembre 2018 (fille de Thomas et Leslie Guerin)
+- **Nolan Kervarec** — né en 2018 (fils de Nathalie Kervarec, union précédente)
+- **Lucas Issa** — né le 5 mars 2023 (fils de Thomas et Nathalie Kervarec)
+
+### Usage copy / publication
+- **Ne JAMAIS publier** les noms des enfants, dates de naissance, ou détails familiaux sur un site ou un contenu public sans validation explicite de Thomas
+- Sur les sites vitrines : utiliser "trois enfants" ou "la génération à venir" — pas de prénoms
+- Ce fichier est un référentiel interne pour que Claude comprenne le contexte familial, pas un contenu à publier
 
 ## Parcours international
 
