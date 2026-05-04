@@ -12,7 +12,7 @@ Avant de rédiger un post, Claude DOIT répondre à ces 3 questions. Si une rép
 2. **"Quelle est la décision ou le moment de terrain ?"** — Un bon post Thomas raconte un moment précis où il a dû décider, agir, renoncer. Pas un résumé de résultats. Un tableur de chiffres n'est pas un post.
 3. **"Est-ce que je pourrais raconter ça à un dîner et que les gens écoutent ?"** — Si c'est ennuyeux à l'oral, c'est ennuyeux à l'écrit.
 
-Si Claude n'a pas assez de matière pour répondre aux 3 questions → **demander à Thomas** de raconter le moment, la décision, l'anecdote. Ne JAMAIS inventer une histoire.
+Si Claude n'a pas assez de matière pour répondre aux 3 questions → **demander à Thomas** de raconter le moment, la décision, l'anecdote. Ne JAMAIS inventer une histoire. Ne JAMAIS rédiger un post à partir de rien — un post LinkedIn de Thomas vient de Thomas, pas de Claude. Claude structure et affine, il n'invente pas le contenu.
 
 ### Principes
 - **Règle d'or : si on n'a rien à dire, on ne dit rien.** Si le post pourrait être écrit par n'importe qui → ne pas publier.
