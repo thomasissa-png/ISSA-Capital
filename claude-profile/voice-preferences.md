@@ -30,19 +30,35 @@ Thomas est **direct, exigeant, sans bullshit**. Il ne tolère pas le jargon vide
 
 ### Registre par contexte
 
-| Contexte | Registre |
-|---|---|
-| Site vitrine (ISSA Capital) | Éditorial muséal, sobre, intemporel. Pas de conversion. |
-| Site opérationnel (Versi) | Expert, confiant, factuel. Premium par la substance. |
-| Communication interne | Direct, synthétique, orienté résultat |
-| CR de réunion | Juridique d'affaires français. Passé composé, formalisme DGFiP |
-| Outils internes | "Vous" de politesse, impératif neutre |
+| Contexte | Registre | Tu/Vous | Exemple d'ouverture |
+|---|---|---|---|
+| Site vitrine (ISSA Capital) | Éditorial muséal, sobre, intemporel. Pas de conversion. | Ni tu ni vous (narration impersonnelle) | "Racines libanaises. Exigences sans exception." |
+| Site opérationnel (Versi Immobilier) | Expert, confiant, factuel. Premium par la substance. | Vous (acquéreur/vendeur) | "Un bien sourcé, analysé et transformé par un opérateur intégré." |
+| Site investisseur (Versi Invest) | Sobre, exclusif, sélectif. Off-market. | Vous (investisseur qualifié) | "Des opportunités sélectionnées. Pas de catalogue." |
+| Communication interne | Direct, synthétique, orienté résultat | Tu (entre co-fondateurs) | — |
+| CR de réunion | Juridique d'affaires français. Passé composé, formalisme DGFiP | Ni tu ni vous (3ème personne) | "Thomas Issa, Président, a exposé que..." |
+| Outils internes (Studio) | Professionnel B2B sobre, impératif neutre | Vous | "Déposez votre plan. Tracez les lots." |
 
-### Format des réponses Claude attendu
+### La voix de Thomas (quand il s'exprime personnellement)
+
+Thomas ne parle pas comme ses marques. Sa voix personnelle est :
+- **Franche et directe.** Pas de filtre diplomatique. Il dit ce qu'il pense.
+- **Concrète.** Il parle en exemples, en chiffres, en résultats — pas en concepts
+- **Exigeante sans arrogance.** Il attend le meilleur mais ne méprise pas
+- **Impatiente.** Il veut des résultats, pas des process. "Ça marche ou ça marche pas ?"
+
+Exemples de phrases typiques Thomas :
+- "C'est n'importe quoi." (verdict direct, pas de nuance)
+- "Ça fait 4 fois de suite qu'on est confronté au même problème."
+- "Faisons simple." (quand la solution proposée est trop complexe)
+- "Je ne suis pas là pour beta-tester." (quand un livrable n'est pas fini)
+- "Pourquoi on s'arrête à 8.5 ?" (le 10/10 est le seul objectif)
+
+### Comment Claude doit répondre à Thomas
 
 - **Orienté résultat + preuve.** Pas de storytelling étape par étape
 - **Concis.** 3 phrases > 3 paragraphes
 - **Décision > Description.** "Je fais X" > "On pourrait envisager X ou Y"
 - **Preuves empiriques.** Screenshots, metrics, tests PASS — pas de discours
 - **Honnêteté.** "Ce point n'est pas couvert" > "Tout est parfait"
-- **Claims vérifiés.** "As-tu seulement vérifié ?" — auto-critique honnête avant tout claim de qualité
+- **Claims vérifiés.** "As-tu seulement vérifié ?" — auto-critique honnête avant tout claim

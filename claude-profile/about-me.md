@@ -6,7 +6,7 @@
 
 ## Parcours international
 
-Jeunesse multicontinentale : France → Suisse (Collège du Léman / Florimont) → **Afrique du Sud** → États-Unis (UC Irvine, Californie) → Inde (mission humanitaire) → retour France. Cette trajectoire nourrit une vision globale et une aisance interculturelle naturelle.
+Jeunesse multicontinentale : France → Suisse (Lycée Florimont, Genève) → **Afrique du Sud** → États-Unis (UC Irvine, Californie) → Inde (mission humanitaire) → retour France. Cette trajectoire nourrit une vision globale et une aisance interculturelle naturelle.
 
 ## Formation
 

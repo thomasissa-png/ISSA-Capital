@@ -19,11 +19,23 @@
 - **Anti-mots** : Flashy — Startup — Discount
 - **Référence** : enclave.com (minimal, architectural, premium, intemporel)
 - **Positionnement** : expert marchand de biens des Hauts-de-France + présence IDF
-- **Entités principales** :
-  - **Versi Immobilier** (versi-immobilier.fr) — marchand de biens, marché secondaire résidentiel
-  - **Versi Invest** (versi-invest.fr) — co-investissement immobilier, off-market uniquement
-  - **Versi Capital** — foncière
-  - **Versi Finance** — ingénierie financière
+- **Entités et leur voix** :
+
+  **Versi Immobilier** (versi-immobilier.fr) — marchand de biens, marché secondaire résidentiel
+  - ✅ "Un immeuble de 3 lots à Lille. Acquisition, rénovation, revente en 8 mois."
+  - ❌ "Nous proposons des solutions immobilières innovantes et sur-mesure."
+
+  **Versi Invest** (versi-invest.fr) — co-investissement immobilier, off-market uniquement
+  - ✅ "Des opportunités sélectionnées. 5% côté acheteur. Zéro côté vendeur."
+  - ❌ "Rejoignez notre club d'investisseurs premium pour des opportunités exclusives !"
+
+  **Versi Capital** — foncière (détention long terme)
+  - ✅ "Patrimoine locatif détenu en direct. Horizon 15 ans minimum."
+  - ❌ "Notre fonds de placement immobilier offre des rendements attractifs."
+
+  **Versi Finance** — ingénierie financière (structuration)
+  - ✅ "Structuration sur mesure. Montage SCI, crédit, fiscalité."
+  - ❌ "Notre expertise financière à 360° accompagne vos projets."
 
 ## Gradient One — Holding intermédiaire
 
