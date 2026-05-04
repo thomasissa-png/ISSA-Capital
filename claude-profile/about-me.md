@@ -6,26 +6,27 @@
 
 ## Parcours international
 
-Jeunesse multicontinentale : France → Suisse (Lycée Florimont, Genève) → **Afrique du Sud** → États-Unis (UC Irvine, Californie) → Inde (mission humanitaire) → retour France. Cette trajectoire nourrit une vision globale et une aisance interculturelle naturelle.
+Paris (1986-1993) → **Afrique du Sud** (1994-1998) → Paris (1999-2002) → Suisse / Lycée Florimont, Genève (2002-2004, baccalauréat) → retour France. Cette trajectoire multicontinentale nourrit une vision globale et une aisance interculturelle naturelle.
 
 ## Formation
 
-- **Classe préparatoire** — Sainte-Geneviève (Versailles)
-- **Ingénieur** — IMT Atlantique (ex-Télécom Bretagne)
-- **Échange international** — UC Irvine (Californie)
-- **HEC Paris** — programme Grande École
+- **Classe préparatoire** — Sainte-Geneviève, Versailles (2004-2006)
+- **IMT Atlantique** (ex-Télécom Bretagne) — ingénieur (2006-2008)
+- **Altran** — conseil en ingénierie (2009)
+- **IMT Atlantique** — ingénieur d'affaires (2009-2010)
+- **UC Irvine** — échange international, Californie (2010)
+- **HEC Paris** — Master Marketing (2010-2011)
 
 ## Parcours professionnel
 
-1. **Altran** (2008-2009) — conseil en ingénierie et technologie
-2. **Gartner** (2009-2010) — analyse et conseil IT
-3. **Sony** (2010-2015) — fonctions de direction. Distinctions : Exceptional Contribution Award x2, Best Sony Europe 2014
-4. **TEOS** — fondateur. Bâtie de zéro en moins d'un an, déployée dans sept régions du monde, 0 à 8 M€ de CA en 4 ans
-5. **Agence de communication internationale** (depuis 2020) — 40 experts. Clients : Adidas, Lego, TikTok, Sony. [CONFIDENTIEL : exit de 1 500 € à 2 M€ — à débloquer par Thomas]
-6. **Advisor startups** — accompagnement sélectif de fondateurs et dirigeants
-7. **Gradient One** (2020) — co-fondateur avec Carl Standertskjold-Nordenstam et Maxime Lemoine. Holding intermédiaire
-8. **Versi** (2022) — co-fondateur. Écosystème immobilier intégré (Versi Immobilier, Versi Invest, Versi Capital, Versi Finance)
-9. **ISSA Capital** (2026) — Président et fondateur. Holding patrimoniale familiale (SAS, Nanterre). Patrimoine familial, horizon intergénérationnel, zéro capitaux tiers
+1. **Gartner** (2011-2012) — analyse et conseil IT
+2. **Sony** (2012-2015) — fonctions de direction. Distinctions : Exceptional Contribution Award x2, Best Sony Europe 2014
+3. **TEOS** — fondateur. Bâtie de zéro en moins d'un an, déployée dans sept régions du monde, 0 à 8 M€ de CA en 4 ans
+4. **Agence de communication internationale** (2020) — fondateur. 40 experts. Clients : Adidas, Lego, TikTok, Sony. [CONFIDENTIEL — demander à Thomas pour les détails financiers]
+5. **Advisor startups** — accompagnement sélectif de fondateurs et dirigeants
+6. **Gradient One** (2020) — co-fondateur avec Carl Standertskjold-Nordenstam et Maxime Lemoine. Holding intermédiaire
+7. **Versi** (2022) — co-fondateur. Écosystème immobilier intégré (Versi Immobilier, Versi Invest, Versi Capital, Versi Finance)
+8. **ISSA Capital** (2026) — Président et fondateur. Holding patrimoniale familiale (SAS, Nanterre). Patrimoine familial, horizon intergénérationnel, zéro capitaux tiers
 
 ## Distinctions
 
