@@ -13,7 +13,9 @@ Thomas Issa est un entrepreneur et investisseur français d'origine libanaise. I
 3. **work-preferences.md** — comment travailler. Qualité, décisions, délégation.
 4. **brand-identity.md** — identité de chaque projet. À consulter quand tu travailles sur un projet spécifique.
 5. **technical-preferences.md** — stack et outils préférés. À consulter pour les choix techniques.
-6. **about-me.md** — parcours complet. À consulter quand tu as besoin de contexte biographique.
+6. **content-templates.md** — structure par type de contenu (LinkedIn, emails, decks). À consulter quand tu rédiges.
+7. **about-me.md** — parcours complet. À consulter quand tu as besoin de contexte biographique.
+8. **lifestyle.md** — restaurants, hôtels, voyages. À consulter pour les recommandations perso.
 
 ## Si tu ne lis qu'un fichier
 

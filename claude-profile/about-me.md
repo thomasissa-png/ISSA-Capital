@@ -2,7 +2,7 @@
 
 ## Identité
 
-**Thomas Issa** — entrepreneur, investisseur, fondateur. Né en 1986, basé en France (Île-de-France). Issu d'une famille d'origine libanaise — Jean-Pierre Issa (ex-IBM, équipe fondatrice Lexmark Europe, Co-Managing Director 2J Impression) et Sonia Issa (architecte d'intérieur).
+**Thomas Issa** — entrepreneur, investisseur, fondateur. Né en 1986, vit à **Nanterre (92)** avec sa conjointe Nathalie Kervarec et leurs 5 enfants. Issu d'une famille d'origine libanaise — Jean-Pierre Issa (ex-IBM, équipe fondatrice Lexmark Europe, Co-Managing Director 2J Impression) et Sonia Issa (architecte d'intérieur).
 
 ## Famille
 
