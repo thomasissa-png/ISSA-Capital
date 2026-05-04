@@ -165,39 +165,37 @@ Un deck Thomas ne commence PAS par "Qui sommes-nous" ni par un organigramme. Il 
 
 Chaque slide raconte un chapitre : le lieu → ce qu'on en fait → combien ça coûte → ce que ça rapporte → pourquoi nous → comment investir.
 
-### Principes
+### Principes (universels — tous projets)
 - **10-15 slides max.** Au-delà, c'est un document, pas une présentation
 - **1 idée par slide.** Pas de slide à 3 paragraphes
 - **Chiffres > mots.** Un graphique ou un chiffre clé par slide quand possible
-- **Fond sombre (anthracite #1A1A1A) + texte clair** — cohérent avec l'identité Versi/ISSA
-- **Photos terrain > stock.** Photos du bien réel, avant/après chantier, plans architecte. Jamais de clipart ni de stock photo.
+- **Fond sombre + texte clair.** Palette sobre, cohérente avec les goûts Thomas (minimaliste, premium)
+- **Photos réelles > stock.** Jamais de clipart ni de stock photo générique
 - **Slide de couverture** : logo + titre + date. Rien d'autre.
 - **Slide finale** : coordonnées + 1 phrase de positionnement. Pas de "Merci" ni de "Questions ?"
-- **Narration slide par slide** : chaque slide doit pouvoir être lue seule et raconter quelque chose. Pas de slide qui dit juste "Équipe" avec 3 photos.
+- **Narration slide par slide** : chaque slide raconte un chapitre. Pas de slide qui dit juste "Équipe" avec 3 photos.
 
-### Structure type — deck investisseur Versi
+### Structure type — deck générique Thomas
 ```
-1. Couverture (logo + "Opportunité [Nom du bien]" + date)
-2. L'accroche (1 photo hero + 1 phrase : ce qu'on en fait et pourquoi c'est intéressant)
-3. Le bien (localisation, surface, état actuel, plan masse)
-4. La transformation (plans architecte, avant/après si dispo, nombre de lots)
-5. L'acquisition (prix, conditions, timing)
-6. Les travaux (scope, budget, planning, photos chantier si en cours)
-7. La commercialisation (cible, prix de sortie, comparables marché)
-8. Le modèle financier (rendement, TRI, cash-flow — 1 tableau clair)
-9. L'opérateur (qui est Versi : 3 fondateurs, track record factuel, 5 opérations depuis 2020)
-10. La structure (véhicule juridique, répartition, ticket d'entrée, gouvernance)
-11. Les risques (identifiés + mitigations — honnêteté > sur-promesse)
-12. Prochaines étapes + contact
+1. Couverture (logo + titre + date)
+2. L'accroche (1 visuel fort + 1 phrase : le point de départ et pourquoi c'est intéressant)
+3. Le sujet (quoi, où, dans quel contexte)
+4. Ce qu'on en fait (la transformation, le projet, la vision)
+5. Les chiffres (budget, rendement, CA, KPIs — selon le sujet)
+6. L'équipe (qui fait quoi, track record factuel)
+7. La structure (véhicule, gouvernance, conditions — si applicable)
+8. Les risques (identifiés + mitigations — honnêteté > sur-promesse)
+9. Prochaines étapes + contact
 ```
 
-### Exemple de narration slide "L'accroche" (slide 2)
+Adapter selon le contexte : un deck immobilier aura des slides travaux/commercialisation, un deck tech aura des slides produit/marché. La structure ci-dessus est le squelette — Thomas décide ce qui s'ajoute.
+
+### Exemple — deck investisseur immobilier (Versi)
 ```
+Slide 2 (accroche) :
 [Photo : façade de l'immeuble, lumière naturelle]
-
 "Un ancien bureau de 250 m² à Lille.
 Personne ne voyait de logements. On a dessiné 3 lots."
-
 T2 · T3 · Duplex 126 m²
 ```
 Une slide qui raconte en 3 secondes : le point de départ, la vision, le résultat.
