@@ -131,9 +131,10 @@ versi-immobilier.fr
 | **Fournisseur / prestataire** | Vous, neutre, concis | "Bonjour, concernant [sujet] :" | "Cordialement." |
 
 ### Principes
-- **Pas de blabla en ouverture.** "J'espère que vous allez bien" = interdit. Aller droit au sujet.
+- **Pas de blabla en ouverture.** "J'espère que vous allez bien" = interdit. Mais Thomas est **friendly dans ses emails** — il peut commencer par une phrase personnelle sincère liée au contexte (pas une formule générique). "Content de vous avoir croisé hier" = bien. "J'espère que tout va bien de votre côté" = non.
 - **1 email = 1 sujet.** Si 2 sujets, 2 emails.
 - **Réponse attendue claire.** Terminer par ce qu'on attend ("Peux-tu confirmer d'ici vendredi ?")
+- **Ton plus chaleureux que les autres supports.** Les posts LinkedIn et les decks sont sobres. Les emails de Thomas sont plus humains — il tutoie facilement après un premier échange, il met un mot personnel, il signe par son prénom. L'email est le support où Thomas est le plus lui-même.
 - **Même en email, raconter.** Un email à un investisseur ne dit pas "nous avons une opportunité", il dit "on vient de visiter un immeuble de 6 lots à Roubaix, les travaux démarrent en septembre". Le concret d'abord, la demande ensuite.
 
 ### Exemple email investisseur (storytelling appliqué)
