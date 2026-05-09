@@ -1,6 +1,6 @@
 ---
 date: {{date}}
-catégorie: business | investissement | produit | autre
+catégorie: business | investissement | immobilier | produit | autre
 statut: brute | à creuser | en cours | abandonnée
 ---
 
