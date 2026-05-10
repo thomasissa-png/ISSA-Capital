@@ -835,14 +835,19 @@ Les mémos de reprise des sessions 5 et 6 ont été archivés dans `docs/project
 - Alignement docs/product/secretariat-contacts-database.md (Carl, Maxime, Martin, Emmanuel)
 - Renommage ASCII des dossiers/fichiers (Reunions, Taches, Idees, Darre, Guerin) — règle CLAUDE.md n°20
 
-**Asana + Craft = connectors natifs Claude** : claude.ai/customize/connectors → 1 clic OAuth, tous plans Claude. Ne JAMAIS proposer de setup MCP technique custom (Node.js, PAT, config JSON) avant d'avoir vérifié le directory natif. Règle CLAUDE.md n°19 ajoutée.
+**Asana + Craft = connectors natifs Claude** : claude.ai/customize/connectors -> 1 clic OAuth, tous plans Claude. Ne JAMAIS proposer de setup MCP technique custom (Node.js, PAT, config JSON) avant d'avoir verifie le directory natif. Regle CLAUDE.md n19 ajoutee.
+
+**Clarification Claude Code vs Claude.ai (session 10)** : les connectors natifs (Craft, Asana, Google Drive) vivent dans l'interface Claude.ai/Desktop et sont lies au compte utilisateur de Thomas. Claude Code (Replit sandbox) n'y a PAS acces. Workflow valide : Thomas utilise Claude.ai pour l'extraction (connectors), Claude Code pour le formatage et la redistribution dans le repo/vault. SETUP-DRIVE.md documente comment connecter le vault Obsidian a Google Drive pour que Claude.ai puisse y ecrire directement a terme.
 
 ### Actions Thomas session 10
 
 1. **Ouvrir le vault dans Obsidian** — pointer vers le dossier `second-cerveau/`
 2. **Installer les plugins Dataview + Homepage** — suivre SETUP.md section 7
 3. **Compléter les champs `[à compléter par Thomas]`** dans les fiches Projets et Contacts
-4. **~~Asana + Craft~~** — déjà connectés par Thomas via les connectors natifs claude.ai/customize/connectors
+4. **~~Asana + Craft~~** — deja connectes par Thomas via les connectors natifs claude.ai/customize/connectors
+5. **Audit Craft + Asana via Claude.ai** — copier le super-prompt (fourni par Claude Code session 10) dans une conversation Claude.ai/Desktop (avec connectors Craft + Asana actifs). Claude.ai produit un fichier IMPORT-PLAN.md. Thomas copie le resultat et le donne a Claude Code pour redistribution dans le vault. IMPORTANT : Claude Code (Replit) n'a PAS acces aux connectors Craft/Asana/Drive — seul Claude.ai/Desktop les voit.
+6. **Setup Google Drive pour le vault** — suivre `second-cerveau/SETUP-DRIVE.md` (Option A recommandee : vault dans dossier Google Drive synchronise localement). Cela permettra a Claude.ai d'ecrire directement dans le vault via le connector Drive.
+7. **Donner le resultat IMPORT-PLAN.md a Claude Code** — une fois que Claude.ai a produit l'inventaire, le transmettre a Claude Code pour redistribution automatique dans les bonnes fiches du vault
 
 ### Résumé de la session 9
 
