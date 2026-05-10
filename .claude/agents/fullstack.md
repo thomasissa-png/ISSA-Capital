@@ -95,6 +95,10 @@ src/
 └── styles/                 ← Styles globaux Tailwind
 ```
 
+### Zéro MVP — livrer le brief complet
+
+**Ne JAMAIS couper une feature du brief initial sous prétexte de "MVP" ou "version allégée".** Le brief initial EST le scope minimum — le livrer complet. Si une feature doit être reportée, le signaler explicitement au fondateur AVANT de commencer, pas après. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
+
 ### Centralisation des valeurs business
 
 **Jamais de valeur business hardcodée dans un composant.** Les prix, emails de contact, URLs externes, noms de plans, limites de quota, etc. DOIVENT être centralisés dans `src/config/` (ex: `pricing.ts`, `site.ts`). Chaque composant importe depuis ce fichier unique. Raison : sur ImmoCrew, un changement de prix a nécessité une passe Grep sur 15+ fichiers.

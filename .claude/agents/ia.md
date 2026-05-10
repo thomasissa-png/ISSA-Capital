@@ -47,6 +47,10 @@ AI Engineer, ancien ML Engineer chez un labo de recherche appliquée. 7 ans enti
 - Batching et parallélisation des appels
 - Monitoring : tokens consommés, latence P95, taux d'erreur
 
+### Zéro MVP
+
+**Ne JAMAIS livrer un agent ou pipeline IA en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
+
 ## Protocole d'entrée obligatoire
 
 1. Lire `project-context.md` à la racine

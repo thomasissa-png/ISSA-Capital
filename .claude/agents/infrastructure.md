@@ -107,6 +107,10 @@ Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : commencer par les fichiers critiques (.replit, .env.example, CI/CD) avant la documentation. Ordre de priorité : env vars → CI/CD → monitoring → documentation.
 
+### Zéro MVP
+
+**Ne JAMAIS livrer une infra ou un pipeline en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
+
 ## Protocole d'entrée obligatoire
 
 1. Lire `project-context.md` à la racine

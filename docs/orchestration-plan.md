@@ -2,36 +2,34 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-09 — Session 9 démarrée (Phase 0 propagation 8 learnings DONE)**
+> Dernière mise à jour : **2026-05-10 — Session 9 CLÔTURÉE (91 commits, 68 tests)**
 
-<!-- SESSION: phases=1 tasks_prod=0 tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/resume-issa-session-9-Y9WBK (créée à partir de claude/resume-issa-session-7-1SjaO) -->
+<!-- SESSION: phases=completed tasks_prod=91_commits tasks_consult=0 -->
+<!-- BRANCH ACTIVE: claude/resume-issa-session-9-Y9WBK -->
 
 ---
 
-## Session 9 — EN COURS (2026-04-09)
+## Session 9 — CLÔTURÉE (2026-04-09 → 2026-05-10)
 
-**Branche active session 9** : `claude/resume-issa-session-9-Y9WBK` (HEAD `d87d31b`)
+**Branche** : `claude/resume-issa-session-9-Y9WBK` (91 commits)
 
-**Compteur session 9** : **0/18 Tasks producteurs** (Phase 0 = travail direct orchestrateur, 0 Task)
+**Livrables majeurs** :
+- ✅ Phase 0 : Propagation 8 learnings sessions 7-8 (10 fichiers agents)
+- ✅ Site vitrine converti en monopage (nav vidé, 6 sections, FAQ JSON-LD)
+- ✅ Bot Telegram "Anya" complet (webhook, Claude API, photos, PDF, Drive, 68 tests)
+- ✅ SEO/GEO optimisés 10/10 (JSON-LD enrichi, robots.ts 11 bots IA, llms.txt)
+- ✅ Claude Profile 9 fichiers (score @ia 9.96/10)
+- ✅ Second cerveau Obsidian (vault complet + 7 templates + SETUP)
+- ✅ Pipeline LinkedIn triple audit >= 9/10 établi
+- ✅ Umami Analytics intégré (Plausible retiré)
+- ✅ Clôture : propagation P0/P1 + archivage + docs/founder-preferences.md créé
 
-**Phase 0 — Propagation 8 learnings session 7-8** : ✅ DONE
-- P1 "Credentials en clair" → CLAUDE.md (règle 18) + ia.md + legal.md + product-manager.md
-- P2 "tsconfig monorepo" → fullstack.md + infrastructure.md
-- P2 "Race condition Playwright" → orchestrator.md
-- P2 "Limite API mid-task" → orchestrator.md
-- P2 "Différenciation inter-pages" → creative-strategy.md + copywriter.md
-- P2 "Audit @design signal Thomas" → orchestrator.md
-- P3 "3 variantes après rejet" → design.md
-- P3 "Délais réalistes vitrine" → copywriter.md
+**Phase 8 — Actions Thomas** : ⏳ NON DÉMARRÉES
+- 12 actions documentées dans le mémo de reprise session 9 (project-context.md)
 
-**Phase 8 — Actions Thomas** : ⏳ EN ATTENTE RÉPONSE THOMAS
-- 12 actions documentées dans `secretariat/DEPLOYMENT.md`
-- Statut inconnu — Thomas doit confirmer son avancement avant Phase 9a
-
-**Prochaines étapes selon avancement Thomas** :
-- Si Phase 8 faite → Phase 9a (debug déploiement Replit) + Phase 9b (premier CR test)
-- Si Phase 8 pas faite → chantiers site vitrine (ajustements visuels, merge vers main, etc.)
+**Session 10** : branche recommandée `claude/issa-capital-s10-deploy-anya-[suffix]`
+- Priorité 1 : déploiement bot Anya (webhook Telegram + Secrets Replit)
+- Priorité 2 : si Phase 8 faite → activation production
 
 ---
 
