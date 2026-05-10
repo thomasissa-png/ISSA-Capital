@@ -38,8 +38,8 @@
 
 ## Gradient One — co-actionnariat (3 actionnaires)
 
-### Carl `[NOM DE FAMILLE À COMPLÉTER]`
-- **Rôle** : Co-actionnaire Gradient One `[TITRE EXACT À COMPLÉTER]`
+### Carl Standertskjold-Nordenstam
+- **Rôle** : Co-fondateur Gradient One / Versi
 - **Entité principale** : Gradient One
 - **Accès agent secrétariat** : Gradient One + Versi Immobilier + Versi Invest + filiales du périmètre Gradient One (Versimo, Immocrew). **PAS d'accès aux CR ISSA Capital.**
 - **Numéro WhatsApp** : `[À COMPLÉTER PAR THOMAS]`
@@ -48,8 +48,8 @@
 
 ---
 
-### Maxime `[NOM DE FAMILLE À COMPLÉTER]`
-- **Rôle** : Co-actionnaire Gradient One `[TITRE EXACT À COMPLÉTER]`
+### Maxime Lemoine
+- **Rôle** : Co-fondateur Gradient One / Versi, responsable partie immobilière
 - **Entité principale** : Gradient One
 - **Accès agent secrétariat** : Gradient One + Versi Immobilier + Versi Invest + filiales du périmètre Gradient One (Versimo, Immocrew). **PAS d'accès aux CR ISSA Capital.**
 - **Numéro WhatsApp** : `[À COMPLÉTER PAR THOMAS]`
@@ -59,11 +59,21 @@
 ---
 
 ### Emmanuel Gomez
-- **Rôle** : Président, Gradient One
-- **Entité principale** : Gradient One
-- **Notes** : président opérationnel de Gradient One. Cité par Thomas dans Q4.1 comme cas d'usage type ("déjeuner avec Emmanuel Gomez ce midi au restaurant pour discuter des prochains lancements Versimo"). Lien direct avec Versimo (filiale de Gradient One) suggère un rôle transverse.
-- **Source** : Q4.1 réponse Thomas
-- **À confirmer Thomas** : Emmanuel Gomez fait-il partie des 3 co-actionnaires Gradient One, ou est-il président opérationnel séparé ? `[À CONFIRMER PAR THOMAS]`
+- **Rôle** : Conseiller (ex-Président Gradient One)
+- **Entité principale** : Indépendant
+- **Notes** : ex-Président de Gradient One. Conseiller proche de Thomas Issa (sans contrat). N'est PAS co-actionnaire (les 3 co-actionnaires sont Thomas, Carl, Maxime). Accès toutes entités.
+- **Source** : `src/lib/secretariat/contacts.ts` (source de vérité, confirmé Thomas)
+
+---
+
+## Conseil juridique
+
+### Martin Yhuel
+- **Rôle** : Avocat Associé, PNM Avocats
+- **Entité principale** : PNM Avocats (Lille)
+- **Accès agent secrétariat** : toutes entités (IC, GO, VI, VV)
+- **Notes** : avocat de la famille Issa. Spécialisé droit des sociétés, capital-investissement, M&A. Basé à Lille.
+- **Source** : `src/lib/secretariat/contacts.ts` (source de vérité)
 
 ---
 

@@ -528,6 +528,7 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | @ia (Session 9 — Claude Profile 9 fichiers) | 2026-04-09 | claude-profile/CLAUDE.md, red-lines.md, voice-preferences.md, work-preferences.md, content-templates.md, brand-identity.md, technical-preferences.md, about-me.md, lifestyle.md | 9 fichiers profil réutilisables cross-projets. Score audit @ia 9.96/10. Couvre : interdits (27 red-lines P0/P1/P2), voix (registre tu/vous contextuel), travail (qualité 10/10, parallélisation), contenu (storytelling-first, 3 questions obligatoires, triple audit), marque (ISSA Capital + Versi + Gradient One), tech (stack Next.js/Tailwind/Umami/gpt-image-2), bio (chronologie 1986-présent), lifestyle (restaurants/hôtels/voyages). | Profil créé pour Claude Cowork — Thomas utilise Claude Desktop avec Obsidian. Chaque fichier est auto-suffisant et lu dans l'ordre spécifié par CLAUDE.md du profil. |
 | @fullstack (Session 9 — Second cerveau Obsidian) | 2026-04-09 | second-cerveau/ (CLAUDE.md, SETUP.md, 7 templates, Todo.md, structure 10 dossiers) | Vault Obsidian complet remplaçant Craft. Structure : Profil (copie claude-profile), Projets, Contacts, Réunions, Tâches, Journal, Idées, Cuisine, Learnings, Ressources. 7 templates (Réunion, Contact, Journal, Idée, Recette, Learning, Projet). SETUP.md pas-à-pas (Obsidian install, Sync, Cowork, plugins). Routine quotidienne suggérée. | Obsidian Sync retenu (pas iCloud — instable Windows). Google Drive comme backup. Craft abandonné (API complexe, éditeur propriétaire). |
 | main thread (Session 9 continuation — clôture) | 2026-05-10 | docs/founder-preferences.md (créé), docs/lessons-learned.md (archivé + propagé), docs/lessons-learned-archive.md (créé), docs/project-context-archive.md (créé), project-context.md (mémo session 10) | Clôture session 9 : propagation P0 "Zéro MVP" (fullstack.md, ia.md, infrastructure.md) + P2 "Umami" (data-analyst.md). Création docs/founder-preferences.md. Archivage learnings P2/P3 terminés. Archivage memos sessions 5-6. Nettoyage guide MCP Gmail/Calendar inutile (Claude Desktop a intégration native Google). | Guide MCP supprimé car Claude Desktop gère nativement Gmail/Calendar — toujours vérifier les intégrations natives avant de recommander une solution technique complexe. |
+| orchestrator (Session 10 — vault Obsidian + alignement contacts) | 2026-05-10 | second-cerveau/ (8 fiches Projets, 14 fiches Contacts, 6 README dossiers, Dashboard.md, SETUP-ASANA-MCP.md) + docs/product/secretariat-contacts-database.md (corrections Carl/Maxime/Martin/Emmanuel) | Vault Obsidian peuplé : 8 projets pré-remplis depuis project-context.md, 14 contacts (11 complets + 3 partiels famille) depuis contacts.ts + secretariat-contacts-database.md + about-me.md. Arbo Alternative C avec Notes/ (Idées/Learnings/Cuisine/Voyages). Alignement contacts-database.md : Carl Standertskjold-Nordenstam, Maxime Lemoine (noms complets), Martin Yhuel ajouté, Emmanuel Gomez corrigé (ex-Président, conseiller sans contrat). Guide SETUP-ASANA-MCP.md pas-à-pas. | Arbo Alternative C validée par Thomas (regroupe perso dans Notes/ thématique). 14 contacts = liste exhaustive des personnes nommées dans les sources existantes. Zéro placeholder générique (pas de fiche "Expert-comptable" sans nom). Craft API non vérifiable sans WebFetch — à documenter pour Thomas. |
 
 ---
 
@@ -821,7 +822,29 @@ Les mémos de reprise des sessions 5 et 6 ont été archivés dans `docs/project
 ### Date de clôture : 2026-05-10
 
 
-### Branche active : `claude/resume-issa-session-9-Y9WBK`
+### Branche active : `claude/issa-capital-s10-obsidian-restructure-HFevS`
+
+### Résumé de la session 10 (en cours)
+
+**Vault Obsidian restructuré** — session 10 a peuplé le vault avec du contenu réel :
+- 8 fiches Projets (ISSA Capital, Gradient One, Versi Immobilier, Versi Invest, Immocrew, Versimo, Immobilier Direct, 2J Impression)
+- 14 fiches Contacts (11 complets + 3 partiels famille)
+- 6 README dans les dossiers vides (Réunions, Journal, Notes/Idées, Notes/Learnings, Notes/Cuisine, Notes/Voyages)
+- Dashboard.md avec requêtes Dataview
+- SETUP-ASANA-MCP.md (guide pas-à-pas)
+- SETUP-CRAFT-MCP.md (guide pas-à-pas — connecteur custom Claude)
+- Alignement docs/product/secretariat-contacts-database.md (Carl, Maxime, Martin, Emmanuel)
+
+**Craft MCP confirmé** : Thomas avait raison de pointer la page craft.do. Vérifié via WebSearch+WebFetch — Craft expose un MCP officiel `https://mcp.craft.do/my/mcp` à brancher comme custom connector dans Claude (Settings > Connectors). Requiert Claude Pro/Max. Auth OAuth gérée par Claude. Lecture, résumé, mise à jour de notes Craft depuis n'importe quelle conversation Claude.
+
+### Actions Thomas session 10
+
+1. **Ouvrir le vault dans Obsidian** — pointer vers le dossier `second-cerveau/`
+2. **Installer les plugins Dataview + Homepage** — suivre SETUP.md section 7
+3. **Compléter les champs `[à compléter par Thomas]`** dans les fiches Projets et Contacts
+4. **Connecter le MCP Craft** — suivre SETUP-CRAFT-MCP.md (5 étapes, ~3 minutes)
+5. **Connecter le MCP Asana** — suivre SETUP-ASANA-MCP.md étapes 1-6 (génération PAT + config JSON)
+6. **Tester les MCP** — demander à Claude "Liste mes projets Asana" et "Liste mes derniers documents Craft"
 
 ### Résumé de la session 9
 

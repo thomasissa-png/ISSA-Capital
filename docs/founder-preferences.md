@@ -39,6 +39,10 @@
 - **Forme collégiale** : "l'un des membres de la famille" plutôt que "Thomas Issa" pour les contacts.
 - **Placeholders** : éviter archétypes (Dupont, Martin). Utiliser des noms distinctifs neutres (ex: "Antoine Vasseur").
 
+## Organisation personnelle
+
+- **Pas de dichotomie Pro/Perso** : Thomas refuse la séparation systématique Pro/Perso dans ses outils (vault, contacts, notes). Un contact reste un contact, une note reste une note. Les containers sont structurels (Projets, Contacts, Réunions), pas catégoriels (Pro vs Perso). Le personnel est rangé par thème dans Notes/ (Idées, Learnings, Cuisine, Voyages).
+
 ## Processus décisionnel
 
 - **Paralléliser par défaut** : valeur > effort. Ne pas séquencer sans raison.

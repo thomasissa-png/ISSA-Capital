@@ -42,8 +42,21 @@ Pas besoin de tout migrer d'un coup. Au fil des jours :
 **Soir (5 min, optionnel)** : note Journal/ du jour (Ctrl+T → template Journal)
 **Vendredi ou dimanche (15 min, recommandé)** : revue hebdo — revoir Todo.md (déplacer les tâches non faites), mettre à jour les projets actifs, checker "En attente" (quelque chose s'est débloqué ?)
 
-## 7. Plugins recommandés (optionnel)
+## 7. Plugins recommandés
+
+### Obligatoires (pour que le Dashboard fonctionne)
+
+- **Dataview** : requêtes sur tes notes (ex: "tous les contacts rencontrés ce mois"). Le Dashboard utilise Dataview pour afficher les projets actifs, contacts récents, tâches, etc.
+  - Settings → Community plugins → Browse → chercher "Dataview" → Install → Enable
+  - Settings → Dataview → activer **Enable JavaScript Queries** (nécessaire pour certaines requêtes avancées)
+  - Settings → Dataview → activer **Enable Inline Queries** (pour les compteurs inline)
+
+- **Homepage** : ouvre automatiquement le Dashboard au lancement d'Obsidian.
+  - Settings → Community plugins → Browse → chercher "Homepage" → Install → Enable
+  - Settings → Homepage → Homepage : taper `Dashboard`
+  - Settings → Homepage → Opening method : `Replace all open notes`
+
+### Recommandés (optionnels)
 
 - **Calendar** : vue calendrier pour le Journal/
-- **Dataview** : requêtes sur tes notes (ex: "tous les contacts rencontrés ce mois")
 - **Templater** : templates avancés avec date automatique
