@@ -2,14 +2,38 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-04-08 — Session 7 démarrée (Phase 0 propagation learnings DONE, CHECKPOINT #5 en attente Thomas)**
+> Dernière mise à jour : **2026-05-10 — Session 9 CLÔTURÉE (91 commits, 68 tests)**
 
-<!-- SESSION: phases=1 tasks_prod=0 tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/resume-issa-session-7-1SjaO (créée à partir de claude/resume-issa-session-6-UDiOS) -->
+<!-- SESSION: phases=completed tasks_prod=91_commits tasks_consult=0 -->
+<!-- BRANCH ACTIVE: claude/resume-issa-session-9-Y9WBK -->
 
 ---
 
-## Session 7 — EN COURS (2026-04-08)
+## Session 9 — CLÔTURÉE (2026-04-09 → 2026-05-10)
+
+**Branche** : `claude/resume-issa-session-9-Y9WBK` (91 commits)
+
+**Livrables majeurs** :
+- ✅ Phase 0 : Propagation 8 learnings sessions 7-8 (10 fichiers agents)
+- ✅ Site vitrine converti en monopage (nav vidé, 6 sections, FAQ JSON-LD)
+- ✅ Bot Telegram "Anya" complet (webhook, Claude API, photos, PDF, Drive, 68 tests)
+- ✅ SEO/GEO optimisés 10/10 (JSON-LD enrichi, robots.ts 11 bots IA, llms.txt)
+- ✅ Claude Profile 9 fichiers (score @ia 9.96/10)
+- ✅ Second cerveau Obsidian (vault complet + 7 templates + SETUP)
+- ✅ Pipeline LinkedIn triple audit >= 9/10 établi
+- ✅ Umami Analytics intégré (Plausible retiré)
+- ✅ Clôture : propagation P0/P1 + archivage + docs/founder-preferences.md créé
+
+**Phase 8 — Actions Thomas** : ⏳ NON DÉMARRÉES
+- 12 actions documentées dans le mémo de reprise session 9 (project-context.md)
+
+**Session 10** : branche recommandée `claude/issa-capital-s10-deploy-anya-[suffix]`
+- Priorité 1 : déploiement bot Anya (webhook Telegram + Secrets Replit)
+- Priorité 2 : si Phase 8 faite → activation production
+
+---
+
+## Session 7-8 — CLÔTURÉE (2026-04-08/09)
 
 **Branche active session 7** : `claude/resume-issa-session-7-1SjaO` (imposée par la configuration git du harness, créée à partir de `claude/resume-issa-session-6-UDiOS`)
 

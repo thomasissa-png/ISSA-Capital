@@ -233,6 +233,37 @@ Quand plusieurs @creative-strategy sont lancés en parallèle sur des pages lié
 
 **Observation session 6 ISSA Capital** : Phase 6b refonte /mission et Phase 6c refonte /participations ont tourné en parallèle sans conflit car l'Edit était séquentiel sur la dernière ligne du tableau. Mais le risque existe si les 2 agents écrivent simultanément — la règle "périmètre fichier disjoint + max 2 parallèles" sauve la mise.
 
+### Race condition Playwright entre Tasks parallèles (learning P2 session 7-8 ISSA Capital)
+
+Quand 2+ agents tournent en parallèle et que l'un d'eux modifie des assets visuels (favicon, images, CSS global) qui affectent les baselines Playwright :
+
+1. **Exclure Playwright du Task qui modifie les assets** — ajouter dans le brief : "NE PAS exécuter Playwright ni régénérer de baselines."
+2. **Le main thread régénère les baselines une seule fois** en fin de phase consolidée, après que tous les Tasks parallèles ont terminé.
+3. **Ne jamais lancer @qa en parallèle d'un @fullstack qui modifie des assets visuels** — @qa lit les baselines que @fullstack est en train de modifier → résultats incohérents.
+
+Source : session 7-8 ISSA Capital — @fullstack favicon modifie les assets + régénère baselines pendant que @qa tourne en parallèle.
+
+### Limite API mid-task — sérialisation de sécurité (learning P2 session 7-8 ISSA Capital)
+
+En complément de la section "Anti-saturation API" ci-dessus : quand on parallélise 3+ Tasks Opus **en fin de session** (budget API potentiellement bas), les agents peuvent être coupés mid-task par un "You've hit your limit".
+
+**Règles complémentaires :**
+1. **En fin de session (compteur > 12/18)** : sérialiser au lieu de paralléliser, même si les Tasks sont indépendants. Le risque de coupure mid-task augmente avec le nombre d'agents parallèles.
+2. **La règle anti-timeout "sauvegarder au fur et à mesure"** (Write/Edit incrémental) protège les livrables même en cas de coupure API — les fichiers écrits avant la coupure sont récupérables.
+3. **En reprise** : vérifier les fichiers produits (Glob + Read) avant de relancer — ne pas relancer un agent dont le livrable existe déjà.
+
+Source : session 7-8 ISSA Capital — @fullstack favicon + @creative-strategy bio + @design audit lancés en parallèle → coupure quota API. Fichiers récupérés à 100% grâce au Write incrémental.
+
+### Audit @design sur signal fondateur "pauvre/moche/fade" (learning P2 session 7-8 ISSA Capital)
+
+Quand le fondateur exprime un **malaise visuel vague** ("je trouve X pauvre visuellement", "c'est moche", "ça fait fade", "ça fait vide"), l'orchestrateur DOIT :
+
+1. **Déclencher un audit @design complet de la page** — pas juste le fix ponctuel du composant mentionné. Le malaise initial pointe toujours vers un problème structurel plus large.
+2. **Le brief @design** doit inclure le verbatim exact du fondateur + instruction "audit complet de la page, pas juste le composant mentionné".
+3. **Résultat attendu** : diagnostic structuré avec score /10, problèmes identifiés par priorité (P1/P2/P3), recommandations actionnables.
+
+Source : session 7-8 ISSA Capital — Thomas dit "phrase seule fond blanc pauvre visuellement" sur /opportunites. @design produit un audit 6.5/10 qui détecte 3 problèmes structurels non nommés par Thomas (section fantôme, rupture tonale, hero nu).
+
 ### Structure d'un message orchestrateur type
 
 ```

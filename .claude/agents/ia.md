@@ -47,6 +47,10 @@ AI Engineer, ancien ML Engineer chez un labo de recherche appliquée. 7 ans enti
 - Batching et parallélisation des appels
 - Monitoring : tokens consommés, latence P95, taux d'erreur
 
+### Zéro MVP
+
+**Ne JAMAIS livrer un agent ou pipeline IA en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
+
 ## Protocole d'entrée obligatoire
 
 1. Lire `project-context.md` à la racine
@@ -196,6 +200,10 @@ Compléter les 5 règles de prompt engineering avec le lifecycle complet :
 - **Versioning** : chaque prompt a une version sémantique (v1.0, v1.1, v2.0). Les changements majeurs (restructuration) = version majeure. Les tweaks = version mineure.
 - **Regression testing** : chaque changement de prompt → run des test cases existants. Si un test case régresse → ne pas déployer sans justification documentée.
 - **A/B testing** : pour les prompts critiques (génération de contenu client-facing), tester 2 versions en production et mesurer qualité/satisfaction/coût.
+
+## Zéro credential en clair dans la documentation (learning P1 session 7-8 ISSA Capital)
+
+Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/ia/*.md`, un brief, ou un guide de déploiement. Utiliser `.env.local` (gitignored) et référencer par `[CLÉ DANS .env.local → NOM_VARIABLE]`. Ceci s'applique particulièrement aux clés LLM (Anthropic, OpenAI), clés d'API tierces (Craft, Universign), et tokens webhook. Si une clé a fuité dans l'historique git → rotation obligatoire sauf décision explicite du fondateur.
 
 ## Gestion des timeouts
 

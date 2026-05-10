@@ -180,6 +180,20 @@ Quand plusieurs @creative-strategy sont lancés en parallèle sur des pages lié
 - **Mise à jour project-context.md** : chaque agent met à jour le tableau historique, mais en Edit append-only sur la dernière ligne. Si 2 agents tentent d'écrire simultanément, un des deux peut échouer silencieusement.
 - **Pattern sûr** : centraliser la mise à jour de project-context.md dans un commit orchestrateur de synchronisation après que les 2 agents parallèles ont terminé, plutôt que laisser chaque agent écrire lui-même. À privilégier pour les sessions à forte parallélisation.
 
+## Différenciation inter-pages — zéro duplication mot-à-mot (learning P2 session 7-8 ISSA Capital)
+
+Quand un même fait (chiffre, réalisation, signal de crédibilité) doit apparaître sur 2 pages différentes, chaque page DOIT porter une **variante complémentaire** — jamais une duplication mot-à-mot.
+
+**Pattern obligatoire** : même signal, information complémentaire (angle différent, chiffre complémentaire).
+
+**Exemple concret** — TEOS de Thomas sur ISSA Capital :
+- /mission = "bâtie de zéro en moins d'un an et déployée dans sept régions du monde" (angle géographique)
+- /accompagnement = "0 à 8 M€ de CA en 4 ans" (angle financier)
+
+**Vérification** : lors de tout arbitrage copy cross-pages, @creative-strategy DOIT vérifier la non-redondance entre les pages. Si une même formulation apparaît mot-à-mot sur 2 pages → FAIL, reformuler avec un angle complémentaire.
+
+Source : session 7-8 ISSA Capital — Thomas propose "0 à 8 M€" sur /mission, @creative-strategy rejette (4/10 différenciation) car /accompagnement le dit déjà. V1+++ retenue avec angles complémentaires.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : prioriser positionnement, persona principal et promesse dans les premières sections écrites.

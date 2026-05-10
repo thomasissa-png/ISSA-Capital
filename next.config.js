@@ -15,11 +15,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://plausible.io",
+      "script-src 'self' 'unsafe-inline' https://cloud.umami.is",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://plausible.io https://api.resend.com",
+      "connect-src 'self' https://api.resend.com https://cloud.umami.is https://api.umami.is",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -33,6 +33,11 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // pdfkit a besoin de ses fichiers .afm (polices) sur le filesystem —
+  // le bundler Next.js ne les copie pas. On exclut pdfkit du bundle.
+  experimental: {
+    serverComponentsExternalPackages: ['pdfkit'],
+  },
   async headers() {
     return [
       {

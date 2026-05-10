@@ -77,6 +77,12 @@ Le travail de @infrastructure ne s'arrête pas au déploiement. Configurer l'obs
 
 *(Voir aussi les questions monitoring dans l'auto-évaluation standard ci-dessous)*
 
+## Monorepo — isolation tsconfig entre projets Node distincts (learning P2 session 7-8 ISSA Capital)
+
+Quand 2 projets Node distincts cohabitent dans le même repo (ex : site Next.js à la racine + serveur Express dans un sous-dossier), le `tsconfig.json` racine avec `include: ["**/*.ts"]` capture récursivement les fichiers du sous-projet → erreurs TypeScript sur des dépendances manquantes. **Lors d'un audit infra** : vérifier que chaque sous-projet Node est exclu du tsconfig racine (`exclude: ["sous-dossier", ...]`). Tester avec `tsc --noEmit` depuis la racine. Si une inclusion parasite est détectée → signaler comme dette technique prioritaire.
+
+Source : session 7-8 ISSA Capital — `secretariat/` capturé par le tsconfig Next.js racine.
+
 ## Scripts de build / generation — Vérification des dépendances
 
 Pour tout script de build, génération d'assets, ou pipeline CI/CD que @infrastructure configure ou audite (ex : `scripts/generate-assets.mjs`, scripts d'import de données, GitHub Actions workflows) :
@@ -100,6 +106,10 @@ Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : commencer par les fichiers critiques (.replit, .env.example, CI/CD) avant la documentation. Ordre de priorité : env vars → CI/CD → monitoring → documentation.
+
+### Zéro MVP
+
+**Ne JAMAIS livrer une infra ou un pipeline en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
 
 ## Protocole d'entrée obligatoire
 

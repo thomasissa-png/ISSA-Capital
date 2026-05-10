@@ -1,0 +1,1282 @@
+/**
+ * POST /api/telegram/webhook
+ *
+ * Route handler Next.js (App Router) pour le secrétariat ISSA Capital.
+ *
+ * Flow complet :
+ *  1. Vérifier le secret token (X-Telegram-Bot-Api-Secret-Token) via timingSafeEqual
+ *  2. Parser le body JSON via Zod (TelegramUpdateSchema)
+ *  3. Vérifier le chat_id contre la whitelist (TELEGRAM_ALLOWED_CHAT_IDS)
+ *  4. Envoyer le message à Claude avec system prompt fiscal + contacts + historique Craft
+ *  5. Claude peut faire des recherches web (adresses, entreprises)
+ *  6. Si needs_clarification → renvoyer la question (conversation multi-tours)
+ *     Si ready → envoyer aperçu CR + boutons Valider/Modifier/Annuler
+ *  7. Valider → référence IC-CR-YYYY-XXXX + publication Craft + confirmation
+ *  8. Toujours retourner 200 OK (Telegram retente agressivement sinon)
+ *
+ * Mémoire : historique de conversation persisté en JSON (24h TTL, 20 messages max).
+ * Contacts récurrents injectés dans le prompt. Recherche web automatique.
+ */
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { timingSafeEqual } from 'node:crypto';
+import Anthropic from '@anthropic-ai/sdk';
+import { TelegramUpdateSchema, ClaudeResponseSchema } from '@/lib/secretariat/types';
+import type { CRDraft } from '@/lib/secretariat/types';
+import {
+  sendTelegramMessage,
+  sendTelegramConfirmation,
+  sendTelegramDocument,
+  answerCallbackQuery,
+  downloadTelegramPhoto,
+  downloadTelegramFile,
+  sendTypingAction,
+} from '@/lib/secretariat/telegram';
+import {
+  renderCrForTelegram,
+  buildCraftTitle,
+} from '@/lib/secretariat/cr-renderer';
+import { formatContactsForPrompt, addContact } from '@/lib/secretariat/contacts';
+import {
+  getConversation,
+  appendMessage as storeMessage,
+  toClaudeMessages,
+  setPendingDraft,
+  getPendingDraft,
+  clearPendingDraft,
+  clearConversation,
+  addPhoto,
+  getPhotos,
+  clearPhotos,
+} from '@/lib/secretariat/conversation-store';
+import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
+import { getNextReference } from '@/lib/secretariat/reference-counter';
+import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
+import { uploadToDrive } from '@/lib/secretariat/drive-upload';
+import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
+import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// ============================================================
+// System prompt — chargement et cache singleton
+// ============================================================
+
+let cachedSystemPrompt: string | null = null;
+
+/**
+ * Charge le system prompt fiscal depuis docs/ia/secretariat-system-prompt.md.
+ * Extrait le contenu du premier bloc code (```) sous "## 2. System prompt complet".
+ * Cache en mémoire après le premier appel.
+ */
+function loadSystemPrompt(): string {
+  if (cachedSystemPrompt !== null) {
+    return cachedSystemPrompt;
+  }
+
+  const promptPath = resolve(process.cwd(), 'docs', 'ia', 'secretariat-system-prompt.md');
+  const fileContent = readFileSync(promptPath, 'utf8');
+
+  const sectionMarker = '## 2. System prompt complet';
+  const sectionIdx = fileContent.indexOf(sectionMarker);
+  if (sectionIdx === -1) {
+    throw new Error(`[webhook] section "${sectionMarker}" introuvable dans ${promptPath}`);
+  }
+
+  const afterSection = fileContent.slice(sectionIdx);
+  const openIdx = afterSection.indexOf('```');
+  if (openIdx === -1) {
+    throw new Error('[webhook] aucun bloc code trouvé après la section 2');
+  }
+
+  const afterOpen = afterSection.slice(openIdx + 3);
+  const newlineAfterOpen = afterOpen.indexOf('\n');
+  if (newlineAfterOpen === -1) {
+    throw new Error('[webhook] bloc code malformé');
+  }
+
+  const contentStart = newlineAfterOpen + 1;
+  const closeIdx = afterOpen.indexOf('```', contentStart);
+  if (closeIdx === -1) {
+    throw new Error('[webhook] bloc code non fermé');
+  }
+
+  const promptBody = afterOpen.slice(contentStart, closeIdx).trim();
+  if (promptBody.length < 500) {
+    throw new Error(
+      `[webhook] system prompt trop court (${promptBody.length} chars), fichier probablement corrompu`,
+    );
+  }
+
+  cachedSystemPrompt = promptBody;
+  return cachedSystemPrompt;
+}
+
+// ============================================================
+// Anthropic client — singleton lazy
+// ============================================================
+
+let cachedClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic {
+  if (cachedClient !== null) {
+    return cachedClient;
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || apiKey === '__TO_FILL__') {
+    throw new Error('ANTHROPIC_API_KEY manquante ou placeholder');
+  }
+
+  cachedClient = new Anthropic({ apiKey, maxRetries: 2 });
+  return cachedClient;
+}
+
+// ============================================================
+// Vérification du secret webhook
+// ============================================================
+
+function verifyWebhookSecret(request: Request): boolean {
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!secret || secret.trim() === '' || secret === '__TO_FILL__') {
+    return false;
+  }
+
+  const header = request.headers.get('x-telegram-bot-api-secret-token');
+  if (!header || header.length === 0) {
+    return false;
+  }
+
+  // Comparaison en temps constant pour éviter les timing attacks
+  if (header.length !== secret.length) {
+    return false;
+  }
+
+  const headerBuf = Buffer.from(header, 'utf8');
+  const secretBuf = Buffer.from(secret, 'utf8');
+  return timingSafeEqual(headerBuf, secretBuf);
+}
+
+// ============================================================
+// Whitelist des chat_ids autorisés
+// ============================================================
+
+function isAllowedChatId(chatId: number): boolean {
+  const raw = process.env.TELEGRAM_ALLOWED_CHAT_IDS;
+  if (!raw || raw.trim() === '') {
+    return false;
+  }
+
+  const allowedIds = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((s) => Number.parseInt(s, 10))
+    .filter((n) => !Number.isNaN(n));
+
+  return allowedIds.includes(chatId);
+}
+
+// ============================================================
+// Appel Claude pour générer le CR
+// ============================================================
+
+const ANTHROPIC_TIMEOUT_MS = 60_000;
+const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+
+/**
+ * Génère l'instruction temporelle dynamique pour le system prompt.
+ * Doit être appelée à chaque requête pour avoir la date/heure actuelles.
+ */
+function buildTimeInstruction(): string {
+  const now = new Date();
+  const dateFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(now);
+  const yesterday = new Date(now.getTime() - 86400000);
+  const dayBefore = new Date(now.getTime() - 2 * 86400000);
+  const hierFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(yesterday);
+  const avantHierFr = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(dayBefore);
+  const todayIso = now.toISOString().split('T')[0];
+  const hierIso = yesterday.toISOString().split('T')[0];
+  const avantHierIso = dayBefore.toISOString().split('T')[0];
+
+  return `
+
+# REGLE PRIORITAIRE — DATES ET HEURES
+
+Tu connais la date et l'heure actuelles. Quand l'utilisateur dit "ce matin", "ce midi", "ce soir", "hier", "hier soir", "tout à l'heure", "avant-hier" ou toute expression temporelle relative — tu CALCULES la date toi-même. Tu ne demandes JAMAIS "quelle est la date exacte".
+
+Date du jour : ${dateFr} = ${todayIso}
+Hier : ${hierFr} = ${hierIso}
+Avant-hier : ${avantHierFr} = ${avantHierIso}
+
+TABLE DE CONVERSION :
+"aujourd'hui" / "ce matin" / "ce midi" / "cet après-midi" / "ce soir" / "tout à l'heure" / "à l'instant" / "il y a une heure" → ${todayIso}
+"déjeuner ce midi" / "petit-déjeuner ce matin" / "dîner ce soir" / "réunion de ce matin" → ${todayIso}
+"hier" / "hier matin" / "hier midi" / "hier après-midi" / "hier soir" → ${hierIso}
+"avant-hier" → ${avantHierIso}
+"lundi/mardi/mercredi/jeudi/vendredi/samedi/dimanche dernier" → CALCULE depuis ${todayIso}
+`;
+}
+
+async function generateCR(
+  messageText: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  photos: PhotoAttachment[] = [],
+): Promise<{
+  success: boolean;
+  status?: 'needs_clarification' | 'ready';
+  clarificationQuestion?: string;
+  crText?: string;
+  crDraft?: CRDraft;
+  error?: string;
+}> {
+  try {
+    let systemPrompt = loadSystemPrompt();
+    const client = getAnthropicClient();
+
+    // Injecter la base de contacts récurrents dans le system prompt
+    const contactsBlock = formatContactsForPrompt();
+    systemPrompt = systemPrompt.replace(
+      '[INJECTION_DATABASE_CONTACTS_ICI]',
+      contactsBlock,
+    );
+
+    // Récupérer l'historique des CR validés (mémoire longue)
+    const recentCRs = formatHistoryForPrompt(10);
+
+    // Le contexte temporel (dates, "ce matin"→date ISO) est maintenant dans
+    // timeInstruction (injecté dans le system prompt). Ici on ajoute juste l'historique.
+    const enrichedMessage = `[${recentCRs}]\n\n${messageText}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+
+    const timeInstruction = buildTimeInstruction();
+
+    // Instruction recherche web ajoutée au system prompt
+    const searchInstruction = `
+
+# REGLE 12 — RECHERCHE WEB AUTOMATIQUE
+
+Tu disposes d'un outil de recherche web. Utilise-le AUTOMATIQUEMENT pour :
+- Trouver l'adresse exacte d'un restaurant, hôtel ou lieu mentionné par l'utilisateur (ex : "Le Voltaire Paris" → rechercher l'adresse complète)
+- Vérifier le titre ou la société d'un interlocuteur non présent dans la database contacts
+- Trouver des informations publiques sur une entreprise mentionnée dans la réunion
+- Compléter toute information factuelle vérifiable qui améliore la qualité du CR
+
+Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou d'entreprise apparaît sans adresse complète, cherche automatiquement.
+`;
+
+    // Construire le contenu du message utilisateur (texte seul ou multimodal avec photos)
+    type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    type TextBlock = { type: 'text'; text: string };
+    type ImageBlock = {
+      type: 'image';
+      source: { type: 'base64'; media_type: ImageMediaType; data: string };
+    };
+    type ContentBlock = TextBlock | ImageBlock;
+
+    let userContent: string | ContentBlock[];
+
+    if (photos.length > 0) {
+      // Message multimodal : photos + texte
+      const contentParts: ContentBlock[] = [];
+
+      for (const photo of photos) {
+        // Cast mimeType en union littérale acceptée par l'API Anthropic
+        const validMediaTypes: ImageMediaType[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const mediaType: ImageMediaType = validMediaTypes.includes(photo.mimeType as ImageMediaType)
+          ? (photo.mimeType as ImageMediaType)
+          : 'image/jpeg';
+
+        contentParts.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: photo.base64,
+          },
+        });
+        // Si la photo avait une légende, l'ajouter comme contexte
+        if (photo.caption) {
+          contentParts.push({
+            type: 'text',
+            text: `[Légende photo : ${photo.caption}]`,
+          });
+        }
+      }
+
+      contentParts.push({
+        type: 'text',
+        text: enrichedMessage,
+      });
+
+      userContent = contentParts;
+    } else {
+      userContent = enrichedMessage;
+    }
+
+    let message;
+    try {
+      message = await client.messages.create(
+        {
+          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          system: systemPrompt + timeInstruction + searchInstruction,
+          tools: [
+            {
+              type: 'web_search_20250305' as const,
+              name: 'web_search',
+              max_uses: 3,
+            },
+          ],
+          messages: [
+            ...conversationHistory,
+            { role: 'user' as const, content: userContent },
+          ],
+        },
+        { signal: controller.signal },
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+
+    // Extraire le texte de la réponse (ignore les blocs tool_use/web_search_result)
+    const textParts: string[] = [];
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        textParts.push(block.text);
+      }
+    }
+    const rawText = textParts.join('\n').trim();
+
+    if (rawText.length === 0) {
+      return { success: false, error: 'Réponse Claude vide' };
+    }
+
+    // Extraction du JSON depuis la réponse Claude.
+    // Claude peut mélanger du texte libre (web search, réflexion) avec le JSON.
+    // Stratégie : chercher dans l'ordre :
+    //   1. Un bloc ```json ... ```
+    //   2. Un objet JSON brut { ... } (le dernier de la réponse)
+    //   3. Si aucun JSON trouvé mais du texte → traiter comme clarification en langage naturel
+
+    let cleanJson: string | null = null;
+
+    // Stratégie 1 : bloc markdown ```json ... ```
+    const jsonBlockMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+    if (jsonBlockMatch?.[1]) {
+      cleanJson = jsonBlockMatch[1].trim();
+    }
+
+    // Stratégie 2 : dernier objet JSON brut { ... } dans le texte
+    if (!cleanJson) {
+      const jsonObjMatch = rawText.match(/\{[\s\S]*"status"\s*:\s*"(?:needs_clarification|ready)"[\s\S]*\}/);
+      if (jsonObjMatch?.[0]) {
+        cleanJson = jsonObjMatch[0].trim();
+      }
+    }
+
+    // Stratégie 3 : aucun JSON → texte libre = clarification naturelle
+    if (!cleanJson) {
+      // Claude a répondu en texte libre (souvent après un web search raté)
+      // On traite ça comme une clarification
+      return {
+        success: true,
+        status: 'needs_clarification',
+        clarificationQuestion: rawText.slice(0, 4000),
+      };
+    }
+
+    // Parser le JSON et valider via Zod
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleanJson);
+    } catch {
+      // JSON malformé/tronqué → extraire le texte lisible comme clarification
+      // Chercher du texte avant le JSON cassé
+      const textBeforeJson = rawText.split('{')[0]?.trim();
+      if (textBeforeJson && textBeforeJson.length > 20) {
+        return {
+          success: true,
+          status: 'needs_clarification',
+          clarificationQuestion: textBeforeJson.slice(0, 4000),
+        };
+      }
+      return { success: false, error: `Réponse Claude non-JSON : ${cleanJson.slice(0, 200)}` };
+    }
+
+    let validation = ClaudeResponseSchema.safeParse(parsed);
+
+    // Correction 1 — Retry Zod : si la validation échoue, retenter une fois
+    // en renvoyant le JSON invalide + les erreurs Zod à Claude pour qu'il se corrige.
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .slice(0, 5)
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join('\n');
+
+      const retryPrompt = `Le JSON que tu as renvoyé est invalide. Voici le JSON :\n\`\`\`json\n${cleanJson.slice(0, 3000)}\n\`\`\`\n\nErreurs de validation :\n${issues}\n\nCorrige le JSON et renvoie-le complet. Ne renvoie QUE le JSON corrigé, sans texte avant ou après.`;
+
+      try {
+        const retryController = new AbortController();
+        const retryTimer = setTimeout(() => retryController.abort(), ANTHROPIC_TIMEOUT_MS);
+
+        let retryMessage;
+        try {
+          retryMessage = await client.messages.create(
+            {
+              model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+              max_tokens: 4096,
+              system: systemPrompt + timeInstruction + searchInstruction,
+              messages: [
+                ...conversationHistory,
+                { role: 'user' as const, content: userContent },
+                { role: 'assistant' as const, content: rawText },
+                { role: 'user' as const, content: retryPrompt },
+              ],
+            },
+            { signal: retryController.signal },
+          );
+        } finally {
+          clearTimeout(retryTimer);
+        }
+
+        // Extraire le texte de la réponse retry
+        const retryTextParts: string[] = [];
+        for (const block of retryMessage.content) {
+          if (block.type === 'text') {
+            retryTextParts.push(block.text);
+          }
+        }
+        const retryRawText = retryTextParts.join('\n').trim();
+
+        // Extraire le JSON de la réponse retry
+        let retryJson: string | null = null;
+        const retryBlockMatch = retryRawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+        if (retryBlockMatch?.[1]) {
+          retryJson = retryBlockMatch[1].trim();
+        }
+        if (!retryJson) {
+          const retryObjMatch = retryRawText.match(/\{[\s\S]*"status"\s*:\s*"(?:needs_clarification|ready)"[\s\S]*\}/);
+          if (retryObjMatch?.[0]) {
+            retryJson = retryObjMatch[0].trim();
+          }
+        }
+
+        if (retryJson) {
+          try {
+            const retryParsed = JSON.parse(retryJson);
+            const retryValidation = ClaudeResponseSchema.safeParse(retryParsed);
+            if (retryValidation.success) {
+              // Retry réussi — utiliser la réponse corrigée
+              parsed = retryParsed;
+              validation = retryValidation;
+            }
+          } catch {
+            // JSON parse échoue sur le retry — on tombe dans le fallback ci-dessous
+          }
+        }
+      } catch (retryErr) {
+        // Retry échoué (timeout, erreur réseau) — on continue avec l'erreur originale
+        console.warn('[telegram-webhook] retry Zod échoué :', retryErr instanceof Error ? retryErr.message : String(retryErr));
+      }
+    }
+
+    // Si après retry la validation échoue toujours → retourner l'erreur
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .slice(0, 3)
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join(' | ');
+      return { success: false, error: `Schéma CR invalide : ${issues}` };
+    }
+
+    const response = validation.data;
+
+    // Traiter l'ajout d'un nouveau contact (si Claude en a détecté un)
+    const rawParsed = parsed as Record<string, unknown>;
+    const newContact = rawParsed['new_contact'] as {
+      prenom?: string;
+      nom?: string;
+      titre?: string;
+      societe?: string;
+      entites_visibles?: string[];
+      notes?: string;
+    } | null | undefined;
+
+    if (newContact?.prenom && newContact?.nom && newContact?.titre && newContact?.societe) {
+      const added = addContact({
+        prenom: newContact.prenom,
+        nom: newContact.nom,
+        titre: newContact.titre,
+        societe: newContact.societe,
+        entitesVisibles: newContact.entites_visibles ?? ['IC', 'GO', 'VI', 'VV'],
+        notes: newContact.notes,
+      });
+      if (added) {
+        console.info(`[contacts] nouveau contact ajouté : ${newContact.prenom} ${newContact.nom}`);
+      }
+    }
+
+    if (response.status === 'needs_clarification') {
+      return {
+        success: true,
+        status: 'needs_clarification',
+        clarificationQuestion: response.clarification_question ?? 'Peux-tu préciser ?',
+      };
+    }
+
+    // status === 'ready'
+    if (response.cr === null) {
+      return { success: false, error: 'CR null malgré status ready' };
+    }
+
+    const crText = renderCrForTelegram(response.cr);
+    return { success: true, status: 'ready', crText, crDraft: response.cr };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isAbort =
+      err instanceof Error &&
+      (err.name === 'AbortError' || msg.includes('aborted'));
+
+    if (isAbort) {
+      return { success: false, error: 'Timeout Claude (60s dépassées)' };
+    }
+
+    return { success: false, error: `Erreur Claude : ${msg.slice(0, 200)}` };
+  }
+}
+
+// ============================================================
+// Appel Claude pour traiter un message vocal
+// ============================================================
+
+/**
+ * Envoie un message vocal (audio base64) à Claude pour transcription et traitement.
+ * Claude gère nativement l'audio via le content block input_audio.
+ * Le résultat est traité comme un message texte normal (clarification ou CR).
+ */
+async function generateCRFromVoice(
+  audioBase64: string,
+  audioMimeType: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  photos: PhotoAttachment[] = [],
+): Promise<{
+  success: boolean;
+  status?: 'needs_clarification' | 'ready';
+  clarificationQuestion?: string;
+  crText?: string;
+  crDraft?: CRDraft;
+  error?: string;
+}> {
+  try {
+    let systemPrompt = loadSystemPrompt();
+    const client = getAnthropicClient();
+
+    const contactsBlock = formatContactsForPrompt();
+    systemPrompt = systemPrompt.replace(
+      '[INJECTION_DATABASE_CONTACTS_ICI]',
+      contactsBlock,
+    );
+
+    const recentCRs = formatHistoryForPrompt(10);
+
+    const timeInstruction = buildTimeInstruction();
+    const searchInstruction = `\\n# REGLE 12 — RECHERCHE WEB AUTOMATIQUE\\nTu disposes d'un outil de recherche web. Utilise-le AUTOMATIQUEMENT pour trouver des adresses, vérifier des titres/sociétés, ou compléter des infos factuelles.\\n`;
+
+    // Construire les content blocks : audio + texte contextuel + photos éventuelles
+    type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    type TextBlock = { type: 'text'; text: string };
+    type ImageBlock = {
+      type: 'image';
+      source: { type: 'base64'; media_type: ImageMediaType; data: string };
+    };
+    type AudioBlock = {
+      type: 'input_audio';
+      source: { type: 'base64'; media_type: string; data: string };
+    };
+    type ContentBlock = TextBlock | ImageBlock | AudioBlock;
+
+    const contentBlocks: ContentBlock[] = [];
+
+    // Audio en premier — Claude input_audio
+    contentBlocks.push({
+      type: 'input_audio',
+      source: {
+        type: 'base64',
+        media_type: audioMimeType,
+        data: audioBase64,
+      },
+    });
+
+    // Photos en attente (si Thomas a envoyé des photos avant le vocal)
+    if (photos.length > 0) {
+      for (const photo of photos) {
+        const validMediaTypes: ImageMediaType[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const mediaType: ImageMediaType = validMediaTypes.includes(photo.mimeType as ImageMediaType)
+          ? (photo.mimeType as ImageMediaType)
+          : 'image/jpeg';
+
+        contentBlocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: photo.base64,
+          },
+        });
+        if (photo.caption) {
+          contentBlocks.push({
+            type: 'text',
+            text: `[Légende photo : ${photo.caption}]`,
+          });
+        }
+      }
+    }
+
+    // Texte contextuel (date, historique CR, instruction de transcription)
+    contentBlocks.push({
+      type: 'text',
+      text: `${recentCRs}\n\n[Message vocal Telegram — transcris le contenu et traite-le comme un message texte normal pour générer le CR.]`,
+    });
+
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+
+    let message;
+    try {
+      message = await client.messages.create(
+        {
+          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          system: systemPrompt + timeInstruction + searchInstruction,
+          tools: [
+            {
+              type: 'web_search_20250305' as const,
+              name: 'web_search',
+              max_uses: 3,
+            },
+          ],
+          messages: [
+            ...conversationHistory,
+            { role: 'user' as const, content: contentBlocks as unknown as Anthropic.MessageCreateParams['messages'][number]['content'] },
+          ],
+        },
+        { signal: controller.signal },
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+
+    // Extraire le texte de la réponse
+    const textParts: string[] = [];
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        textParts.push(block.text);
+      }
+    }
+    const rawText = textParts.join('\n').trim();
+
+    if (rawText.length === 0) {
+      return { success: false, error: 'Réponse Claude vide pour le message vocal' };
+    }
+
+    // Extraction JSON identique au flow texte
+    let cleanJson: string | null = null;
+    const jsonBlockMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+    if (jsonBlockMatch?.[1]) {
+      cleanJson = jsonBlockMatch[1].trim();
+    }
+    if (!cleanJson) {
+      const jsonObjMatch = rawText.match(/\{[\s\S]*"status"\s*:\s*"(?:needs_clarification|ready)"[\s\S]*\}/);
+      if (jsonObjMatch?.[0]) {
+        cleanJson = jsonObjMatch[0].trim();
+      }
+    }
+
+    // Pas de JSON → clarification en texte libre
+    if (!cleanJson) {
+      return {
+        success: true,
+        status: 'needs_clarification',
+        clarificationQuestion: rawText.slice(0, 4000),
+      };
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleanJson);
+    } catch {
+      const textBeforeJson = rawText.split('{')[0]?.trim();
+      if (textBeforeJson && textBeforeJson.length > 20) {
+        return {
+          success: true,
+          status: 'needs_clarification',
+          clarificationQuestion: textBeforeJson.slice(0, 4000),
+        };
+      }
+      return { success: false, error: 'Réponse vocale non-JSON et non interprétable' };
+    }
+
+    const validation = ClaudeResponseSchema.safeParse(parsed);
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .slice(0, 3)
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join(' | ');
+      return { success: false, error: `Schéma CR invalide (vocal) : ${issues}` };
+    }
+
+    const response = validation.data;
+
+    if (response.status === 'needs_clarification') {
+      return {
+        success: true,
+        status: 'needs_clarification',
+        clarificationQuestion: response.clarification_question ?? 'Peux-tu préciser ?',
+      };
+    }
+
+    if (response.cr === null) {
+      return { success: false, error: 'CR null malgré status ready (vocal)' };
+    }
+
+    const crText = renderCrForTelegram(response.cr);
+    return { success: true, status: 'ready', crText, crDraft: response.cr };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isAbort =
+      err instanceof Error &&
+      (err.name === 'AbortError' || msg.includes('aborted'));
+
+    if (isAbort) {
+      return { success: false, error: 'Timeout Claude vocal (60s dépassées)' };
+    }
+
+    return { success: false, error: `Erreur Claude vocal : ${msg.slice(0, 200)}` };
+  }
+}
+
+// ============================================================
+// POST handler
+// ============================================================
+
+// Flag global : restauration Drive déjà tentée ?
+const RESTORE_KEY = '__issa_drive_restored__' as const;
+
+export async function POST(request: Request): Promise<Response> {
+  // 0. Restaurer les données depuis Drive au premier appel après un redéploiement
+  // BLOQUANT — on attend que la restauration soit terminée avant de traiter
+  if (!(RESTORE_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[RESTORE_KEY] = true;
+    try {
+      await restoreFromGoogleDrive();
+    } catch {
+      // Si la restauration échoue, on continue — données vierges
+    }
+  }
+
+  // 1. Vérification du secret
+  if (!verifyWebhookSecret(request)) {
+    // On retourne quand même 200 pour ne pas que Telegram retente
+    // mais on log l'échec de secret
+    console.warn('[telegram-webhook] secret invalide ou manquant');
+    return Response.json({ ok: true, ignored: 'invalid_secret' });
+  }
+
+  // 2. Parsing du body
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    console.warn('[telegram-webhook] body JSON invalide');
+    return Response.json({ ok: true, ignored: 'invalid_json' });
+  }
+
+  const parsed = TelegramUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    console.warn('[telegram-webhook] payload Telegram invalide :', parsed.error.issues.slice(0, 3));
+    return Response.json({ ok: true, ignored: 'invalid_payload' });
+  }
+
+  const update = parsed.data;
+
+  // 3. Dispatch
+  try {
+    // 3a. Message texte
+    if (update.message?.text !== undefined) {
+      const chatId = update.message.chat.id;
+      const text = update.message.text;
+
+      // Whitelist
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
+        return Response.json({ ok: true });
+      }
+
+      // Commande /start — réponse de bienvenue
+      if (text.trim().toLowerCase() === '/start') {
+        await sendTelegramMessage(
+          chatId,
+          'Secrétariat ISSA Capital prêt. Envoie le contenu de ta réunion et je génère le CR.',
+        );
+        return Response.json({ ok: true });
+      }
+
+      // Commandes d'abandon — annule la conversation en cours
+      const cancelKeywords = ['annule', 'annuler', 'laisse tomber', 'oublie', 'stop', 'cancel', 'non merci'];
+      const normalizedText = text.trim().toLowerCase();
+      if (cancelKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+        const hadDraft = getPendingDraft(chatId) !== null;
+        const hadHistory = getConversation(chatId).length > 0;
+        clearPendingDraft(chatId);
+        clearConversation(chatId);
+        if (hadDraft || hadHistory) {
+          await sendTelegramMessage(chatId, 'Conversation annulée. Envoie un nouveau message quand tu veux.');
+        } else {
+          await sendTelegramMessage(chatId, 'Rien en cours. Envoie le contenu d\'une réunion pour commencer.');
+        }
+        return Response.json({ ok: true });
+      }
+
+      // Si un draft est en attente et Thomas dit "non" / "c'est bon" / "pas de photo"
+      // → montrer l'aperçu avec les boutons de validation
+      const noPhotoKeywords = ['non', 'no', 'pas de photo', 'c\'est bon', 'cest bon', 'sans photo', 'aucune', 'nope'];
+      const draft = getPendingDraft(chatId);
+      if (draft && noPhotoKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+        const photos = getPhotos(chatId);
+        if (photos.length > 0) {
+          // Regénérer le CR avec les photos
+          await sendTypingAction(chatId);
+          const history = getConversation(chatId);
+          const claudeHistory = toClaudeMessages(history);
+          const result = await generateCR(
+            `Regénère le CR en intégrant les ${photos.length} photos jointes en annexes photographiques.`,
+            claudeHistory,
+            photos,
+          );
+          // NE PAS clearPhotos ici — on en a besoin pour le PDF quand Thomas validera
+          if (result.crText && result.crDraft) {
+            setPendingDraft(chatId, result.crDraft, result.crText);
+            const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+            await sendTelegramConfirmation(chatId, previewText);
+          } else {
+            // Fallback : utiliser le draft original sans photos
+            const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+            await sendTelegramConfirmation(chatId, previewText);
+          }
+        } else {
+          // Pas de photos → montrer l'aperçu directement
+          const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+          await sendTelegramConfirmation(chatId, previewText);
+        }
+        return Response.json({ ok: true });
+      }
+
+      // Récupérer l'historique de conversation pour ce chat
+      const history = getConversation(chatId);
+      const claudeHistory = toClaudeMessages(history);
+
+      // Sauvegarder le message utilisateur dans l'historique
+      storeMessage(chatId, 'user', text);
+
+      // Récupérer les photos en attente (envoyées avant ce message texte)
+      const pendingPhotos = getPhotos(chatId);
+
+      // Typing indicator avant l'appel Claude (feedback immédiat)
+      await sendTypingAction(chatId);
+
+      // Accusé de réception UNIQUEMENT si c'est le premier message de la conversation
+      // (pas une réponse à une clarification) ET le message est substantiel
+      const isFirstMessage = history.length === 0;
+      if (isFirstMessage && (text.length > 80 || pendingPhotos.length > 0)) {
+        await sendTelegramMessage(chatId, 'Un instant, je prépare le compte rendu…');
+      }
+
+      // Appel Claude avec l'historique complet + photos en attente
+      const result = await generateCR(text, claudeHistory, pendingPhotos);
+
+      // Vider les photos après l'appel Claude (intégrées dans la requête)
+      if (pendingPhotos.length > 0) {
+        clearPhotos(chatId);
+      }
+
+      if (!result.success) {
+        const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
+        storeMessage(chatId, 'assistant', errorMsg);
+        await sendTelegramMessage(chatId, errorMsg);
+        return Response.json({ ok: true });
+      }
+
+      if (result.status === 'needs_clarification') {
+        const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+        // Sauvegarder la réponse dans l'historique pour le prochain échange
+        storeMessage(chatId, 'assistant', question);
+        await sendTelegramMessage(chatId, question);
+        return Response.json({ ok: true });
+      }
+
+      // status === 'ready' — stocker le draft, PUIS demander s'il y a des photos
+      if (result.crText && result.crDraft) {
+        storeMessage(chatId, 'assistant', result.crText);
+        setPendingDraft(chatId, result.crDraft, result.crText);
+
+        // Demander s'il y a des photos à joindre AVANT de montrer l'aperçu
+        await sendTelegramMessage(
+          chatId,
+          'CR prêt. Des photos à joindre au compte rendu ? Si oui, envoie-les maintenant. Sinon, réponds « non ».',
+        );
+      }
+
+      return Response.json({ ok: true });
+    }
+
+    // 3b. Message avec photo(s)
+    if (update.message?.photo !== undefined && update.message.photo.length > 0) {
+      const chatId = update.message.chat.id;
+
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
+        return Response.json({ ok: true });
+      }
+
+      // Prendre la dernière entrée du tableau photo (meilleure résolution)
+      const photoArray = update.message.photo;
+      const bestPhoto = photoArray[photoArray.length - 1];
+      if (!bestPhoto) {
+        return Response.json({ ok: true });
+      }
+      const caption = update.message.caption;
+
+      // Télécharger la photo via l'API Telegram
+      const photoResult = await downloadTelegramPhoto(bestPhoto.file_id);
+
+      if (!photoResult.success || !photoResult.base64) {
+        console.error('[telegram-webhook] échec téléchargement photo :', photoResult.error);
+        await sendTelegramMessage(
+          chatId,
+          `Erreur lors du téléchargement de la photo : ${photoResult.error ?? 'inconnue'}. Réessaie.`,
+        );
+        return Response.json({ ok: true });
+      }
+
+      // Stocker la photo en attente
+      const added = addPhoto(chatId, photoResult.base64, photoResult.mimeType ?? 'image/jpeg', caption);
+
+      if (!added) {
+        await sendTelegramMessage(
+          chatId,
+          'Limite de 10 photos atteinte pour ce CR. Les photos supplémentaires sont ignorées.',
+        );
+        return Response.json({ ok: true });
+      }
+
+      const photoCount = getPhotos(chatId).length;
+
+      // Si la photo a un caption, le sauvegarder dans l'historique de conversation
+      // pour que Claude le voie quand Thomas enverra le message texte final
+      if (caption && caption.trim().length > 0) {
+        storeMessage(chatId, 'user', caption);
+      }
+
+      // Message adapté selon qu'on est en phase "ajout photos" (draft en attente) ou non
+      const hasDraft = getPendingDraft(chatId) !== null;
+      if (hasDraft) {
+        await sendTelegramMessage(
+          chatId,
+          `Photo reçue (${photoCount}/10). Envoie d'autres photos, ou réponds « non » pour générer le CR.`,
+        );
+      } else {
+        const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
+        await sendTelegramMessage(
+          chatId,
+          `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
+        );
+      }
+      return Response.json({ ok: true });
+    }
+
+    // 3b-bis. Message vocal (dictaphone Telegram — audio/ogg opus)
+    const voiceData = update.message?.voice;
+    if (voiceData) {
+      const chatId = update.message!.chat.id;
+
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
+        return Response.json({ ok: true });
+      }
+
+      // Typing indicator immédiat (la transcription + génération prend du temps)
+      await sendTypingAction(chatId);
+
+      // Télécharger le fichier audio via l'API Telegram
+      const audioResult = await downloadTelegramFile(voiceData.file_id);
+
+      if (!audioResult.success || !audioResult.base64) {
+        console.error('[telegram-webhook] échec téléchargement vocal :', audioResult.error);
+        await sendTelegramMessage(
+          chatId,
+          `Erreur lors du téléchargement du message vocal : ${audioResult.error ?? 'inconnue'}. Réessaie.`,
+        );
+        return Response.json({ ok: true });
+      }
+
+      // Envoyer l'audio à Claude pour transcription et traitement
+      // Claude gère nativement l'audio via le type input_audio
+      const history = getConversation(chatId);
+      const claudeHistory = toClaudeMessages(history);
+      const pendingPhotos = getPhotos(chatId);
+
+      try {
+        // Sauvegarder dans l'historique (comme message user texte)
+        storeMessage(chatId, 'user', '[Message vocal]');
+
+        const result = await generateCRFromVoice(
+          audioResult.base64,
+          audioResult.mimeType ?? 'audio/ogg',
+          claudeHistory,
+          pendingPhotos,
+        );
+
+        // Vider les photos après l'appel Claude
+        if (pendingPhotos.length > 0) {
+          clearPhotos(chatId);
+        }
+
+        if (!result.success) {
+          const errorMsg = `Erreur de traitement vocal : ${result.error ?? 'inconnue'}. Réessaie ou envoie en texte.`;
+          storeMessage(chatId, 'assistant', errorMsg);
+          await sendTelegramMessage(chatId, errorMsg);
+          return Response.json({ ok: true });
+        }
+
+        if (result.status === 'needs_clarification') {
+          const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+          storeMessage(chatId, 'assistant', question);
+          await sendTelegramMessage(chatId, question);
+          return Response.json({ ok: true });
+        }
+
+        // status === 'ready'
+        if (result.crText && result.crDraft) {
+          const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+          storeMessage(chatId, 'assistant', result.crText);
+          setPendingDraft(chatId, result.crDraft, result.crText);
+          await sendTelegramConfirmation(chatId, previewText);
+        }
+
+        return Response.json({ ok: true });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[telegram-webhook] erreur traitement vocal :', msg);
+        await sendTelegramMessage(
+          chatId,
+          'Erreur lors du traitement du message vocal. Réessaie ou envoie en texte.',
+        );
+        return Response.json({ ok: true });
+      }
+    }
+
+    // 3b-ter. Message sans texte ni photo ni vocal (sticker, vidéo, etc.)
+    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0) && update.message.voice === undefined) {
+      const chatId = update.message.chat.id;
+      if (isAllowedChatId(chatId)) {
+        await sendTelegramMessage(
+          chatId,
+          'Envoie le contenu de la réunion en texte, en message vocal, ou des photos avec légende.',
+        );
+      }
+      return Response.json({ ok: true });
+    }
+
+    // 3c. Callback query (boutons inline) — cycle Valider/Modifier/Annuler
+    if (update.callback_query !== undefined) {
+      const callbackData = update.callback_query.data;
+      const callbackChatId = update.callback_query.message?.chat.id;
+      const callbackQueryId = update.callback_query.id;
+
+      // Acquitter immédiatement le callback pour retirer le spinner Telegram
+      await answerCallbackQuery(callbackQueryId);
+
+      if (!callbackChatId || !callbackData) {
+        return Response.json({ ok: true });
+      }
+
+      if (!isAllowedChatId(callbackChatId)) {
+        return Response.json({ ok: true });
+      }
+
+      const pendingDraft = getPendingDraft(callbackChatId);
+
+      if (!pendingDraft) {
+        await sendTelegramMessage(
+          callbackChatId,
+          'Aucun CR en attente de validation. Envoie le contenu d\'une réunion pour générer un nouveau CR.',
+        );
+        return Response.json({ ok: true });
+      }
+
+      // --- VALIDER ---
+      if (callbackData === 'validate') {
+        try {
+          // 1. Générer la référence séquentielle
+          const reference = getNextReference(pendingDraft.cr.entite);
+          const dateEtablissement = new Date().toISOString();
+
+          // 2. Construire le titre du document
+          const craftTitle = buildCraftTitle(pendingDraft.cr);
+
+          // Récupérer les photos en attente AVANT de les clear (pour le PDF)
+          const photosForPdf = getPhotos(callbackChatId).map((p) => ({
+            base64: p.base64,
+            mimeType: p.mimeType,
+          }));
+
+          // 3. Générer le PDF du CR (avec photos embarquées si disponibles)
+          let pdfBuffer: Buffer | null = null;
+          try {
+            pdfBuffer = await generateCrPdf({
+              cr: pendingDraft.cr,
+              reference,
+              dateEtablissement,
+              photos: photosForPdf.length > 0 ? photosForPdf : undefined,
+            });
+          } catch (pdfErr) {
+            const pdfErrMsg = pdfErr instanceof Error
+              ? `${pdfErr.message}\n${pdfErr.stack?.slice(0, 300) ?? ''}`
+              : String(pdfErr);
+            console.error('[telegram-webhook] erreur génération PDF :', pdfErrMsg);
+            // Envoyer l'erreur sur Telegram pour diagnostic
+            await sendTelegramMessage(
+              callbackChatId,
+              `⚠️ Erreur PDF : ${pdfErrMsg.slice(0, 500)}`,
+            );
+          }
+
+          // 5. Envoyer le PDF sur Telegram (avant la publication Craft pour feedback rapide)
+          if (pdfBuffer) {
+            const pdfFilename = `${reference.replace(/\//g, '-')}.pdf`;
+            const pdfCaption = `${craftTitle}\nRéf. ${reference}`;
+            const docResult = await sendTelegramDocument(
+              callbackChatId,
+              pdfBuffer,
+              pdfFilename,
+              pdfCaption,
+            );
+            if (!docResult.success) {
+              console.error(
+                '[telegram-webhook] erreur envoi PDF Telegram :',
+                docResult.error,
+              );
+              // On continue — le PDF n'est pas bloquant
+            }
+          }
+
+          // 6. Upload PDF sur Google Drive
+          let driveLink: string | undefined;
+          if (pdfBuffer) {
+            const pdfFilename = `${reference.replace(/\//g, '-')}.pdf`;
+            const driveResult = await uploadToDrive(
+              pdfBuffer,
+              pdfFilename,
+              pendingDraft.cr.entite,
+              craftTitle,
+            );
+            if (driveResult.success) {
+              driveLink = driveResult.webViewLink;
+              console.info(`[telegram-webhook] PDF uploadé sur Drive : ${driveResult.fileId}`);
+            } else {
+              console.warn('[telegram-webhook] échec upload Drive :', driveResult.error);
+              await sendTelegramMessage(
+                callbackChatId,
+                `⚠️ Upload Drive échoué : ${driveResult.error?.slice(0, 300) ?? 'erreur inconnue'}`,
+              );
+            }
+          }
+
+          // 7. Envoyer la confirmation textuelle sur Telegram
+          let confirmMsg = `CR validé.\n\nRéférence : ${reference}`;
+          if (driveLink) {
+            confirmMsg += `\nDrive : ${driveLink}`;
+          }
+          if (!pdfBuffer) {
+            confirmMsg += '\n\n⚠️ Le PDF n\'a pas pu être généré.';
+          }
+          await sendTelegramMessage(callbackChatId, confirmMsg);
+
+          // 8. Sauvegarder le CR dans l'historique (mémoire longue d'Anya)
+          saveCrToHistory(pendingDraft.cr, reference, dateEtablissement);
+
+          // 9. Backup compteur + historique sur Google Drive (survit aux redéploiements)
+          backupToGoogleDrive().catch((e) =>
+            console.warn('[telegram-webhook] backup Drive échoué :', e),
+          );
+
+          // 10. Nettoyer la conversation, le draft et les photos
+          clearPendingDraft(callbackChatId);
+          clearConversation(callbackChatId);
+          clearPhotos(callbackChatId);
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error('[telegram-webhook] erreur validation CR :', errMsg);
+          await sendTelegramMessage(
+            callbackChatId,
+            `Erreur lors de la validation : ${errMsg.slice(0, 200)}. Réessaie dans un moment.`,
+          );
+        }
+
+        return Response.json({ ok: true });
+      }
+
+      // --- MODIFIER ---
+      if (callbackData === 'modify') {
+        // Sauvegarder le CR précédent dans l'historique de conversation
+        // pour que Claude ait le contexte lors de la modification.
+        // Ainsi, Thomas peut dire "change le lieu par Le Voltaire" et Claude
+        // sait quel CR il doit modifier.
+        storeMessage(
+          callbackChatId,
+          'assistant',
+          `[CR précédent à modifier]\n${pendingDraft.previewText}`,
+        );
+        clearPendingDraft(callbackChatId);
+        await sendTelegramMessage(
+          callbackChatId,
+          'Que veux-tu modifier ? Envoie tes corrections et je regénère le CR.',
+        );
+        return Response.json({ ok: true });
+      }
+
+      // --- ANNULER ---
+      if (callbackData === 'cancel') {
+        clearPendingDraft(callbackChatId);
+        clearConversation(callbackChatId);
+        await sendTelegramMessage(callbackChatId, 'CR annulé.');
+        return Response.json({ ok: true });
+      }
+
+      // Callback inconnu — ignorer
+      return Response.json({ ok: true });
+    }
+
+    // 3d. Autres types d'updates — on ignore silencieusement
+    return Response.json({ ok: true });
+  } catch (err) {
+    // JAMAIS crasher la réponse — Telegram retentera sinon
+    console.error('[telegram-webhook] erreur dispatch :', err);
+    return Response.json({ ok: true });
+  }
+}

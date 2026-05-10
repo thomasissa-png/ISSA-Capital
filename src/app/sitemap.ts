@@ -4,20 +4,17 @@ import { siteConfig } from '@/config/site';
 /**
  * Sitemap statique — ISSA Capital.
  *
- * IMPORTANT (Phase 3 — audit SEO) : les dates lastModified sont des CONSTANTES
- * fixes, pas `new Date()`. Bing pénalise les sitemaps dont les dates changent à
- * chaque build (signal de spam / contenu artificiellement frais). Mettre à jour
- * manuellement la date d'une page UNIQUEMENT lors d'une modification réelle de
- * son contenu éditorial.
+ * Mode monopage : seule la home et les mentions légales sont exposées.
+ * Les anciennes pages internes existent dans le code mais ne sont plus
+ * liées depuis la nav — elles sont retirées du sitemap pour ne pas
+ * envoyer de signaux contradictoires aux moteurs.
+ *
+ * Les dates lastModified sont des CONSTANTES fixes (Bing pénalise les
+ * sitemaps dont les dates changent à chaque build).
  */
 
 const CONTENT_DATES = {
-  accueil: '2026-04-07',
-  mission: '2026-04-07',
-  participations: '2026-04-07',
-  accompagnement: '2026-04-07',
-  opportunites: '2026-04-07',
-  contact: '2026-04-07',
+  accueil: '2026-04-11',
 } as const;
 
 type Route = {
@@ -27,13 +24,14 @@ type Route = {
   changeFreq: 'monthly' | 'yearly';
 };
 
+// Note : /mentions-legales est noindex — elle n'est PAS dans le sitemap
+// (un sitemap doit lister uniquement les pages indexables, sinon Bing
+// pénalise pour signal contradictoire).
 const routes: ReadonlyArray<Route> = [
-  { path: '', lastModified: CONTENT_DATES.accueil, priority: 1.0, changeFreq: 'monthly' },
-  { path: '/mission', lastModified: CONTENT_DATES.mission, priority: 0.9, changeFreq: 'monthly' },
-  { path: '/accompagnement', lastModified: CONTENT_DATES.accompagnement, priority: 0.9, changeFreq: 'monthly' },
-  { path: '/opportunites', lastModified: CONTENT_DATES.opportunites, priority: 0.9, changeFreq: 'monthly' },
-  { path: '/participations', lastModified: CONTENT_DATES.participations, priority: 0.8, changeFreq: 'monthly' },
-  { path: '/contact', lastModified: CONTENT_DATES.contact, priority: 0.6, changeFreq: 'yearly' },
+  // path: '/' (avec trailing slash) pour aligner sur le canonical déclaré
+  // dans page.tsx (siteConfig.url + '/'). Bing ne normalise pas — l'URL
+  // du sitemap doit être strictement identique au canonical.
+  { path: '/', lastModified: CONTENT_DATES.accueil, priority: 1.0, changeFreq: 'monthly' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

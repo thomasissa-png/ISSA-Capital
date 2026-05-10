@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import PlausibleProvider from 'next-plausible';
 import Script from 'next/script';
 import { siteConfig } from '@/config/site';
 import { Header } from '@/components/layout/Header';
@@ -20,7 +19,7 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — Holding patrimoniale d'une famille libanaise`,
+    default: `${siteConfig.name} — Holding patrimoniale familiale`,
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -30,7 +29,7 @@ export const metadata: Metadata = {
   publisher: siteConfig.name,
   keywords: [
     'holding patrimoniale',
-    'famille libanaise',
+    'famille Issa',
     'investissement immobilier',
     'participations',
     'conseil stratégique',
@@ -81,6 +80,13 @@ export const metadata: Metadata = {
   // Le mask-icon Safari (rel non-standard) est déclaré via icons.other car
   // la convention file-based ne couvre pas ce cas.
   icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
     other: [
       {
         rel: 'mask-icon',
@@ -90,9 +96,8 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
-  alternates: {
-    canonical: siteConfig.url,
-  },
+  // Pas de canonical global ici — chaque page déclare son propre canonical
+  // (évite les conflits trailing slash entre layout et page).
 };
 
 export const viewport: Viewport = {
@@ -105,6 +110,8 @@ export const viewport: Viewport = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': ['Organization', 'FinancialService'],
+  '@id': `${siteConfig.url}/#organization`,
+  mainEntityOfPage: siteConfig.url,
   name: siteConfig.legalName,
   alternateName: siteConfig.name,
   url: siteConfig.url,
@@ -125,10 +132,43 @@ const organizationJsonLd = {
   foundingDate: '2026',
   vatID: siteConfig.tvaIntra,
   taxID: siteConfig.siren,
-  sameAs: ['https://www.linkedin.com/in/thomasissa'],
+  sameAs: [
+    'https://www.linkedin.com/in/thomasissa',
+    'https://versi-immobilier.fr',
+    'https://versi-invest.fr',
+  ],
+  subOrganization: [
+    {
+      '@type': 'Organization',
+      name: 'Gradient One',
+      description: "Holding intermédiaire co-fondée en 2020. Détient Versi Immobilier, Versi Invest, Immocrew et Versimo.",
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versi Immobilier',
+      url: 'https://versi-immobilier.fr',
+      description: 'Marchand de biens — marché secondaire résidentiel : acquisition, rénovation, revente.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versi Invest',
+      url: 'https://versi-invest.fr',
+      description: 'Conseil en investissement immobilier et co-investissement sur sélection.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'Immocrew',
+      description: 'Outil marketing pour mandataires immobiliers.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'Versimo',
+      description: 'Home staging virtuel par IA.',
+    },
+  ],
   contactPoint: {
     '@type': 'ContactPoint',
-    contactType: 'customer support',
+    contactType: 'investor relations',
     email: siteConfig.email,
     areaServed: 'FR',
     availableLanguage: ['French', 'English'],
@@ -140,14 +180,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }): JSX.Element {
-  const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
-
   return (
     <html lang="fr">
       <head>
-        {plausibleDomain ? (
-          <PlausibleProvider domain={plausibleDomain} trackOutboundLinks />
-        ) : null}
+        <Script
+          id="umami-analytics"
+          src="https://cloud.umami.is/script.js"
+          data-website-id="ecdaae22-72f5-4759-a454-6774de025c74"
+          strategy="afterInteractive"
+          defer
+        />
         <Script
           id="jsonld-organization"
           type="application/ld+json"

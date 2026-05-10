@@ -32,7 +32,7 @@
 4. **@growth** (si invoqué) : **ne pas** appliquer les frameworks AARRR/funnel/boucles virales classiques. La "conversion" n'est pas le KPI principal.
 5. **@seo** : optimiser pour le **branding** et l'**autorité**, pas pour le trafic transactionnel. Mots-clés défensifs et de marque, pas des mots-clés d'intention d'achat.
 6. **@qa / testeurs persona** : les tests ne mesurent PAS la "conviction à soumettre". Ils mesurent la **perception de prestige**, la **crédibilité**, le **respect inspiré**, la **clarté de l'identité**.
-7. **@fullstack** : implémentation soignée mais sans features de tracking de conversion agressives. Analytics Plausible minimal. Pas de heatmaps, pas de session recording.
+7. **@fullstack** : implémentation soignée mais sans features de tracking de conversion agressives. Analytics Umami uniquement (cookieless, open source — décision Thomas session 9). Pas de heatmaps, pas de session recording.
 
 ### Révision des gates testeur-persona (GP1-GP10)
 Les gates GP1-GP10 définies dans CLAUDE.md sont calibrées "conviction + conversion". Pour ce projet, recalibrer ainsi :
@@ -171,15 +171,20 @@ Pareil : l'offre de conseil existe, elle est documentée sobrement, mais ce n'es
   - **❌ NE PAS détailler** Suisse / Afrique du Sud / Inde — trop biographique pour un site de holding, garder en réserve pour interviews presse ou bio Marc.
 - **Implication pour les agents** :
   - @creative-strategy : intégrer l'identité libanaise dans le brand-platform, les références culturelles, les holdings de référence (inclure du Moyen-Orient / Liban si pertinent)
-  - @copywriter : ne JAMAIS écrire "famille française". Possible de jouer sur "famille libanaise enracinée en France", "héritage libanais, ancrage français", ou équivalent — à arbitrer
+  - @copywriter : ne JAMAIS écrire "famille française" NI "famille libanaise" (retour Jean-Pierre session 9). Formulations autorisées : "famille Issa", "famille aux racines libanaises", "d'origine libanaise" (bio uniquement), "héritage libanais"
   - @design : références visuelles peuvent inclure des codes esthétiques moyen-orientaux subtils (typographie, motifs, palettes) si cohérent avec le ton premium élégant
   - @seo / @geo : potentiel de différenciation sur les requêtes "holding familiale libanaise France" / "famille libanaise patrimoine France"
 - **Anti-règle #1** : ne JAMAIS écrire "famille française", "famille issue de France", ou équivalent. C'est une erreur factuelle ET une perte d'asset différenciant.
-- **Précision identitaire #2 (ajoutée Thomas 2026-04-07)** : **au présent**, préférer **"racines libanaises"** ou **"d'origine libanaise"** plutôt que "famille libanaise". Raison : Thomas est marié à une française, ses enfants sont franco-libanais — "famille libanaise" au présent devient imprécise pour la génération actuelle. "Racines libanaises" est plus juste ET plus poétique (évoque la transmission, la profondeur, l'héritage).
-- **Exception narrative** : **au passé**, quand on décrit Jean-Pierre ou Sonia (nés dans une famille libanaise, partis du Liban en 1970s), "famille libanaise" reste factuellement vrai et autorisé.
-- **Règle copywriter** :
-  - **Présent** (ISSA Capital, la famille Issa aujourd'hui) → "racines libanaises" / "d'origine libanaise" / "famille aux racines libanaises" / "famille enracinée en France"
-  - **Passé** (Jean-Pierre, Sonia, années 70, exode, parents) → "famille libanaise" autorisé
+- **Précision identitaire #2 (ajoutée Thomas 2026-04-07, RENFORCÉE par Jean-Pierre 2026-04-09)** : **NE PLUS ÉCRIRE "famille libanaise"** nulle part dans les livrables client-facing. Retour Jean-Pierre Issa : *"On n'est pas tout à fait libanais comme on a pas tous la nationalité même si on vient du Liban… Gardons la tagline avec racines, mais enlevons quand on peut enlever, et reformulons sinon pour ne pas dire famille libanaise."*
+- **Formulations AUTORISÉES** : "racines libanaises" (tagline OK), "d'origine libanaise" (factuel, bio Jean-Pierre/Sonia), "héritage libanais" (culturel), "famille Issa" (neutre), "famille aux racines libanaises" (nuancé)
+- **Formulations INTERDITES** : "famille libanaise" (présuppose la nationalité), "famille française" (anti-règle #1 inchangée)
+- **Exception narrative restreinte** : "dans une famille d'origine libanaise" autorisé UNIQUEMENT dans les bios passées de Jean-Pierre et Sonia (fait historique). Jamais "famille libanaise" sans "d'origine".
+- **Règle copywriter mise à jour session 9** :
+  - **Tagline / baseline** → "Racines libanaises. Exigences sans exception." = GARDER (validé Jean-Pierre)
+  - **Metadata / SEO** → "Holding patrimoniale familiale" (pas "d'une famille libanaise")
+  - **Body copy** → "la famille Issa" ou "de la famille Issa" au lieu de "d'une famille libanaise"
+  - **Bio Jean-Pierre/Sonia** → "d'origine libanaise" autorisé (factuel, passé)
+  - **Registre poétique/éditorial** → "héritage libanais", "racines libanaises" autorisé
 
 ---
 
@@ -363,8 +368,8 @@ Compte tenu du profil Thomas (15+ ans corporate premium Sony, co-founder TEOS à
 - Variantes B et C écartées.
 
 ### Promesse unique — VERROUILLÉE 2026-04-07 (Thomas a tranché : variante A reformulée libanaise)
-- **Promesse officielle** : "La holding patrimoniale d'une **famille libanaise** qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
-- Cette formulation intègre l'identité libanaise comme asset (voir section "Identité familiale"). Les variantes B et C de l'hypothèse H3 sont écartées.
+- **Promesse officielle** : "La holding patrimoniale de la **famille Issa**, aux racines libanaises, qui investit pour les générations à venir, dans des projets qu'elle peut transmettre fièrement."
+- Reformulation session 9 suite retour Jean-Pierre (2026-04-09) : "famille libanaise" → "famille Issa, aux racines libanaises". Les variantes B et C de l'hypothèse H3 sont écartées.
 - **Ton de marque** : premium élégant, sobre, intemporel, éditorial. Pas de tape-à-l'œil. Référence : maisons de gestion patrimoniale haut de gamme, holdings familiales européennes type Agache / Artémis / Berkshire (texte minimaliste)
 - **3 mots qui DÉFINISSENT la marque** : Famille — Transmission — Long-terme
 - **3 mots qui ne DÉFINISSENT PAS la marque** : Spéculatif — Tape-à-l'œil — Court-termiste
@@ -519,6 +524,11 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | @creative-strategy (Session 6 — refonte /accompagnement 10/10 duo JP+Thomas) | 2026-04-08 | docs/strategy/accompagnement-refonte-10-10-session6.md | Élargissement narratif Thomas seul → Jean-Pierre + Thomas. 3 variantes : A Duo opérationnel (9.5/10), B Figure tutélaire (8.8/10), C Maison et héritier (9.4/10). Verbatim complet chacune. Recommandation : Variante A — sous réserve arbitrage Thomas. | Variante A retenue en recommandation car seule à répondre pleinement à "tous les deux on accompagne". Plafond Variante B = 8.8/10 — Jean-Pierre ne peut pas être à la fois tutélaire ET accompagnateur actif. Question Thomas bloquante avant implémentation @fullstack : "Jean-Pierre intervient-il opérationnellement dans les missions clients ?" |
 | @design (Session 8 — audit visuel /opportunites) | 2026-04-08 | docs/design/opportunites-audit-session8.md | Audit complet de src/app/opportunites/page.tsx — 4 problèmes visuels identifiés. Problème critique (S2 phrase isolée sans ancrage) : 3 options documentées (suppression / enrichissement grille / fusion Hero). Recommandation principale : Option 3 Fusion Hero + suppression S2 (note italique text-sm dans Hero + suppression des lignes 59-68). 2 corrections complémentaires : tone S4 default → elevated + tone S7 default → subtle. Brief @fullstack avec code exact et lignes de référence. | Suppression S2 recommandée car redondance éditoriale confirmée (contenu présent dans Hero lead + cards S3) + absence de composants d'ancrage (0 overline, 0 H2). Option enrichissement (grille 2 col border-l) documentée comme alternative si Thomas veut conserver S2 comme section. Tone S4 `elevated` vs `default` : rompt la monotonie subtle/default de la zone centrale sans toucher aux contenus. Principe Simplicité > Démonstration respecté — aucune section ajoutée, seulement des suppressions et des bascules de tone. |
 
+| @fullstack (Session 9 — monopage + SEO/GEO + Umami + Telegram bot Anya) | 2026-04-09 | src/app/page.tsx (monopage 6 sections), src/app/api/telegram/webhook/route.ts (~1200 lignes), src/lib/secretariat/*.ts (8 modules), src/app/robots.ts, public/llms.txt, 68 tests (4 suites) | (1) Site converti en monopage : nav vidé, sections empilées, 2 CTAs #contact, FAQ JSON-LD. (2) SEO/GEO 10/10 : JSON-LD enrichi Organization+subOrganization+FAQPage, robots.ts opt-in 11 bots IA, llms.txt, sitemap nettoyé. (3) Umami intégré (Plausible retiré). (4) Bot Telegram "Anya" complet : webhook Next.js, Claude API + web search + photos, PDFKit A4, Google Drive OAuth2, contacts, historique CR, compteur IC-CR-YYYY-XXXX. 68 tests tous PASS. | Monopage : Thomas a demandé de simplifier la navigation. SEO/GEO : 4 itérations pour atteindre 10/10. Umami : préférence fondateur explicite vs Plausible. Anya : migration WhatsApp→Telegram (1 token vs 5 credentials), intégration dans Next.js plutôt que serveur Express séparé. |
+| @ia (Session 9 — Claude Profile 9 fichiers) | 2026-04-09 | claude-profile/CLAUDE.md, red-lines.md, voice-preferences.md, work-preferences.md, content-templates.md, brand-identity.md, technical-preferences.md, about-me.md, lifestyle.md | 9 fichiers profil réutilisables cross-projets. Score audit @ia 9.96/10. Couvre : interdits (27 red-lines P0/P1/P2), voix (registre tu/vous contextuel), travail (qualité 10/10, parallélisation), contenu (storytelling-first, 3 questions obligatoires, triple audit), marque (ISSA Capital + Versi + Gradient One), tech (stack Next.js/Tailwind/Umami/gpt-image-2), bio (chronologie 1986-présent), lifestyle (restaurants/hôtels/voyages). | Profil créé pour Claude Cowork — Thomas utilise Claude Desktop avec Obsidian. Chaque fichier est auto-suffisant et lu dans l'ordre spécifié par CLAUDE.md du profil. |
+| @fullstack (Session 9 — Second cerveau Obsidian) | 2026-04-09 | second-cerveau/ (CLAUDE.md, SETUP.md, 7 templates, Todo.md, structure 10 dossiers) | Vault Obsidian complet remplaçant Craft. Structure : Profil (copie claude-profile), Projets, Contacts, Réunions, Tâches, Journal, Idées, Cuisine, Learnings, Ressources. 7 templates (Réunion, Contact, Journal, Idée, Recette, Learning, Projet). SETUP.md pas-à-pas (Obsidian install, Sync, Cowork, plugins). Routine quotidienne suggérée. | Obsidian Sync retenu (pas iCloud — instable Windows). Google Drive comme backup. Craft abandonné (API complexe, éditeur propriétaire). |
+| main thread (Session 9 continuation — clôture) | 2026-05-10 | docs/founder-preferences.md (créé), docs/lessons-learned.md (archivé + propagé), docs/lessons-learned-archive.md (créé), docs/project-context-archive.md (créé), project-context.md (mémo session 10) | Clôture session 9 : propagation P0 "Zéro MVP" (fullstack.md, ia.md, infrastructure.md) + P2 "Umami" (data-analyst.md). Création docs/founder-preferences.md. Archivage learnings P2/P3 terminés. Archivage memos sessions 5-6. Nettoyage guide MCP Gmail/Calendar inutile (Claude Desktop a intégration native Google). | Guide MCP supprimé car Claude Desktop gère nativement Gmail/Calendar — toujours vérifier les intégrations natives avant de recommander une solution technique complexe. |
+
 ---
 
 ## Performance des agents
@@ -641,16 +651,16 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 3. NDA + mandat Carl + Maxime
 4. Compte Universign + clé API
 5. Numéro WhatsApp Business pro + vérification Meta (24-48h)
-6. Adresse dpo@issa-capital.com
+6. Adresse contact@issa-capital.com
 7. Déploiement Replit (Secrets, volume persistant, migrations, seed)
 8. Webhook Meta configuré
 9. Activation 2FA admin + changement mot de passe allezpsg
 10. Crons (backup quotidien + RFC3161 backfill hebdo)
 11. UptimeRobot + alerte coût Anthropic
 
-### 🔴 PROPAGATION P1/P2 NON-PROPAGÉE — gate bloquante reprise session 9
+### ✅ PROPAGATION P1/P2 — DONE (session 9 Phase 0, 2026-04-09)
 
-11 learnings session 7-8 ajoutés dans `docs/lessons-learned.md` dont 7 avec statut propagation = `non-propagé`. Propager dans les agents concernés AVANT tout nouveau travail en session 9.
+8 learnings session 7-8 propagés dans 10 fichiers agents (CLAUDE.md, orchestrator.md, fullstack.md, infrastructure.md, creative-strategy.md, copywriter.md, design.md, ia.md, legal.md, product-manager.md). Statut propagation mis à jour dans `docs/lessons-learned.md`.
 
 ### Décisions Thomas verrouillées session 7-8
 
@@ -766,7 +776,7 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 
 - **Principe directeur #0** : VITRINE pas conversion. Zéro CTA agressif.
 - **Règle absolue** : Simplicité > Démonstration > Élégance (P0 verrouillée).
-- **Identité libanaise** (jamais française).
+- **Identité** : jamais "famille française", jamais "famille libanaise" (retour Jean-Pierre session 9). Autorisé : "racines libanaises", "d'origine libanaise", "famille Issa".
 - **Caractères UTF-8 réels** dans le code (é è à ç).
 - **Mention TikTok / Adidas / Lego / Sony AUTORISÉE** (exception explicite Q2 session 5).
 - **Zéro mention du nom de l'agence Thomas** (commence par S, finit par i, 6 lettres) → "Une agence de communication internationale".
@@ -798,236 +808,77 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 
 ---
 
-## Mémo de reprise — Session 6 (clôture session 5 le 2026-04-08)
+## Mémos archivés
 
-### État à la clôture session 5
-- **Branche active session 5 (clôturée)** : `claude/resume-issa-session-5-zZVP2` (HEAD `3cfc3c3` au moment de la clôture, à actualiser après commit clôture)
-- **Site DÉPLOYÉ** : issa-capital.com (production stable, 8 retours Thomas appliqués + favicon refonté)
-- **Pipeline G28 green** : tsc 0 / lint 0 / vitest 7/7 / next build 16 routes / Playwright 154 PASS 2 skipped 0 failed
-- **Verdict @reviewer session 5** : **GO CONDITIONNEL 9.4/10** — mise en ligne autorisée
-- **Verdict @testeur-karim session 5** : GO CONDITIONNEL 8.5/10 (P0-1 + P1-1 corrigés en C2, P1-2/P1-3/P2 reportés)
-- **Verdict @qa session 5** : GO intégral pipeline + traçabilité G27 11/11 + audit qualité 13/13
-- **Compteur producteurs session 5** : 11 Tasks producteurs / 18 (confortable, bien sous le seuil ALERTE ROUGE)
-
-### Ce qui a été livré en session 5 (15 commits, 11 phases)
-
-**Phase A — Restructures stratégiques (@creative-strategy)** :
-1. `docs/strategy/accompagnement-restructure.md` (`c66186a`) — restructure /accompagnement, suppression verbatim fictif, réalignement Karim
-2. `docs/strategy/participations-restructure.md` (`98fadcc`) — architecture 5 sections /participations, suppression redondance Niveau 1/Niveau 2
-
-**Phase B — Copy (@copywriter)** :
-3. `docs/copy/landing-page-copy.md` — section "Notre raison d'être" 1 occurrence "famille", titre "Une holding née d'une lignée." (#3)
-4. `docs/copy/page-accompagnement.md` — Section 1 "Pour qui" Option A + H2 reformulé (#6 + P1-1)
-5. `docs/copy/page-opportunites.md` — "La pierre s'inscrit dans le temps long..." (#7)
-6. `docs/copy/page-participations.md` — restructure 5 sections (#8)
-7. `docs/copy/audit-p1-session5.md` — audit transverse 7 fichiers, 10 détections, Pattern A éradiqué
-8. `docs/copy/about-page-copy.md` — Section C Option B (suppression chiffres géo + ajout marques) (P0-1)
-
-**Phase C — Code (@fullstack)** :
-9. `src/app/page.tsx` — #1 2e CTA hero, #2 limite 3 cards, #3 propagation copy
-10. `src/app/accompagnement/page.tsx` — #6 + P1-1 propagation
-11. `src/app/opportunites/page.tsx` — #7 propagation
-12. `src/app/participations/page.tsx` — #8 restructure grid 12 col
-13. `src/app/a-propos/page.tsx` — P0-1 propagation
-14. `src/components/layout/Header.tsx` — #5 scroll-to-top + #4 "À propos" déjà dans nav
-
-**Phase C3 — Refonte favicon (@design + @fullstack)** :
-15. `public/favicon.svg` — Direction A sérif classique, C en arc Bézier cubique unique
-16. `docs/design/favicon-redesign-session5.md` — audit + concept + handoff
-17. Propagation 8 SVG sources + binaires régénérés (favicon.ico, apple-touch-icon.png, android-chrome-192/512.png)
-18. Création `public/apple-touch-icon.svg` (manquait dans le repo)
-19. `src/app/favicon.ico` + `src/app/apple-icon.png` (file-based routing Next.js)
-
-**Phase D — Tests** :
-20. `docs/reviews/testeur-karim-session5.md` — audit GP1-GP10 4 pages, GO CONDITIONNEL 8.5/10
-21. `docs/qa/qa-session5-report.md` — pipeline G28 5/5 + G27 11/11 + audit qualité 13/13, GO intégral
-
-**Phase E — Audit final** :
-22. `docs/reviews/cross-review-session5.md` — gates 32, GO CONDITIONNEL 9.4/10
-
-### Décisions Thomas verrouillées en session 5
-- **Q1** Option B typo (52/32/26) : GARDÉE
-- **Q2** Mention nominative TikTok/Adidas/Lego/Sony : **AUTORISÉE** (exception explicite à CLAUDE.md n°14, validée par Thomas)
-- **Q3** OCC-11 "d'une famille libanaise" : GARDÉE
-- **Q4** Versi Invest col-span : caduque (intégrée dans #2 + #8)
-- **Q5** Portraits Thomas/Jean-Pierre : reportée
-
-### Frictions résiduelles reportées en session 6 (P1/P2)
-
-**P1 — décisions éditoriales Thomas en suspens** :
-1. **P1-2 Section 4 Filiation absente du code homepage TSX** — la section existe dans `docs/copy/landing-page-copy.md` (Modif 3) mais pas dans `src/app/page.tsx`. Décision Thomas requise : ajouter la section sur la home OU maintenir le delta éditorial copy/TSX comme volonté assumée
-2. **P1-3 Sony/TEOS continuité narrative** — `/a-propos` Section C : "Il rejoint Sony, puis TEOS" laisse penser à 2 étapes alors que TEOS est né chez Sony. Reformulation simple : "Il rejoint Sony, où il co-fonde TEOS..."
-
-**P2 — qualité site (non bloquant)** :
-3. **/participations Versi Invest "Participation phare" sans contexte** — la participation la plus récente (2026, pas de site) mérite une phrase d'explication ou un repositionnement éditorial
-4. **Homepage Section 6 répète bifurcation hero** — les 2 blocs "Pour les dirigeants" / "Pour les apporteurs d'affaires" répètent les 2 CTAs du hero. Audit @ux si Thomas confirme
-5. **TESTING.md ligne 54 "21 baselines/7 pages"** → réalité "24 baselines/8 pages" depuis ajout /a-propos session 4. 1 Edit @qa cosmétique
-
-**P1 — agent secrétariat (gros chantier 12-18h, NON démarré en session 5)** :
-6. Implémentation Phases 1-7 (specs complètes dans `docs/ia/secretariat-architecture.md` + `secretariat-system-prompt.md` + `secretariat-implementation-plan.md`)
-7. Code à produire dans `src/lib/ai/` (claude-client, system-prompt, cr-schema, cr-renderer, contacts-injector, evals)
-8. Code à produire dans `src/server/` (routes, services, db, admin)
-9. Phase 8 actions Thomas BLOQUANTES en parallèle (DPA Anthropic + Replit, numéro WhatsApp, database contacts complétée, signature Thomas, NDA Carl/Maxime)
-
-**P3 — communication & visibility** :
-10. Bannière LinkedIn 1584×396 Thomas (briefing dans `docs/copy/linkedin-thomas-issa.md`)
-11. Premier post LinkedIn d'annonce du site
-12. Promotion gate G33 Playwright `expect(page).toHaveScreenshot()` strict
-13. Monitoring SEO/GEO post-launch (GSC + Bing + Rich Results + citations LLM)
-
-**P3 — meta-maintenance framework** :
-14. Propagation cross-projets des 6 nouveaux lessons-learned session 5 vers le repo Agent-Team source (P1 sub-orchestrator pas de Task + P2 main thread dispatcher pattern + P1 propagation chirurgicale duplication + P2 fichiers manquants scripts + P3 testeur "FAIL si je doute" + P1 design assets typographiques Bézier)
-
-### Validation visuelle humaine recommandée
-
-- **Favicon Direction A** : test sur onglet navigateur réel à 16px et 32px (impossible automatique)
-- **Page /a-propos Section C** après suppression chiffres géographiques : vérifier que la lecture reste fluide
-- **Page /accompagnement Section "Pour qui"** après reformulation H2 : vérifier que Karim s'identifie sans confusion avec l'Overline
-- **Page /participations** après restructure 5 sections : vérifier visuellement que la section "Au sein de Gradient One" enchaîne bien la Section 1 (pas de redondance ressentie)
-
-### Branche pour session 6
-À créer à partir de `claude/resume-issa-session-5-zZVP2` (mergé sur main d'abord ou pas, à la discrétion Thomas).
-
-### Décision push main session 5
-**Verdict @reviewer + @qa : mise en ligne autorisée**. Thomas peut merger `claude/resume-issa-session-5-zZVP2` sur main quand il le souhaite. Les frictions P1-2/P1-3 + P2 ne sont pas bloquantes — c'est de la qualité éditoriale incrémentale, le site est fonctionnellement complet et déployable.
+Les mémos de reprise des sessions 5 et 6 ont été archivés dans `docs/project-context-archive.md` (clôture session 9, 2026-05-10). Consulter ce fichier pour l'historique détaillé de ces sessions.
 
 ---
 
-## Mémo de reprise — Session 5 (clôture session 4 le 2026-04-08)
+## Mémo de reprise — Session 10 (clôture session 9 le 2026-05-10)
 
-### État à la clôture session 4
-- **Branche active session 4 (clôture)** : `claude/issa-session-4-reprise-9oB9r` (HEAD `ab7470e` au moment de la clôture)
-- **Branche active session 5** : `claude/resume-issa-session-5-zZVP2` (créée à partir de la branche session 4)
-- **Site DÉPLOYÉ** : issa-capital.com (production stable)
-- **Pipeline green** : tsc + lint + vitest 7/7 + next build + Playwright 24/24 PASS
-- **Verdict @reviewer session 4** : GO CONDITIONNEL 9.94/10 → 13/13 GO inconditionnel après fix P1
-- **Compteur producteurs session 4** : ~17/18 (clôture proche du seuil ALERTE ROUGE)
+### Numéro de session : 10
 
-### Ce qui a été livré en session 4 (15 livrables, 17+ commits)
-1. Bloc 1 P0 : suppression CTA "Travailler avec Thomas Issa", fix favicon IC (root cause = conflit double favicon causant HTTP 500), suppression filler "Cette holding n'est pas née en 2026"
-2. F2 audit échelle typographique → **Option B validée Thomas** (display 52px / h2 32px / h3 26px) — appliquée au Bloc 4
-3. PM 62 questions agent secrétariat ISSA Capital (réponses Thomas RES1-RES6 acquises)
-4. Database contacts initiale `secretariat-contacts-database.md`
-5. @moi 3 arbitrages tranchés (Q6.2 tags Craft "CONFIDENTIEL" seul + convention nommage YYYY-MM-DD-[type]-[entite] / Q9.5 sidebar admin laxiste / CTA participations align)
-6. Wording CTA "Besoin d'être accompagné ?" propagé partout (3 TSX + 3 MD)
-7. @legal audit juridique secrétariat (5 blocs : fiscal Art. 39-1 CGI, tonalité juridique, signature scannée + RFC 3161 Universign, RGPD, RBAC multi-utilisateurs)
-8. F1 audit anti-filler global (11 occurrences détectées, 7 Edits P0 prêts + 3 OCC arbitrées par @copywriter Bloc 3)
-9. C archi page /a-propos (5 sections, route, nav footer-only, états, images)
-10. Scope éditorial /a-propos (@creative-strategy : arc thématique Racines/Construire/Transmettre, 5 décisions structurantes, hypothèses Thomas H1-H5 résolues)
-11. Bloc 3 copy /a-propos (~725 mots, 5 sections + passerelle homepage + 3 OCC F1 arbitrées)
-12. **Bloc 4 fullstack implémentation groupée** : nouvelle page `/a-propos` + migration Section 4 Filiation Jean-Pierre depuis homepage + Option B typo + 7 Edits F1 + 3 OCC reformulées + reorder /participations Versi Invest en phare (badge `featured` + col-span-2) + footer "À propos" + 24 baselines Playwright régénérées
-13. @ia 3 livrables specs agent secrétariat (1856 lignes : architecture + system prompt + plan d'implémentation 8 phases)
-14. @qa revue chirurgicale finale Bloc 4 → GO CONDITIONNEL (5/5 pipeline + 10/10 cohérence + 3/4 anti-régressions)
-15. @reviewer cross-review session 4 → GO CONDITIONNEL 9.94/10 (12 GO + 1 GO CONDITIONNEL → 13/13 GO après fix P1 placeholder appliqué)
+### Date de clôture : 2026-05-10
 
-### Réponses Thomas verrouillées (ne pas redemander)
-- **Hero homepage** : H1 "Racines libanaises. Exigences sans exception." + sous-titre A "d'une famille libanaise, établie en France" — OK
-- **CTA hero** : suppression "Travailler avec Thomas Issa" — UN seul CTA "Présenter une opportunité d'affaires"
-- **CTA accompagnement** : "Besoin d'être accompagné ?" partout (homepage + mission + participations + footer)
-- **Section 4 Filiation Jean-Pierre** : migrée vers `/a-propos` (page dédiée), passerelle 2-3 lignes en homepage Section 2
-- **Identité visuelle** : logo IC monogramme + EB Garamond auto-hosted — OK
-- **Stats homepage** (50% / 2020 / 4 participations) : OK pour l'instant
-- **Versi Invest** : participation phare dans `/participations` (col-span-2 desktop, badge "Participation phare", border levant)
-- **Page /a-propos** : créée (5 sections Hero/Racines/Construire/Transmettre/Fermeture, layout fallback 1 colonne sans portrait Thomas)
-- **Épisode agence** : ellipse "Une agence de communication internationale" — nom caché temporairement (à révéler post-launch). NE JAMAIS écrire le nom (commence par S, finit par i, 6 lettres)
-- **Sortie agence** verrouillée : "pour se consacrer à sa famille et au développement des activités d'ISSA Capital"
-- **Bio Thomas pour /a-propos** : Florimont, UC Irvine, jalons géo, Sony/TEOS/conseil/agence (mention groupée), humanitaire Inde 4 mots, 3 enfants Antoine/Noémie/Lucas
-- **Tonalité éditoriale verrouillée** : règle P0 Simplicité > Démonstration > Élégance, jamais "famille française", "racines libanaises" au présent / "famille libanaise" au passé, zéro filler défensif
 
-### Agent secrétariat — réponses Thomas acquises
-- **Canal** : WhatsApp Cloud API officielle Meta (UNIQUEMENT, pas iMessage)
-- **Numéro pro WhatsApp** : à acquérir par Thomas (24-48h délai vérification Meta)
-- **Multi-utilisateurs** : Thomas (TOUS) + Carl + Maxime (Gradient One + Versi uniquement, RBAC strict)
-- **Hébergement** : Replit Pro Autoscale
-- **Backoffice** : `issa-capital.com/admin` (mot de passe `allezpsg` à changer en prod, 4 modules : contacts CRUD + historique CR + logs + paramètres)
-- **Database contacts** : import initial via `secretariat-contacts-database.md` + saisie au fil de l'eau
-- **Format CR** : 4 sections narratives Art. 39-1 CGI + signature scannée Thomas (PNG à uploader) + horodatage RFC 3161 Universign + numérotation `IC-CR-2026-XXXX` (compteur Craft externe)
-- **Templates** : 1 system prompt unique avec champs conditionnels par type (7 types : déjeuner, conseil, appel, interne, visite-immo, signature-contrat, dîner)
-- **Conservation** : 10 ans (Craft seul = source de vérité, pas de backup auto)
-- **Pas d'export PDF** (RES4 NON jamais)
-- **Tags Craft** : `CONFIDENTIEL` seul (pas de tags type/entité — tranché par @moi)
-- **Convention nommage** : `YYYY-MM-DD-[type]-[entite]-[interlocuteur].md`
+### Branche active : `claude/resume-issa-session-9-Y9WBK`
 
-### TODO Phase 8 actions Thomas (BLOQUANTES avant production agent secrétariat)
-1. Signer DPA Anthropic (privacy.anthropic.com)
-2. Signer DPA Replit
-3. Email information RGPD à Carl + Maxime AVANT whitelist WhatsApp (Art. 13 RGPD)
-4. Signature mandat + NDA Carl + Maxime (Yousign/Docusign, 1 page)
-5. Upload signature PNG transparente Thomas (pour intégration footer CR)
-6. Acquérir numéro WhatsApp pro dédié (24-48h vérification Meta)
-7. Compléter `secretariat-contacts-database.md` : noms de famille Carl + Maxime + numéros WhatsApp + équipes Versi/Immocrew/Versimo + conseillers (expert-comptable, fiscaliste, notaire, banquier)
+### Résumé de la session 9
 
-### Reportés en session 5 (priorisé par @orchestrator)
+Session massive couvrant 91 commits. Travaux majeurs :
 
-**P1 — décisions Thomas en suspens** :
-- Validation visuelle Option B + page /a-propos sur le site déployé (test condition réelle)
-- Arbitrage "Sony" : garder ou anonymiser dans /a-propos + /accompagnement (mention TikTok/Adidas/Lego/Sony pré-existante dans /accompagnement)
-- Validation OCC-11 homepage title "d'une famille libanaise" (au lieu de "famille libanaise")
-- Validation Versi Invest layout (col-span-2 OK ou alternative col-span-3)
-- Validation hypothèses portrait/archive Jean-Pierre (H4/H5 — pour layout 2 colonnes plus tard)
+1. **Propagation learnings sessions 7-8** — 8 learnings propagés dans 10 fichiers agents
+2. **Site vitrine converti en monopage** — nav vidé, sections empilées, 2 CTAs #contact, FAQ JSON-LD
+3. **Bot Telegram "Anya"** — secrétariat IA complet (webhook Next.js API route, Claude API avec web search, photos, PDFKit A4, Google Drive OAuth2 upload, contacts récurrents, historique CR, compteur IC-CR-YYYY-XXXX). 68 tests (4 suites) tous PASS
+4. **SEO/GEO optimisés 10/10** — JSON-LD enrichi (Organization + subOrganization + FAQPage), robots.ts opt-in 11 bots IA, llms.txt, sitemap nettoyé, canonical unifié
+5. **Claude Profile** — 9 fichiers réutilisables (red-lines, voice, work, content-templates, brand-identity, technical, about-me, lifestyle, CLAUDE.md). Score @ia 9.96/10
+6. **Second cerveau Obsidian** — vault complet (Profil, Projets, Contacts, Réunions, Tâches, Journal, Idées, Cuisine, Learnings, Ressources) + 7 templates + SETUP.md + sync Obsidian Sync
+7. **LinkedIn post testing** — pipeline triple audit >= 9/10 établi, v4 à 8.5/10
+8. **Umami Analytics** — Plausible retiré, Umami intégré (préférence fondateur)
 
-**P1 — agent secrétariat (gros chantier 12-18h)** :
-- Implémentation Phases 1-7 (specs complètes dans `docs/ia/secretariat-architecture.md` + `secretariat-system-prompt.md` + `secretariat-implementation-plan.md`)
-- Code à produire dans `src/lib/ai/` (périmètre @ia) : claude-client, system-prompt, cr-schema, cr-renderer, contacts-injector, evals
-- Code à produire dans `src/server/` (périmètre @fullstack) : routes, services, db, admin
-- Phase 8 actions Thomas en parallèle dès le début
+### Travaux en cours
 
-**P2 — qualité site** :
-- Audit testeur-persona GP1-GP10 sur la nouvelle page `/a-propos` (manqué en session 4)
-- Centralisation marqueurs `[NOM]` Carl/Maxime dans database contacts puis substitution en bloc dans 4 livrables
-- Correction G15 sur les autres placeholders éventuels
+- **MCP Gmail/Calendar** : ANNULÉ — Claude Desktop a une intégration Google native (Settings > Integrations). Thomas doit simplement connecter son compte Google dans l'interface.
+- **Anya v2** (actions auto-trackées, préparation réunion, suivi hebdo) — Thomas "garde l'idée" mais pas prioritaire
+- **robots.ts** : vérifié intact (opt-in 11 bots IA présent)
 
-**P3 — communication & visibility** :
-- Bannière LinkedIn 1584×396 Thomas (briefing dans `docs/copy/linkedin-thomas-issa.md`)
-- Premier post LinkedIn d'annonce du site (si Thomas veut communiquer)
-- Promotion gate G33 Playwright `expect(page).toHaveScreenshot()` strict
-- Monitoring SEO/GEO post-launch (Google Search Console + Bing + Rich Results + citations LLM "family office libanais Paris", "Thomas Issa")
+### Décisions Thomas verrouillées session 9
 
-**P3 — meta-maintenance framework** :
-- Propagation cross-projets des 5 lessons-learned session 4 vers le repo Agent-Team source (P1 fullstack handoff substitution + P2 chaîne référencement amont règle 15 + P2 testeur-persona Phase 5b auto + P2 Anti-saturation API + pattern @moi proxy haute confiance)
+- **Zéro MVP** : le mot "MVP" est banni. Tout livrable = brief complet
+- **"famille libanaise" interdit** (retour Jean-Pierre) → "racines libanaises", "d'origine libanaise", "famille Issa"
+- **Umami uniquement** — jamais Plausible ni GA4
+- **Storytelling-first** pour tout contenu
+- **Triple audit >= 9/10** avant soumission à Thomas
+- **"Si on n'a rien à dire, on ne dit rien"** — Claude n'invente pas de contenu
+- **Humilité confiante** — "sûr de mes forces" mais pas de superlatifs
 
-### Branche pour session 5
-**Créée** : `claude/resume-issa-session-5-zZVP2` à partir de `claude/issa-session-4-reprise-9oB9r`. Nom de branche propagé dans `project-context.md` (ce mémo). Note : `index.html`, `INSTALL.md`, `install.sh` ne sont PAS dans ce repo projet (ils vivent dans le repo Agent-Team source) et `update.sh` local n'a pas de référence à la branche `claude/issa`. Les références à l'ancienne branche dans `docs/qa/qa-bloc4-final-review.md` et `REPLIT_ACTIONS.md` sont conservées en l'état car ce sont des rapports d'audit historiques (immuables).
+### Prochaines actions recommandées
 
-### Décision push main
-**Verdict @reviewer + @qa : push main autorisé** après application du fix P1 placeholder (déjà fait commit `ac55d5c`). Thomas n'a pas explicitement demandé le merge — décision à prendre par Thomas en début de session 5 (ou avant).
+1. **Déploiement Anya** (@infrastructure) — suivre `src/app/api/telegram/webhook/` (webhook déjà intégré dans le site Next.js). Configurer le webhook Telegram Bot API vers `https://issa-capital.com/api/telegram/webhook`. Secrets à ajouter dans Replit : `TELEGRAM_BOT_TOKEN`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`. Priorité : Thomas attend ce bot pour ses CR de réunion.
+2. **Phase 8 actions Thomas** (non-agent) — DPA Anthropic/Replit, email RGPD Carl/Maxime, mandat NDA, signature PNG. Documenté dans le mémo session 9 ci-dessus (section Phase 8).
+3. **Connexion Gmail/Calendar Claude Desktop** — Thomas doit aller dans Settings > Integrations de Claude Desktop et connecter son compte Google. Aucune action technique requise.
+
+### Blockers
+
+- Aucun blocker technique
+- Actions Thomas (Phase 8) non démarrées — nécessitent des démarches juridiques/administratives
+
+### Nom de branche recommandé session 10
+
+`claude/issa-capital-s10-deploy-anya-`
+
+### Commande de reprise suggérée
+
+```
+reprise ISSA Capital session 10 — Branche : claude/issa-capital-s10-deploy-anya-[suffix]. Priorités : (1) déploiement bot Anya — configurer webhook Telegram + Secrets Replit, (2) si Thomas a fait les actions Phase 8 → activer le bot en production. Lire project-context.md + docs/lessons-learned.md avant toute action. Branche précédente : claude/resume-issa-session-9-Y9WBK.
+```
 
 ---
-
-## Notes libres
-
-**Profil utilisateur (Thomas)** :
-- Niveau technique : technique (fondateur écosystème tech, comprend les choix d'archi)
-- Mode d'interaction : autopilot complet activé — Thomas ne veut pas valider chaque phase, sauf checkpoint Phase 0 obligatoire (validation des hypothèses ci-dessus)
-- Préférence : aller vite, déléguer la formulation aux agents spécialisés, trancher uniquement sur les hypothèses dures
-
-**Direction design (rappel critique pour @design)** :
-Premium élégant à 0€ photo/vidéo se construit sur :
-1. Typographie soignée (serif éditoriale + sans-serif moderne, contraste fort)
-2. Espace blanc généreux (pas peur du vide)
-3. Composition éditoriale (grilles asymétriques, hiérarchie typographique forte)
-4. Patterns / illustrations vectorielles sobres
-5. Images libres très sélectionnées (Unsplash haut de gamme) OU génération IA contrôlée
-RÉFÉRENCES À EXPLORER : sites Agache, Artémis, Berkshire Hathaway (l'opposé visuel mais l'esprit minimaliste), maisons de gestion patrimoniale haut de gamme européennes.
-
-**Outillage orchestrator (limitation détectée)** :
-L'orchestrator n'a pas WebFetch dans son outillage. Si des données web sont nécessaires pendant le run, l'orchestrator doit les demander à Thomas ou au main thread. Documenté dans lessons-learned.md (catégorie performance-ia, P1).
-
-**Données factuelles vérifiées** (sources : societe.com, immocrew.fr, versimo.fr — fetched 2026-04-07) :
-- ISSA Capital : SAS, SIREN 102 356 094, créée 17 mars 2026, siège Nanterre, NAF 6630Z
-- Immocrew : pricing 100€/mois (annuel) ou 150€/mois, cible mandataires solo France
-- Versimo : Découverte gratuit / Starter 9,90€ / Pro 29€/mois, USP pipeline 2 passes
-- gradientone.fr et issa-capital.com : sites bloquent les bots (403), contenu non récupérable
 
 ### Corrections factuelles verrouillées par Thomas — Session 6 (2026-04-08)
 
 **À lire obligatoirement par @creative-strategy, @copywriter, @fullstack avant toute production sur bio Thomas ou Jean-Pierre.**
 
-1. **2J Impression — date de rachat** : le rachat de 2J Impression par Jean-Pierre Issa (et ses deux associés) a eu lieu en **2016**, **PAS en 1994**. L'erreur "1994" était présente dans plusieurs livrables session 5 (landing-page-copy.md, mission-page-fusion-copy.md, src/app/mission/page.tsx) et a été corrigée en session 6. Si une date de FONDATION de 2J Impression (différente du rachat) est utilisée, elle doit être vérifiée explicitement avec Thomas avant publication.
+1. **2J Impression — date de rachat** : le rachat de 2J Impression par Jean-Pierre Issa (et ses deux associés) a eu lieu en **2016**, **PAS en 1994**. L'erreur "1994" était présente dans plusieurs livrables session 5 (landing-page-copy.md, mission-page-fusion-copy.md, src/app/mission/page.tsx) et a été corrigée en session 6.
 
-2. **Parcours Thomas en jeunesse** : Thomas Issa a vécu en **Afrique du Sud** dans sa jeunesse, **avant** l'Inde et avant les États-Unis (Irvine). L'ordre chronologique correct du parcours international est : **Afrique du Sud (jeunesse) → Institut Florimont Genève (lycée 2002-2004) → [prépa/IMT] → University of California Irvine (2010) → Inde (détour humanitaire)**. Le CV de Thomas (section "Expertise fondateur Thomas Issa" ci-dessus) ne mentionnait pas l'Afrique du Sud : c'est un ajout biographique verrouillé par Thomas en session 6.
-
-**Fichiers corrigés en session 6** :
-- `src/app/mission/page.tsx` : "En 1994" → "En 2016" (l.131) + réordonnancement Afrique du Sud en tête (l.163-170)
-
-**Fichiers à NE PLUS contredire** sur ces 2 faits : tout livrable copy, stratégie, SEO, legal produit en session 6+.
+2. **Parcours Thomas en jeunesse** : Thomas Issa a vécu en **Afrique du Sud** dans sa jeunesse, **avant** l'Inde et avant les États-Unis (Irvine). Ordre chronologique : **Afrique du Sud (jeunesse) → Florimont Genève (2002-2004) → [prépa/IMT] → UC Irvine (2010) → Inde**.

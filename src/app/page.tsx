@@ -1,27 +1,75 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import Script from 'next/script';
 import { Container } from '@/components/ui/Container';
 import { Section } from '@/components/ui/Section';
 import { Overline } from '@/components/ui/Overline';
 import { Button } from '@/components/ui/Button';
+import { ContactForm } from '@/components/ui/ContactForm';
 import { siteConfig } from '@/config/site';
 
 /**
- * Page d'accueil — rendu statique (SSG).
- * Pas de données dynamiques, pas de fetch. Next la rend à build time.
- * Respecte le Principe directeur #0 : VITRINE pas conversion — CTAs discrets,
- * ton éditorial, hero typographique sans CTA agressif.
+ * FAQPage JSON-LD — pour citation par les LLM (ChatGPT, Claude, Perplexity, Gemini)
+ * et opportunité de featured snippet Google. Invisible dans le rendu.
+ */
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: "Qu'est-ce qu'ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital SAS est une holding patrimoniale familiale française fondée en 2026 par Thomas Issa. Son siège est à Nanterre (92). Elle gère le patrimoine de la famille Issa — pas de capitaux tiers — avec un horizon intergénérationnel. Elle regroupe les participations dans Gradient One (holding intermédiaire co-fondée en 2020), Versi Immobilier (marchand de biens), Versi Invest (co-investissement immobilier) et leurs filiales.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Qui dirige ISSA Capital ?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "Thomas Issa est le Président et fondateur d'ISSA Capital. Issu d'une famille d'origine libanaise, il est aussi co-fondateur de Gradient One (2020). Son parcours inclut des fonctions chez Sony, la fondation de TEOS (de 0 à 8 M€ en 4 ans) et plusieurs missions d'advisory dans la tech et l'immobilier.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Quelles sont les filiales et participations d\'ISSA Capital ?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital détient des participations dans Gradient One (holding intermédiaire, 2020), Versi Immobilier (marchand de biens résidentiel), Versi Invest (conseil et co-investissement immobilier), Immocrew (outil marketing pour mandataires) et Versimo (home staging par IA).",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: "Comment contacter ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital est joignable par email à contact@issa-capital.com. Le siège social est situé au 54 Rue Henri Barbusse, 92000 Nanterre, France.",
+      },
+    },
+    {
+      '@type': 'Question',
+      name: "Quels sont les filtres de décision d'investissement d'ISSA Capital ?",
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: "ISSA Capital applique trois filtres non négociables avant tout investissement : (1) horizon patrimonial long terme — évaluation sur 20 à 30 ans, pas sur le TRI à 5 ans ; (2) préservation de l'environnement — aucun modèle qui dégrade durablement l'environnement ; (3) éthique humaine — certains secteurs sont hors périmètre, indépendamment du dossier.",
+      },
+    },
+  ],
+};
+
+/**
+ * Page d'accueil — version monopage light (session 9).
+ * Toutes les sections sont sur cette page unique. Pas de pages internes dans le menu.
+ * Les CTAs hero scrollent vers le formulaire de contact en bas de page (#contact).
+ * Respecte le Principe directeur #0 : VITRINE pas conversion.
  */
 
 export const dynamic = 'force-static';
 
-// NOTE : le title est utilisé tel quel (pas de suffixe — c'est la home).
-// Le layout root applique `template: '%s — ISSA Capital'`, donc on définit ici
-// un title "absolute" via l'objet pour neutraliser le template sur la home.
 export const metadata: Metadata = {
   title: {
-    absolute: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
+    absolute: 'ISSA Capital — Holding patrimoniale familiale | Famille Issa, Nanterre',
   },
   description:
     "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Investissement immobilier, participations, conseil stratégique.",
@@ -42,9 +90,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "ISSA Capital — Holding patrimoniale d'une famille libanaise",
+    title: 'ISSA Capital — Holding patrimoniale familiale',
     description:
-      "Holding patrimoniale d'une famille aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
+      "Holding patrimoniale de la famille Issa, aux racines libanaises, établie en France. Immobilier, participations, conseil stratégique.",
     images: [siteConfig.ogImage],
   },
 };
@@ -52,25 +100,33 @@ export const metadata: Metadata = {
 export default function HomePage(): JSX.Element {
   return (
     <>
+      <Script
+        id="jsonld-faq"
+        type="application/ld+json"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Section 1 — Hero principal */}
-      <Section tone="inverse" className="py-4xl md:py-5xl">
+      {/* C1 : py-3xl mobile (64px), py-5xl desktop (128px) — mobile-first proportionné. */}
+      <Section tone="inverse" className="py-3xl md:py-5xl">
         <Container width="editorial" className="text-center">
-          <Overline tone="light">Holding patrimoniale — famille libanaise</Overline>
+          <Overline tone="light">Holding patrimoniale familiale</Overline>
           <h1 className="mt-lg font-heading text-display leading-[1.08] text-parchment-100">
             Racines libanaises.
             <br />
             Exigences sans exception.
           </h1>
           <p className="mx-auto mt-xl max-w-[520px] font-body text-lead text-ink-300">
-            La holding patrimoniale d&apos;une famille libanaise, établie en France.
+            La holding patrimoniale de la famille Issa, établie en France.
             Patrimoine, participations, transmission.
           </p>
+          {/* 2 CTAs : scroll vers le formulaire avec pré-sélection du sujet */}
           <div className="mt-2xl flex flex-col items-center justify-center gap-md sm:flex-row sm:gap-lg">
-            <Button href="/opportunites" variant="primary-inverse" size="lg">
+            <Button href="#contact" variant="primary-inverse" size="lg">
               Présenter une opportunité d&apos;affaires
             </Button>
             <Button
-              href="/accompagnement"
+              href="#contact"
               variant="ghost"
               size="lg"
               className="border border-parchment-100/40 bg-transparent text-parchment-100 hover:bg-parchment-100/10 active:bg-parchment-100/20"
@@ -81,55 +137,36 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 2 — Chapeau mission
-          Session 6 Phase 5 : /a-propos a été fusionnée dans /mission (biographie
-          Thomas, Sonia, famille absorbées). Le second lien "Découvrir la famille
-          fondatrice" pointait vers /a-propos — il est supprimé car redondant
-          avec "Lire notre mission" qui mène désormais à la page unifiée. */}
+      {/* Section 2 — Notre raison d'être */}
+      {/* C3 : text-h2 au lieu de text-h3 — section narrative principale, titre le plus imposant après le hero */}
+      {/* C4 : space-y-lg (24px) au lieu de space-y-md (16px) — respiration éditoriale entre paragraphes */}
       <Section tone="default">
         <Container width="editorial">
           <Overline>Notre raison d&apos;être</Overline>
-          <h2 className="mt-md max-w-[640px] font-heading text-h3 text-ink-950">
+          <h2 className="mt-lg font-heading text-h2 text-ink-950">
             Une holding née d&apos;une lignée.
           </h2>
-          <div className="mt-lg space-y-md text-lead text-ink-700">
+          <div className="mt-xl space-y-lg text-lead text-ink-700">
             <p>
-              ISSA Capital est la holding patrimoniale d&apos;une famille libanaise,
-              établie en France. Sa raison d&apos;être : structurer ce qui s&apos;est
-              construit sur trois décennies, le faire fructifier, le transmettre.
+              ISSA Capital SAS est la holding patrimoniale de la famille Issa,
+              fondée en 2026 et établie à Nanterre. Sa raison d&apos;être&nbsp;:
+              structurer ce qui s&apos;est construit sur trois décennies, le
+              faire fructifier, le transmettre.
             </p>
             <p>
               Une structure indépendante, dont les Issa sont les seuls actionnaires, et
               dont l&apos;horizon est intergénérationnel.
             </p>
-            <p>
-              Elle est l&apos;aboutissement de trois décennies de construction
-              patrimoniale — un héritage libanais qui a appris à se tenir dans la durée.
-            </p>
-          </div>
-          <div className="mt-xl flex flex-col gap-md sm:flex-row sm:flex-wrap sm:gap-xl">
-            <Link
-              href="/mission"
-              className="inline-flex items-center gap-sm font-body text-base text-levant-700 hover:text-levant-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-levant-500 focus-visible:ring-offset-2"
-            >
-              Lire notre mission
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
           </div>
         </Container>
       </Section>
 
-      {/* Section 3 — Stats d'ancrage (stats-only strict)
-          Session 7 CHECKPOINT #5 Thomas : texte éditorial Gradient One retiré.
-          La homepage ne conserve QUE les stats (2020 / 6 / 3) — le titre, le
-          sous-titre italique et la description de Gradient One ajoutés en
-          Phase 3+5 session 6 sont supprimés. Raison : éviter de sur-mettre
-          Gradient One en avant sur la homepage (cohérent avec le traitement
-          discret adopté sur /participations — note hero uniquement).
-          Le chiffre 50 reste verrouillé hors scope (CHECKPOINT #2 session 6). */}
-      <Section tone="inverse">
+      {/* Section 3 — Stats */}
+      {/* C5/C16 : py-3xl md:py-5xl — valorise les 3 chiffres, leur donne l'espace d'une déclaration */}
+      {/* C6 : gap-2xl en colonne mobile (48px) donne à chaque chiffre son propre espace de respiration */}
+      <Section tone="inverse" className="py-3xl md:py-5xl">
         <Container width="editorial">
-          <dl className="grid grid-cols-1 gap-xl sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-2xl sm:grid-cols-3 sm:gap-xl">
             <div className="border-l-2 border-levant-500 pl-lg">
               <dt className="font-body text-xs uppercase tracking-wider text-ink-400">
                 Co-fondation
@@ -158,7 +195,7 @@ export default function HomePage(): JSX.Element {
         </Container>
       </Section>
 
-      {/* Section 4 — Écosystème aperçu (teaser 3 participations, cartographie complète sur /participations) */}
+      {/* Section 4 — Écosystème (3 participations, sans lien vers /participations) */}
       <Section tone="default">
         <Container width="content">
           <div className="mb-2xl">
@@ -172,54 +209,66 @@ export default function HomePage(): JSX.Element {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3">
-            {/*
-              Décision Thomas session 5 (retour #2) : la homepage est un teaser et
-              n'affiche QUE 3 participations — Gradient One, Versi Immobilier,
-              Versi Invest. L'écosystème complet (Immocrew, Versimo, immobilier
-              direct) est exclusivement présenté sur /participations, qui assume
-              le rôle de cartographie exhaustive.
-            */}
             {[
               {
                 name: 'Gradient One',
                 sector: 'Holding intermédiaire',
-                desc: "Co-fondée en 2020. Porte les participations opérationnelles et financières de l'écosystème.",
+                desc: "Holding intermédiaire co-fondée en 2020. Détient Versi Immobilier, Versi Invest, Immocrew et Versimo.",
               },
               {
                 name: 'Versi Immobilier',
                 sector: 'Marchand de biens',
                 desc: 'Marché secondaire résidentiel — acquisition, rénovation, revente.',
+                url: 'https://versi-immobilier.fr',
               },
               {
                 name: 'Versi Invest',
                 sector: 'Co-acquisitions & accompagnement',
                 desc: 'Conseil en investissement immobilier et co-investissement sur sélection.',
+                url: 'https://versi-invest.fr',
               },
             ].map((p) => (
+              /* C8 : border-ink-100 (plus subtil que ink-200), duration-normal = token 300ms vs défaut Tailwind 150ms */
               <article
                 key={p.name}
-                className="border border-ink-200 bg-white p-xl transition-colors hover:border-levant-500"
+                className="flex flex-col border border-ink-100 bg-white p-xl transition-colors duration-normal hover:border-levant-500"
               >
-                <p className="overline text-levant-700">{p.sector}</p>
+                {/* C7 : classes primitives explicites — la classe .overline n'existe pas dans la config Tailwind */}
+                <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-levant-700">{p.sector}</p>
                 <h3 className="mt-sm font-heading text-h4 text-ink-950">{p.name}</h3>
-                <p className="mt-sm text-sm text-ink-600">{p.desc}</p>
+                <p className="mt-sm flex-1 text-sm text-ink-600">{p.desc}</p>
+                {p.url ? (
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-md inline-flex items-center gap-xs text-sm text-levant-700 hover:text-levant-500 focus-visible:outline-none focus-visible:underline"
+                  >
+                    {p.url.replace('https://', '')}
+                    <span aria-hidden="true">→</span>
+                  </a>
+                ) : null}
               </article>
             ))}
-          </div>
-          <div className="mt-2xl text-center">
-            <Button href="/participations" variant="secondary" size="md">
-              Voir toutes nos participations
-            </Button>
           </div>
         </Container>
       </Section>
 
       {/* Section 5 — Trois filtres */}
-      <Section tone="subtle">
+      {/*
+        C10 : tone="inverse" au lieu de "subtle".
+        Raisonnement : Section 4 (default=parchment-100) et Section 5 (subtle=parchment-50)
+        sont visuellement quasi identiques — parchment-100 vs parchment-50, différence imperceptible.
+        Sequence avant : inverse→default→inverse→default→subtle→elevated (deux sections parchment consécutives).
+        Sequence après : inverse→default→inverse→default→inverse→elevated (alternance propre, rythme marqué).
+        C11 : adaptation des couleurs texte pour le fond inverse.
+        ink-300 (#ADADAD) sur ink-950 (#0A0A0A) = ratio 6.3:1. PASS WCAG AA.
+      */}
+      <Section tone="inverse">
         <Container width="content">
           <div className="mb-2xl">
-            <Overline>Nos filtres de décision</Overline>
-            <h2 className="mt-md font-heading text-h2 text-ink-950">
+            <Overline tone="light">Nos filtres de décision</Overline>
+            <h2 className="mt-md font-heading text-h2 text-parchment-100">
               Trois filtres. Aucune exception.
             </h2>
           </div>
@@ -230,75 +279,40 @@ export default function HomePage(): JSX.Element {
                 desc: "Nous raisonnons en décennies. Un investissement est évalué sur sa capacité à créer de la valeur sur 20 ou 30 ans — pas sur son TRI à 5 ans.",
               },
               {
-                title: 'Préservation de l’environnement',
-                desc: "Ce que nous finançons doit tenir sur trente ans. Un modèle qui dégrade l'environnement ne tient pas.",
+                title: 'Préservation de l\u2019environnement',
+                desc: "Ce que nous finançons doit tenir sur trente ans. Un modèle qui dégrade l\u2019environnement ne tient pas.",
               },
               {
                 title: 'Éthique humaine',
-                desc: "Certains secteurs sont hors périmètre, indépendamment du dossier. Ce n'est pas une question d'analyse.",
+                desc: "Certains secteurs sont hors périmètre, indépendamment du dossier.",
               },
             ].map((f) => (
               <div key={f.title} className="border-l-2 border-levant-500 pl-lg">
-                <h3 className="font-heading text-h4 text-ink-950">{f.title}</h3>
-                <p className="mt-sm text-base text-ink-700">{f.desc}</p>
+                <h3 className="font-heading text-h4 text-parchment-100">{f.title}</h3>
+                <p className="mt-sm text-base text-ink-300">{f.desc}</p>
               </div>
             ))}
           </div>
         </Container>
       </Section>
 
-      {/* Section 6 — Deux portes d'entrée symétriques (Karim ↔ Leila) */}
-      <Section tone="inverse">
-        <Container width="content">
-          <div className="mb-2xl text-center">
-            <Overline tone="light">Deux façons d&apos;entrer en relation</Overline>
-            <h2 className="mt-md font-heading text-h2 text-parchment-100">
-              Deux raisons de prendre contact.
-            </h2>
+      {/* Section 6 — Contact */}
+      {/*
+        C12 : ajout de l'Overline comme repère de section avant le formulaire.
+        Toutes les autres sections ont Overline + H2. La section Contact ne doit pas faire exception.
+        L'Overline "Entrer en relation" positionne la section, le heading "Nous écrire." est l'invitation.
+        Les deux coexistent sans redondance car ils ont des niveaux sémantiques différents.
+      */}
+      <Section tone="elevated" id="contact">
+        <Container width="editorial">
+          <div className="mb-2xl">
+            <Overline>Entrer en relation</Overline>
           </div>
-          <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
-            {/* Porte 1 — Apporteurs d'affaires / Leila → /opportunites
-                Session 8 CHECKPOINT Thomas : ordre inversé — Opportunités
-                à gauche, Accompagnement à droite (cohérent avec l'ordre du
-                nav top qui place également Opportunités avant Accompagnement). */}
-            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
-              <Overline tone="light">Pour les apporteurs d&apos;affaires</Overline>
-              <h3 className="mt-md font-heading text-h3 text-parchment-100">
-                Présenter une opportunité.
-              </h3>
-              <p className="mt-md flex-1 text-base text-ink-300">
-                Vous avez un actif à présenter ou une opportunité à faire étudier. ISSA
-                Capital investit en propre — immobilier résidentiel francilien ou
-                participations minoritaires dans des entreprises saines. Critères
-                explicites, horizon long, aucun comité trimestriel à convaincre.
-              </p>
-              <div className="mt-lg">
-                <Button href="/opportunites" variant="primary-inverse" size="lg">
-                  Présenter une opportunité
-                </Button>
-              </div>
-            </article>
-
-            {/* Porte 2 — Dirigeants / Karim → /accompagnement */}
-            <article className="flex flex-col border border-ink-800 bg-ink-900 p-xl md:p-2xl">
-              <Overline tone="light">Pour les dirigeants</Overline>
-              <h3 className="mt-md font-heading text-h3 text-parchment-100">
-                Accompagnement de dirigeants.
-              </h3>
-              <p className="mt-md flex-1 text-base text-ink-300">
-                Une mission ponctuelle ou un rôle d&apos;advisor récurrent. Pour les
-                fondateurs et dirigeants qui cherchent un pair — pas un prestataire.
-              </p>
-              <div className="mt-lg">
-                <Button href="/accompagnement" variant="primary-inverse" size="lg">
-                  Besoin d&apos;être accompagné ?
-                </Button>
-              </div>
-            </article>
-          </div>
-          <p className="mt-2xl text-center text-xs text-ink-400">
-            Ou contactez-nous directement : contact@issa-capital.com
-          </p>
+          <ContactForm
+            variant="contact"
+            heading="Nous écrire."
+            intro="Une question, une proposition, un dossier. Écrivez-nous."
+          />
         </Container>
       </Section>
     </>

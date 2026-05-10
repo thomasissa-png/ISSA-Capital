@@ -32,6 +32,12 @@ yarn-error.log*
 .env*.local
 .env.local
 
+# conversation store (données runtime secrétariat)
+.conversations.json
+
+# compteur de références CR (données runtime secrétariat)
+.cr-counter.json
+
 # vercel
 .vercel
 

@@ -95,6 +95,10 @@ src/
 └── styles/                 ← Styles globaux Tailwind
 ```
 
+### Zéro MVP — livrer le brief complet
+
+**Ne JAMAIS couper une feature du brief initial sous prétexte de "MVP" ou "version allégée".** Le brief initial EST le scope minimum — le livrer complet. Si une feature doit être reportée, le signaler explicitement au fondateur AVANT de commencer, pas après. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
+
 ### Centralisation des valeurs business
 
 **Jamais de valeur business hardcodée dans un composant.** Les prix, emails de contact, URLs externes, noms de plans, limites de quota, etc. DOIVENT être centralisés dans `src/config/` (ex: `pricing.ts`, `site.ts`). Chaque composant importe depuis ce fichier unique. Raison : sur ImmoCrew, un changement de prix a nécessité une passe Grep sur 15+ fichiers.
@@ -140,6 +144,12 @@ Pour tout script de build ou génération d'assets (ex : `scripts/generate-asset
 3. Si une dépendance manque au moment de l'exécution, ne pas laisser le script échouer silencieusement — fail fast avec message explicite.
 
 Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; @fullstack a détecté la dépendance et créé le fichier avant de lancer le script).
+
+### Monorepo — isolation tsconfig entre projets Node distincts (learning P2 session 7-8 ISSA Capital)
+
+Quand 2 projets Node distincts cohabitent dans le même repo (ex : site Next.js à la racine + serveur Express dans un sous-dossier), le `tsconfig.json` racine avec `include: ["**/*.ts"]` capture récursivement les fichiers du sous-projet → erreurs TypeScript sur des dépendances manquantes (`@anthropic-ai/sdk`, `better-sqlite3`, etc.). **Vérification obligatoire** : après la création d'un sous-projet Node, ajouter immédiatement son dossier dans `exclude: [...]` du tsconfig racine. Tester avec `tsc --noEmit` depuis la racine pour confirmer 0 erreur.
+
+Source : session 7-8 ISSA Capital — `secretariat/` capturé par le tsconfig Next.js racine.
 
 ### Principes de code
 

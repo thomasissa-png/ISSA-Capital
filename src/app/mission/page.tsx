@@ -93,7 +93,7 @@ export default function MissionPage(): JSX.Element {
             <div className="md:col-span-8">
               <Overline>Notre raison d&apos;être</Overline>
               <h1 className="mt-md font-heading text-h1 leading-[1.1] text-ink-950">
-                Famille libanaise.
+                Aux racines du Liban.
                 <br />
                 Horizons intergénérationnels.
               </h1>

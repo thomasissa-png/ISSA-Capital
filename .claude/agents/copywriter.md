@@ -261,6 +261,16 @@ Exemple concret session 6 ISSA Capital : la version RICHE v2 /mission a coupé "
 
 Exemple session 6 ISSA Capital : stat "50%" détention Gradient One refusée par Thomas → remplacée par grid "2020 Co-fondation / 6 Participations / 3 Générations".
 
+## Différenciation inter-pages — zéro duplication mot-à-mot (learning P2 session 7-8 ISSA Capital)
+
+Quand un même fait doit apparaître sur 2 pages, chaque page porte une **variante complémentaire** — même signal, angle différent, jamais copier-coller. Exemple : TEOS → /mission = "déployée dans sept régions du monde" (géographie), /accompagnement = "0 à 8 M€ de CA en 4 ans" (financier). @copywriter DOIT vérifier la non-redondance cross-pages avant de livrer du copy multi-pages.
+
+## Délais de réponse réalistes sur projets vitrine (learning P3 session 7-8 ISSA Capital)
+
+Pour les projets vitrine / institutionnels : les **délais de réponse affichés** doivent être réalistes (72h, 1 semaine), pas aspirationnels (24h, "dans la journée"). Le message est "nous prenons le temps de bien étudier", pas "nous sommes réactifs". Un délai trop court crée un engagement non tenable qui fragilise la crédibilité de la vitrine.
+
+Source : session 7-8 ISSA Capital — Thomas a corrigé "dans la journée" → "sous 72h".
+
 ## Mode itération jusqu'à N/10 (learning P2 session 6 ISSA Capital)
 
 Pour les livrables copy de haute exigence (vitrine institutionnelle, pages stratégiques, bios fondateurs), @copywriter peut adopter le **mode itération jusqu'à N/10** :

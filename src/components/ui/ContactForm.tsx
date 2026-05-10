@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, useEffect, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -63,6 +63,24 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
   const [opportunityType, setOpportunityType] = useState<string>('');
   const locationRequired =
     variant === 'opportunite' && opportunityType === 'immobilier_residentiel';
+
+  // Pré-sélection du sujet via hash (#contact-opportunite / #contact-accompagnement)
+  const [subject, setSubject] = useState<string>('');
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#contact-opportunite') {
+      setSubject('opportunite');
+    } else if (hash === '#contact-accompagnement') {
+      setSubject('accompagnement');
+    }
+    // Scroll vers la section contact si hash correspond
+    if (hash.startsWith('#contact')) {
+      const el = document.getElementById('contact');
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -149,7 +167,8 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
           {heading}
         </h2>
       ) : null}
-      {intro ? <div className="mt-sm text-sm text-ink-700">{intro}</div> : null}
+      {/* text-base au lieu de text-sm — l'intro d'une section d'invitation mérite le corps standard (16px) */}
+      {intro ? <div className="mt-md text-base text-ink-700">{intro}</div> : null}
 
       <div className="mt-xl space-y-lg">
         {/* Honeypot — hors viewport, invisible pour les humains */}
@@ -209,18 +228,23 @@ export function ContactForm({ variant, heading, intro }: ContactFormProps): JSX.
           ) : null}
         </div>
 
+        {/* Champ Sujet — variant contact : pré-sélectionné via hash CTA hero */}
         {variant === 'contact' ? (
           <div>
             <label htmlFor="subject" className={labelClass}>
-              Sujet <span aria-hidden="true">*</span>
+              Sujet
             </label>
-            <select id="subject" name="subject" required className={inputClass} defaultValue="">
-              <option value="" disabled>
-                Choisir un sujet
-              </option>
-              <option value="opportunite">Opportunité d&apos;affaires</option>
-              <option value="accompagnement">Accompagnement / conseil</option>
-              <option value="presse">Demande presse</option>
+            <select
+              id="subject"
+              name="subject"
+              className={inputClass}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            >
+              <option value="">— Choisir un sujet</option>
+              <option value="opportunite">Présenter une opportunité d&apos;affaires</option>
+              <option value="accompagnement">Être accompagné</option>
+              <option value="presse">Presse</option>
               <option value="autre">Autre</option>
             </select>
           </div>
