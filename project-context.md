@@ -831,20 +831,18 @@ Les mémos de reprise des sessions 5 et 6 ont été archivés dans `docs/project
 - 14 fiches Contacts (11 complets + 3 partiels famille)
 - 6 README dans les dossiers vides (Réunions, Journal, Notes/Idées, Notes/Learnings, Notes/Cuisine, Notes/Voyages)
 - Dashboard.md avec requêtes Dataview
-- SETUP-ASANA-MCP.md (guide pas-à-pas)
-- SETUP-CRAFT-MCP.md (guide pas-à-pas — connecteur custom Claude)
+- SETUP-ASANA.md + SETUP-CRAFT.md (60 secondes chacun, via directory connectors natifs Claude)
 - Alignement docs/product/secretariat-contacts-database.md (Carl, Maxime, Martin, Emmanuel)
+- Renommage ASCII des dossiers/fichiers (Reunions, Taches, Idees, Darre, Guerin) — règle CLAUDE.md n°20
 
-**Craft MCP confirmé** : Thomas avait raison de pointer la page craft.do. Vérifié via WebSearch+WebFetch — Craft expose un MCP officiel `https://mcp.craft.do/my/mcp` à brancher comme custom connector dans Claude (Settings > Connectors). Requiert Claude Pro/Max. Auth OAuth gérée par Claude. Lecture, résumé, mise à jour de notes Craft depuis n'importe quelle conversation Claude.
+**Asana + Craft = connectors natifs Claude** : claude.ai/customize/connectors → 1 clic OAuth, tous plans Claude. Ne JAMAIS proposer de setup MCP technique custom (Node.js, PAT, config JSON) avant d'avoir vérifié le directory natif. Règle CLAUDE.md n°19 ajoutée.
 
 ### Actions Thomas session 10
 
 1. **Ouvrir le vault dans Obsidian** — pointer vers le dossier `second-cerveau/`
 2. **Installer les plugins Dataview + Homepage** — suivre SETUP.md section 7
 3. **Compléter les champs `[à compléter par Thomas]`** dans les fiches Projets et Contacts
-4. **Connecter le MCP Craft** — suivre SETUP-CRAFT-MCP.md (5 étapes, ~3 minutes)
-5. **Connecter le MCP Asana** — suivre SETUP-ASANA-MCP.md étapes 1-6 (génération PAT + config JSON)
-6. **Tester les MCP** — demander à Claude "Liste mes projets Asana" et "Liste mes derniers documents Craft"
+4. **~~Asana + Craft~~** — déjà connectés par Thomas via les connectors natifs claude.ai/customize/connectors
 
 ### Résumé de la session 9
 

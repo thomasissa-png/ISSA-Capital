@@ -30,15 +30,15 @@
 ## 5. Migrer depuis Craft (progressif)
 
 Pas besoin de tout migrer d'un coup. Au fil des jours :
-- Nouvelle tâche → dans Obsidian (Tâches/Todo.md)
-- Nouvelle recette → dans Obsidian (Cuisine/)
-- Nouvelle note de réunion → dans Obsidian (Réunions/)
+- Nouvelle tâche → dans Obsidian (Taches/Todo.md)
+- Nouvelle recette → dans Obsidian (Notes/Cuisine/)
+- Nouvelle note de réunion → dans Obsidian (Reunions/)
 - Les anciennes notes Craft → migrer quand tu les revisites
 
 ## 6. Routine quotidienne suggérée
 
 **Matin (2 min)** : ouvrir Todo.md, vérifier "Aujourd'hui"
-**Après chaque réunion (3 min)** : nouvelle note dans Réunions/ (Ctrl+T → template Réunion)
+**Après chaque réunion (3 min)** : nouvelle note dans Reunions/ (Ctrl+T → template Réunion)
 **Soir (5 min, optionnel)** : note Journal/ du jour (Ctrl+T → template Journal)
 **Vendredi ou dimanche (15 min, recommandé)** : revue hebdo — revoir Todo.md (déplacer les tâches non faites), mettre à jour les projets actifs, checker "En attente" (quelque chose s'est débloqué ?)
 

@@ -23,7 +23,7 @@ LIMIT 10
 
 ```dataview
 TASK
-FROM "Tâches"
+FROM "Taches"
 WHERE !completed
 SORT due ASC
 ```
@@ -32,7 +32,7 @@ SORT due ASC
 
 ```dataview
 TABLE
-FROM "Réunions"
+FROM "Reunions"
 SORT file.name DESC
 LIMIT 5
 ```
