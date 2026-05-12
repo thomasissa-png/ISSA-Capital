@@ -39,21 +39,39 @@ function nextWeekday(base: Date, targetDow: number, isProchain: boolean): string
   return d.toISOString().split('T')[0]!;
 }
 
-const cases = [
-  { msg: 'rdv médecin demain',                    expectedDate: addDays(today, 1) },
-  { msg: 'appeler maman après-demain',            expectedDate: addDays(today, 2) },
-  { msg: 'sortie enfants aquaboulevard vendredi', expectedDate: nextWeekday(today, 5, false) },
-  { msg: 'déjeuner avec Pierre vendredi prochain', expectedDate: nextWeekday(today, 5, true) },
-  { msg: 'courses samedi',                        expectedDate: nextWeekday(today, 6, false) },
-  { msg: 'anniversaire ce dimanche',              expectedDate: nextWeekday(today, 0, false) },
-  { msg: 'rdv dentiste lundi',                    expectedDate: nextWeekday(today, 1, false) },
-  { msg: 'RDV dans 3 jours',                      expectedDate: addDays(today, 3) },
-  { msg: 'rappeler Marie dans 2 semaines',        expectedDate: addDays(today, 14) },
-  { msg: 'sortie enfants aquaboulevard le 12/05/2026', expectedDate: '2026-05-12' },
-  { msg: 'rdv avocat le 25 juin',                 expectedDate: `${today.getMonth() + 1 > 6 ? today.getFullYear() + 1 : today.getFullYear()}-06-25` },
-  { msg: 'appeler banque',                        expectedDate: null },
-  { msg: 'préparer présentation Versi',           expectedDate: null },
-  { msg: 'RDV notaire aujourd\'hui',              expectedDate: todayIso },
+type TestCase = { msg: string; expectedDate: string | null; expectedTime: string | null };
+
+const cases: TestCase[] = [
+  // Dates uniquement (heure attendue null)
+  { msg: 'rdv médecin demain',                          expectedDate: addDays(today, 1),               expectedTime: null },
+  { msg: 'appeler maman après-demain',                  expectedDate: addDays(today, 2),               expectedTime: null },
+  { msg: 'sortie enfants aquaboulevard vendredi',       expectedDate: nextWeekday(today, 5, false),    expectedTime: null },
+  { msg: 'déjeuner avec Pierre vendredi prochain',      expectedDate: nextWeekday(today, 5, true),     expectedTime: null },
+  { msg: 'courses samedi',                              expectedDate: nextWeekday(today, 6, false),    expectedTime: null },
+  { msg: 'anniversaire ce dimanche',                    expectedDate: nextWeekday(today, 0, false),    expectedTime: null },
+  { msg: 'rdv dentiste lundi',                          expectedDate: nextWeekday(today, 1, false),    expectedTime: null },
+  { msg: 'RDV dans 3 jours',                            expectedDate: addDays(today, 3),               expectedTime: null },
+  { msg: 'rappeler Marie dans 2 semaines',              expectedDate: addDays(today, 14),              expectedTime: null },
+  { msg: 'sortie enfants aquaboulevard le 12/05/2026',  expectedDate: '2026-05-12',                    expectedTime: null },
+  { msg: 'rdv avocat le 25 juin',                       expectedDate: `${today.getMonth() + 1 > 6 ? today.getFullYear() + 1 : today.getFullYear()}-06-25`, expectedTime: null },
+  { msg: 'appeler banque',                              expectedDate: null,                            expectedTime: null },
+  { msg: 'préparer présentation Versi',                 expectedDate: null,                            expectedTime: null },
+  { msg: 'RDV notaire aujourd\'hui',                    expectedDate: todayIso,                        expectedTime: null },
+
+  // Date + heure
+  { msg: 'rdv médecin demain 14h30',                    expectedDate: addDays(today, 1),               expectedTime: '14:30' },
+  { msg: 'rdv médecin demain à 14h',                    expectedDate: addDays(today, 1),               expectedTime: '14:00' },
+  { msg: 'appeler Pierre à 9h',                         expectedDate: null,                            expectedTime: '09:00' },
+  { msg: 'RDV dentiste vendredi 18h',                   expectedDate: nextWeekday(today, 5, false),    expectedTime: '18:00' },
+  { msg: 'sortie 8h du matin samedi',                   expectedDate: nextWeekday(today, 6, false),    expectedTime: '08:00' },
+  { msg: 'rdv 12/05/2026 à 15h45',                      expectedDate: '2026-05-12',                    expectedTime: '15:45' },
+  { msg: 'déjeuner demain midi',                        expectedDate: addDays(today, 1),               expectedTime: '12:00' },
+  { msg: 'rdv lundi 8h30',                              expectedDate: nextWeekday(today, 1, false),    expectedTime: '08:30' },
+
+  // Cas ambigus — l'IA doit retourner null pour l'heure (pas inventer)
+  { msg: 'rdv médecin demain matin',                    expectedDate: addDays(today, 1),               expectedTime: null },
+  { msg: 'sortie ce soir',                              expectedDate: todayIso,                        expectedTime: null },
+  { msg: 'rappeler après-midi',                         expectedDate: null,                            expectedTime: null },
 ];
 
 const systemPrompt = `Tu es Anya, secrétariat IA de Thomas Issa. Tu reçois un message Telegram court (texte ou vocal transcrit) qui décrit soit une tâche, soit un événement. Tu DOIS retourner un JSON strict de la forme :
@@ -76,12 +94,14 @@ Règles :
 - Ne JAMAIS inventer. Si tu hésites, mets null.
 - Sortie : JSON brut uniquement, pas de markdown, pas d'explication.`;
 
-console.log(`\nTest Haiku 4.5 — résolution dates FR`);
+console.log(`\nTest Haiku 4.5 — résolution dates + heures FR`);
 console.log(`Date du jour : ${todayIso} (${['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'][today.getDay()]})\n`);
-console.log('─'.repeat(100));
+console.log('─'.repeat(120));
 
-let ok = 0;
-let ko = 0;
+let dateOk = 0;
+let timeOk = 0;
+let fullOk = 0;
+let errors = 0;
 
 for (const c of cases) {
   try {
@@ -93,21 +113,31 @@ for (const c of cases) {
     });
     const text = resp.content[0]?.type === 'text' ? resp.content[0].text : '';
     const parsed = JSON.parse(text);
-    const dateOk = parsed.date === c.expectedDate;
-    const status = dateOk ? '✅' : '❌';
-    if (dateOk) ok++; else ko++;
-    console.log(`${status}  ${c.msg.padEnd(55)} → ${String(parsed.date).padEnd(12)} (attendu : ${String(c.expectedDate).padEnd(12)}) titre="${parsed.titre}"`);
+    const dOk = parsed.date === c.expectedDate;
+    const tOk = parsed.heure === c.expectedTime;
+    if (dOk) dateOk++;
+    if (tOk) timeOk++;
+    if (dOk && tOk) fullOk++;
+    const dStatus = dOk ? '✅' : '❌';
+    const tStatus = tOk ? '✅' : '❌';
+    console.log(
+      `${dStatus}${tStatus}  ${c.msg.padEnd(50)} → date=${String(parsed.date).padEnd(11)} (att. ${String(c.expectedDate).padEnd(11)})  heure=${String(parsed.heure).padEnd(7)} (att. ${String(c.expectedTime).padEnd(7)})`,
+    );
   } catch (err) {
-    ko++;
+    errors++;
     const msg = err instanceof Error ? err.message : String(err);
-    console.log(`💥  ${c.msg.padEnd(55)} → ERREUR : ${msg}`);
+    console.log(`💥  ${c.msg.padEnd(50)} → ERREUR : ${msg}`);
   }
 }
 
-console.log('─'.repeat(100));
-console.log(`\nRésultat : ${ok}/${cases.length} OK, ${ko}/${cases.length} KO`);
-if (ko === 0) {
-  console.log('✅ Haiku 4.5 maîtrise toutes les expressions temporelles FR testées.');
+console.log('─'.repeat(120));
+console.log(`\nRésultat :`);
+console.log(`  Dates correctes  : ${dateOk}/${cases.length}`);
+console.log(`  Heures correctes : ${timeOk}/${cases.length}`);
+console.log(`  Date + heure OK  : ${fullOk}/${cases.length}`);
+if (errors > 0) console.log(`  Erreurs API      : ${errors}`);
+if (fullOk === cases.length) {
+  console.log('\n✅ Haiku 4.5 maîtrise toutes les expressions temporelles FR (date + heure) testées.');
 } else {
-  console.log('⚠️  Cas en échec — vérifier le détail ci-dessus avant déploiement.');
+  console.log('\n⚠️  Cas en échec — vérifier le détail ci-dessus avant déploiement.');
 }
