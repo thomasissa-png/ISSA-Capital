@@ -163,7 +163,7 @@ export async function handleInboxPhoto(
   const buffer = Buffer.from(photoBase64, 'base64');
 
   // Résoudre le timestamp via EXIF → Telegram → now
-  const { date } = await resolvePhotoTimestamp(buffer, telegramMessageDate);
+  const { date, source } = await resolvePhotoTimestamp(buffer, telegramMessageDate);
   const filename = buildInboxFilename(ext, caption, undefined, date);
 
   const result = await uploadToInbox(buffer, filename, INBOX_SUBFOLDER.PHOTOS, mimeType);
@@ -172,9 +172,16 @@ export async function handleInboxPhoto(
 
   if (result.success) {
     const captionInfo = caption ? ` (${caption.slice(0, 30)})` : '';
+    const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const sourceLabel =
+      source === 'exif'
+        ? 'date EXIF de prise de vue'
+        : source === 'telegram'
+          ? 'date d’envoi Telegram (EXIF absent — vérifie que tu envoies bien en mode fichier)'
+          : 'date du jour (aucune source fiable)';
     return {
       success: true,
-      userMessage: `${mediaLabel} enregistrée${captionInfo}`,
+      userMessage: `${mediaLabel} enregistrée${captionInfo}\nDate utilisée : ${dateStr} (${sourceLabel})`,
     };
   }
 
