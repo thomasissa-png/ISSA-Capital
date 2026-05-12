@@ -1376,6 +1376,7 @@ export async function POST(request: Request): Promise<Response> {
         caption,
         bestPhoto.file_size,
         telegramMessageDate,
+        'photo',
       );
       await sendTelegramMessage(chatId, inboxPhotoResult.userMessage);
       return Response.json({ ok: true });
@@ -1505,7 +1506,7 @@ export async function POST(request: Request): Promise<Response> {
       // Source : diagnostic bugs photos S12, extension vidéos S12.
       const docMimeType = documentData.mime_type ?? 'application/octet-stream';
       if (docMimeType.startsWith('image/') || docMimeType.startsWith('video/')) {
-        console.warn(`[telegram-webhook] média en document détecté (mime=${docMimeType}) → routage vers handleInboxPhoto`);
+        console.warn(`[telegram-webhook] média en document détecté (mime=${docMimeType}, file_name=${documentData.file_name ?? 'n/a'}, size=${documentData.file_size ?? 'n/a'}) → routage vers handleInboxPhoto`);
         const inboxPhotoFromDocResult = await handleInboxPhoto(
           chatId,
           docResult.base64,
@@ -1513,6 +1514,7 @@ export async function POST(request: Request): Promise<Response> {
           update.message?.caption,
           documentData.file_size,
           update.message!.date,
+          'document',
         );
         await sendTelegramMessage(chatId, inboxPhotoFromDocResult.userMessage);
         return Response.json({ ok: true });
@@ -1561,6 +1563,7 @@ export async function POST(request: Request): Promise<Response> {
         update.message.caption,
         videoData.file_size,
         update.message.date,
+        'video',
       );
       await sendTelegramMessage(chatId, inboxVideoResult.userMessage);
       return Response.json({ ok: true });

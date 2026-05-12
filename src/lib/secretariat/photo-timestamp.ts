@@ -34,6 +34,11 @@ export async function resolvePhotoTimestamp(
   // Le coût CPU d'un parse complet sur un buffer EXIF de quelques Ko est négligeable.
   try {
     const exif = await parse(photoBuffer, { tiff: true, exif: true, translateValues: true, reviveValues: true });
+    if (exif) {
+      // Dump all tags found so we can see in Replit Logs what's actually in the buffer.
+      const tagsFound = Object.keys(exif);
+      console.warn(`[inbox-photo] exif tags trouvés (${tagsFound.length}): ${tagsFound.join(', ').slice(0, 200)}`);
+    }
     const candidate = exif?.DateTimeOriginal ?? exif?.CreateDate;
     if (candidate instanceof Date && !isNaN(candidate.getTime())) {
       console.warn(`[inbox-photo] timestamp source: exif → ${candidate.toISOString()}`);
@@ -41,7 +46,7 @@ export async function resolvePhotoTimestamp(
     }
     if (exif) {
       const dtoType = candidate === undefined ? 'absent' : typeof candidate;
-      console.warn(`[inbox-photo] exif présent mais DateTimeOriginal/CreateDate non utilisable (type=${dtoType}, value=${String(candidate).slice(0, 40)})`);
+      console.warn(`[inbox-photo] exif présent mais DateTimeOriginal/CreateDate non utilisable (type=${dtoType}, value=${String(candidate).slice(0, 80)})`);
     } else {
       console.warn('[inbox-photo] exif absent dans le buffer (image envoyée en mode photo Telegram, ou re-encodage)');
     }

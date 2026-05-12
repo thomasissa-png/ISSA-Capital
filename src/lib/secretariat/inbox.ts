@@ -139,6 +139,7 @@ export async function handleInboxPhoto(
   caption?: string,
   fileSize?: number,
   telegramMessageDate?: number,
+  telegramSourceType?: 'photo' | 'document' | 'video',
 ): Promise<InboxResult> {
   // Vérification taille
   const sizeError = checkFileSize(fileSize);
@@ -152,6 +153,8 @@ export async function handleInboxPhoto(
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
     'video/mp4': 'mp4',
     'video/quicktime': 'mov',
     'video/x-msvideo': 'avi',
@@ -159,6 +162,7 @@ export async function handleInboxPhoto(
   };
   const isVideo = mimeType.startsWith('video/');
   const ext = extMap[mimeType] ?? (isVideo ? 'mp4' : 'jpg');
+  console.warn(`[handleInboxPhoto] reçu: mime=${mimeType} source=${telegramSourceType ?? 'unknown'} size=${fileSize ?? 'n/a'} ext_choisie=${ext}`);
 
   const buffer = Buffer.from(photoBase64, 'base64');
 
@@ -177,11 +181,19 @@ export async function handleInboxPhoto(
       source === 'exif'
         ? 'date EXIF de prise de vue'
         : source === 'telegram'
-          ? 'date d’envoi Telegram (EXIF absent — vérifie que tu envoies bien en mode fichier)'
+          ? 'date d’envoi Telegram (EXIF absent)'
           : 'date du jour (aucune source fiable)';
+    const sourceTypeLabel =
+      telegramSourceType === 'document'
+        ? 'mode fichier (EXIF préservé)'
+        : telegramSourceType === 'photo'
+          ? 'mode photo (EXIF supprimé par Telegram)'
+          : telegramSourceType === 'video'
+            ? 'vidéo (pas d’EXIF)'
+            : 'mode inconnu';
     return {
       success: true,
-      userMessage: `${mediaLabel} enregistrée${captionInfo}\nDate utilisée : ${dateStr} (${sourceLabel})`,
+      userMessage: `${mediaLabel} enregistrée${captionInfo}\nReçu en : ${sourceTypeLabel}\nDate utilisée : ${dateStr} (${sourceLabel})`,
     };
   }
 
