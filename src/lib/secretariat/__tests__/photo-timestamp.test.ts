@@ -141,4 +141,34 @@ describe('resolvePhotoTimestamp', () => {
 
     expect(result.source).toBe('telegram');
   });
+
+  // REGRESSION: image envoyée en mode "fichier" (Send as file) conserve ses EXIF,
+  // donc resolvePhotoTimestamp DOIT extraire la date EXIF et retourner source 'exif'.
+  // Avant le fix c15ed66, ces images étaient routées vers handleInboxDocument
+  // et resolvePhotoTimestamp n'était jamais appelé. — fixé le 2026-05-12
+  it('returns EXIF date with source "exif" when EXIF is present and no telegramDate is provided', async () => {
+    const exifDate = new Date('2020-01-15T14:30:00.000Z');
+    mocks.exifrParse.mockResolvedValue({ DateTimeOriginal: exifDate });
+
+    const result = await resolvePhotoTimestamp(fakeBuffer);
+
+    expect(result.source).toBe('exif');
+    expect(result.date).toEqual(exifDate);
+    expect(result.date.toISOString()).toBe('2020-01-15T14:30:00.000Z');
+  });
+
+  // REGRESSION: quand une image n'a pas d'EXIF (screenshot, capture écran) mais
+  // est envoyée via Telegram, le fallback doit utiliser message.date (source 'telegram').
+  // Avant le fix c15ed66, les images en mode "fichier" passaient par handleInboxDocument
+  // qui n'appelle pas resolvePhotoTimestamp → les fichiers étaient nommés avec la date
+  // d'upload au lieu de la date Telegram. — fixé le 2026-05-12
+  it('falls back to telegramDate with source "telegram" when EXIF is absent', async () => {
+    mocks.exifrParse.mockResolvedValue(null);
+
+    // 1715508000 = 2024-05-12T10:00:00.000Z
+    const result = await resolvePhotoTimestamp(fakeBuffer, 1715508000);
+
+    expect(result.source).toBe('telegram');
+    expect(result.date.toISOString()).toBe('2024-05-12T10:00:00.000Z');
+  });
 });

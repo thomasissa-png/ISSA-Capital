@@ -691,4 +691,59 @@ describe('POST /api/telegram/webhook', () => {
     const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
     expect(sentMsg).toContain('texte');
   });
+
+  // ----------------------------------------------------------
+  // 16. Document image (mime_type image/*) → routé vers handleInboxPhoto
+  // ----------------------------------------------------------
+  // REGRESSION: les images envoyées en mode "fichier" (Send as file) dans Telegram
+  // ont un payload message.document avec mime_type image/jpeg (pas message.photo).
+  // Avant le fix c15ed66, elles étaient routées vers handleInboxDocument qui ne
+  // résout pas le timestamp EXIF. Le fix route mime_type image/* vers handleInboxPhoto
+  // pour que resolvePhotoTimestamp soit appelé (EXIF préservé). — fixé le 2026-05-12
+  it('route un document avec mime_type image/jpeg vers handleInboxPhoto (pas handleInboxDocument)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const telegramDate = 1715508000; // 2024-05-12T14:00:00Z
+    const documentImagePayload = {
+      update_id: 99,
+      message: {
+        message_id: 500,
+        chat: { id: 12345, type: 'private' as const },
+        date: telegramDate,
+        document: {
+          file_id: 'doc-img-file-id',
+          file_unique_id: 'doc-img-unique',
+          file_size: 524288, // 512 Ko
+          mime_type: 'image/jpeg',
+          file_name: 'IMG_20240512.jpg',
+        },
+        caption: 'Photo terrasse',
+      },
+    };
+
+    const res = await POST(makeRequest(documentImagePayload));
+    expect(res.status).toBe(200);
+
+    // handleInboxPhoto est appelé exactement 1 fois
+    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+
+    // handleInboxDocument n'est PAS appelé
+    expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
+
+    // Le 6ème argument de handleInboxPhoto est le timestamp Telegram (message.date)
+    const photoArgs = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
+    expect(photoArgs[0]).toBe(12345);           // chatId
+    expect(photoArgs[1]).toBe('abc');            // base64 (mock downloadTelegramFile)
+    expect(photoArgs[2]).toBe('image/jpeg');     // mimeType
+    expect(photoArgs[3]).toBe('Photo terrasse'); // caption
+    expect(photoArgs[4]).toBe(524288);           // fileSize
+    expect(photoArgs[5]).toBe(telegramDate);     // telegramMessageDate
+
+    // Le console.warn de routage est émis
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('image en document détectée'),
+    );
+
+    warnSpy.mockRestore();
+  });
 });
