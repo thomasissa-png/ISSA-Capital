@@ -540,6 +540,9 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | fullstack (Session 12 — Phase 3 workflow bail) | 2026-05-12 | 6 fichiers créés : `src/lib/secretariat/rent/data/bail-config.json`, `src/lib/secretariat/rent/bail-config.ts` (~250 lignes), `src/lib/secretariat/rent/pdf-bail.ts` (~550 lignes DOCX+PDF 24 sections juridiques), `src/lib/secretariat/workflows/bail.ts` (~480 lignes state machine), 3 fichiers tests (`bail-config.test.ts` 27 tests, `bail-workflow.test.ts` 21 tests, `pdf-bail.test.ts` 10 tests). 4 fichiers modifiés : `workflows/types.ts` (WorkflowType union +bail), `rent/types.ts` (Locataire +6 champs bail, BailVariables, BailWorkflowData), `rent/locataires.ts` (parseur fiche +6 champs bail), `workflows/registry.ts` (+bail), `registry.test.ts` (+3 assertions bail), `api/telegram/webhook/route.ts` (+/bail command, +handleBailText, +handleBailCallback, +handleBailGeneration). 384/384 tests PASS, 0 erreur TS. | Port fidèle des 24 sections juridiques depuis `second-cerveau/generer_bail.py` vers TypeScript (DOCX via npm `docx` + PDF via PDFKit). Workflow bail = machine d'états 6 steps (selecting_locataire → date_debut → date_signature → confirming_recap → generating → done). Bail = mono-locataire (rejet "tous" contrairement à quittance batch). Résolution de bien par 3 patterns (statique, template `{studio_num}`, par-côté rue/cour). Upload Drive vers `DRIVE_BAUX_FOLDER_ID`. Config bail centralisée dans `bail-config.json` (miroir pattern `biens.json`). parseDateInput supporte ISO, DD/MM/YYYY, "15 mai 2026", accents optionnels. | Package `docx` installé (npm) car Python source construit les documents programmatiquement — pas de template DOCX existant à réutiliser. DOCX+PDF double format = décision Thomas verrouillée session 11. Récap avant génération conservé pour bail (contrairement à quittance où Thomas l'a retiré) car bail = document juridique engageant, confirmation explicite préférable. Inventaire chargé depuis bail-config.json par type (`studio-meuble-standard`), pas hardcodé. Overrides loyer/charges/dépôt supportés dans le workflow pour flexibilité future. |
 | legal (Session 12 — Audit juridique PDFs Anya) | 2026-05-12 | `docs/legal/anya-pdfs-audit.md` | Audit complet des 3 PDFs Anya (quittance, bail meublé, fin de bail). Verdicts : Quittance = GO CONDITIONNEL, Bail = NO-GO (encadrement des loyers manquant — zone tendue Nanterre + Paris), Fin de bail = GO CONDITIONNEL. 7 items P0/P1 identifiés pour @fullstack. 2 actions bloquantes pour Thomas (vérifier encadrement loyers, confirmer type location meublé/nu). | 3 risques critiques identifiés : (1) Encadrement des loyers zone tendue absent du bail — infraction art. 140 loi ELAN, restitution trop-perçu possible. (2) IRL sans valeur numérique de référence — révision inapplicable en litige. (3) Clause pénale astreinte 3× loyer journalier — risque réduction judiciaire art. 1231-5 C.civ. Contradiction brief détectée : brief dit "location nue" mais code génère exclusivement des baux meublés — question transmise à Thomas. | Audit porté sur le code réel (meublé) pas le brief (nu) — règle anti-invention. Base légale : loi 89-462, loi ALUR, décret 2015-587, art. 17-1 (IRL), art. 22 (dépôt), art. 140 ELAN (encadrement loyers), art. 1231-5 C.civ. (clause pénale). |
 | fullstack (Session 12 — Phases 4+5 fin-de-bail + candidat) | 2026-05-12 | 6 fichiers créés : `src/lib/secretariat/rent/pdf-fin-de-bail.ts` (~155 lignes, PDFKit attestation 1 page), `src/lib/secretariat/workflows/fin-de-bail.ts` (~480 lignes, state machine 4 steps), `src/lib/secretariat/workflows/candidat.ts` (~500 lignes, state machine 8 steps + Drive upload .md), 3 fichiers tests (`pdf-fin-de-bail.test.ts` 5 tests, `fin-de-bail-workflow.test.ts` 20 tests, `candidat-workflow.test.ts` 25 tests). 5 fichiers modifiés : `workflows/types.ts` (WorkflowType +findebail +candidat), `rent/types.ts` (+FinDeBailWorkflowData, +FinDeBailVariables, +CandidatWorkflowData), `workflows/registry.ts` (+findebail +candidat), `registry.test.ts` (+6 assertions), `api/telegram/webhook/route.ts` (+/findebail +/candidat commands, +6 handlers). 434/434 tests PASS (50 nouveaux), 0 erreur TS. | Phase 4 fin-de-bail : port fidèle du Python `generer_fin_de_bail.py`. PDF seul (pas DOCX — document simple 1 page). Machine d'états 4 steps (selecting_locataire → date_fin → recap → generating). Utilise dateFinBail du locataire si disponible (proposée par défaut, "ok" pour valider). Upload Drive dans DRIVE_BAUX_FOLDER_ID (même dossier que les baux). Phase 5 candidat : fiche .md avec frontmatter YAML structuré, uploadée dans _Candidats/ sur Drive via navigation 07. Contacts → 05. Locataires → _Candidats. Pattern list-then-filter Drive (learning P1 S11). Promotion candidat → locataire : hors scope, reportée en Phase 6. | Attestation PDF seul vs DOCX+PDF : le Python original génère DOCX+PDF mais l'attestation est un document simple non modifiable — PDF suffit (contrairement au bail qui peut nécessiter des ajustements). Candidat : 6 étapes de collecte séquentielle (nom → contact → situation → garanties → bien → notes) avec "skip" possible sur chaque champ optionnel, car un candidat peut être enregistré avec très peu d'infos initialement. Drive _Candidats/ : réutilise le chemin déjà connu du système (locataires.ts LOCATAIRE_FOLDERS), pas de nouveau dossier à créer. |
+| orchestrator + fullstack + qa (Session 12 — bugs photos + vidéos + P0 legal) | 2026-05-12 | 4 commits : `c15ed66` (fix routing `image/*` documents vers `handleInboxPhoto` + EXIF DateTimeOriginal au lieu de now, +19/-1 webhook), `832b481` (3 tests non-régression photos, +85 dans `photo-timestamp.test.ts` + `route.test.ts`), `15ccc8d` (vidéos = photos : handler `message.video` + extension `video/*` documents + 6 tests, +248/-13 dans `types.ts` + webhook + `inbox.ts` + 2 fichiers tests), `2129978` (P0 #1 quittance civilité + P0 #4 fin-de-bail dépôt garantie, +helper `extractPdfText` zlib FlateDecode, 3 fichiers). 445/445 tests PASS, 0 erreur TS. | Bugs photos diagnostiqués : (a) photos en mode "Send as file" arrivaient en `message.document` mime `image/*` → fallback `handleInboxDocument` au lieu de `handleInboxPhoto` → upload `_Inbox/Documents/` au lieu de `_Inbox/Photos/`, EXIF non lu (filenames avec `new Date()`). Fix par check MIME avant dispatch. Vidéos non gérées du tout : `message.video` rejetée par catch-all, `message.document` mime `video/*` allait dans Documents. Décision Thomas : vidéos traitées comme photos, même handler, même dossier (verbatim "c'est meme cas dusage"). P0 #1 audit @legal : @fullstack a tracé l'amont et constaté que `workflows/quittance.ts:398` peuplait DÉJÀ `v.locataireNom` avec `locataireNomAvecCivilite(loc)` → faux positif partiel, test de non-régression ajouté quand même. P0 #4 : paragraphe dépôt + délai 1/2 mois + art. 22 ajouté dans `pdf-fin-de-bail.ts:137-149`. | Pattern dispatch webhook par MIME promu en règle CLAUDE.md 24 (couvre L1+L2 P1 lessons). Helper `extractPdfText` créé pour tests PDF (zlib natif, parse opérateurs TJ avec kerning) — éligible à promotion S13 en util partagé. Audit @legal P0 #1 mal localisé : @legal pointait `pdf-quittance.ts:164` mais le fix réel était en amont — leçon P2 propagée pour audits futurs (tracer la chaîne amont avant FAIL). Thomas scope-restrict P0 audit @legal : "Appliquons uniquement p0 #1 et #4" → pattern "livraison en vagues" documenté (préférence fondateur). |
+| legal (Session 12 — Audit juridique 4 P0 + P1 + risques transversaux) | 2026-05-12 | Voir entrée legal 541 (audit déjà documenté) — résultats appliqués : 4 P0 identifiés, 2 actionnables sans Thomas appliqués `2129978` (P0 #1 quittance civilité, P0 #4 fin-de-bail dépôt), 2 P0 bloqués par décision Thomas reportés S13 (P0 #2 encadrement loyers Nanterre+Paris 18 art. 140 ELAN, P0 #3 IRL valeur numérique art. 17-1). | Verdict synthèse : Quittance GO CONDITIONNEL → après `2129978` (P0 #1 résolu, P1 "délivrée gratuitement" reporté S13). Bail meublé NO-GO maintenu (P0 #2 + #3 non résolus). Fin de bail GO CONDITIONNEL → après `2129978` (P0 #4 résolu, P1 référence état des lieux reporté S13). | Risques transversaux non corrigés S12 : clause pénale 3× loyer journalier vulnérable à réduction art. 1231-5 C. civ. (arbitrage Thomas S13), contradiction meublé/nu non tranchée (Thomas doit confirmer). 4 décisions Thomas requises pour reprendre les P0 bail en S13. |
+| main thread (Session 12 — clôture) | 2026-05-12 | `docs/lessons-learned.md` (6 entrées Session 12 : 2 P1 + 4 P2), `CLAUDE.md` (règle 24 webhook MIME dispatch), `project-context.md` (mémo de reprise S13 + closure historique). | Clôture session 12. 9 commits productifs livrés (Phase 3 bail + bugs photos + vidéos + Phases 4+5 + audit legal + P0 legal #1+#4 + docs S12). Gate bloquante propagation P0/P1 : ✅ règle CLAUDE.md 24 ajoutée propage les 2 P1 (dispatch webhook MIME) — statut `propagé`. 4 learnings P2 avec propagation `à-faire` (qa.md/legal.md/reviewer.md/_base-agent-protocol.md/founder-preferences.md/orchestrator.md) — non bloquant gate S13. 445/445 tests PASS, 0 erreur TS, working tree clean, push origin OK. | Pas d'audit TTL project-context.md cette session (priorité moyenne, reporté S13). Pas de propagation P2 agents (acceptable car gate propagation = P0/P1 uniquement). 4 décisions Thomas explicitement documentées dans le mémo S13 (encadrement loyers, IRL API/manuel, clause pénale, meublé/nu) — sans ces inputs le bail reste NO-GO @legal. |
 
 ---
 
@@ -627,63 +630,71 @@ Les mémos de reprise des sessions 5, 6, 7, 9, 10 et 11 ont été archivés dans
 
 ---
 
-## Mémo de reprise — Session 12 (clôture session 11 le 2026-05-12)
+## Mémo de reprise — Session 13 (clôture session 12 le 2026-05-12)
 
-### Numéro de session : 12
+### Numéro de session : 13
 
 ### Date de clôture : 2026-05-12
 
-### Branche active S11 : `claude/issa-capital-s11-anya-validation-5exzj`
+### Branche active S12 : `claude/issa-capital-s12-anya-phase3-bail-P64ir`
 
-### Nom de branche recommandé pour session 12
-`claude/issa-capital-s12-anya-phase3-bail-[suffix]`
+### Nom de branche recommandé pour session 13
+`claude/issa-capital-s13-anya-bail-legal-[suffix]`
 
-### Résumé de la session 11 (en 5 lignes)
+### Résumé de la session 12 (en 5 lignes)
 
-Session marathon Anya production : Phase 1+2 quittance livrée (lib `src/lib/secretariat/rent/`, workflow PDFKit, 97 tests) + recherche futée locataires (Levenshtein + accents) + migration OAuth scope `drive.file → drive` (4 commits diagnostic dont page verdict visuel) + robust folder lookup contournant un bug Drive `name=` silencieux + batch quittance N×M (parseurs multi-locataires/multi-mois) + simplification post-feedback Thomas (retrait récap + aucune limite) + fix EXIF photos (pile fallback EXIF/Telegram/now) + menu commandes Telegram auto-maintenu via endpoint `/api/telegram/setup`. **14 commits productifs**, 324/324 tests, 0 erreur TS. Validation prod `/quittance` réussie côté Thomas.
+Session productive Anya : (1) Phase 3 bail livrée (lib `bail-config.ts` + `pdf-bail.ts` DOCX+PDF 24 sections juridiques + workflow 6 steps + 61 tests, commit `8e759b7`). (2) Bugs photos fixés : `c15ed66` (route `image/*` documents vers `handleInboxPhoto` → EXIF DateTimeOriginal au lieu de now) + `832b481` (3 tests non-régression). (3) Vidéos = photos : `15ccc8d` (handler `message.video` + extension `video/*` documents, même flow `_Inbox/Photos/`). (4) Phases 4+5 livrées : fin-de-bail (PDF 1 page) + candidat (fiche .md frontmatter YAML dans `_Candidats/`), commit `64a1424`. (5) Audit @legal PDFs (`52e028c`) : 4 P0 identifiés, 2 actionnables sans Thomas (#1+#4) appliqués via `2129978` (civilité quittance + dépôt garantie fin-de-bail), 2 P0 bloqués par décisions Thomas reportés S13 (#2 encadrement loyers, #3 IRL numérique). **9 commits productifs**, 445/445 tests, 0 erreur TS.
 
-### Travaux en cours (à reprendre S12)
+### Travaux en cours (à reprendre S13)
 
-- **Phase 3 workflow bail** : architecture prête (lib `rent/` réutilisable, pattern `quittance.ts` à dupliquer), reste à implémenter le workflow DOCX+PDF complet (24 sections juridiques, IRL, clause pénale 10%, inventaire interactif). Mission ~30-45 min @fullstack. Dépendances : nouveau dossier Drive à créer + `DRIVE_BAUX_FOLDER_ID` à configurer en Replit Secrets AVANT lancement.
-- **Phase 4 fin-de-bail + Phase 5 candidat** : à enchaîner après bail. Plus simple (attestation PDF + fiche `.md` _Candidats/).
-- **Audit @legal PDFs** : conformité juridique des PDFs quittance/bail/fin-de-bail. À lancer après livraison Phase 3.
-- **Audit TTL project-context.md / CLAUDE.md** : project-context.md 978 lignes (cap 250) — audit profond délégué pour archiver tout contenu > 5 sessions. CLAUDE.md 477 lignes (cap 125) — dépassement historique, à challenger.
+- **P0 #2 bail — encadrement loyers (zone tendue Nanterre + Paris 18)** : bloqué par décision Thomas. **Action Thomas** : aller sur encadrementdesloyers.gouv.fr, récupérer pour chaque bien : loyer de référence (€/m²) + loyer de référence majoré (€/m²). Données à intégrer dans `BailVariables` (champs `loyerReferenceEncadrement` + `loyerReferenceMajore`) et afficher dans la section loyer du PDF. Base légale : art. 140 loi ELAN 2018. Risque actuel sans cette mention : commission de conciliation peut imposer réduction de loyer + restitution trop-perçu rétroactive.
+- **P0 #3 bail — IRL valeur numérique** : bloqué par mini-arbitrage Thomas. **Option A (recommandée)** : appel API INSEE IRL dans `construireVariablesBail()` qui récupère la valeur du trimestre en cours automatiquement. **Option B** : champ manuel à saisir trimestriellement par Thomas. Sans valeur numérique, la révision IRL est inapplicable en cas de litige. Base légale : art. 17-1 loi 89-462.
+- **P1 audit @legal hors scope S12** : (a) quittance ajout "Cette quittance est délivrée gratuitement" art. 21 al. 5 loi 89-462 (pdf-quittance.ts pied de page), (b) fin-de-bail référence état des lieux sortie + art. 22 dans le corps. ~15 min @fullstack.
+- **Clause pénale 3× loyer journalier** : risque transversal identifié par @legal (réduction judiciaire art. 1231-5 C. civ.). Arbitrage Thomas : conserver 3× (dissuasif mais réductible) ou passer à 1× (plus défendable). Documenté dans `docs/legal/anya-pdfs-audit.md` section 4.1.
+- **Contradiction brief vs code — meublé vs nu** : le code génère exclusivement des baux meublés (`bail-config.json` `type_bail: "CONTRAT DE LOCATION MEUBLEE"` + inventaire électroménager). **Action Thomas** : confirmer tous les biens sont meublés OU spécifier les biens nus nécessitant un second template. Régimes juridiques incompatibles (durée, charges, IRL, dépôt).
+- **Promotion candidat → locataire** : feature reportée Phase 6 lors de la livraison Phase 5. Workflow : `/promouvoir <nom_candidat>` → migration `.md` de `_Candidats/` vers `05. Locataires/<nom>/` + création des dossiers standards (Baux/, Quittances/, EDL/) + suppression de la fiche candidat.
+- **Helper `extractPdfText`** : actuellement dupliqué dans `pdf-quittance.test.ts` et `pdf-fin-de-bail.test.ts`. Promotion en `src/lib/test-utils/pdf-text.ts` partagé. Réutilisable pour futurs tests PDF bail.
+- **Audit TTL project-context.md / CLAUDE.md** : project-context.md > 700 lignes (cap historique 250), CLAUDE.md > 480 lignes (cap historique 125). Audit profond délégué pour archiver tout contenu > 5 sessions. Priorité moyenne, hygiène long-terme.
 
-### Actions Thomas à valider en début S12
+### Actions Thomas à valider en début S13
 
-1. **Tester `/quittance` batch en prod** : `1,3,5` + `2026-04 à 2026-05` → 6 PDFs reçus directement sans récap. Validation finale du flow batch.
-2. **Tester upload photo** en mode photo classique → fichier nommé avec date d'envoi Telegram (pas "aujourd'hui").
-3. **Configurer menu commandes Telegram** : générer `ADMIN_SETUP_TOKEN` (32+ chars), l'ajouter en Replit Secrets, redéployer, visiter `https://issa-capital.com/api/telegram/setup?token=<token>` → page verte, autocomplétion `/` dans Telegram active.
-4. **Créer dossier Drive `Baux/`** (avant Phase 3) + récupérer son ID + ajouter `DRIVE_BAUX_FOLDER_ID` en Replit Secrets.
+1. **Tester `/bail` en prod** : sélection locataire → date début → date signature → récap → bouton Valider → DOCX+PDF générés et envoyés. Vérifier que les 24 sections juridiques apparaissent correctement dans le DOCX.
+2. **Tester `/findebail` en prod** : sélection locataire → date fin → récap → bouton Valider → PDF attestation 1 page envoyé. Vérifier que le paragraphe "dépôt de garantie + délai 1 mois / 2 mois + art. 22" apparaît bien après le corps de l'attestation.
+3. **Tester `/candidat` en prod** : 6 étapes de collecte (nom → contact → situation → garanties → bien → notes) avec "skip" possible sur chaque champ → fiche .md uploadée dans `_Candidats/` sur Drive. **Pré-requis** : `DRIVE_VAULT_ROOT_ID` doit être configuré dans Replit Secrets (navigation `07. Contacts` → `05. Locataires` → `_Candidats`).
+4. **Tester photos en mode "fichier"** (Send as file) : la photo doit atterrir dans `_Inbox/Photos/` avec un nom de fichier reflétant la date EXIF DateTimeOriginal (pas la date d'upload). Vérifier sur Drive.
+5. **Tester vidéos** : envoi vidéo en mode compressé OU "fichier" → doit aller dans `_Inbox/Photos/` (même dossier que les photos, même cas d'usage journal Anya).
+6. **Décisions à fournir avant relance @fullstack sur le bail** :
+   - Encadrement loyers (point 1 ci-dessus) — valeurs €/m² Nanterre + Paris 18
+   - Arbitrage IRL : API INSEE auto OU saisie manuelle trimestrielle ?
+   - Arbitrage clause pénale : 3× ou 1× loyer journalier ?
+   - Confirmation meublé exclusif OU besoin template location nue ?
 
-### Décisions Thomas verrouillées session 11
+### Décisions Thomas verrouillées session 12
 
-- **Sources Python** : copiées dans le repo `second-cerveau/` (`generer_quittance.py`, `generer_bail.py`, `generer_fin_de_bail.py`, `biens.yml`, `bail-config.yml`, `signature-thomas-issa.png`)
-- **Fiches locataires** : lues depuis Drive uniquement (vault Obsidian), pas le repo. Scope OAuth `drive` migré.
-- **Format quittance** : PDF seul. **Format bail** : DOCX + PDF (Phase 3 à venir).
-- **Numérotation quittance** : `QL-YYYY-MM-INIT`. Si PDF existant → écraser silencieusement.
-- **Sélection locataire** : skip confirmation infos (vault = source de vérité).
-- **Récap final** : SUPPRIMÉ. Génération directe après sélection période. Aucune limite N×M.
-- **Envoi PDFs** : un par message Telegram (pas de ZIP).
-- **Fiche cassée pendant batch** : skip + signalement final, ne pas tout arrêter.
-- **Phases 6-7 Gmail+cron** : reportées V2.
+- **Phase 3 bail** : DOCX+PDF, 24 sections juridiques, IRL trimestre précédent, clause pénale 10% (montant brut), inventaire interactif par type de bien depuis `bail-config.json`, récap avant génération conservé (contrairement à quittance, car bail = engagement juridique).
+- **Phase 4 fin-de-bail** : PDF seul (pas DOCX — document 1 page non modifiable), upload Drive dans `DRIVE_BAUX_FOLDER_ID` (sous-dossier locataire), date proposée depuis fiche vault si disponible.
+- **Phase 5 candidat** : fiche `.md` avec frontmatter YAML structuré dans `_Candidats/` Drive, 6 champs collectés séquentiellement avec "skip" possible sur chaque (enregistrement minimal = nom seul accepté).
+- **Vidéos = photos** : pas de sous-dossier `_Inbox/Videos/`, tout va dans `_Inbox/Photos/` via `handleInboxPhoto`. Décision verbatim : "que ce soit traité comme photos pour le journal, et que ca aille dans photos, c'est meme cas dusage".
+- **Audit @legal P0 vagues** : Thomas livre en vagues — uniquement P0 #1 + #4 appliqués S12, le reste S13 après ses arbitrages. Verbatim : "Appliquons uniquement p0 #1 et #4". Pattern documenté dans `docs/lessons-learned.md` session 12.
 
-### Prochaines actions recommandées S12 (ordre)
+### Prochaines actions recommandées S13 (ordre)
 
-1. **Vérification gates bloquantes** : 3 learnings P1 S11 avec statut propagation = non-propagé (`OAuth scope propagation`, `Drive query stricte`, `Replit logs filter`). Cible : CLAUDE.md (règle 21), fullstack.md, infrastructure.md. À traiter AVANT Phase 3 selon règle CLAUDE.md (gate bloquante reprise).
-2. **Phase 3 workflow bail** (@fullstack, ~30-45 min) : implémenter workflow `bail.ts` qui produit DOCX+PDF (24 sections, IRL, clause pénale, inventaire interactif depuis bail-config.yml). Tests + commit + push.
-3. **Phase 4 fin-de-bail + Phase 5 candidat** (@fullstack, ~20 min groupé) après validation Phase 3.
-4. **Audit TTL project-context.md + CLAUDE.md** : audit profond délégué pour réduire les caps. Priorité moyenne mais nécessaire pour la hygiène long-terme.
+1. **Aucune gate bloquante** au démarrage S13 — tous les learnings P0/P1 S12 ont propagation = `propagé` (règle CLAUDE.md 24 ajoutée couvre L1+L2). Les 4 learnings P2 S12 ont propagation = `à-faire` (qa.md, legal.md, reviewer.md, _base-agent-protocol.md, founder-preferences.md, orchestrator.md). À traiter en clôture S13 si pas urgent.
+2. **Après inputs Thomas** : @fullstack reprend les P0 bail #2 (encadrement loyers) + #3 (IRL numérique) + 2 P1 quittance/fin-de-bail. ~1h30 de code.
+3. **Phase 6 promotion candidat → locataire** : workflow `/promouvoir <nom>` (~30 min @fullstack).
+4. **Helper extractPdfText partagé** : extraire dans `src/lib/test-utils/pdf-text.ts`, supprimer duplications. ~10 min.
+5. **Audit TTL project-context.md + CLAUDE.md** : audit profond délégué.
 
 ### Blockers
 
-- Aucun blocker technique
-- Action préalable Phase 3 : Thomas doit créer dossier `Baux/` sur Drive et configurer `DRIVE_BAUX_FOLDER_ID`
+- Aucun blocker technique côté code.
+- **4 décisions Thomas requises** pour reprendre les corrections @legal bail (voir "Actions Thomas à valider").
+- **1 pré-requis Replit Secret** pour activer `/candidat` : `DRIVE_VAULT_ROOT_ID` (parent du dossier `07. Contacts`).
 
-### Commande de reprise S12
+### Commande de reprise S13
 
 ```
-@orchestrator Mode reprise de session ISSA Capital — Session 12. Branche : claude/issa-capital-s12-anya-phase3-bail-[suffix]. Lis project-context.md (mémo session 12) + docs/lessons-learned.md (3 learnings P1 S11 non-propagés à traiter en gate bloquante AVANT Phase 3). Priorités dans l'ordre : (1) propagation P1 OAuth scope + Drive query stricte + Replit logs filter → CLAUDE.md/fullstack.md/infrastructure.md, (2) Phase 3 workflow bail Anya (DOCX+PDF, 24 sections juridiques) après que Thomas ait configuré DRIVE_BAUX_FOLDER_ID, (3) Phase 4+5 fin-de-bail+candidat groupées. Branche S11 précédente : claude/issa-capital-s11-anya-validation-5exzj (14 commits productifs livrés).
+@orchestrator Mode reprise de session ISSA Capital — Session 13. Branche : claude/issa-capital-s13-anya-bail-legal-[suffix]. Lis project-context.md (mémo session 13) + docs/lessons-learned.md (4 learnings P2 S12 avec propagation à-faire, non bloquants). Priorités dans l'ordre : (1) Confirmer décisions Thomas sur 4 arbitrages bail (encadrement loyers Nanterre+Paris 18, IRL API/manuel, clause pénale 3× vs 1×, meublé exclusif vs template nu) ET configuration Replit Secret `DRIVE_VAULT_ROOT_ID` si pas fait. (2) @fullstack applique P0 bail #2 + #3 + P1 quittance "délivrée gratuitement" + P1 fin-de-bail référence état des lieux. (3) Phase 6 promotion candidat → locataire. (4) Helper extractPdfText partagé. (5) Audit TTL si bande passante. Branche S12 précédente : claude/issa-capital-s12-anya-phase3-bail-P64ir (9 commits productifs livrés, 445/445 tests, audit @legal complet livré).
 ```
 
 ---
