@@ -1441,11 +1441,29 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
+      // Image envoyée en mode "fichier" (Send as file) → router vers handler photo
+      // pour préserver les EXIF (Telegram strippe les EXIF des photos compressées
+      // mais pas des documents). Source : diagnostic bugs photos S12.
+      const docMimeType = documentData.mime_type ?? 'application/octet-stream';
+      if (docMimeType.startsWith('image/')) {
+        console.warn(`[telegram-webhook] image en document détectée (mime=${docMimeType}) → routage vers handleInboxPhoto`);
+        const inboxPhotoFromDocResult = await handleInboxPhoto(
+          chatId,
+          docResult.base64,
+          docMimeType,
+          update.message?.caption,
+          documentData.file_size,
+          update.message!.date,
+        );
+        await sendTelegramMessage(chatId, inboxPhotoFromDocResult.userMessage);
+        return Response.json({ ok: true });
+      }
+
       // Mode inbox — upload direct vers Drive
       const inboxDocResult = await handleInboxDocument(
         chatId,
         docResult.base64,
-        documentData.mime_type ?? 'application/octet-stream',
+        docMimeType,
         documentData.file_name,
         documentData.file_size,
       );
