@@ -11,10 +11,45 @@
  */
 
 import { parse } from 'exifr';
+import sharp from 'sharp';
 
 export interface PhotoTimestamp {
   date: Date;
   source: 'exif' | 'telegram' | 'now';
+}
+
+/**
+ * Détecte un container HEIC/HEIF par signature ISO BMFF.
+ * Plus fiable que le MIME type (Telegram peut mentir, iPhone aussi).
+ */
+function isHeicBuffer(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  if (buf.subarray(4, 8).toString('ascii') !== 'ftyp') return false;
+  const brand = buf.subarray(8, 12).toString('ascii');
+  return ['heic', 'heix', 'hevc', 'heim', 'heis', 'mif1', 'msf1', 'hevx'].includes(brand);
+}
+
+/**
+ * Pour HEIC, exifr lit le thumbnail JPEG embarqué (tags JFIF) et rate
+ * les vraies métadonnées EXIF stockées dans les box ISO BMFF du container.
+ * Sharp sait lire ces box et extrait le buffer EXIF brut, qu'on passe
+ * ensuite à exifr pour parsing.
+ */
+async function extractExifBuffer(photoBuffer: Buffer): Promise<Buffer> {
+  if (!isHeicBuffer(photoBuffer)) {
+    return photoBuffer;
+  }
+  try {
+    const metadata = await sharp(photoBuffer).metadata();
+    if (metadata.exif && metadata.exif.length > 0) {
+      console.warn(`[inbox-photo] HEIC détecté, EXIF extrait via sharp (${metadata.exif.length} bytes)`);
+      return metadata.exif;
+    }
+    console.warn('[inbox-photo] HEIC détecté mais sharp.metadata().exif est absent');
+  } catch (err) {
+    console.warn(`[inbox-photo] sharp metadata a échoué sur HEIC: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  return photoBuffer;
 }
 
 /**
@@ -29,14 +64,12 @@ export async function resolvePhotoTimestamp(
   telegramMessageDate?: number,
 ): Promise<PhotoTimestamp> {
   // 1. EXIF DateTimeOriginal ou CreateDate
-  // Note importante : exifr v7 supporte HEIC/HEIF nativement, mais SEULEMENT si on lui
-  // laisse l'auto-détection. Avec des options restrictives comme { tiff: true, exif: true },
-  // le parser HEIC (basé sur les box ISO BMFF) n'est pas activé et retourne null pour
-  // toute photo iPhone envoyée en mode fichier.
-  // Solution : parse(buffer, true) = lis tous les segments, auto-détecte le format.
-  // Coût CPU négligeable sur des photos < 1Mo.
+  // exifr v7 lit bien les JPEG, mais sur HEIC il s'arrête sur le thumbnail JPEG
+  // embarqué et rate les vraies métadonnées EXIF du container ISO BMFF.
+  // Solution : pour HEIC, on extrait le buffer EXIF brut via sharp d'abord.
   try {
-    const exif = await parse(photoBuffer, true);
+    const bufferToParse = await extractExifBuffer(photoBuffer);
+    const exif = await parse(bufferToParse, true);
     if (exif) {
       const tagsFound = Object.keys(exif);
       console.warn(`[inbox-photo] exif tags trouvés (${tagsFound.length}): ${tagsFound.join(', ').slice(0, 200)}`);
