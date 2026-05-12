@@ -32,6 +32,7 @@ import {
   downloadTelegramPhoto,
   downloadTelegramFile,
   sendTypingAction,
+  sendTelegramMessageWithButtons,
 } from '@/lib/secretariat/telegram';
 import {
   renderCrForTelegram,
@@ -60,6 +61,7 @@ import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
 import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
 import { getWorkflow } from '@/lib/secretariat/workflows/registry';
+import type { WorkflowState } from '@/lib/secretariat/workflows/types';
 import type { MediaGroupBuffer } from '@/lib/secretariat/types';
 import {
   handleInboxPhoto,
@@ -816,6 +818,32 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     return Response.json({ ok: true });
   }
 
+  // /quittance — démarrer le workflow quittance de loyer
+  if (normalizedText === '/quittance') {
+    // Annuler tout workflow actif
+    const existing = getActiveWorkflow(chatId);
+    if (existing) {
+      clearActiveWorkflow(chatId);
+    }
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+
+    const qWf = getWorkflow('quittance');
+    if (qWf) {
+      await sendTypingAction(chatId);
+      const startResult = await qWf.start(chatId);
+      if (startResult.newState) {
+        setActiveWorkflow(chatId, startResult.newState);
+      }
+      // Envoyer les messages de démarrage
+      for (const msg of startResult.messages) {
+        await sendTelegramMessage(chatId, msg.text);
+      }
+    }
+    return Response.json({ ok: true });
+  }
+
   // /cr — démarrer le workflow CR
   if (normalizedText === '/cr') {
     const crWf = getWorkflow('cr');
@@ -894,7 +922,7 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
   // Commande inconnue
   await sendTelegramMessage(
     chatId,
-    'Commande inconnue. Commandes disponibles : /cr, /inbox, /cancel, /status',
+    'Commande inconnue. Commandes disponibles : /cr, /quittance, /inbox, /cancel, /status',
   );
   return Response.json({ ok: true });
 }
@@ -1090,6 +1118,10 @@ export async function POST(request: Request): Promise<Response> {
       // ── Niveau 2 : workflow actif ──────────────────────────────
       const activeWorkflow = getActiveWorkflow(chatId);
       if (activeWorkflow) {
+        // Workflow quittance : dispatch direct vers le workflow
+        if (activeWorkflow.type === 'quittance') {
+          return await handleQuittanceText(chatId, activeWorkflow, text);
+        }
         // Le workflow CR en Phase 1 est pass-through :
         // la logique reste dans ce fichier, le state sert juste de flag
         return await handleCRText(chatId, text, normalizedText);
@@ -1414,6 +1446,12 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
+      // Workflow quittance — callbacks préfixés par "q_"
+      const quittanceWf = getActiveWorkflow(callbackChatId);
+      if (quittanceWf && quittanceWf.type === 'quittance') {
+        return await handleQuittanceCallback(callbackChatId, quittanceWf, callbackData);
+      }
+
       const pendingDraft = getPendingDraft(callbackChatId);
 
       if (!pendingDraft) {
@@ -1576,5 +1614,150 @@ export async function POST(request: Request): Promise<Response> {
     // JAMAIS crasher la réponse — Telegram retentera sinon
     console.error('[telegram-webhook] erreur dispatch :', err);
     return Response.json({ ok: true });
+  }
+}
+
+// ============================================================
+// Handlers Quittance — dispatch texte et callbacks
+// ============================================================
+
+/**
+ * Gère un message texte dans le contexte du workflow quittance.
+ */
+async function handleQuittanceText(
+  chatId: number,
+  state: WorkflowState,
+  text: string,
+): Promise<Response> {
+  const qWf = getWorkflow('quittance');
+  if (!qWf) {
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await qWf.handleMessage(chatId, state, text);
+
+  // Mettre à jour le state
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  // Envoyer les messages
+  await sendQuittanceMessages(chatId, result.messages, result.newState);
+
+  // Si le workflow est terminé (done) avec un PDF, l'envoyer
+  if (result.newState?.step === 'done') {
+    await sendQuittancePdfIfAvailable(chatId, result.newState);
+    clearActiveWorkflow(chatId);
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Gère un callback inline dans le contexte du workflow quittance.
+ */
+async function handleQuittanceCallback(
+  chatId: number,
+  state: WorkflowState,
+  callbackData: string,
+): Promise<Response> {
+  const qWf = getWorkflow('quittance');
+  if (!qWf) {
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await qWf.handleCallback(chatId, state, callbackData);
+
+  // Mettre à jour le state
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  // Envoyer les messages
+  await sendQuittanceMessages(chatId, result.messages, result.newState);
+
+  // Si le workflow est terminé (done) avec un PDF, l'envoyer
+  if (result.newState?.step === 'done') {
+    await sendQuittancePdfIfAvailable(chatId, result.newState);
+    clearActiveWorkflow(chatId);
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Envoie les messages du workflow quittance.
+ *
+ * Les messages avec showConfirmation=true sont envoyés avec des boutons inline
+ * personnalisés (Confirmer / Modifier / Annuler), préfixés "q_" pour ne pas
+ * interférer avec les callbacks CR.
+ *
+ * Les messages de l'étape confirming_periode reçoivent en plus des boutons
+ * pour le mois courant et le mois précédent.
+ */
+async function sendQuittanceMessages(
+  chatId: number,
+  messages: Array<{ text: string; showConfirmation?: boolean }>,
+  state: WorkflowState | null,
+): Promise<void> {
+  for (const msg of messages) {
+    if (msg.showConfirmation) {
+      const buttons = [];
+
+      // Si on est à l'étape de la période, ajouter des boutons mois rapide
+      if (state?.step === 'confirming_periode') {
+        const now = new Date();
+        const moisCourant = now.getMonth() + 1;
+        const anneeCourante = now.getFullYear();
+        const moisPrec = moisCourant === 1 ? 12 : moisCourant - 1;
+        const anneePrec = moisCourant === 1 ? anneeCourante - 1 : anneeCourante;
+
+        const MOIS_FR = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+        buttons.push([
+          { text: `${MOIS_FR[moisPrec]} ${anneePrec}`, callback_data: `q_mois_${anneePrec}_${moisPrec}` },
+          { text: `${MOIS_FR[moisCourant]} ${anneeCourante}`, callback_data: `q_mois_${anneeCourante}_${moisCourant}` },
+        ]);
+      }
+
+      // Boutons standard Confirmer / Modifier / Annuler
+      buttons.push([
+        { text: 'Confirmer', callback_data: 'q_confirm' },
+        { text: 'Modifier', callback_data: 'q_modify' },
+        { text: 'Annuler', callback_data: 'q_cancel' },
+      ]);
+
+      await sendTelegramMessageWithButtons(chatId, msg.text, buttons);
+    } else {
+      await sendTelegramMessage(chatId, msg.text);
+    }
+  }
+}
+
+/**
+ * Envoie le PDF de quittance via Telegram s'il est disponible dans le state.
+ */
+async function sendQuittancePdfIfAvailable(
+  chatId: number,
+  state: WorkflowState,
+): Promise<void> {
+  const data = state.data as Record<string, unknown>;
+  const pdfBase64 = data['pdfBase64'] as string | undefined;
+  const pdfFilename = data['pdfFilename'] as string | undefined;
+
+  if (pdfBase64 && pdfFilename) {
+    try {
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      await sendTelegramDocument(chatId, pdfBuffer, pdfFilename, `Quittance ${pdfFilename}`);
+    } catch (err) {
+      console.error('[quittance] erreur envoi PDF Telegram :', err instanceof Error ? err.message : err);
+    }
   }
 }

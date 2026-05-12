@@ -217,3 +217,74 @@ Passer de `drive.file` a `drive` (scope complet) resoudrait le probleme de visib
 - `src/lib/secretariat/__tests__/drive-subfolder.test.ts` — nouveau fichier test (11 tests)
 - `.env.example` — documentation des 4 env vars optionnelles
 - `docs/dev-decisions.md` — cette section
+
+---
+
+## Session 11 — Phase 1+2 Anya : lib rent/ + workflow quittance
+
+### Contexte
+
+Port du workflow Python `generer_quittance.py` (549 lignes, fpdf2) en TypeScript pour le bot Telegram Anya. Le Python original lit les fiches locataires depuis le vault Obsidian local, genere des quittances PDF et les ecrit sur le disque. La version TypeScript lit les fiches depuis Google Drive (decision verrouillee par Thomas) et uploade les PDF sur Drive.
+
+### Choix de lib num-en-lettres : implementation native (~100 lignes)
+
+**Decision** : implementation native dans `src/lib/secretariat/rent/num-en-lettres.ts` au lieu d'un package npm.
+
+**Justification** :
+- Le scope est limite : montants de loyer entre 0 et ~10 000 euros, toujours arrondis a l'entier (comme le Python : `int(round(montant))`)
+- Les libs npm candidates (`to-words`, `written-number`, `nombre-en-toutes-lettres`) ajoutent 50-200KB de code pour 124 locales dont 123 inutiles
+- Les regles du francais sont bien specifiees et testables : 80 = quatre-vingts (avec S sauf suivi), 71 = soixante-et-onze, 200 = deux cents (avec S si multiple exact)
+- 100 lignes testees (27 tests) = ownership total, zero risque de breaking change npm
+- **Alternative ecartee** : `to-words` — la lib la plus moderne mais necessite une configuration locale FR et ajoute une dependance pour un cas d'usage trivial
+
+### Approche de lecture Drive (scope readonly)
+
+Les fiches locataires sont lues depuis `07. Contacts/05. Locataires/01. Actuels/` puis `_Candidats/` sur Google Drive. Le code navigue dans l'arborescence via l'API files.list (dossier par dossier) car le scope OAuth actuel est `drive.file` (ne voit que les fichiers crees par l'app).
+
+**Action Thomas** : migrer le scope OAuth vers `drive.readonly` via `/api/drive-auth` pour que le bot puisse lire les fiches locataires existantes. Sans ce scope, la recherche de locataires retournera toujours une liste vide.
+
+Le parser YAML est minimaliste (cle: valeur simple par ligne) car les fiches locataires n'utilisent ni listes ni objets imbriques dans le frontmatter. Un parser YAML complet (js-yaml) ajouterait une dependance pour un format deja contraint.
+
+### PDF : PDFKit (pas fpdf2)
+
+Le Python utilise fpdf2 (pur Python). Le TypeScript utilise PDFKit (deja en dependance pour les CR). Le layout est porte fidellement : memes marges (22mm), memes sections, memes polices (Helvetica/Helvetica-Bold — polices internes PDFKit, pas de TTF necessaire), meme table Loyer/Charges/Total, meme texte juridique, memes mentions legales.
+
+Difference notable : fpdf2 permet `align="J"` (justified) partout, PDFKit aussi via `{ align: 'justify' }`. Le rendu est visuellement equivalent.
+
+### Upload Drive : ecrasement silencieux
+
+Decision Thomas : si une quittance pour le meme mois + locataire existe deja sur Drive, on ecrase silencieusement (suppression + re-upload). Pas de demande de confirmation, pas d'increment de numero.
+
+### Variables d'environnement ajoutees
+
+- `DRIVE_QUITTANCES_FOLDER_ID` — optionnel, ID du dossier parent Drive pour les quittances
+- `DRIVE_VAULT_ROOT_ID` — optionnel, ID du dossier racine Obsidian sur Drive (pour naviguer vers les fiches locataires)
+
+### Fichiers ajoutes/modifies
+
+**Nouveaux** :
+- `src/lib/secretariat/rent/types.ts` — Zod schemas Locataire, Bien, BailleurConfig, QuittanceVariables, QuittanceWorkflowData
+- `src/lib/secretariat/rent/locataires.ts` — lecture fiches locataires depuis Drive + parser YAML/frontmatter
+- `src/lib/secretariat/rent/biens.ts` — resolution des biens (import JSON statique)
+- `src/lib/secretariat/rent/bailleur.ts` — config bailleur
+- `src/lib/secretariat/rent/num-en-lettres.ts` — conversion nombre en toutes lettres francaises
+- `src/lib/secretariat/rent/dates-fr.ts` — formatage dates en francais
+- `src/lib/secretariat/rent/signature.ts` — chargement signature PNG
+- `src/lib/secretariat/rent/pdf-quittance.ts` — generation PDF quittance (PDFKit)
+- `src/lib/secretariat/rent/data/biens.json` — copie statique de biens.yml
+- `src/lib/secretariat/rent/__tests__/num-en-lettres.test.ts` — 27 tests
+- `src/lib/secretariat/rent/__tests__/dates-fr.test.ts` — 14 tests
+- `src/lib/secretariat/rent/__tests__/biens.test.ts` — 15 tests
+- `src/lib/secretariat/rent/__tests__/locataires.test.ts` — 10 tests
+- `src/lib/secretariat/rent/__tests__/types.test.ts` — 9 tests
+- `src/lib/secretariat/rent/__tests__/pdf-quittance.test.ts` — 8 tests
+- `src/lib/secretariat/rent/__tests__/quittance-workflow.test.ts` — 7 tests
+- `src/lib/secretariat/workflows/quittance.ts` — workflow quittance (machine d'etats)
+
+**Modifies** :
+- `src/lib/secretariat/workflows/types.ts` — ajout WorkflowType 'quittance' + QuittanceWorkflowStep
+- `src/lib/secretariat/workflows/registry.ts` — enregistrement du workflow quittance
+- `src/lib/secretariat/telegram.ts` — ajout sendTelegramMessageWithButtons (boutons inline personnalises)
+- `src/app/api/telegram/webhook/route.ts` — commande /quittance + dispatch workflow quittance
+- `docs/ia/anya-spec.md` — documentation workflow quittance
+- `.env.example` — variables Drive quittances

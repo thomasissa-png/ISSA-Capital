@@ -12,7 +12,7 @@
 // ============================================================
 
 /** Types de workflow disponibles. Ajouter ici pour chaque nouveau workflow. */
-export type WorkflowType = 'cr';
+export type WorkflowType = 'cr' | 'quittance';
 
 // ============================================================
 // État d'un workflow actif
@@ -25,6 +25,16 @@ export type CRWorkflowStep =
   | 'pending_validation'
   | 'validated'
   | 'cancelled';
+
+/** Étapes possibles pour le workflow Quittance */
+export type QuittanceWorkflowStep =
+  | 'selecting_locataire'
+  | 'confirming_locataire'
+  | 'confirming_periode'
+  | 'confirming_montants'
+  | 'generating'
+  | 'done'
+  | 'error';
 
 /** État persisté d'un workflow actif pour un chat_id donné. */
 export interface WorkflowState {

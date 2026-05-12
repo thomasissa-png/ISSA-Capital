@@ -1,7 +1,7 @@
 # Anya — Bot Telegram secrétariat ISSA Capital
 
 > Fiche technique partageable. Source de vérité pour tout autre Claude (Cowork, Desktop, autre repo) qui doit comprendre ou faire évoluer Anya.
-> Dernière mise à jour : 2026-05-12 (session 10 — extension mode inbox + architecture multi-workflows).
+> Dernière mise à jour : 2026-05-12 (session 11 — workflow quittance de loyer Phase 1+2).
 
 ---
 
@@ -22,7 +22,7 @@
 | Validation | Zod (schémas Telegram + Claude responses) |
 | Stockage | Google Drive (OAuth2 refresh token) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF | PDFKit (compte-rendus A4 avec annexes photographiques) |
-| Tests | Vitest — 102/102 passent (68 CR + 34 inbox/router) |
+| Tests | Vitest — 210/210 passent (68 CR + 34 inbox/router + 97 rent/quittance + 11 autres) |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -57,6 +57,7 @@ Message reçu
 |---|---|
 | `/start` | Message de bienvenue, vérifie whitelist |
 | `/cr` | Force le workflow CR (compte-rendu) |
+| `/quittance` | Démarre le workflow quittance de loyer |
 | `/inbox` | Force retour mode inbox + clear workflow actif |
 | `/cancel` | Annule le workflow en cours, retour inbox |
 | `/status` | Affiche le mode actuel + workflow actif s'il y en a un |
@@ -78,7 +79,7 @@ Message reçu
 - Auto si **texte ≥80 caractères** sans workflow actif (habitude Thomas préservée)
 - Manuel via `/cr`
 
-**Machine d'états** : `collecting` → `pending_photos` → `pending_validation` → `validated` (FIN) OU `cancelled` (FIN)
+**Machine d'états CR** : `collecting` → `pending_photos` → `pending_validation` → `validated` (FIN) OU `cancelled` (FIN)
 
 **Cycle complet** :
 
@@ -92,6 +93,34 @@ Message reçu
 8. Upload PDF vers Drive (dossier de l'entité : IC / GO / VI / VV)
 9. Sauvegarde historique + cleanup
 10. Retour mode inbox
+
+## Comportement par type de message — Workflow Quittance
+
+**Démarrage** : `/quittance`
+
+**Machine d'états** : `selecting_locataire` → `confirming_locataire` → `confirming_periode` → `confirming_montants` → `generating` → `done` | `error`
+
+**Cycle complet** :
+
+1. Thomas tape `/quittance`
+2. Anya liste les locataires actuels (lecture Drive `07. Contacts/05. Locataires/01. Actuels/`)
+3. Thomas sélectionne un locataire (numéro ou nom)
+4. Anya affiche l'aperçu locataire + boutons Confirmer/Modifier/Annuler
+5. Thomas confirme → Anya demande la période (boutons mois rapide + saisie YYYY-MM)
+6. Thomas sélectionne le mois
+7. Anya affiche le récapitulatif complet (locataire, période, loyer, charges, total en lettres, n° quittance) + boutons Confirmer/Modifier/Annuler
+8. Thomas confirme → génération PDF (PDFKit A4, layout fidèle au template Python)
+9. Numéro quittance : `QL-YYYY-MM-INITIALES`
+10. Upload PDF vers Drive (`Quittances/{Locataire}/Quittance-{Locataire}-YYYY-MM.pdf`)
+11. Si le PDF existe déjà → écrasement silencieux (pas de confirmation)
+12. Envoi du PDF via Telegram
+13. Retour mode inbox
+
+**Fichiers lib** : `src/lib/secretariat/rent/` (types, locataires, biens, bailleur, num-en-lettres, dates-fr, signature, pdf-quittance)
+
+**Variables d'environnement optionnelles** :
+- `DRIVE_QUITTANCES_FOLDER_ID` — ID du dossier parent pour les quittances
+- `DRIVE_VAULT_ROOT_ID` — ID du dossier racine Obsidian (pour naviguer vers les fiches locataires)
 
 ## Sécurité
 
@@ -140,12 +169,23 @@ Pour ajouter un nouveau workflow (ex: quittance de loyer, bail) :
 
 ```
 src/lib/secretariat/
+├── rent/                 # lib partagée quittance/bail
+│   ├── types.ts          # Zod schemas (Locataire, Bien, BailleurConfig, QuittanceVariables)
+│   ├── locataires.ts     # lecture fiches locataires depuis Drive
+│   ├── biens.ts          # résolution des biens (biens.json)
+│   ├── bailleur.ts       # config bailleur
+│   ├── num-en-lettres.ts # conversion nombre → texte français
+│   ├── dates-fr.ts       # formatage dates en français
+│   ├── signature.ts      # chargement signature PNG
+│   ├── pdf-quittance.ts  # rendu PDF (PDFKit)
+│   ├── data/biens.json   # copie statique de second-cerveau/biens.yml
+│   └── __tests__/        # 97 tests Vitest
 └── workflows/
-    ├── types.ts          # interface Workflow commune
+    ├── types.ts          # interface Workflow commune (WorkflowType = 'cr' | 'quittance')
     ├── registry.ts       # workflowRegistry: Record<WorkflowType, Workflow>
     ├── cr.ts             # workflow CR (existant)
-    ├── quittance.ts      # ← à créer Phase 2
-    └── bail.ts           # ← à créer Phase 2
+    ├── quittance.ts      # workflow quittance de loyer
+    └── bail.ts           # ← à créer Phase 3
 ```
 
 **Ajouter un workflow = 3 actions :**
@@ -175,10 +215,12 @@ src/lib/secretariat/types.ts               # schémas Zod
 
 ```bash
 npm test
-# → 102/102 passent
+# → 210/210 passent
 # - 68 tests CR existants (integration + pdf-generator + counter)
 # - 23 tests inbox (slugify, naming, types, edge cases)
 # - 11 tests router (commandes, auto-CR, bascule mode, TTL)
+# - 97 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires, types, pdf, workflow)
+# - 11 tests autres (contactSchema, rateLimit)
 ```
 
 ## Roadmap
@@ -189,10 +231,16 @@ npm test
 - Architecture workflows extensible
 - Workflow CR (wrap léger de l'existant)
 
-**Phase 2 — À venir**
+**Phase 2 — Déployée (session 11)**
 
-- Workflow quittance de loyer (collecte locataire/bien/mois/montant → PDF → Drive `Quittances/{Locataire}/YYYY-MM.pdf` + email locataire optionnel)
-- Workflow bail (parties + bien + conditions + clauses → PDF bail)
+- Workflow quittance de loyer : `/quittance` → sélection locataire (Drive) → confirmation → période → montants → PDF A4 → upload Drive + envoi Telegram
+- Lib partagée `src/lib/secretariat/rent/` : types, locataires Drive, biens, bailleur, num-en-lettres, dates-fr, signature, pdf-quittance
+
+**Phase 3 — À venir**
+
+- Workflow bail (parties + bien + conditions + clauses → DOCX+PDF bail)
+- Envoi email locataire (Gmail API) pour quittances
+- Cron mensuel quittances automatiques
 - Workflows futurs : factures, devis, attestations (même pattern)
 
 **Phase 3 — Idées en suspens**

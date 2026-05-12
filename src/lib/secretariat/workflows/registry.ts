@@ -9,6 +9,7 @@
 
 import type { Workflow, WorkflowType } from './types';
 import { crWorkflow } from './cr';
+import { quittanceWorkflow } from './quittance';
 
 // ============================================================
 // Registry — tous les workflows disponibles
@@ -16,6 +17,7 @@ import { crWorkflow } from './cr';
 
 const WORKFLOW_REGISTRY: Record<WorkflowType, Workflow> = {
   cr: crWorkflow,
+  quittance: quittanceWorkflow,
 };
 
 /**

@@ -1,0 +1,46 @@
+{
+  "bailleur": {
+    "nom": "Thomas Issa",
+    "telephone": "06 64 85 06 31",
+    "adresse": "54 rue Henri Barbusse",
+    "cpVille": "92000 Nanterre",
+    "signatureImage": "signature-thomas-issa.png",
+    "signatureLargeurMm": 40
+  },
+  "biens": [
+    {
+      "id": "barbusse-studio",
+      "matchAdresse": ["54 rue Henri Barbusse", "Henri Barbusse"],
+      "ligne1": "54 rue Henri Barbusse",
+      "ligne2": "Studio RDC",
+      "cpVille": "92000 Nanterre"
+    },
+    {
+      "id": "bd-seine-nanterre",
+      "matchAdresse": ["2 bis boulevard de la Seine", "2bis boulevard de la Seine", "boulevard de la Seine"],
+      "ligne1": "2 bis boulevard de la Seine",
+      "ligne2Template": "{studio}, 6e étage",
+      "cpVille": "92000 Nanterre"
+    },
+    {
+      "id": "myrha-paris",
+      "matchAdresse": ["74 rue Myrha", "Myrha"],
+      "ligne1": "74 rue Myrha",
+      "ligne2": "Studio RDC",
+      "cpVille": "75018 Paris"
+    },
+    {
+      "id": "saint-michel-rue",
+      "matchAdresse": ["Saint-Michel", "Saint Michel", "Saint-michel"],
+      "ligne1": "7 passage Saint-Michel",
+      "ligne2ParCote": {
+        "côté rue": "Studio sur rue",
+        "côté cour": "Studio sur cour",
+        "studio côté rue": "Studio sur rue",
+        "studio côté cour": "Studio sur cour"
+      },
+      "ligne2Defaut": "Studio rez-de-chaussée",
+      "cpVille": "75017 Paris"
+    }
+  ]
+}
