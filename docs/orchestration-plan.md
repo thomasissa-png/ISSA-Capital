@@ -2,14 +2,14 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-05-12 — Session 12 Phase 3 bail LIVRÉE (384 tests)**
+> Dernière mise à jour : **2026-05-12 — Session 12 Phases 3+4+5 LIVRÉES (434 tests)**
 
-<!-- SESSION: phases=phase3_bail_done tasks_prod=ongoing tasks_consult=0 -->
+<!-- SESSION: phases=phase345_done tasks_prod=ongoing tasks_consult=0 -->
 <!-- BRANCH ACTIVE: claude/issa-capital-s12-anya-phase3-bail-P64ir -->
 
 ---
 
-## Session 12 — Phase 3 Bail (2026-05-12)
+## Session 12 — Phases 3+4+5 (2026-05-12)
 
 **Branche** : `claude/issa-capital-s12-anya-phase3-bail-P64ir`
 
@@ -21,10 +21,36 @@
 - Upload Drive vers DRIVE_BAUX_FOLDER_ID
 - 384/384 tests PASS (324 existants + 60 nouveaux), 0 erreur TS
 
+**Phase 4 — Workflow fin-de-bail (attestation PDF)** : LIVREE
+- 2 fichiers créés : `src/lib/secretariat/rent/pdf-fin-de-bail.ts` (PDFKit, port de `generer_fin_de_bail.py`), `src/lib/secretariat/workflows/fin-de-bail.ts` (state machine)
+- 1 fichier test : `src/lib/secretariat/rent/__tests__/fin-de-bail-workflow.test.ts` (20 tests)
+- 1 fichier test : `src/lib/secretariat/rent/__tests__/pdf-fin-de-bail.test.ts` (5 tests)
+- Machine d'états 5 steps : selecting_locataire -> collecting_date_fin -> confirming_recap -> generating -> done
+- Attestation PDF 1 page : en-tête bailleur, objet, corps attestation, signature PNG optionnelle
+- Upload Drive vers DRIVE_BAUX_FOLDER_ID (sous-dossier locataire)
+- Réutilise `parseLocataireSelection` (quittance), `parseDateInput` (bail), `chargerBailleurBail` (bail)
+
+**Phase 5 — Workflow candidat (fiche .md _Candidats/)** : LIVREE
+- 1 fichier créé : `src/lib/secretariat/workflows/candidat.ts` (state machine + buildCandidatMarkdown + uploadCandidatFiche)
+- 1 fichier test : `src/lib/secretariat/rent/__tests__/candidat-workflow.test.ts` (25 tests)
+- Machine d'états 9 steps : collecting_nom -> collecting_contact -> collecting_situation -> collecting_garanties -> collecting_bien -> collecting_notes -> confirming_recap -> creating_fiche -> done
+- Fiche .md avec frontmatter YAML (prenom, nom, email, telephone, situation_pro, garanties, bien_vise, statut, date_candidature)
+- Upload Drive via DRIVE_VAULT_ROOT_ID -> 07. Contacts -> 05. Locataires -> _Candidats
+- Pattern list-then-filter local pour Drive (learning P1 S11)
+- Extraction regex email + téléphone français, option "skip" sur chaque champ
+
+**Fichiers partagés modifiés (Phases 4+5)** :
+- `src/lib/secretariat/rent/types.ts` : +FinDeBailWorkflowData, +FinDeBailVariables, +CandidatWorkflowData
+- `src/lib/secretariat/workflows/types.ts` : WorkflowType étendu à 5 types
+- `src/lib/secretariat/workflows/registry.ts` : 5 entrées (cr, quittance, bail, findebail, candidat)
+- `src/lib/secretariat/workflows/__tests__/registry.test.ts` : tests étendus pour 5 workflows
+- `src/app/api/telegram/webhook/route.ts` : +321 lignes (handlers findebail + candidat)
+
+**Bilan tests** : 434/434 PASS (384 pré-existants + 25 Phase 4 + 25 Phase 5), 0 erreur TypeScript
+
 **Prochaines phases** :
-- Phase 4 : workflow fin-de-bail (attestation PDF)
-- Phase 5 : workflow candidat (fiche .md _Candidats/)
 - Audit @legal PDFs (quittance + bail + fin-de-bail)
+- Phase 6 : promotion candidat -> locataire (hors scope session 12)
 
 ---
 
