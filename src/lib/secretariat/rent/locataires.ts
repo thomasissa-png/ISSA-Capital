@@ -357,6 +357,13 @@ export function parseFicheLocataire(
     moyenPaiement: typeof fm['moyen_paiement'] === 'string'
       ? fm['moyen_paiement']
       : 'Virement bancaire',
+    // Champs spécifiques bail (optionnels)
+    dateNaissance: parseDate(fm['date_naissance']),
+    lieuNaissance: typeof fm['lieu_naissance'] === 'string' ? fm['lieu_naissance'] : null,
+    nationalite: typeof fm['nationalite'] === 'string' ? fm['nationalite'] : null,
+    surfaceM2: typeof fm['surface_m2'] === 'number' ? fm['surface_m2'] : null,
+    depotGarantie: typeof fm['depot_garantie'] === 'number' ? fm['depot_garantie'] : null,
+    jourPaiement: typeof fm['jour_paiement'] === 'number' ? fm['jour_paiement'] : null,
   };
 }
 

@@ -32,6 +32,19 @@ export const LocataireSchema = z.object({
   dateFinBail: z.date().nullable(),
   /** Moyen de paiement (défaut : "Virement bancaire") */
   moyenPaiement: z.string().default('Virement bancaire'),
+  // --- Champs spécifiques au bail (optionnels pour les quittances) ---
+  /** Date de naissance du locataire (YYYY-MM-DD) */
+  dateNaissance: z.date().nullable().optional(),
+  /** Lieu de naissance (ex: "Paris 13") */
+  lieuNaissance: z.string().nullable().optional(),
+  /** Nationalité (ex: "Française") */
+  nationalite: z.string().nullable().optional(),
+  /** Surface réelle du logement en m² (prioritaire sur bail-config) */
+  surfaceM2: z.number().nullable().optional(),
+  /** Dépôt de garantie en euros (override par locataire) */
+  depotGarantie: z.number().nullable().optional(),
+  /** Jour de paiement du loyer (1-28) */
+  jourPaiement: z.number().nullable().optional(),
 });
 
 export type Locataire = z.infer<typeof LocataireSchema>;
@@ -215,4 +228,91 @@ export interface QuittanceWorkflowData {
     moisLabel: string;
     reason: string;
   }>;
+}
+
+// ============================================================
+// État du workflow bail (data persistée dans WorkflowState.data)
+// ============================================================
+
+/** Étapes du workflow bail */
+export type BailWorkflowStep =
+  | 'selecting_locataire'
+  | 'collecting_date_debut'
+  | 'collecting_date_signature'
+  | 'confirming_recap'
+  | 'generating'
+  | 'done'
+  | 'error';
+
+export interface BailWorkflowData {
+  /** Locataire sélectionné */
+  selectedLocataire?: Locataire;
+  /** Liste des locataires affichée (pour sélection par numéro) */
+  locatairesDisponibles?: Array<{ nom: string; adresse: string }>;
+  /** Date de début du bail (YYYY-MM-DD) */
+  dateDebut?: string;
+  /** Date de signature (YYYY-MM-DD, défaut : veille du début) */
+  dateSignature?: string;
+  /** Override loyer (optionnel) */
+  loyerOverride?: number;
+  /** Override charges (optionnel) */
+  chargesOverride?: number;
+  /** Override dépôt de garantie (optionnel) */
+  depotOverride?: number;
+  /** DOCX généré en base64 */
+  docxBase64?: string;
+  /** PDF généré en base64 */
+  pdfBase64?: string;
+  /** Nom des fichiers générés (sans extension) */
+  filenameBase?: string;
+}
+
+// ============================================================
+// Variables de bail — input pour le rendu DOCX/PDF
+// ============================================================
+
+export interface BailVariables {
+  // Bailleur
+  bailleurNom: string;
+  bailleurNomCapitales: string;
+  bailleurDateNaissance: string;
+  bailleurLieuNaissance: string;
+  bailleurNationalite: string;
+  bailleurAdresse: string;
+  bailleurCpVille: string;
+  signaturePngBase64: string | null;
+  signatureLargeurMm: number;
+
+  // Locataire
+  locataireNom: string;
+  locataireCiviliteAbregee: string;
+  locataireDateNaissance: string;
+  locataireLieuNaissance: string;
+  locataireNationalite: string;
+  locataireEstFeminin: boolean;
+
+  // Bien
+  bienAdresseLigne1: string;
+  bienComplement: string;
+  bienCpVille: string;
+  bienSurfaceM2: number;
+  bienPieces: string;
+  bienChargesIncluses: string;
+
+  // Bail
+  dateDebut: Date;
+  dateSignature: Date;
+  dureeBail: string;
+  preavisLocataire: string;
+  preavisBailleur: string;
+  loyer: number;
+  charges: number;
+  depotGarantie: number;
+  jourPaiement: number;
+  delaiRestitutionDepot: string;
+  lieuSignature: string;
+  typeBail: string;
+
+  // Inventaire
+  inventaire: Record<string, string[]> | null;
 }

@@ -53,11 +53,12 @@ describe('listWorkflowCommands', () => {
     expect(unique.size).toBe(names.length);
   });
 
-  it('contient les commandes cr et quittance', () => {
+  it('contient les commandes cr, quittance et bail', () => {
     const commands = listWorkflowCommands();
     const names = commands.map((c) => c.command);
     expect(names).toContain('cr');
     expect(names).toContain('quittance');
+    expect(names).toContain('bail');
   });
 
   it('les commandes ne contiennent pas de slash', () => {
@@ -70,10 +71,11 @@ describe('listWorkflowCommands', () => {
 });
 
 describe('getAvailableWorkflowTypes', () => {
-  it('retourne les types cr et quittance', () => {
+  it('retourne les types cr, quittance et bail', () => {
     const types = getAvailableWorkflowTypes();
     expect(types).toContain('cr');
     expect(types).toContain('quittance');
+    expect(types).toContain('bail');
   });
 });
 
@@ -91,6 +93,14 @@ describe('getWorkflow', () => {
     expect(wf).not.toBeNull();
     expect(wf!.type).toBe('quittance');
     expect(wf!.command).toBe('quittance');
+    expect(wf!.commandDescription.length).toBeGreaterThan(0);
+  });
+
+  it('retourne un workflow valide pour bail', () => {
+    const wf = getWorkflow('bail');
+    expect(wf).not.toBeNull();
+    expect(wf!.type).toBe('bail');
+    expect(wf!.command).toBe('bail');
     expect(wf!.commandDescription.length).toBeGreaterThan(0);
   });
 

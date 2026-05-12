@@ -62,7 +62,8 @@ import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/d
 import { getWorkflow } from '@/lib/secretariat/workflows/registry';
 import type { WorkflowState } from '@/lib/secretariat/workflows/types';
 import { generateBatch } from '@/lib/secretariat/workflows/quittance';
-import type { Locataire } from '@/lib/secretariat/rent/types';
+import { generateBail } from '@/lib/secretariat/workflows/bail';
+import type { Locataire, BailWorkflowData } from '@/lib/secretariat/rent/types';
 import type { MediaGroupBuffer } from '@/lib/secretariat/types';
 import {
   handleInboxPhoto,
@@ -845,6 +846,31 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     return Response.json({ ok: true });
   }
 
+  // /bail — démarrer le workflow bail meublé
+  if (normalizedText === '/bail') {
+    // Annuler tout workflow actif
+    const existingBail = getActiveWorkflow(chatId);
+    if (existingBail) {
+      clearActiveWorkflow(chatId);
+    }
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+
+    const bailWf = getWorkflow('bail');
+    if (bailWf) {
+      await sendTypingAction(chatId);
+      const startResult = await bailWf.start(chatId);
+      if (startResult.newState) {
+        setActiveWorkflow(chatId, startResult.newState);
+      }
+      for (const msg of startResult.messages) {
+        await sendTelegramMessage(chatId, msg.text);
+      }
+    }
+    return Response.json({ ok: true });
+  }
+
   // /cr — démarrer le workflow CR
   if (normalizedText === '/cr') {
     const crWf = getWorkflow('cr');
@@ -1122,6 +1148,10 @@ export async function POST(request: Request): Promise<Response> {
         // Workflow quittance : dispatch direct vers le workflow
         if (activeWorkflow.type === 'quittance') {
           return await handleQuittanceText(chatId, activeWorkflow, text);
+        }
+        // Workflow bail : dispatch direct vers le workflow
+        if (activeWorkflow.type === 'bail') {
+          return await handleBailText(chatId, activeWorkflow, text);
         }
         // Le workflow CR en Phase 1 est pass-through :
         // la logique reste dans ce fichier, le state sert juste de flag
@@ -1456,6 +1486,12 @@ export async function POST(request: Request): Promise<Response> {
       const quittanceWf = getActiveWorkflow(callbackChatId);
       if (quittanceWf && quittanceWf.type === 'quittance') {
         return await handleQuittanceCallback(callbackChatId, quittanceWf, callbackData);
+      }
+
+      // Workflow bail — callbacks préfixés par "bail_"
+      const bailWf = getActiveWorkflow(callbackChatId);
+      if (bailWf && bailWf.type === 'bail') {
+        return await handleBailCallback(callbackChatId, bailWf, callbackData);
       }
 
       const pendingDraft = getPendingDraft(callbackChatId);
@@ -1808,4 +1844,150 @@ async function sendQuittancePdfIfAvailable(
       console.error('[quittance] erreur envoi PDF Telegram :', err instanceof Error ? err.message : err);
     }
   }
+}
+
+// ============================================================
+// Bail workflow handlers
+// ============================================================
+
+/**
+ * Gère un message texte dans le contexte du workflow bail.
+ */
+async function handleBailText(
+  chatId: number,
+  state: WorkflowState,
+  text: string,
+): Promise<Response> {
+  const bailWf = getWorkflow('bail');
+  if (!bailWf) {
+    return Response.json({ ok: true });
+  }
+
+  // Si génération en cours, ignorer les messages texte
+  if (state.step === 'generating') {
+    await sendTelegramMessage(chatId, '🔄 Génération du bail en cours, patiente…');
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await bailWf.handleMessage(chatId, state, text);
+
+  // Mettre à jour le state
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  // Envoyer les messages
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  // Si le workflow passe en generating → lancer la génération
+  if (result.newState?.step === 'generating') {
+    await handleBailGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Gère un callback inline dans le contexte du workflow bail.
+ */
+async function handleBailCallback(
+  chatId: number,
+  state: WorkflowState,
+  callbackData: string,
+): Promise<Response> {
+  const bailWf = getWorkflow('bail');
+  if (!bailWf) {
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await bailWf.handleCallback(chatId, state, callbackData);
+
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  // Si generating → lancer la génération
+  if (result.newState?.step === 'generating') {
+    await handleBailGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Exécute la génération du bail (DOCX + PDF), uploade sur Drive,
+ * envoie les documents sur Telegram.
+ */
+async function handleBailGeneration(
+  chatId: number,
+  state: WorkflowState,
+): Promise<void> {
+  const data = state.data as unknown as BailWorkflowData;
+
+  if (!data.selectedLocataire || !data.dateDebut) {
+    await sendTelegramMessage(chatId, '❌ Données incomplètes. Relance /bail.');
+    clearActiveWorkflow(chatId);
+    return;
+  }
+
+  try {
+    const dateDebut = new Date(data.dateDebut);
+    const dateSignature = data.dateSignature ? new Date(data.dateSignature) : undefined;
+
+    const result = await generateBail(data.selectedLocataire, dateDebut, dateSignature);
+
+    if (!result.success || !result.docxBuffer || !result.pdfBuffer || !result.filenameBase) {
+      await sendTelegramMessage(chatId, `❌ Erreur : ${result.error ?? 'génération échouée'}`);
+      clearActiveWorkflow(chatId);
+      return;
+    }
+
+    // Envoyer le DOCX sur Telegram
+    await sendTelegramDocument(
+      chatId,
+      result.docxBuffer,
+      `${result.filenameBase}.docx`,
+      `📄 Bail DOCX — ${data.selectedLocataire.nomAffiche}`,
+    );
+
+    // Envoyer le PDF sur Telegram
+    await sendTelegramDocument(
+      chatId,
+      result.pdfBuffer,
+      `${result.filenameBase}.pdf`,
+      `📄 Bail PDF — ${data.selectedLocataire.nomAffiche}`,
+    );
+
+    // Message de confirmation avec liens Drive
+    const parts = [`✅ Bail généré pour ${data.selectedLocataire.nomAffiche}`];
+    if (result.driveLinks && result.driveLinks.length > 0) {
+      parts.push('\n📁 Drive :');
+      for (const link of result.driveLinks) {
+        parts.push(`  ${link.type} : ${link.link}`);
+      }
+    }
+    parts.push('\nMode inbox réactivé.');
+
+    await sendTelegramMessage(chatId, parts.join('\n'));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[bail] erreur génération : ${msg}`);
+    await sendTelegramMessage(chatId, `❌ Erreur bail : ${msg.slice(0, 300)}`);
+  }
+
+  clearActiveWorkflow(chatId);
 }

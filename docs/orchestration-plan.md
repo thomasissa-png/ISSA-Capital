@@ -2,10 +2,29 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-05-10 — Session 9 CLÔTURÉE (91 commits, 68 tests)**
+> Dernière mise à jour : **2026-05-12 — Session 12 Phase 3 bail LIVRÉE (384 tests)**
 
-<!-- SESSION: phases=completed tasks_prod=91_commits tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/resume-issa-session-9-Y9WBK -->
+<!-- SESSION: phases=phase3_bail_done tasks_prod=ongoing tasks_consult=0 -->
+<!-- BRANCH ACTIVE: claude/issa-capital-s12-anya-phase3-bail-P64ir -->
+
+---
+
+## Session 12 — Phase 3 Bail (2026-05-12)
+
+**Branche** : `claude/issa-capital-s12-anya-phase3-bail-P64ir`
+
+**Phase 3 — Workflow bail DOCX+PDF** : LIVREE
+- 6 fichiers créés (bail-config.json, bail-config.ts, pdf-bail.ts, bail.ts workflow, 3 fichiers tests)
+- 4 fichiers modifiés (types.ts x2, locataires.ts, registry.ts, registry.test.ts, webhook route.ts)
+- 24 sections juridiques portées de Python vers TypeScript (DOCX + PDF)
+- Machine d'états 6 steps : selecting_locataire -> date_debut -> date_signature -> confirming_recap -> generating -> done
+- Upload Drive vers DRIVE_BAUX_FOLDER_ID
+- 384/384 tests PASS (324 existants + 60 nouveaux), 0 erreur TS
+
+**Prochaines phases** :
+- Phase 4 : workflow fin-de-bail (attestation PDF)
+- Phase 5 : workflow candidat (fiche .md _Candidats/)
+- Audit @legal PDFs (quittance + bail + fin-de-bail)
 
 ---
 

@@ -1,0 +1,95 @@
+{
+  "bailleur": {
+    "nom_complet": "Thomas Issa",
+    "nom_avec_capitales": "Thomas ISSA",
+    "date_naissance": "1986-10-09",
+    "lieu_naissance": "Paris 13",
+    "nationalite": "Française",
+    "adresse": "54 rue Henri Barbusse",
+    "cp_ville": "92000 Nanterre",
+    "signature_image": "../Quittances/signature-thomas-issa.png",
+    "signature_largeur_mm": 40
+  },
+  "defaults": {
+    "depot_garantie": 1000,
+    "delai_restitution_depot": "1 mois",
+    "jour_paiement_loyer": 1,
+    "duree_bail": "un an",
+    "preavis_locataire": "un mois",
+    "preavis_bailleur": "3 mois",
+    "lieu_signature": "Nanterre",
+    "type_bail": "CONTRAT DE LOCATION MEUBLEE"
+  },
+  "biens": {
+    "barbusse-studio": {
+      "surface_m2": 14,
+      "description_complement": "RDC sur cour",
+      "pieces": "une cuisine, mezzanine, toilettes et salle d'eau",
+      "charges_incluses": "électricité, chauffage, eau, internet et charges de copropriété",
+      "inventaire_type": "studio-meuble-standard"
+    },
+    "bd-seine-nanterre": {
+      "surface_m2": 13,
+      "description_complement_template": "Appartement {studio_num}, 6e étage",
+      "pieces": "une cuisine, chambre, toilettes et salle d'eau",
+      "charges_incluses": "chauffage, électricité, eau, internet et charges de copropriété",
+      "inventaire_type": "studio-meuble-standard"
+    },
+    "myrha-paris": {
+      "surface_m2": 20,
+      "description_complement": "RDC",
+      "pieces": "une cuisine, chambre, toilettes et salle d'eau",
+      "charges_incluses": "électricité, chauffage, eau, internet et charges de copropriété",
+      "inventaire_type": "studio-meuble-standard"
+    },
+    "saint-michel-rue": {
+      "surface_m2": 13,
+      "description_complement_par_cote": {
+        "côté rue": "RDC sur rue",
+        "côté cour": "RDC sur cour",
+        "studio côté rue": "RDC sur rue",
+        "studio côté cour": "RDC sur cour"
+      },
+      "description_complement_defaut": "RDC",
+      "pieces": "une cuisine, toilettes et salle de bains",
+      "charges_incluses": "électricité, chauffage, eau, internet et charges de copropriété",
+      "inventaire_type": "studio-meuble-standard"
+    }
+  },
+  "inventaires": {
+    "studio-meuble-standard": {
+      "electromenager": [
+        "1 four à micro-ondes",
+        "1 plaque à induction",
+        "1 frigidaire",
+        "1 lave-linge"
+      ],
+      "vaisselle": [
+        "6 assiettes normales",
+        "2 bols",
+        "6 verres",
+        "2 verres à vin",
+        "2 couteaux à couper",
+        "Jeu de 6 couverts (couteaux, fourchettes, grandes cuillères, petites cuillères)",
+        "2 casseroles",
+        "1 poêle",
+        "2 plats à four",
+        "1 plateau",
+        "1 paire de ciseaux"
+      ],
+      "linge": [
+        "1 alèse",
+        "1 tapis de bain",
+        "2 torchons",
+        "2 oreillers et leurs taies",
+        "1 drap",
+        "1 couette"
+      ],
+      "divers": [
+        "1 poubelle",
+        "1 balai",
+        "1 séchoir à linge"
+      ]
+    }
+  }
+}
