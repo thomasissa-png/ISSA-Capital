@@ -63,6 +63,14 @@ const mocks = vi.hoisted(() => ({
   handleInboxVoice: vi.fn().mockResolvedValue({ success: true, userMessage: 'Vocal enregistré' }),
   handleInboxDocument: vi.fn().mockResolvedValue({ success: true, userMessage: 'Document enregistré' }),
   handleInboxAlbum: vi.fn().mockResolvedValue({ success: true, userMessage: 'Album enregistré' }),
+  // Inbox photo batch
+  startOrExtendBatch: vi.fn(),
+  isWaitingForInboxPhotoDate: vi.fn().mockReturnValue(false),
+  hasPendingBatch: vi.fn().mockReturnValue(false),
+  getBatchPhotoCount: vi.fn().mockReturnValue(0),
+  handleDateReply: vi.fn().mockResolvedValue({ success: true, userMessage: null }),
+  buildDatePromptMessage: vi.fn().mockReturnValue('Quelle date ?'),
+  cancelBatch: vi.fn(),
   // Workflow registry
   getWorkflow: vi.fn().mockReturnValue({
     type: 'cr',
@@ -149,6 +157,16 @@ vi.mock('@/lib/secretariat/inbox', () => ({
   handleInboxVoice: mocks.handleInboxVoice,
   handleInboxDocument: mocks.handleInboxDocument,
   handleInboxAlbum: mocks.handleInboxAlbum,
+}));
+
+vi.mock('@/lib/secretariat/workflows/inbox-photo-batch', () => ({
+  startOrExtendBatch: mocks.startOrExtendBatch,
+  isWaitingForInboxPhotoDate: mocks.isWaitingForInboxPhotoDate,
+  hasPendingBatch: mocks.hasPendingBatch,
+  getBatchPhotoCount: mocks.getBatchPhotoCount,
+  handleDateReply: mocks.handleDateReply,
+  buildDatePromptMessage: mocks.buildDatePromptMessage,
+  cancelBatch: mocks.cancelBatch,
 }));
 
 vi.mock('@/lib/secretariat/reference-counter', () => ({
@@ -700,7 +718,7 @@ describe('POST /api/telegram/webhook', () => {
   // Avant le fix c15ed66, elles étaient routées vers handleInboxDocument qui ne
   // résout pas le timestamp EXIF. Le fix route mime_type image/* vers handleInboxPhoto
   // pour que resolvePhotoTimestamp soit appelé (EXIF préservé). — fixé le 2026-05-12
-  it('route un document avec mime_type image/jpeg vers handleInboxPhoto (pas handleInboxDocument)', async () => {
+  it('route un document avec mime_type image/jpeg vers startOrExtendBatch (pas handleInboxDocument)', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const telegramDate = 1715508000; // 2024-05-12T14:00:00Z
@@ -724,20 +742,18 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(documentImagePayload));
     expect(res.status).toBe(200);
 
-    // handleInboxPhoto est appelé exactement 1 fois
-    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+    // startOrExtendBatch est appelé (nouveau workflow batch S13)
+    expect(mocks.startOrExtendBatch).toHaveBeenCalledOnce();
 
     // handleInboxDocument n'est PAS appelé
     expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
 
-    // Le 6ème argument de handleInboxPhoto est le timestamp Telegram (message.date)
-    const photoArgs = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
-    expect(photoArgs[0]).toBe(12345);           // chatId
-    expect(photoArgs[1]).toBe('abc');            // base64 (mock downloadTelegramFile)
-    expect(photoArgs[2]).toBe('image/jpeg');     // mimeType
-    expect(photoArgs[3]).toBe('Photo terrasse'); // caption
-    expect(photoArgs[4]).toBe(524288);           // fileSize
-    expect(photoArgs[5]).toBe(telegramDate);     // telegramMessageDate
+    // Vérification des arguments de startOrExtendBatch
+    const batchArgs = mocks.startOrExtendBatch.mock.calls[0] as [number, { base64: string; mimeType: string; caption?: string }];
+    expect(batchArgs[0]).toBe(12345);           // chatId
+    expect(batchArgs[1].base64).toBe('abc');    // base64 (mock downloadTelegramFile)
+    expect(batchArgs[1].mimeType).toBe('image/jpeg'); // mimeType
+    expect(batchArgs[1].caption).toBe('Photo terrasse'); // caption
 
     // Le console.warn de routage est émis
     expect(warnSpy).toHaveBeenCalledWith(
@@ -749,7 +765,7 @@ describe('POST /api/telegram/webhook', () => {
 
   // ── Tests vidéo (session 12 — traiter les vidéos comme des photos) ──
 
-  it('route message.video vers handleInboxPhoto (même dossier Photos)', async () => {
+  it('route message.video vers startOrExtendBatch (même dossier Photos)', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const telegramDate = 1715508000; // 2024-05-12T10:00:00Z
@@ -775,20 +791,18 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(videoPayload));
     expect(res.status).toBe(200);
 
-    // handleInboxPhoto est appelé exactement 1 fois
-    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+    // startOrExtendBatch est appelé (nouveau workflow batch S13)
+    expect(mocks.startOrExtendBatch).toHaveBeenCalledOnce();
 
     // handleInboxDocument n'est PAS appelé
     expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
 
-    // Vérification des 6 arguments de handleInboxPhoto
-    const args = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
-    expect(args[0]).toBe(12345);                // chatId
-    expect(args[1]).toBe('abc');                // base64 (mock downloadTelegramFile)
-    expect(args[2]).toBe('video/mp4');          // mimeType
-    expect(args[3]).toBe('Visite appartement'); // caption
-    expect(args[4]).toBe(2_000_000);            // fileSize
-    expect(args[5]).toBe(telegramDate);         // telegramMessageDate
+    // Vérification des arguments de startOrExtendBatch
+    const batchArgs = mocks.startOrExtendBatch.mock.calls[0] as [number, { base64: string; mimeType: string; caption?: string }];
+    expect(batchArgs[0]).toBe(12345);                // chatId
+    expect(batchArgs[1].base64).toBe('abc');         // base64 (mock downloadTelegramFile)
+    expect(batchArgs[1].mimeType).toBe('video/mp4'); // mimeType
+    expect(batchArgs[1].caption).toBe('Visite appartement'); // caption
 
     // Le console.warn de routage vidéo est émis
     expect(warnSpy).toHaveBeenCalledWith(
@@ -798,7 +812,7 @@ describe('POST /api/telegram/webhook', () => {
     warnSpy.mockRestore();
   });
 
-  it('route un document avec mime_type video/quicktime vers handleInboxPhoto (extension du fix c15ed66)', async () => {
+  it('route un document avec mime_type video/quicktime vers startOrExtendBatch (extension du fix c15ed66)', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const telegramDate = 1715508000;
@@ -822,16 +836,15 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(documentVideoPayload));
     expect(res.status).toBe(200);
 
-    // handleInboxPhoto est appelé (pas handleInboxDocument)
-    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+    // startOrExtendBatch est appelé (pas handleInboxDocument)
+    expect(mocks.startOrExtendBatch).toHaveBeenCalledOnce();
     expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
 
     // Vérification des arguments
-    const args = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
-    expect(args[0]).toBe(12345);
-    expect(args[2]).toBe('video/quicktime');
-    expect(args[3]).toBe('Vidéo terrasse');
-    expect(args[5]).toBe(telegramDate);
+    const batchArgs = mocks.startOrExtendBatch.mock.calls[0] as [number, { base64: string; mimeType: string; caption?: string }];
+    expect(batchArgs[0]).toBe(12345);
+    expect(batchArgs[1].mimeType).toBe('video/quicktime');
+    expect(batchArgs[1].caption).toBe('Vidéo terrasse');
 
     warnSpy.mockRestore();
   });

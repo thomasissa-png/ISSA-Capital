@@ -97,6 +97,16 @@ export function hasPendingBatch(chatId: number): boolean {
   return cache.has(chatId);
 }
 
+/**
+ * Retourne le nombre de photos dans le batch en cours.
+ * Retourne 0 si aucun batch n'existe pour ce chatId.
+ */
+export function getBatchPhotoCount(chatId: number): number {
+  const cache = getBatchCache();
+  const batch = cache.get(chatId);
+  return batch?.photos.length ?? 0;
+}
+
 // ============================================================
 // API publique — gestion du batch
 // ============================================================

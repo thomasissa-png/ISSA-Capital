@@ -67,14 +67,21 @@ import { generateFinDeBail } from '@/lib/secretariat/workflows/fin-de-bail';
 import type { FinDeBailWorkflowData, CandidatWorkflowData } from '@/lib/secretariat/rent/types';
 import { uploadCandidatFiche } from '@/lib/secretariat/workflows/candidat';
 import type { Locataire, BailWorkflowData } from '@/lib/secretariat/rent/types';
-import type { MediaGroupBuffer } from '@/lib/secretariat/types';
 import {
-  handleInboxPhoto,
   handleInboxText,
   handleInboxVoice,
   handleInboxDocument,
-  handleInboxAlbum,
 } from '@/lib/secretariat/inbox';
+import {
+  startOrExtendBatch,
+  isWaitingForInboxPhotoDate,
+  hasPendingBatch,
+  getBatchPhotoCount,
+  handleDateReply,
+  buildDatePromptMessage,
+  cancelBatch,
+} from '@/lib/secretariat/workflows/inbox-photo-batch';
+import type { BatchPhoto } from '@/lib/secretariat/workflows/inbox-photo-batch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,19 +92,6 @@ export const dynamic = 'force-dynamic';
 
 /** Seuil de caractères pour la détection auto CR (texte long → workflow CR) */
 const AUTO_CR_TEXT_THRESHOLD = 80;
-
-/** Délai d'attente pour accumuler les photos d'un album (media_group_id) */
-const MEDIA_GROUP_DELAY_MS = 2_000;
-
-/** Cache globalThis pour les albums photo en cours de réception */
-const MEDIA_GROUP_CACHE_KEY = '__issa_media_group_cache__' as const;
-
-function getMediaGroupCache(): Map<string, MediaGroupBuffer> {
-  if (!(MEDIA_GROUP_CACHE_KEY in globalThis)) {
-    (globalThis as Record<string, unknown>)[MEDIA_GROUP_CACHE_KEY] = new Map<string, MediaGroupBuffer>();
-  }
-  return (globalThis as Record<string, unknown>)[MEDIA_GROUP_CACHE_KEY] as Map<string, MediaGroupBuffer>;
-}
 
 // ============================================================
 // System prompt — chargement et cache singleton
@@ -941,12 +935,14 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
   // /inbox — forcer le retour en mode inbox
   if (normalizedText === '/inbox') {
     const hadWorkflow = getActiveWorkflow(chatId) !== null;
+    const hadBatch = hasPendingBatch(chatId);
     clearActiveWorkflow(chatId);
     clearPendingDraft(chatId);
     clearConversation(chatId);
     clearPhotos(chatId);
-    if (hadWorkflow) {
-      await sendTelegramMessage(chatId, 'Mode inbox réactivé. CR annulé.');
+    cancelBatch(chatId);
+    if (hadWorkflow || hadBatch) {
+      await sendTelegramMessage(chatId, 'Mode inbox réactivé. Tout annulé.');
     } else {
       await sendTelegramMessage(chatId, 'Déjà en mode inbox.');
     }
@@ -958,11 +954,13 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     const hadWorkflow = getActiveWorkflow(chatId) !== null;
     const hadDraft = getPendingDraft(chatId) !== null;
     const hadHistory = getConversation(chatId).length > 0;
+    const hadBatch = hasPendingBatch(chatId);
     clearActiveWorkflow(chatId);
     clearPendingDraft(chatId);
     clearConversation(chatId);
     clearPhotos(chatId);
-    if (hadWorkflow || hadDraft || hadHistory) {
+    cancelBatch(chatId);
+    if (hadWorkflow || hadDraft || hadHistory || hadBatch) {
       await sendTelegramMessage(chatId, 'Annulé. Mode inbox réactivé.');
     } else {
       await sendTelegramMessage(chatId, 'Rien en cours.');
@@ -976,6 +974,8 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     const draft = getPendingDraft(chatId);
     const photos = getPhotos(chatId);
     const history = getConversation(chatId);
+    const batchCount = getBatchPhotoCount(chatId);
+    const batchWaiting = isWaitingForInboxPhotoDate(chatId);
 
     let status = 'Mode : ';
     if (workflow) {
@@ -991,6 +991,10 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     }
     if (history.length > 0) {
       status += `\nMessages en conversation : ${history.length}`;
+    }
+    if (batchCount > 0) {
+      const batchState = batchWaiting ? 'en attente de date' : 'en accumulation';
+      status += `\nBatch photos inbox : ${batchCount} photo${batchCount > 1 ? 's' : ''} (${batchState})`;
     }
 
     await sendTelegramMessage(chatId, status);
@@ -1217,6 +1221,18 @@ export async function POST(request: Request): Promise<Response> {
         return await handleCRText(chatId, text, normalizedText);
       }
 
+      // ── Niveau 2b : batch photo en attente de date ─────────────
+      if (isWaitingForInboxPhotoDate(chatId)) {
+        const dateResult = await handleDateReply(chatId, text);
+        if (dateResult.userMessage) {
+          await sendTelegramMessage(chatId, dateResult.userMessage);
+        }
+        // Si success=true, le batch a été uploadé (message de confirmation envoyé par finalizeBatch)
+        // Si success=false avec userMessage, format invalide → message d'erreur envoyé ci-dessus
+        // Si success=false sans userMessage, pas de batch → ne devrait pas arriver ici
+        return Response.json({ ok: true });
+      }
+
       // ── Niveau 3 : mode inbox (par défaut) ─────────────────────
       // Texte long (>= seuil) → démarrer automatiquement un workflow CR
       if (text.length >= AUTO_CR_TEXT_THRESHOLD) {
@@ -1254,8 +1270,6 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
       const caption = update.message.caption;
-      const mediaGroupId = (update.message as Record<string, unknown>).media_group_id as string | undefined;
-      const telegramMessageDate = update.message.date;
 
       // Télécharger la photo via l'API Telegram
       const photoResult = await downloadTelegramPhoto(bestPhoto.file_id);
@@ -1312,74 +1326,27 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Mode inbox — upload direct vers Drive
-      if (mediaGroupId) {
-        // Album photo : accumuler dans le cache et traiter en batch après le délai
-        const cache = getMediaGroupCache();
-        let group = cache.get(mediaGroupId);
-
-        if (!group) {
-          group = {
-            photos: [],
-            caption: caption,
-            chatId,
-            messageDate: telegramMessageDate,
-            timerId: setTimeout(async () => {
-              // Timer expiré : traiter l'album
-              const finishedGroup = cache.get(mediaGroupId);
-              cache.delete(mediaGroupId);
-              if (finishedGroup && finishedGroup.photos.length > 0) {
-                const albumResult = await handleInboxAlbum(
-                  finishedGroup.chatId,
-                  finishedGroup.photos,
-                  finishedGroup.caption,
-                  finishedGroup.messageDate,
-                );
-                await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
-              }
-            }, MEDIA_GROUP_DELAY_MS),
-          };
-          cache.set(mediaGroupId, group);
-        } else {
-          // Réinitialiser le timer (on a reçu une nouvelle photo du groupe)
-          clearTimeout(group.timerId);
-          group.timerId = setTimeout(async () => {
-            const finishedGroup = cache.get(mediaGroupId);
-            cache.delete(mediaGroupId);
-            if (finishedGroup && finishedGroup.photos.length > 0) {
-              const albumResult = await handleInboxAlbum(
-                finishedGroup.chatId,
-                finishedGroup.photos,
-                finishedGroup.caption,
-                finishedGroup.messageDate,
-              );
-              await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
-            }
-          }, MEDIA_GROUP_DELAY_MS);
-        }
-
-        // Ajouter la photo au groupe
-        group.photos.push({
+      // Mode inbox — batch avec demande de date (bypass EXIF Telegram)
+      {
+        const batchPhoto: BatchPhoto = {
           base64: photoResult.base64,
           mimeType: photoResult.mimeType ?? 'image/jpeg',
-        });
+          caption,
+        };
 
-        // Pas de message ici — on attend le batch
+        const wasWaiting = isWaitingForInboxPhotoDate(chatId);
+        startOrExtendBatch(chatId, batchPhoto);
+
+        // Si le batch était déjà en attente de date, notifier Thomas
+        // (startOrExtendBatch ajoute la photo mais ne renvoie pas le message)
+        if (wasWaiting) {
+          const count = getBatchPhotoCount(chatId);
+          const msg = buildDatePromptMessage(count);
+          await sendTelegramMessage(chatId, msg);
+        }
+
         return Response.json({ ok: true });
       }
-
-      // Photo unique en mode inbox
-      const inboxPhotoResult = await handleInboxPhoto(
-        chatId,
-        photoResult.base64,
-        photoResult.mimeType ?? 'image/jpeg',
-        caption,
-        bestPhoto.file_size,
-        telegramMessageDate,
-        'photo',
-      );
-      await sendTelegramMessage(chatId, inboxPhotoResult.userMessage);
-      return Response.json({ ok: true });
     }
 
     // 3b-bis. Message vocal (dictaphone Telegram — audio/ogg opus)
@@ -1501,22 +1468,42 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Image ou vidéo envoyée en mode "fichier" (Send as file) → router vers handler photo
-      // pour préserver les EXIF (images) et le dossier Photos (vidéos).
-      // Source : diagnostic bugs photos S12, extension vidéos S12.
+      // Image ou vidéo envoyée en mode "fichier" (Send as file) → batch avec demande de date
+      // Source : diagnostic bugs photos S12, EXIF strip S13 (Telegram iOS HEIC→JPEG)
       const docMimeType = documentData.mime_type ?? 'application/octet-stream';
       if (docMimeType.startsWith('image/') || docMimeType.startsWith('video/')) {
-        console.warn(`[telegram-webhook] média en document détecté (mime=${docMimeType}, file_name=${documentData.file_name ?? 'n/a'}, size=${documentData.file_size ?? 'n/a'}) → routage vers handleInboxPhoto`);
-        const inboxPhotoFromDocResult = await handleInboxPhoto(
-          chatId,
-          docResult.base64,
-          docMimeType,
-          update.message?.caption,
-          documentData.file_size,
-          update.message!.date,
-          'document',
-        );
-        await sendTelegramMessage(chatId, inboxPhotoFromDocResult.userMessage);
+        console.warn(`[telegram-webhook] média en document détecté (mime=${docMimeType}, file_name=${documentData.file_name ?? 'n/a'}, size=${documentData.file_size ?? 'n/a'}) → batch inbox`);
+
+        // Vérifier si un workflow est actif (ne pas intercepter)
+        const docActiveWorkflow = getActiveWorkflow(chatId);
+        const docHasDraft = getPendingDraft(chatId) !== null;
+        if (docActiveWorkflow || docHasDraft) {
+          // Workflow actif — traiter comme photo CR (comportement existant)
+          const added = addPhoto(chatId, docResult.base64, docMimeType, update.message?.caption);
+          if (!added) {
+            await sendTelegramMessage(chatId, 'Limite de 10 photos atteinte pour ce CR.');
+          } else {
+            const photoCount = getPhotos(chatId).length;
+            await sendTelegramMessage(chatId, `Photo reçue (${photoCount}/10).`);
+          }
+          return Response.json({ ok: true });
+        }
+
+        const batchPhoto: BatchPhoto = {
+          base64: docResult.base64,
+          mimeType: docMimeType,
+          caption: update.message?.caption,
+        };
+
+        const wasWaiting = isWaitingForInboxPhotoDate(chatId);
+        startOrExtendBatch(chatId, batchPhoto);
+
+        if (wasWaiting) {
+          const count = getBatchPhotoCount(chatId);
+          const msg = buildDatePromptMessage(count);
+          await sendTelegramMessage(chatId, msg);
+        }
+
         return Response.json({ ok: true });
       }
 
@@ -1555,17 +1542,32 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      console.warn(`[telegram-webhook] message.video (mime=${videoData.mime_type ?? 'video/mp4'}) → handleInboxPhoto (même dossier Photos)`);
-      const inboxVideoResult = await handleInboxPhoto(
-        chatId,
-        videoResult.base64,
-        videoData.mime_type ?? 'video/mp4',
-        update.message.caption,
-        videoData.file_size,
-        update.message.date,
-        'video',
-      );
-      await sendTelegramMessage(chatId, inboxVideoResult.userMessage);
+      console.warn(`[telegram-webhook] message.video (mime=${videoData.mime_type ?? 'video/mp4'}) → batch inbox`);
+
+      // Vérifier si un workflow est actif (ne pas intercepter les vidéos en mode CR)
+      const videoActiveWorkflow = getActiveWorkflow(chatId);
+      const videoHasDraft = getPendingDraft(chatId) !== null;
+      if (videoActiveWorkflow || videoHasDraft) {
+        // Workflow actif — ignorer (les vidéos ne sont pas supportées dans les CR)
+        await sendTelegramMessage(chatId, 'Les vidéos ne sont pas supportées dans ce workflow. Envoie une photo ou du texte.');
+        return Response.json({ ok: true });
+      }
+
+      const videoBatchPhoto: BatchPhoto = {
+        base64: videoResult.base64,
+        mimeType: videoData.mime_type ?? 'video/mp4',
+        caption: update.message.caption,
+      };
+
+      const videoWasWaiting = isWaitingForInboxPhotoDate(chatId);
+      startOrExtendBatch(chatId, videoBatchPhoto);
+
+      if (videoWasWaiting) {
+        const count = getBatchPhotoCount(chatId);
+        const msg = buildDatePromptMessage(count);
+        await sendTelegramMessage(chatId, msg);
+      }
+
       return Response.json({ ok: true });
     }
 
