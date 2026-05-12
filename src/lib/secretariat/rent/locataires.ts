@@ -376,6 +376,21 @@ async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
     return { fiches: [], totaux: { actuels: 0, candidats: 0 }, loadedAt: now };
   }
 
+  // DIAGNOSTIC : log du scope OAuth effectif (une fois par session)
+  try {
+    const scopeResp = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(accessToken)}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (scopeResp.ok) {
+      const info = (await scopeResp.json()) as { scope?: string; email?: string };
+      console.log(`[locataires] OAuth scope actif : "${info.scope}" (compte: ${info.email ?? 'inconnu'})`);
+    } else {
+      console.warn(`[locataires] tokeninfo HTTP ${scopeResp.status}`);
+    }
+  } catch (err) {
+    console.warn(`[locataires] tokeninfo erreur : ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   const rootFolderId = process.env.DRIVE_VAULT_ROOT_ID ?? process.env.DRIVE_INBOX_FOLDER_ID;
   if (!rootFolderId) {
     console.error('[locataires] DRIVE_VAULT_ROOT_ID ou DRIVE_INBOX_FOLDER_ID manquant');
