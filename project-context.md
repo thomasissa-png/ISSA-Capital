@@ -856,7 +856,7 @@ Session dense couvrant vault Obsidian + extension Anya. Travaux majeurs :
 1. **Activation Anya inbox en prod** (Thomas, ~5 min) :
    - Révoquer token Telegram exposé en chat (@BotFather)
    - Créer nouveau token, ajouter en Replit Secrets `TELEGRAM_BOT_TOKEN`
-   - Ajouter en Replit Secrets : `DRIVE_INBOX_FOLDER_ID=18m0Vq_Y1rbdnJ-SfTcoRKWCi0GJ0iCuJ`
+   - ~~Ajouter en Replit Secrets : `DRIVE_INBOX_FOLDER_ID=18m0Vq_Y1rbdnJ-SfTcoRKWCi0GJ0iCuJ`~~ — **Corrigé session 11** : la bonne valeur Replit Secrets est `DRIVE_INBOX_FOLDER_ID=1Q8FJkcU9X06QsBDGPsHXV8y64QBpv0Fp` (test live upload, Thomas a vu les photos dans le sous-dossier `Photos` de ce dossier). L'ID `18m0Vq...` documenté à la clôture S10 était erroné — déjà configuré dans Replit à ce moment-là.
    - Redéployer et tester (photo, texte, voix, doc, album, /cr, /status)
 2. **Phase 2 workflow quittance** (`@fullstack` quand Thomas voudra) — création de `workflows/quittance.ts` + template PDF + tests. ~1 session.
 3. **Import Craft → vault** (Thomas dans Claude.ai puis Claude Code) — quand Thomas voudra rapatrier ses notes Craft.
