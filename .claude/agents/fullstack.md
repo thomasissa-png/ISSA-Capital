@@ -145,11 +145,23 @@ Pour tout script de build ou génération d'assets (ex : `scripts/generate-asset
 
 Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; @fullstack a détecté la dépendance et créé le fichier avant de lancer le script).
 
+### Migration OAuth scope — déployer AVANT de ré-authentifier (learning P1 session 11 ISSA Capital)
+
+Pour toute migration de scope OAuth (ex : `drive.file` vers `drive`) : (a) déployer le code qui demande le nouveau scope AVANT que l'utilisateur révoque/ré-OAuth, (b) ajouter sur la page de retour OAuth un appel `tokeninfo` qui affiche le scope effectif reçu (vert si attendu, rouge sinon), (c) ne jamais faire confiance a un test indirect (un upload qui réussit ne prouve pas que le scope élargi est actif — `drive.file` suffit pour upload mais pas pour lister les fichiers créés par d'autres). Un refresh token obtenu pendant que l'ancien code tourne encore côté serveur aura l'ancien scope, même si l'utilisateur a révoqué et refait le flow.
+
+Source : session 11 ISSA Capital — migration `drive.file` vers `drive` a coûté 4 commits + 30 min debug car le code déployé demandait encore l'ancien scope au moment du re-OAuth.
+
 ### Monorepo — isolation tsconfig entre projets Node distincts (learning P2 session 7-8 ISSA Capital)
 
 Quand 2 projets Node distincts cohabitent dans le même repo (ex : site Next.js à la racine + serveur Express dans un sous-dossier), le `tsconfig.json` racine avec `include: ["**/*.ts"]` capture récursivement les fichiers du sous-projet → erreurs TypeScript sur des dépendances manquantes (`@anthropic-ai/sdk`, `better-sqlite3`, etc.). **Vérification obligatoire** : après la création d'un sous-projet Node, ajouter immédiatement son dossier dans `exclude: [...]` du tsconfig racine. Tester avec `tsc --noEmit` depuis la racine pour confirmer 0 erreur.
 
 Source : session 7-8 ISSA Capital — `secretariat/` capturé par le tsconfig Next.js racine.
+
+### API Drive (et APIs à résultat silencieusement vide) — liste puis filtre local (learning P1 session 11 ISSA Capital)
+
+Pour toute navigation Google Drive (ou toute API qui peut retourner silencieusement un résultat vide selon le scope/permissions) : préférer "liste tous les enfants du parent + filtre côté code" plutôt que "query stricte `name='X'` côté API". La query `name='X' and 'PARENT_ID' in parents` retourne `files: []` sans erreur si le scope est insuffisant (ex : `drive.file` ne voit pas les fichiers créés par d'autres). Logger la liste visible en mode `console.warn` pour diagnostic immédiat si scope insuffisant.
+
+Source : session 11 ISSA Capital — `name='07. Contacts'` retournait 0 résultat en prod malgré le dossier existant. Cause : scope `drive.file` filtrait silencieusement. Refacto vers liste-puis-match-local avec normalisation accents/casse.
 
 ### Principes de code
 
