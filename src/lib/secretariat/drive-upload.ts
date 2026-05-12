@@ -17,6 +17,7 @@
  */
 
 const DRIVE_API = 'https://www.googleapis.com/upload/drive/v3/files';
+const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /**
@@ -41,7 +42,7 @@ export interface DriveUploadResult {
 /**
  * Obtient un access token frais via le refresh token.
  */
-async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string | null> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
@@ -148,6 +149,186 @@ export async function uploadToDrive(
     return {
       success: false,
       error: `Erreur Drive : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+// ============================================================
+// Inbox upload — sous-dossiers créés à la volée dans _Inbox
+// ============================================================
+
+/** Cache globalThis : sous-dossier name → Drive folder ID */
+const INBOX_CACHE_KEY = '__issa_inbox_folder_cache__' as const;
+
+function getInboxFolderCache(): Map<string, string> {
+  if (!(INBOX_CACHE_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[INBOX_CACHE_KEY] = new Map<string, string>();
+  }
+  return (globalThis as Record<string, unknown>)[INBOX_CACHE_KEY] as Map<string, string>;
+}
+
+/**
+ * Récupère ou crée un sous-dossier dans le dossier Inbox Drive.
+ * Cache le folder ID en globalThis pour éviter les appels répétés.
+ */
+async function getOrCreateSubfolder(
+  accessToken: string,
+  parentFolderId: string,
+  subfolderName: string,
+): Promise<string | null> {
+  const cache = getInboxFolderCache();
+  const cacheKey = `${parentFolderId}/${subfolderName}`;
+
+  // Vérifier le cache
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    // Chercher si le sous-dossier existe déjà
+    const query = encodeURIComponent(
+      `name='${subfolderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    );
+    const searchUrl = `${DRIVE_FILES_API}?q=${query}&fields=files(id)`;
+
+    const searchResponse = await fetch(searchUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (searchResponse.ok) {
+      const searchData = (await searchResponse.json()) as { files?: Array<{ id: string }> };
+      if (searchData.files && searchData.files.length > 0 && searchData.files[0]) {
+        const folderId = searchData.files[0].id;
+        cache.set(cacheKey, folderId);
+        return folderId;
+      }
+    }
+
+    // Créer le sous-dossier
+    const createResponse = await fetch(DRIVE_FILES_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: subfolderName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentFolderId],
+      }),
+    });
+
+    if (createResponse.ok) {
+      const createData = (await createResponse.json()) as { id?: string };
+      if (createData.id) {
+        cache.set(cacheKey, createData.id);
+        return createData.id;
+      }
+    }
+
+    const errorText = await createResponse.text().catch(() => '');
+    console.error(`[drive] erreur création sous-dossier ${subfolderName} :`, errorText.slice(0, 200));
+    return null;
+  } catch (err) {
+    console.error('[drive] erreur getOrCreateSubfolder :', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
+ * Upload un fichier vers le dossier Inbox Drive.
+ *
+ * Le dossier parent est lu depuis DRIVE_INBOX_FOLDER_ID (env var).
+ * Les sous-dossiers (Photos, Notes, Voice, Documents) sont créés à la volée.
+ *
+ * @param buffer Contenu du fichier
+ * @param filename Nom du fichier (ASCII pur)
+ * @param subfolder Nom du sous-dossier (Photos, Notes, Voice, Documents)
+ * @param mimeType Type MIME du fichier
+ */
+export async function uploadToInbox(
+  buffer: Buffer,
+  filename: string,
+  subfolder: string,
+  mimeType: string,
+): Promise<DriveUploadResult> {
+  const inboxFolderId = process.env.DRIVE_INBOX_FOLDER_ID;
+  if (!inboxFolderId) {
+    return {
+      success: false,
+      error: 'DRIVE_INBOX_FOLDER_ID manquant dans les variables d\'environnement',
+    };
+  }
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return {
+      success: false,
+      error: 'Upload Inbox désactivé — credentials OAuth2 manquants',
+    };
+  }
+
+  // Récupérer ou créer le sous-dossier
+  const targetFolderId = await getOrCreateSubfolder(accessToken, inboxFolderId, subfolder);
+  if (!targetFolderId) {
+    return {
+      success: false,
+      error: `Impossible de créer le sous-dossier ${subfolder} dans Drive`,
+    };
+  }
+
+  try {
+    // Upload multipart (metadata JSON + contenu fichier)
+    const metadata = JSON.stringify({
+      name: filename,
+      parents: [targetFolderId],
+      mimeType,
+    });
+
+    const boundary = '===issa_inbox_boundary===';
+    const body =
+      `--${boundary}\r\n` +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      metadata + '\r\n' +
+      `--${boundary}\r\n` +
+      `Content-Type: ${mimeType}\r\n\r\n`;
+    const footer = `\r\n--${boundary}--`;
+
+    const bodyBuffer = Buffer.concat([
+      Buffer.from(body, 'utf-8'),
+      buffer,
+      Buffer.from(footer, 'utf-8'),
+    ]);
+
+    const response = await fetch(`${DRIVE_API}?uploadType=multipart&fields=id,webViewLink`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Length': String(bodyBuffer.length),
+      },
+      body: bodyBuffer,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Drive API ${response.status}: ${errorText.slice(0, 200)}`,
+      };
+    }
+
+    const data = (await response.json()) as { id?: string; webViewLink?: string };
+    return {
+      success: true,
+      fileId: data.id,
+      webViewLink: data.webViewLink,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Erreur Drive Inbox : ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }

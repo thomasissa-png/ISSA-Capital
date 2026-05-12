@@ -50,10 +50,28 @@ const mocks = vi.hoisted(() => ({
   addPhoto: vi.fn().mockReturnValue(true),
   getPhotos: vi.fn().mockReturnValue([]),
   clearPhotos: vi.fn(),
+  getActiveWorkflow: vi.fn().mockReturnValue(null),
+  setActiveWorkflow: vi.fn(),
+  clearActiveWorkflow: vi.fn(),
   // Reference counter
   getNextReference: vi.fn().mockReturnValue('IC-CR-2026-0001'),
   // Contacts
   formatContactsForPrompt: vi.fn().mockReturnValue('Contacts: Thomas Issa — Président'),
+  // Inbox
+  handleInboxPhoto: vi.fn().mockResolvedValue({ success: true, userMessage: 'Photo enregistrée' }),
+  handleInboxText: vi.fn().mockResolvedValue({ success: true, userMessage: 'Note enregistrée' }),
+  handleInboxVoice: vi.fn().mockResolvedValue({ success: true, userMessage: 'Vocal enregistré' }),
+  handleInboxDocument: vi.fn().mockResolvedValue({ success: true, userMessage: 'Document enregistré' }),
+  handleInboxAlbum: vi.fn().mockResolvedValue({ success: true, userMessage: 'Album enregistré' }),
+  // Workflow registry
+  getWorkflow: vi.fn().mockReturnValue({
+    type: 'cr',
+    ttlMs: 86400000,
+    start: vi.fn().mockResolvedValue({
+      newState: { type: 'cr', step: 'collecting', data: {}, startedAt: Date.now(), expiresAt: Date.now() + 86400000 },
+      messages: [],
+    }),
+  }),
   // fs
   readFileSync: vi.fn(),
 }));
@@ -116,6 +134,21 @@ vi.mock('@/lib/secretariat/conversation-store', () => ({
   addPhoto: mocks.addPhoto,
   getPhotos: mocks.getPhotos,
   clearPhotos: mocks.clearPhotos,
+  getActiveWorkflow: mocks.getActiveWorkflow,
+  setActiveWorkflow: mocks.setActiveWorkflow,
+  clearActiveWorkflow: mocks.clearActiveWorkflow,
+}));
+
+vi.mock('@/lib/secretariat/workflows/registry', () => ({
+  getWorkflow: mocks.getWorkflow,
+}));
+
+vi.mock('@/lib/secretariat/inbox', () => ({
+  handleInboxPhoto: mocks.handleInboxPhoto,
+  handleInboxText: mocks.handleInboxText,
+  handleInboxVoice: mocks.handleInboxVoice,
+  handleInboxDocument: mocks.handleInboxDocument,
+  handleInboxAlbum: mocks.handleInboxAlbum,
 }));
 
 vi.mock('@/lib/secretariat/reference-counter', () => ({
@@ -296,6 +329,15 @@ describe('POST /api/telegram/webhook', () => {
     mocks.toClaudeMessages.mockReturnValue([]);
     mocks.getPendingDraft.mockReturnValue(null);
     mocks.getPhotos.mockReturnValue([]);
+    mocks.getActiveWorkflow.mockReturnValue(null);
+    mocks.getWorkflow.mockReturnValue({
+      type: 'cr',
+      ttlMs: 86400000,
+      start: vi.fn().mockResolvedValue({
+        newState: { type: 'cr', step: 'collecting', data: {}, startedAt: Date.now(), expiresAt: Date.now() + 86400000 },
+        messages: [],
+      }),
+    });
     mocks.publishToCraft.mockResolvedValue({
       success: true,
       craftUrl: 'https://craft.test/doc',
@@ -377,7 +419,11 @@ describe('POST /api/telegram/webhook', () => {
   // 6. "annule" → clearConversation appelé
   // ----------------------------------------------------------
   it('annule la conversation quand le message est "annule"', async () => {
-    // Simuler une conversation en cours
+    // Simuler un workflow CR actif + une conversation en cours
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'collecting', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
     mocks.getConversation.mockReturnValue([
       { role: 'user', content: 'Déjeuner avec Karim', timestamp: Date.now() },
     ]);
@@ -386,6 +432,7 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(textMessage('annule')));
     expect(res.status).toBe(200);
 
+    expect(mocks.clearActiveWorkflow).toHaveBeenCalledWith(12345);
     expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
     expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
     expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
@@ -397,7 +444,11 @@ describe('POST /api/telegram/webhook', () => {
   // 7. "stop" → clearConversation appelé
   // ----------------------------------------------------------
   it('annule la conversation quand le message est "stop"', async () => {
-    // Simuler un draft en attente
+    // Simuler un workflow CR actif + un draft en attente
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'pending_photos', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
     mocks.getPendingDraft.mockReturnValue({
       cr: VALID_CR_DRAFT,
       previewText: 'aperçu',
@@ -407,6 +458,7 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(textMessage('stop')));
     expect(res.status).toBe(200);
 
+    expect(mocks.clearActiveWorkflow).toHaveBeenCalledWith(12345);
     expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
     expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
     expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
@@ -418,6 +470,11 @@ describe('POST /api/telegram/webhook', () => {
   // 8. Message texte → Claude needs_clarification → question renvoyée
   // ----------------------------------------------------------
   it('renvoie la question de clarification quand Claude demande des précisions', async () => {
+    // Simuler un workflow CR actif (réponse à une clarification)
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'collecting', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
     mocks.create.mockResolvedValueOnce(
       claudeResponseClarification('Avec quelle entité ce déjeuner a-t-il eu lieu ?'),
     );
@@ -429,9 +486,10 @@ describe('POST /api/telegram/webhook', () => {
     expect(mocks.appendMessage).toHaveBeenCalledWith(12345, 'user', 'Déjeuner avec Karim hier');
 
     // Vérifie que la question de clarification est envoyée
-    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
-    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
-    expect(sentMsg).toContain('entité');
+    // (peut être précédée d'un accusé de réception si premier message)
+    const textCalls = mocks.sendTelegramMessage.mock.calls as Array<[number, string]>;
+    const clarificationCall = textCalls.find(([, msg]) => msg.includes('entité'));
+    expect(clarificationCall).toBeDefined();
 
     // Vérifie que la réponse assistant est sauvegardée dans l'historique
     expect(mocks.appendMessage).toHaveBeenCalledWith(
@@ -448,6 +506,11 @@ describe('POST /api/telegram/webhook', () => {
   // 9. Message texte → Claude ready → aperçu + boutons
   // ----------------------------------------------------------
   it('stocke le draft et demande les photos quand Claude génère un CR complet', async () => {
+    // Simuler un workflow CR actif
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'collecting', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
     mocks.create.mockResolvedValueOnce(claudeResponseReady());
 
     const res = await POST(makeRequest(textMessage('Déjeuner avec Karim Benmoussa au Voltaire')));
@@ -473,6 +536,11 @@ describe('POST /api/telegram/webhook', () => {
   // 10. Message texte → Claude texte libre (pas JSON) → clarification
   // ----------------------------------------------------------
   it('traite une réponse Claude en texte libre comme une clarification', async () => {
+    // Simuler un workflow CR actif
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'collecting', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
     mocks.create.mockResolvedValueOnce(
       claudeResponseFreeText(
         "Je ne trouve pas d'information sur ce restaurant. Peux-tu me donner l'adresse exacte ?",
@@ -482,10 +550,10 @@ describe('POST /api/telegram/webhook', () => {
     const res = await POST(makeRequest(textMessage('Déjeuner au restaurant machin')));
     expect(res.status).toBe(200);
 
-    // Le texte libre est traité comme clarification et envoyé tel quel
-    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
-    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
-    expect(sentMsg).toContain('adresse exacte');
+    // Le texte libre est traité comme clarification et envoyé
+    const textCalls = mocks.sendTelegramMessage.mock.calls as Array<[number, string]>;
+    const clarificationCall = textCalls.find(([, msg]) => msg.includes('adresse exacte'));
+    expect(clarificationCall).toBeDefined();
 
     // Pas de boutons de confirmation
     expect(mocks.sendTelegramConfirmation).not.toHaveBeenCalled();
@@ -526,13 +594,13 @@ describe('POST /api/telegram/webhook', () => {
 
     // Publication Craft retirée (session 9) — Drive uniquement
 
-    // Message de confirmation envoyé
-    expect(mocks.sendTelegramMessage).toHaveBeenCalledOnce();
-    const sentMsg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
-    expect(sentMsg).toContain('IC-CR-2026-0001');
-    expect(sentMsg).toContain('validé');
+    // Message de confirmation envoyé (peut être précédé d'un message d'erreur Drive)
+    const textCalls = mocks.sendTelegramMessage.mock.calls as Array<[number, string]>;
+    const confirmCall = textCalls.find(([, msg]) => msg.includes('IC-CR-2026-0001') && msg.includes('validé'));
+    expect(confirmCall).toBeDefined();
 
-    // Nettoyage conversation + draft
+    // Nettoyage conversation + draft + workflow
+    expect(mocks.clearActiveWorkflow).toHaveBeenCalledWith(12345);
     expect(mocks.clearPendingDraft).toHaveBeenCalledWith(12345);
     expect(mocks.clearConversation).toHaveBeenCalledWith(12345);
   });

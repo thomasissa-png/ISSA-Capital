@@ -16,6 +16,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CRDraft } from './types';
+import type { WorkflowState } from './workflows/types';
 
 // Répertoire persistant Replit (/home/runner/) — survit aux redéploiements
 // Fallback sur /tmp si /home/runner/ n'existe pas
@@ -70,6 +71,8 @@ interface ConversationEntry {
   pendingDraft?: PendingDraft | null;
   /** Photos en attente d'intégration dans le prochain appel Claude */
   photos?: PhotoAttachment[];
+  /** Workflow actif (null/undefined = mode inbox) */
+  activeWorkflow?: WorkflowState | null;
 }
 
 type StoreData = Record<string, ConversationEntry>;
@@ -366,6 +369,81 @@ export function clearPhotos(chatId: number): void {
 
   if (entry) {
     entry.photos = [];
+    entry.lastActivityAt = Date.now();
+    saveStore(store);
+  }
+}
+
+// ============================================================
+// Workflow actif — gestion du mode inbox vs workflows
+// ============================================================
+
+/**
+ * Récupère le workflow actif pour un chat_id.
+ * Retourne null si :
+ *   - aucun workflow actif
+ *   - conversation expirée (TTL 24h)
+ *   - workflow expiré (expiresAt dépassé) → auto-nettoyage
+ */
+export function getActiveWorkflow(chatId: number): WorkflowState | null {
+  const store = loadStore();
+  const key = String(chatId);
+  const entry = store[key];
+
+  if (!entry) return null;
+
+  // TTL conversation
+  if (Date.now() - entry.lastActivityAt > TTL_MS) {
+    delete store[key];
+    saveStore(store);
+    return null;
+  }
+
+  const workflow = entry.activeWorkflow;
+  if (!workflow) return null;
+
+  // TTL workflow — auto-nettoyage si expiré
+  if (Date.now() > workflow.expiresAt) {
+    entry.activeWorkflow = null;
+    entry.lastActivityAt = Date.now();
+    saveStore(store);
+    return null;
+  }
+
+  return workflow;
+}
+
+/**
+ * Définit le workflow actif pour un chat_id.
+ */
+export function setActiveWorkflow(chatId: number, state: WorkflowState): void {
+  const store = loadStore();
+  const key = String(chatId);
+
+  if (!store[key]) {
+    store[key] = {
+      chatId,
+      messages: [],
+      lastActivityAt: Date.now(),
+    };
+  }
+
+  store[key].activeWorkflow = state;
+  store[key].lastActivityAt = Date.now();
+
+  saveStore(store);
+}
+
+/**
+ * Supprime le workflow actif pour un chat_id (retour en mode inbox).
+ */
+export function clearActiveWorkflow(chatId: number): void {
+  const store = loadStore();
+  const key = String(chatId);
+  const entry = store[key];
+
+  if (entry) {
+    entry.activeWorkflow = null;
     entry.lastActivityAt = Date.now();
     saveStore(store);
   }

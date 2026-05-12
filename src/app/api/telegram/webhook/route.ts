@@ -49,6 +49,9 @@ import {
   addPhoto,
   getPhotos,
   clearPhotos,
+  getActiveWorkflow,
+  setActiveWorkflow,
+  clearActiveWorkflow,
 } from '@/lib/secretariat/conversation-store';
 import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
@@ -56,9 +59,38 @@ import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
 import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
+import { getWorkflow } from '@/lib/secretariat/workflows/registry';
+import type { MediaGroupBuffer } from '@/lib/secretariat/types';
+import {
+  handleInboxPhoto,
+  handleInboxText,
+  handleInboxVoice,
+  handleInboxDocument,
+  handleInboxAlbum,
+} from '@/lib/secretariat/inbox';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// ============================================================
+// Constantes mode inbox / workflows
+// ============================================================
+
+/** Seuil de caractères pour la détection auto CR (texte long → workflow CR) */
+const AUTO_CR_TEXT_THRESHOLD = 80;
+
+/** Délai d'attente pour accumuler les photos d'un album (media_group_id) */
+const MEDIA_GROUP_DELAY_MS = 2_000;
+
+/** Cache globalThis pour les albums photo en cours de réception */
+const MEDIA_GROUP_CACHE_KEY = '__issa_media_group_cache__' as const;
+
+function getMediaGroupCache(): Map<string, MediaGroupBuffer> {
+  if (!(MEDIA_GROUP_CACHE_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[MEDIA_GROUP_CACHE_KEY] = new Map<string, MediaGroupBuffer>();
+  }
+  return (globalThis as Record<string, unknown>)[MEDIA_GROUP_CACHE_KEY] as Map<string, MediaGroupBuffer>;
+}
 
 // ============================================================
 // System prompt — chargement et cache singleton
@@ -771,6 +803,227 @@ async function generateCRFromVoice(
 }
 
 // ============================================================
+// Commandes slash — /start, /cr, /inbox, /cancel, /status
+// ============================================================
+
+async function handleSlashCommand(chatId: number, normalizedText: string): Promise<Response> {
+  // /start — message de bienvenue
+  if (normalizedText === '/start') {
+    await sendTelegramMessage(
+      chatId,
+      'Anya prête. Mode inbox actif — envoie photos, notes ou documents.\nPour un compte rendu, tape /cr ou envoie un long message.',
+    );
+    return Response.json({ ok: true });
+  }
+
+  // /cr — démarrer le workflow CR
+  if (normalizedText === '/cr') {
+    const crWf = getWorkflow('cr');
+    if (crWf) {
+      const startResult = await crWf.start(chatId);
+      if (startResult.newState) {
+        setActiveWorkflow(chatId, startResult.newState);
+      }
+    }
+    await sendTelegramMessage(
+      chatId,
+      'Mode CR activé. Envoie le contenu de ta réunion (texte, vocal ou photos).',
+    );
+    return Response.json({ ok: true });
+  }
+
+  // /inbox — forcer le retour en mode inbox
+  if (normalizedText === '/inbox') {
+    const hadWorkflow = getActiveWorkflow(chatId) !== null;
+    clearActiveWorkflow(chatId);
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+    if (hadWorkflow) {
+      await sendTelegramMessage(chatId, 'Mode inbox réactivé. CR annulé.');
+    } else {
+      await sendTelegramMessage(chatId, 'Déjà en mode inbox.');
+    }
+    return Response.json({ ok: true });
+  }
+
+  // /cancel — annuler le workflow actif
+  if (normalizedText === '/cancel') {
+    const hadWorkflow = getActiveWorkflow(chatId) !== null;
+    const hadDraft = getPendingDraft(chatId) !== null;
+    const hadHistory = getConversation(chatId).length > 0;
+    clearActiveWorkflow(chatId);
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+    if (hadWorkflow || hadDraft || hadHistory) {
+      await sendTelegramMessage(chatId, 'Annulé. Mode inbox réactivé.');
+    } else {
+      await sendTelegramMessage(chatId, 'Rien en cours.');
+    }
+    return Response.json({ ok: true });
+  }
+
+  // /status — afficher l'état actuel
+  if (normalizedText === '/status') {
+    const workflow = getActiveWorkflow(chatId);
+    const draft = getPendingDraft(chatId);
+    const photos = getPhotos(chatId);
+    const history = getConversation(chatId);
+
+    let status = 'Mode : ';
+    if (workflow) {
+      status += `workflow ${workflow.type} (étape : ${workflow.step})`;
+    } else {
+      status += 'inbox';
+    }
+    if (draft) {
+      status += '\nCR en attente de validation';
+    }
+    if (photos.length > 0) {
+      status += `\nPhotos en attente : ${photos.length}`;
+    }
+    if (history.length > 0) {
+      status += `\nMessages en conversation : ${history.length}`;
+    }
+
+    await sendTelegramMessage(chatId, status);
+    return Response.json({ ok: true });
+  }
+
+  // Commande inconnue
+  await sendTelegramMessage(
+    chatId,
+    'Commande inconnue. Commandes disponibles : /cr, /inbox, /cancel, /status',
+  );
+  return Response.json({ ok: true });
+}
+
+// ============================================================
+// Handler texte CR — logique existante extraite en fonction
+// ============================================================
+
+async function handleCRText(
+  chatId: number,
+  text: string,
+  normalizedText: string,
+): Promise<Response> {
+  // Commandes d'abandon (mots naturels) — annule la conversation en cours
+  const cancelKeywords = ['annule', 'annuler', 'laisse tomber', 'oublie', 'stop', 'cancel', 'non merci'];
+  if (cancelKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+    const hadDraft = getPendingDraft(chatId) !== null;
+    const hadHistory = getConversation(chatId).length > 0;
+    clearActiveWorkflow(chatId);
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+    if (hadDraft || hadHistory) {
+      await sendTelegramMessage(chatId, 'Conversation annulée. Mode inbox réactivé.');
+    } else {
+      await sendTelegramMessage(chatId, 'Rien en cours. Mode inbox actif.');
+    }
+    return Response.json({ ok: true });
+  }
+
+  // Si un draft est en attente et Thomas dit "non" / "c'est bon" / "pas de photo"
+  // → montrer l'aperçu avec les boutons de validation
+  const noPhotoKeywords = ['non', 'no', 'pas de photo', 'c\'est bon', 'cest bon', 'sans photo', 'aucune', 'nope'];
+  const draft = getPendingDraft(chatId);
+  if (draft && noPhotoKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
+    const photos = getPhotos(chatId);
+    if (photos.length > 0) {
+      // Regénérer le CR avec les photos
+      await sendTypingAction(chatId);
+      const history = getConversation(chatId);
+      const claudeHistory = toClaudeMessages(history);
+      const result = await generateCR(
+        `Regénère le CR en intégrant les ${photos.length} photos jointes en annexes photographiques.`,
+        claudeHistory,
+        photos,
+      );
+      // NE PAS clearPhotos ici — on en a besoin pour le PDF quand Thomas validera
+      if (result.crText && result.crDraft) {
+        setPendingDraft(chatId, result.crDraft, result.crText);
+        const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+        await sendTelegramConfirmation(chatId, previewText);
+      } else {
+        // Fallback : utiliser le draft original sans photos
+        const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+        await sendTelegramConfirmation(chatId, previewText);
+      }
+    } else {
+      // Pas de photos → montrer l'aperçu directement
+      const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+      await sendTelegramConfirmation(chatId, previewText);
+    }
+    return Response.json({ ok: true });
+  }
+
+  // Récupérer l'historique de conversation pour ce chat
+  const history = getConversation(chatId);
+  const claudeHistory = toClaudeMessages(history);
+
+  // Sauvegarder le message utilisateur dans l'historique
+  storeMessage(chatId, 'user', text);
+
+  // Récupérer les photos en attente (envoyées avant ce message texte)
+  const pendingPhotos = getPhotos(chatId);
+
+  // Typing indicator avant l'appel Claude (feedback immédiat)
+  await sendTypingAction(chatId);
+
+  // Accusé de réception UNIQUEMENT si c'est le premier message de la conversation
+  // (pas une réponse à une clarification) ET le message est substantiel
+  const isFirstMessage = history.length === 0;
+  if (isFirstMessage && (text.length >= AUTO_CR_TEXT_THRESHOLD || pendingPhotos.length > 0)) {
+    await sendTelegramMessage(chatId, 'Un instant, je prépare le compte rendu…');
+  }
+
+  // Appel Claude avec l'historique complet + photos en attente
+  const result = await generateCR(text, claudeHistory, pendingPhotos);
+
+  // Vider les photos après l'appel Claude (intégrées dans la requête)
+  if (pendingPhotos.length > 0) {
+    clearPhotos(chatId);
+  }
+
+  if (!result.success) {
+    const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
+    storeMessage(chatId, 'assistant', errorMsg);
+    await sendTelegramMessage(chatId, errorMsg);
+    return Response.json({ ok: true });
+  }
+
+  if (result.status === 'needs_clarification') {
+    const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+    // Sauvegarder la réponse dans l'historique pour le prochain échange
+    storeMessage(chatId, 'assistant', question);
+    await sendTelegramMessage(chatId, question);
+    return Response.json({ ok: true });
+  }
+
+  // status === 'ready' — stocker le draft, PUIS demander s'il y a des photos
+  if (result.crText && result.crDraft) {
+    storeMessage(chatId, 'assistant', result.crText);
+    setPendingDraft(chatId, result.crDraft, result.crText);
+
+    // Mettre à jour le workflow step
+    const workflow = getActiveWorkflow(chatId);
+    if (workflow) {
+      setActiveWorkflow(chatId, { ...workflow, step: 'pending_photos' });
+    }
+
+    // Demander s'il y a des photos à joindre AVANT de montrer l'aperçu
+    await sendTelegramMessage(
+      chatId,
+      'CR prêt. Des photos à joindre au compte rendu ? Si oui, envoie-les maintenant. Sinon, réponds « non ».',
+    );
+  }
+
+  return Response.json({ ok: true });
+}
+
+// ============================================================
 // POST handler
 // ============================================================
 
@@ -816,7 +1069,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // 3. Dispatch
   try {
-    // 3a. Message texte
+    // 3a. Message texte — router 3 niveaux
     if (update.message?.text !== undefined) {
       const chatId = update.message.chat.id;
       const text = update.message.text;
@@ -827,120 +1080,39 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Commande /start — réponse de bienvenue
-      if (text.trim().toLowerCase() === '/start') {
-        await sendTelegramMessage(
-          chatId,
-          'Secrétariat ISSA Capital prêt. Envoie le contenu de ta réunion et je génère le CR.',
-        );
-        return Response.json({ ok: true });
-      }
-
-      // Commandes d'abandon — annule la conversation en cours
-      const cancelKeywords = ['annule', 'annuler', 'laisse tomber', 'oublie', 'stop', 'cancel', 'non merci'];
       const normalizedText = text.trim().toLowerCase();
-      if (cancelKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
-        const hadDraft = getPendingDraft(chatId) !== null;
-        const hadHistory = getConversation(chatId).length > 0;
-        clearPendingDraft(chatId);
-        clearConversation(chatId);
-        if (hadDraft || hadHistory) {
-          await sendTelegramMessage(chatId, 'Conversation annulée. Envoie un nouveau message quand tu veux.');
-        } else {
-          await sendTelegramMessage(chatId, 'Rien en cours. Envoie le contenu d\'une réunion pour commencer.');
-        }
-        return Response.json({ ok: true });
+
+      // ── Niveau 1 : commandes slash ──────────────────────────────
+      if (normalizedText.startsWith('/')) {
+        return await handleSlashCommand(chatId, normalizedText);
       }
 
-      // Si un draft est en attente et Thomas dit "non" / "c'est bon" / "pas de photo"
-      // → montrer l'aperçu avec les boutons de validation
-      const noPhotoKeywords = ['non', 'no', 'pas de photo', 'c\'est bon', 'cest bon', 'sans photo', 'aucune', 'nope'];
-      const draft = getPendingDraft(chatId);
-      if (draft && noPhotoKeywords.some((kw) => normalizedText === kw || normalizedText.startsWith(kw))) {
-        const photos = getPhotos(chatId);
-        if (photos.length > 0) {
-          // Regénérer le CR avec les photos
-          await sendTypingAction(chatId);
-          const history = getConversation(chatId);
-          const claudeHistory = toClaudeMessages(history);
-          const result = await generateCR(
-            `Regénère le CR en intégrant les ${photos.length} photos jointes en annexes photographiques.`,
-            claudeHistory,
-            photos,
-          );
-          // NE PAS clearPhotos ici — on en a besoin pour le PDF quand Thomas validera
-          if (result.crText && result.crDraft) {
-            setPendingDraft(chatId, result.crDraft, result.crText);
-            const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
-            await sendTelegramConfirmation(chatId, previewText);
-          } else {
-            // Fallback : utiliser le draft original sans photos
-            const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
-            await sendTelegramConfirmation(chatId, previewText);
+      // ── Niveau 2 : workflow actif ──────────────────────────────
+      const activeWorkflow = getActiveWorkflow(chatId);
+      if (activeWorkflow) {
+        // Le workflow CR en Phase 1 est pass-through :
+        // la logique reste dans ce fichier, le state sert juste de flag
+        return await handleCRText(chatId, text, normalizedText);
+      }
+
+      // ── Niveau 3 : mode inbox (par défaut) ─────────────────────
+      // Texte long (>= seuil) → démarrer automatiquement un workflow CR
+      if (text.length >= AUTO_CR_TEXT_THRESHOLD) {
+        // Activer le workflow CR
+        const crWf = getWorkflow('cr');
+        if (crWf) {
+          const startResult = await crWf.start(chatId, text);
+          if (startResult.newState) {
+            setActiveWorkflow(chatId, startResult.newState);
           }
-        } else {
-          // Pas de photos → montrer l'aperçu directement
-          const previewText = `${draft.previewText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
-          await sendTelegramConfirmation(chatId, previewText);
         }
-        return Response.json({ ok: true });
+        // Traiter le texte comme premier message CR (comportement existant)
+        return await handleCRText(chatId, text, normalizedText);
       }
 
-      // Récupérer l'historique de conversation pour ce chat
-      const history = getConversation(chatId);
-      const claudeHistory = toClaudeMessages(history);
-
-      // Sauvegarder le message utilisateur dans l'historique
-      storeMessage(chatId, 'user', text);
-
-      // Récupérer les photos en attente (envoyées avant ce message texte)
-      const pendingPhotos = getPhotos(chatId);
-
-      // Typing indicator avant l'appel Claude (feedback immédiat)
-      await sendTypingAction(chatId);
-
-      // Accusé de réception UNIQUEMENT si c'est le premier message de la conversation
-      // (pas une réponse à une clarification) ET le message est substantiel
-      const isFirstMessage = history.length === 0;
-      if (isFirstMessage && (text.length > 80 || pendingPhotos.length > 0)) {
-        await sendTelegramMessage(chatId, 'Un instant, je prépare le compte rendu…');
-      }
-
-      // Appel Claude avec l'historique complet + photos en attente
-      const result = await generateCR(text, claudeHistory, pendingPhotos);
-
-      // Vider les photos après l'appel Claude (intégrées dans la requête)
-      if (pendingPhotos.length > 0) {
-        clearPhotos(chatId);
-      }
-
-      if (!result.success) {
-        const errorMsg = `Erreur de génération : ${result.error ?? 'inconnue'}. Réessaie dans un moment.`;
-        storeMessage(chatId, 'assistant', errorMsg);
-        await sendTelegramMessage(chatId, errorMsg);
-        return Response.json({ ok: true });
-      }
-
-      if (result.status === 'needs_clarification') {
-        const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
-        // Sauvegarder la réponse dans l'historique pour le prochain échange
-        storeMessage(chatId, 'assistant', question);
-        await sendTelegramMessage(chatId, question);
-        return Response.json({ ok: true });
-      }
-
-      // status === 'ready' — stocker le draft, PUIS demander s'il y a des photos
-      if (result.crText && result.crDraft) {
-        storeMessage(chatId, 'assistant', result.crText);
-        setPendingDraft(chatId, result.crDraft, result.crText);
-
-        // Demander s'il y a des photos à joindre AVANT de montrer l'aperçu
-        await sendTelegramMessage(
-          chatId,
-          'CR prêt. Des photos à joindre au compte rendu ? Si oui, envoie-les maintenant. Sinon, réponds « non ».',
-        );
-      }
-
+      // Texte court en mode inbox → sauvegarder comme note Drive
+      const inboxResult = await handleInboxText(chatId, text);
+      await sendTelegramMessage(chatId, inboxResult.userMessage);
       return Response.json({ ok: true });
     }
 
@@ -960,6 +1132,7 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
       const caption = update.message.caption;
+      const mediaGroupId = (update.message as Record<string, unknown>).media_group_id as string | undefined;
 
       // Télécharger la photo via l'API Telegram
       const photoResult = await downloadTelegramPhoto(bestPhoto.file_id);
@@ -973,39 +1146,111 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Stocker la photo en attente
-      const added = addPhoto(chatId, photoResult.base64, photoResult.mimeType ?? 'image/jpeg', caption);
-
-      if (!added) {
-        await sendTelegramMessage(
-          chatId,
-          'Limite de 10 photos atteinte pour ce CR. Les photos supplémentaires sont ignorées.',
-        );
+      // Vérifier taille fichier
+      if (bestPhoto.file_size && bestPhoto.file_size > 20 * 1024 * 1024) {
+        await sendTelegramMessage(chatId, 'Photo trop volumineuse (> 20 Mo). Réduis la taille et réessaie.');
         return Response.json({ ok: true });
       }
 
-      const photoCount = getPhotos(chatId).length;
-
-      // Si la photo a un caption, le sauvegarder dans l'historique de conversation
-      // pour que Claude le voie quand Thomas enverra le message texte final
-      if (caption && caption.trim().length > 0) {
-        storeMessage(chatId, 'user', caption);
-      }
-
-      // Message adapté selon qu'on est en phase "ajout photos" (draft en attente) ou non
+      // Router selon le mode actif
+      const activeWorkflow = getActiveWorkflow(chatId);
       const hasDraft = getPendingDraft(chatId) !== null;
-      if (hasDraft) {
-        await sendTelegramMessage(
-          chatId,
-          `Photo reçue (${photoCount}/10). Envoie d'autres photos, ou réponds « non » pour générer le CR.`,
-        );
-      } else {
-        const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
-        await sendTelegramMessage(
-          chatId,
-          `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
-        );
+
+      if (activeWorkflow || hasDraft) {
+        // Mode workflow CR — stocker pour le CR (comportement existant)
+        const added = addPhoto(chatId, photoResult.base64, photoResult.mimeType ?? 'image/jpeg', caption);
+
+        if (!added) {
+          await sendTelegramMessage(
+            chatId,
+            'Limite de 10 photos atteinte pour ce CR. Les photos supplémentaires sont ignorées.',
+          );
+          return Response.json({ ok: true });
+        }
+
+        const photoCount = getPhotos(chatId).length;
+
+        if (caption && caption.trim().length > 0) {
+          storeMessage(chatId, 'user', caption);
+        }
+
+        if (hasDraft) {
+          await sendTelegramMessage(
+            chatId,
+            `Photo reçue (${photoCount}/10). Envoie d'autres photos, ou réponds « non » pour générer le CR.`,
+          );
+        } else {
+          const captionInfo = caption ? ` (légende : "${caption.slice(0, 50)}")` : '';
+          await sendTelegramMessage(
+            chatId,
+            `Photo reçue${captionInfo} (${photoCount}/10). Envoie d'autres photos ou le texte de ta réunion quand tu es prêt.`,
+          );
+        }
+        return Response.json({ ok: true });
       }
+
+      // Mode inbox — upload direct vers Drive
+      if (mediaGroupId) {
+        // Album photo : accumuler dans le cache et traiter en batch après le délai
+        const cache = getMediaGroupCache();
+        let group = cache.get(mediaGroupId);
+
+        if (!group) {
+          group = {
+            photos: [],
+            caption: caption,
+            chatId,
+            timerId: setTimeout(async () => {
+              // Timer expiré : traiter l'album
+              const finishedGroup = cache.get(mediaGroupId);
+              cache.delete(mediaGroupId);
+              if (finishedGroup && finishedGroup.photos.length > 0) {
+                const albumResult = await handleInboxAlbum(
+                  finishedGroup.chatId,
+                  finishedGroup.photos,
+                  finishedGroup.caption,
+                );
+                await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
+              }
+            }, MEDIA_GROUP_DELAY_MS),
+          };
+          cache.set(mediaGroupId, group);
+        } else {
+          // Réinitialiser le timer (on a reçu une nouvelle photo du groupe)
+          clearTimeout(group.timerId);
+          group.timerId = setTimeout(async () => {
+            const finishedGroup = cache.get(mediaGroupId);
+            cache.delete(mediaGroupId);
+            if (finishedGroup && finishedGroup.photos.length > 0) {
+              const albumResult = await handleInboxAlbum(
+                finishedGroup.chatId,
+                finishedGroup.photos,
+                finishedGroup.caption,
+              );
+              await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
+            }
+          }, MEDIA_GROUP_DELAY_MS);
+        }
+
+        // Ajouter la photo au groupe
+        group.photos.push({
+          base64: photoResult.base64,
+          mimeType: photoResult.mimeType ?? 'image/jpeg',
+        });
+
+        // Pas de message ici — on attend le batch
+        return Response.json({ ok: true });
+      }
+
+      // Photo unique en mode inbox
+      const inboxPhotoResult = await handleInboxPhoto(
+        chatId,
+        photoResult.base64,
+        photoResult.mimeType ?? 'image/jpeg',
+        caption,
+        bestPhoto.file_size,
+      );
+      await sendTelegramMessage(chatId, inboxPhotoResult.userMessage);
       return Response.json({ ok: true });
     }
 
@@ -1019,9 +1264,6 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Typing indicator immédiat (la transcription + génération prend du temps)
-      await sendTypingAction(chatId);
-
       // Télécharger le fichier audio via l'API Telegram
       const audioResult = await downloadTelegramFile(voiceData.file_id);
 
@@ -1034,69 +1276,122 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Envoyer l'audio à Claude pour transcription et traitement
-      // Claude gère nativement l'audio via le type input_audio
-      const history = getConversation(chatId);
-      const claudeHistory = toClaudeMessages(history);
-      const pendingPhotos = getPhotos(chatId);
+      // Router selon le mode actif
+      const activeWorkflow = getActiveWorkflow(chatId);
+      if (activeWorkflow || getPendingDraft(chatId) !== null) {
+        // Mode workflow CR — traiter comme avant (transcription + CR)
+        await sendTypingAction(chatId);
 
-      try {
-        // Sauvegarder dans l'historique (comme message user texte)
-        storeMessage(chatId, 'user', '[Message vocal]');
+        const history = getConversation(chatId);
+        const claudeHistory = toClaudeMessages(history);
+        const pendingPhotos = getPhotos(chatId);
 
-        const result = await generateCRFromVoice(
-          audioResult.base64,
-          audioResult.mimeType ?? 'audio/ogg',
-          claudeHistory,
-          pendingPhotos,
-        );
+        try {
+          storeMessage(chatId, 'user', '[Message vocal]');
 
-        // Vider les photos après l'appel Claude
-        if (pendingPhotos.length > 0) {
-          clearPhotos(chatId);
-        }
+          const result = await generateCRFromVoice(
+            audioResult.base64,
+            audioResult.mimeType ?? 'audio/ogg',
+            claudeHistory,
+            pendingPhotos,
+          );
 
-        if (!result.success) {
-          const errorMsg = `Erreur de traitement vocal : ${result.error ?? 'inconnue'}. Réessaie ou envoie en texte.`;
-          storeMessage(chatId, 'assistant', errorMsg);
-          await sendTelegramMessage(chatId, errorMsg);
+          if (pendingPhotos.length > 0) {
+            clearPhotos(chatId);
+          }
+
+          if (!result.success) {
+            const errorMsg = `Erreur de traitement vocal : ${result.error ?? 'inconnue'}. Réessaie ou envoie en texte.`;
+            storeMessage(chatId, 'assistant', errorMsg);
+            await sendTelegramMessage(chatId, errorMsg);
+            return Response.json({ ok: true });
+          }
+
+          if (result.status === 'needs_clarification') {
+            const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
+            storeMessage(chatId, 'assistant', question);
+            await sendTelegramMessage(chatId, question);
+            return Response.json({ ok: true });
+          }
+
+          if (result.crText && result.crDraft) {
+            const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
+            storeMessage(chatId, 'assistant', result.crText);
+            setPendingDraft(chatId, result.crDraft, result.crText);
+            await sendTelegramConfirmation(chatId, previewText);
+          }
+
+          return Response.json({ ok: true });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error('[telegram-webhook] erreur traitement vocal :', msg);
+          await sendTelegramMessage(
+            chatId,
+            'Erreur lors du traitement du message vocal. Réessaie ou envoie en texte.',
+          );
           return Response.json({ ok: true });
         }
+      }
 
-        if (result.status === 'needs_clarification') {
-          const question = result.clarificationQuestion ?? 'Peux-tu préciser ?';
-          storeMessage(chatId, 'assistant', question);
-          await sendTelegramMessage(chatId, question);
-          return Response.json({ ok: true });
-        }
+      // Mode inbox — upload direct vers Drive (pas de transcription)
+      const inboxVoiceResult = await handleInboxVoice(
+        chatId,
+        audioResult.base64,
+        audioResult.mimeType ?? 'audio/ogg',
+        voiceData.duration,
+        voiceData.file_size,
+      );
+      await sendTelegramMessage(chatId, inboxVoiceResult.userMessage);
+      return Response.json({ ok: true });
+    }
 
-        // status === 'ready'
-        if (result.crText && result.crDraft) {
-          const previewText = `${result.crText}\n\n—\nVérifie le CR ci-dessus puis choisis une action :`;
-          storeMessage(chatId, 'assistant', result.crText);
-          setPendingDraft(chatId, result.crDraft, result.crText);
-          await sendTelegramConfirmation(chatId, previewText);
-        }
+    // 3b-ter. Message avec document (PDF, etc.)
+    const documentData = update.message?.document;
+    if (documentData) {
+      const chatId = update.message!.chat.id;
 
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
         return Response.json({ ok: true });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('[telegram-webhook] erreur traitement vocal :', msg);
+      }
+
+      // Vérifier la taille
+      if (documentData.file_size && documentData.file_size > 20 * 1024 * 1024) {
+        await sendTelegramMessage(chatId, 'Document trop volumineux (> 20 Mo). Réduis la taille et réessaie.');
+        return Response.json({ ok: true });
+      }
+
+      // Télécharger le document via l'API Telegram
+      const docResult = await downloadTelegramFile(documentData.file_id);
+
+      if (!docResult.success || !docResult.base64) {
+        console.error('[telegram-webhook] échec téléchargement document :', docResult.error);
         await sendTelegramMessage(
           chatId,
-          'Erreur lors du traitement du message vocal. Réessaie ou envoie en texte.',
+          `Erreur lors du téléchargement du document : ${docResult.error ?? 'inconnue'}. Réessaie.`,
         );
         return Response.json({ ok: true });
       }
+
+      // Mode inbox — upload direct vers Drive
+      const inboxDocResult = await handleInboxDocument(
+        chatId,
+        docResult.base64,
+        documentData.mime_type ?? 'application/octet-stream',
+        documentData.file_name,
+        documentData.file_size,
+      );
+      await sendTelegramMessage(chatId, inboxDocResult.userMessage);
+      return Response.json({ ok: true });
     }
 
-    // 3b-ter. Message sans texte ni photo ni vocal (sticker, vidéo, etc.)
-    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0) && update.message.voice === undefined) {
+    // 3b-quater. Message sans texte ni photo ni vocal ni document (sticker, vidéo, etc.)
+    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0) && update.message.voice === undefined && update.message.document === undefined) {
       const chatId = update.message.chat.id;
       if (isAllowedChatId(chatId)) {
         await sendTelegramMessage(
           chatId,
-          'Envoie le contenu de la réunion en texte, en message vocal, ou des photos avec légende.',
+          'Type de fichier non supporté. Envoie du texte, des photos, des vocaux ou des documents (PDF, etc.).',
         );
       }
       return Response.json({ ok: true });
@@ -1225,7 +1520,8 @@ export async function POST(request: Request): Promise<Response> {
             console.warn('[telegram-webhook] backup Drive échoué :', e),
           );
 
-          // 10. Nettoyer la conversation, le draft et les photos
+          // 10. Nettoyer la conversation, le draft, les photos et le workflow
+          clearActiveWorkflow(callbackChatId);
           clearPendingDraft(callbackChatId);
           clearConversation(callbackChatId);
           clearPhotos(callbackChatId);
@@ -1262,9 +1558,11 @@ export async function POST(request: Request): Promise<Response> {
 
       // --- ANNULER ---
       if (callbackData === 'cancel') {
+        clearActiveWorkflow(callbackChatId);
         clearPendingDraft(callbackChatId);
         clearConversation(callbackChatId);
-        await sendTelegramMessage(callbackChatId, 'CR annulé.');
+        clearPhotos(callbackChatId);
+        await sendTelegramMessage(callbackChatId, 'CR annulé. Mode inbox réactivé.');
         return Response.json({ ok: true });
       }
 

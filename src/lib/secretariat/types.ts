@@ -55,6 +55,15 @@ export const TelegramVoiceSchema = z.object({
 });
 export type TelegramVoice = z.infer<typeof TelegramVoiceSchema>;
 
+export const TelegramDocumentSchema = z.object({
+  file_id: z.string(),
+  file_unique_id: z.string(),
+  file_name: z.string().optional(),
+  mime_type: z.string().optional(),
+  file_size: z.number().int().optional(),
+});
+export type TelegramDocument = z.infer<typeof TelegramDocumentSchema>;
+
 export const TelegramMessageSchema = z
   .object({
     message_id: z.number().int(),
@@ -64,7 +73,10 @@ export const TelegramMessageSchema = z
     text: z.string().optional(),
     photo: z.array(TelegramPhotoSizeSchema).optional(),
     voice: TelegramVoiceSchema.optional(),
+    document: TelegramDocumentSchema.optional(),
     caption: z.string().optional(),
+    /** Identifiant de groupe média — les photos d'un album partagent le même ID */
+    media_group_id: z.string().optional(),
   })
   .passthrough();
 export type TelegramMessage = z.infer<typeof TelegramMessageSchema>;
@@ -88,6 +100,21 @@ export const TelegramUpdateSchema = z
   })
   .passthrough();
 export type TelegramUpdate = z.infer<typeof TelegramUpdateSchema>;
+
+/**
+ * Buffer pour un album photo (media_group_id).
+ * Accumule les photos d'un groupe avant traitement batch.
+ */
+export interface MediaGroupBuffer {
+  /** Photos téléchargées et prêtes pour l'upload */
+  photos: Array<{ base64: string; mimeType: string }>;
+  /** Légende commune (caption du premier message du groupe) */
+  caption?: string;
+  /** Chat ID source */
+  chatId: number;
+  /** Timer de déclenchement (2s après la dernière photo du groupe) */
+  timerId: ReturnType<typeof setTimeout>;
+}
 
 // ============================================================
 // CR — schémas de sortie Claude
