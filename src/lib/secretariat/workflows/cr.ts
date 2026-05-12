@@ -36,6 +36,8 @@ const CR_TTL_MS = 24 * 60 * 60 * 1000;
  */
 export const crWorkflow: Workflow = {
   type: 'cr',
+  command: 'cr',
+  commandDescription: 'Démarrer un compte rendu de réunion',
   ttlMs: CR_TTL_MS,
 
   async start(_chatId: number, _initialText?: string): Promise<WorkflowResponse> {

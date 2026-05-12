@@ -1,7 +1,7 @@
 # Anya — Bot Telegram secrétariat ISSA Capital
 
 > Fiche technique partageable. Source de vérité pour tout autre Claude (Cowork, Desktop, autre repo) qui doit comprendre ou faire évoluer Anya.
-> Dernière mise à jour : 2026-05-12 (session 11 — batch quittance N locataires × M mois).
+> Dernière mise à jour : 2026-05-12 (session 11 — menu commandes Telegram auto-maintenu).
 
 ---
 
@@ -22,7 +22,7 @@
 | Validation | Zod (schémas Telegram + Claude responses) |
 | Stockage | Google Drive (OAuth2 refresh token) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF | PDFKit (compte-rendus A4 avec annexes photographiques) |
-| Tests | Vitest — 314/314 passent (68 CR + 34 inbox/router + 10 photo-timestamp + 193 rent/quittance batch + 9 autres) |
+| Tests | Vitest — 324/324 passent (68 CR + 34 inbox/router + 10 photo-timestamp + 193 rent/quittance batch + 10 registry + 9 autres) |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -61,6 +61,34 @@ Message reçu
 | `/inbox` | Force retour mode inbox + clear workflow actif |
 | `/cancel` | Annule le workflow en cours, retour inbox |
 | `/status` | Affiche le mode actuel + workflow actif s'il y en a un |
+
+## Menu commandes Telegram (auto-maintenu)
+
+Le menu auto-complétion Telegram (suggestions quand Thomas tape `/`) est synchronisé automatiquement depuis le code via l'endpoint `/api/telegram/setup`.
+
+**Fonctionnement** : chaque workflow dans `workflows/registry.ts` declare `command` et `commandDescription` dans son interface `Workflow`. L'endpoint `/api/telegram/setup` lit le registry, ajoute les commandes systeme (`/status`, `/inbox`, `/cancel`), et appelle l'API Telegram `setMyCommands`.
+
+**Commandes actuelles configurées** :
+
+| Commande | Description (visible dans Telegram) |
+|---|---|
+| `/cr` | Démarrer un compte rendu de réunion |
+| `/quittance` | Générer des quittances de loyer |
+| `/status` | Voir l'état d'Anya (mode actif, photos en attente) |
+| `/inbox` | Revenir au mode inbox (réception simple) |
+| `/cancel` | Annuler le workflow en cours |
+
+**Comment ajouter une nouvelle commande** :
+
+1. Dans le nouveau workflow (ex: `workflows/bail.ts`), ajouter les champs `command: 'bail'` et `commandDescription: 'Générer un bail de location'` dans l'objet Workflow
+2. Enregistrer le workflow dans `workflows/registry.ts`
+3. Redéployer sur Replit
+4. Visiter `https://issa-capital.com/api/telegram/setup?token=<ADMIN_SETUP_TOKEN>`
+5. La page verte confirme la mise à jour. Tester en tapant `/` dans le chat Telegram
+
+**Pourquoi ce design** : le menu est auto-maintenu par le code. Pas de configuration manuelle sur BotFather, pas de risque de désynchronisation entre les commandes réellement gérées par le webhook et celles affichées dans Telegram. Ajouter un workflow = le menu se met à jour au prochain appel setup.
+
+**Sécurité** : l'endpoint est protégé par `ADMIN_SETUP_TOKEN` (Replit Secrets). Sans token valide, retourne 401.
 
 ## Comportement par type de message — Mode inbox
 
@@ -148,6 +176,7 @@ GOOGLE_CLIENT_ID            # OAuth2 Drive
 GOOGLE_CLIENT_SECRET        # OAuth2 Drive
 GOOGLE_REFRESH_TOKEN        # OAuth2 Drive (long-lived)
 DRIVE_INBOX_FOLDER_ID       # ID du dossier _Inbox/ du vault Obsidian
+ADMIN_SETUP_TOKEN           # token admin pour /api/telegram/setup (menu commandes)
 ```
 
 Folder IDs Drive pour CR par entité juridique (hardcodés dans `drive-upload.ts`) :
@@ -195,11 +224,12 @@ src/lib/secretariat/
     └── bail.ts           # ← à créer Phase 3
 ```
 
-**Ajouter un workflow = 3 actions :**
+**Ajouter un workflow = 4 actions :**
 
-1. Créer `workflows/{nom}.ts` implémentant l'interface `Workflow` (`start`, `handleMessage`, `handlePhoto`, `handleVoice`, `handleCallback`, `cancel`)
+1. Créer `workflows/{nom}.ts` implémentant l'interface `Workflow` (`command`, `commandDescription`, `start`, `handleMessage`, `handlePhoto`, `handleVoice`, `handleCallback`, `cancel`)
 2. Ajouter `'{nom}'` au type union `WorkflowType`
 3. Enregistrer dans `workflowRegistry`
+4. Visiter `/api/telegram/setup?token=XXX` pour synchroniser le menu Telegram
 
 Le routing dans `route.ts` ne change pas, les autres workflows ne sont pas impactés, les tests existants passent toujours.
 
@@ -207,6 +237,7 @@ Le routing dans `route.ts` ne change pas, les autres workflows ne sont pas impac
 
 ```
 src/app/api/telegram/webhook/route.ts      # entry point webhook (~1280 lignes)
+src/app/api/telegram/setup/route.ts        # endpoint admin — synchronise le menu commandes Telegram
 src/lib/secretariat/inbox.ts               # handlers mode inbox
 src/lib/secretariat/workflows/types.ts     # interface Workflow
 src/lib/secretariat/workflows/registry.ts  # registry
@@ -222,12 +253,13 @@ src/lib/secretariat/types.ts               # schémas Zod
 
 ```bash
 npm test
-# → 306/306 passent
+# → 324/324 passent
 # - 68 tests CR existants (integration + pdf-generator + counter)
 # - 23 tests inbox (slugify, naming, types, edge cases)
 # - 11 tests router (commandes, auto-CR, bascule mode, TTL)
 # - 193 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires fuzzy, types, pdf, workflow, batch parseurs)
-# - 11 tests autres (contactSchema, rateLimit)
+# - 10 tests registry (listWorkflowCommands, getWorkflow, doublons, format)
+# - 11 tests autres (contactSchema, rateLimit, drive-subfolder)
 ```
 
 ## Roadmap

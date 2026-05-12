@@ -82,6 +82,12 @@ export interface Workflow {
   /** Type identifiant ce workflow */
   readonly type: WorkflowType;
 
+  /** Commande Telegram sans le slash (ex: "quittance") */
+  readonly command: string;
+
+  /** Description affichée dans le menu auto-complétion Telegram */
+  readonly commandDescription: string;
+
   /** TTL en ms — durée max avant expiration automatique */
   readonly ttlMs: number;
 

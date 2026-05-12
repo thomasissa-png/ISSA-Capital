@@ -35,3 +35,14 @@ export function getWorkflow(type: WorkflowType): Workflow | null {
 export function getAvailableWorkflowTypes(): WorkflowType[] {
   return Object.keys(WORKFLOW_REGISTRY) as WorkflowType[];
 }
+
+/**
+ * Liste les commandes Telegram de tous les workflows enregistrés.
+ * Utilisé par /api/telegram/setup pour construire le menu auto-complétion.
+ */
+export function listWorkflowCommands(): Array<{ command: string; description: string }> {
+  return Object.values(WORKFLOW_REGISTRY).map((wf) => ({
+    command: wf.command,
+    description: wf.commandDescription,
+  }));
+}

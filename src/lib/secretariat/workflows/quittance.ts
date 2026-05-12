@@ -600,6 +600,8 @@ export async function generateBatch(
 
 export const quittanceWorkflow: Workflow = {
   type: 'quittance',
+  command: 'quittance',
+  commandDescription: 'Générer des quittances de loyer',
   ttlMs: QUITTANCE_TTL_MS,
 
   // ----------------------------------------------------------
