@@ -1166,6 +1166,7 @@ export async function POST(request: Request): Promise<Response> {
       }
       const caption = update.message.caption;
       const mediaGroupId = (update.message as Record<string, unknown>).media_group_id as string | undefined;
+      const telegramMessageDate = update.message.date;
 
       // Télécharger la photo via l'API Telegram
       const photoResult = await downloadTelegramPhoto(bestPhoto.file_id);
@@ -1233,6 +1234,7 @@ export async function POST(request: Request): Promise<Response> {
             photos: [],
             caption: caption,
             chatId,
+            messageDate: telegramMessageDate,
             timerId: setTimeout(async () => {
               // Timer expiré : traiter l'album
               const finishedGroup = cache.get(mediaGroupId);
@@ -1242,6 +1244,7 @@ export async function POST(request: Request): Promise<Response> {
                   finishedGroup.chatId,
                   finishedGroup.photos,
                   finishedGroup.caption,
+                  finishedGroup.messageDate,
                 );
                 await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
               }
@@ -1259,6 +1262,7 @@ export async function POST(request: Request): Promise<Response> {
                 finishedGroup.chatId,
                 finishedGroup.photos,
                 finishedGroup.caption,
+                finishedGroup.messageDate,
               );
               await sendTelegramMessage(finishedGroup.chatId, albumResult.userMessage);
             }
@@ -1282,6 +1286,7 @@ export async function POST(request: Request): Promise<Response> {
         photoResult.mimeType ?? 'image/jpeg',
         caption,
         bestPhoto.file_size,
+        telegramMessageDate,
       );
       await sendTelegramMessage(chatId, inboxPhotoResult.userMessage);
       return Response.json({ ok: true });

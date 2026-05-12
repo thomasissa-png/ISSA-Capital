@@ -114,6 +114,8 @@ export interface MediaGroupBuffer {
   chatId: number;
   /** Timer de déclenchement (2s après la dernière photo du groupe) */
   timerId: ReturnType<typeof setTimeout>;
+  /** Telegram message.date du premier message du groupe (Unix timestamp en secondes) */
+  messageDate?: number;
 }
 
 // ============================================================

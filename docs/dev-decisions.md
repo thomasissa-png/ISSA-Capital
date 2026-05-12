@@ -409,3 +409,43 @@ Total : 306 tests (vs 252 avant).
 - `src/lib/secretariat/rent/__tests__/quittance-workflow.test.ts` — step names mis a jour
 - `docs/ia/anya-spec.md` — documentation batch, compteurs tests
 - `docs/dev-decisions.md` — cette section
+
+---
+
+## Session 11 — Fix timestamp photos EXIF (inbox)
+
+**Date** : 2026-05-12
+**Probleme** : Les photos uploadees via le mode inbox etaient nommees avec `new Date()` (date d'upload), pas la date de prise de vue. Consequence : tri chronologique impossible dans Drive.
+
+### Solution : pile de 3 fallback
+
+Pour chaque photo, le timestamp du nom de fichier est determine dans cet ordre (premier succes gagne) :
+
+1. **EXIF `DateTimeOriginal`** (ou `CreateDate`) — date reelle de prise de vue. Disponible uniquement si Thomas envoie en mode "fichier" (trombone Telegram), car le mode "photo" compresse et supprime les EXIF.
+2. **`message.date` Telegram** — timestamp Unix d'envoi du message. Toujours disponible. Mieux que "aujourd'hui" si Thomas envoie des photos prises il y a 2 mois.
+3. **`new Date()`** — dernier recours.
+
+### Choix technique : exifr
+
+Lib npm `exifr` choisie pour l'extraction EXIF :
+- Legere (~5 ko), 0 dependance native
+- Parsing partiel (`pick: ['DateTimeOriginal', 'CreateDate']`) — performance optimale
+- Fallback gracieux : si le buffer n'est pas un JPEG/TIFF valide, `parse()` renvoie null ou throw — catch silencieux, pas de crash upload
+
+### Fichiers ajoutes
+
+- `src/lib/secretariat/photo-timestamp.ts` — `resolvePhotoTimestamp()` avec pile de 3 fallback
+- `src/lib/secretariat/__tests__/photo-timestamp.test.ts` — 10 tests (EXIF valide, CreateDate, fallback Telegram, fallback now, dates invalides, crash exifr)
+
+### Fichiers modifies
+
+- `src/lib/secretariat/inbox.ts` — `handleInboxPhoto` et `handleInboxAlbum` utilisent `resolvePhotoTimestamp` ; `buildInboxFilename` accepte un param `date` optionnel
+- `src/lib/secretariat/types.ts` — `MediaGroupBuffer` enrichi avec `messageDate` (timestamp Telegram du premier message du groupe)
+- `src/app/api/telegram/webhook/route.ts` — extraction `update.message.date` et propagation vers `handleInboxPhoto` / buffer album / `handleInboxAlbum`
+- `docs/ia/anya-spec.md` — documentation timestamp dans tableau inbox, compteur tests mis a jour (314)
+- `docs/dev-decisions.md` — cette section
+- `package.json` — ajout dep `exifr`
+
+### Limite connue
+
+Telegram en mode "photo" (envoi direct depuis galerie) compresse l'image et supprime les EXIF. La majorite des photos envoyees par Thomas tomberont donc sur le fallback 2 (`message.date`). Pour preserver les EXIF, Thomas doit envoyer en mode "fichier" (icone trombone → joindre fichier → choisir photo).

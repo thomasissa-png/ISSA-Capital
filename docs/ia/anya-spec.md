@@ -22,7 +22,7 @@
 | Validation | Zod (schémas Telegram + Claude responses) |
 | Stockage | Google Drive (OAuth2 refresh token) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF | PDFKit (compte-rendus A4 avec annexes photographiques) |
-| Tests | Vitest — 306/306 passent (68 CR + 34 inbox/router + 193 rent/quittance batch + 11 autres) |
+| Tests | Vitest — 314/314 passent (68 CR + 34 inbox/router + 10 photo-timestamp + 193 rent/quittance batch + 9 autres) |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -66,8 +66,8 @@ Message reçu
 
 | Type entrant | Action | Dossier Drive | Naming | Bonus |
 |---|---|---|---|---|
-| **Photo** unique | Download (qualité max) + upload | `_Inbox/Photos/` | `YYYY-MM-DD_HH-mm-ss_{slug-caption}.jpg` | Caption → `.txt` adjacent |
-| **Album** (media_group) | Accumulation 2s puis batch upload | `_Inbox/Photos/` | `..._01.jpg`, `_02.jpg`, ... | Caption → 1 `.txt` global |
+| **Photo** unique | Download (qualité max) + upload | `_Inbox/Photos/` | `YYYY-MM-DD_HH-mm-ss_{slug-caption}.jpg` | Timestamp : EXIF DateTimeOriginal → Telegram message.date → now (pile de 3 fallback) |
+| **Album** (media_group) | Accumulation 2s puis batch upload | `_Inbox/Photos/` | `..._01.jpg`, `_02.jpg`, ... | Timestamp : idem photo unique (1re photo de l'album) |
 | **Texte court** (<80 chars) | Génère `.md` avec frontmatter YAML | `_Inbox/Notes/` | `YYYY-MM-DD_HH-mm-ss_{30-chars-slug}.md` | Source: Telegram |
 | **Vocal** | Download `.ogg` brut | `_Inbox/Voice/` | `YYYY-MM-DD_HH-mm-ss_voice_Xs.ogg` | Durée en métadonnée |
 | **Document** (PDF, image, ...) | Download + upload tel quel | `_Inbox/Documents/` | `YYYY-MM-DD_HH-mm-ss_{nom-original}` | MIME loggé |

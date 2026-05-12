@@ -17,6 +17,7 @@
  */
 
 import { uploadToInbox } from './drive-upload';
+import { resolvePhotoTimestamp } from './photo-timestamp';
 
 // ============================================================
 // Constantes
@@ -62,13 +63,19 @@ export function slugify(text: string): string {
 /**
  * Génère un nom de fichier inbox avec timestamp ISO.
  * Format : YYYY-MM-DD_HH-mm-ss[_slug].ext
+ *
+ * @param extension Extension du fichier (avec ou sans point)
+ * @param caption Légende optionnelle (utilisée comme slug)
+ * @param originalName Nom de fichier original (fallback slug)
+ * @param date Date à utiliser pour le timestamp (défaut: now)
  */
 export function buildInboxFilename(
   extension: string,
   caption?: string,
   originalName?: string,
+  date?: Date,
 ): string {
-  const now = new Date();
+  const now = date ?? new Date();
   const pad = (n: number): string => String(n).padStart(2, '0');
 
   const timestamp = [
@@ -119,6 +126,11 @@ export interface InboxResult {
 
 /**
  * Traite une photo en mode inbox → upload vers Drive _Inbox/Photos/
+ *
+ * Le timestamp du nom de fichier est résolu via la pile de fallback :
+ * EXIF DateTimeOriginal → Telegram message.date → now
+ *
+ * @param telegramMessageDate Timestamp Unix Telegram (secondes) — fallback 2
  */
 export async function handleInboxPhoto(
   _chatId: number,
@@ -126,6 +138,7 @@ export async function handleInboxPhoto(
   mimeType: string,
   caption?: string,
   fileSize?: number,
+  telegramMessageDate?: number,
 ): Promise<InboxResult> {
   // Vérification taille
   const sizeError = checkFileSize(fileSize);
@@ -142,8 +155,11 @@ export async function handleInboxPhoto(
   };
   const ext = extMap[mimeType] ?? 'jpg';
 
-  const filename = buildInboxFilename(ext, caption);
   const buffer = Buffer.from(photoBase64, 'base64');
+
+  // Résoudre le timestamp via EXIF → Telegram → now
+  const { date } = await resolvePhotoTimestamp(buffer, telegramMessageDate);
+  const filename = buildInboxFilename(ext, caption, undefined, date);
 
   const result = await uploadToInbox(buffer, filename, INBOX_SUBFOLDER.PHOTOS, mimeType);
 
@@ -291,26 +307,35 @@ export async function handleInboxDocument(
 /**
  * Traite un album de photos (media_group_id) → batch upload vers Drive _Inbox/Photos/
  * Les photos sont nommées avec un suffixe séquentiel : _01, _02, _03…
+ *
+ * Le timestamp est résolu via la première photo de l'album (EXIF → Telegram → now).
+ * Toutes les photos de l'album partagent le même timestamp de base.
+ *
+ * @param telegramMessageDate Timestamp Unix Telegram (secondes) — fallback 2
  */
 export async function handleInboxAlbum(
   _chatId: number,
   photos: Array<{ base64: string; mimeType: string }>,
   commonCaption?: string,
+  telegramMessageDate?: number,
 ): Promise<InboxResult> {
   if (photos.length === 0) {
     return { success: false, userMessage: 'Album vide.' };
   }
 
-  const now = new Date();
+  // Résoudre le timestamp via la première photo de l'album
+  const firstBuffer = Buffer.from(photos[0]!.base64, 'base64');
+  const { date: resolvedDate } = await resolvePhotoTimestamp(firstBuffer, telegramMessageDate);
+
   const pad = (n: number): string => String(n).padStart(2, '0');
 
   const timestamp = [
-    now.getFullYear(),
-    '-', pad(now.getMonth() + 1),
-    '-', pad(now.getDate()),
-    '_', pad(now.getHours()),
-    '-', pad(now.getMinutes()),
-    '-', pad(now.getSeconds()),
+    resolvedDate.getFullYear(),
+    '-', pad(resolvedDate.getMonth() + 1),
+    '-', pad(resolvedDate.getDate()),
+    '_', pad(resolvedDate.getHours()),
+    '-', pad(resolvedDate.getMinutes()),
+    '-', pad(resolvedDate.getSeconds()),
   ].join('');
 
   const slug = commonCaption ? `_${slugify(commonCaption)}` : '';
