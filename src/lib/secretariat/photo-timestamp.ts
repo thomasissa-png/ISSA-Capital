@@ -48,24 +48,47 @@ function parseExifDate(s: string | undefined): Date | null {
   return isNaN(date.getTime()) ? null : date;
 }
 
+function extractDateFromTags(tags: Record<string, { description?: unknown }>): Date | null {
+  const candidates = [
+    tags.DateTimeOriginal?.description,
+    tags.CreateDate?.description,
+    tags.DateCreated?.description,
+    tags.DateTime?.description,
+    tags.ModifyDate?.description,
+  ];
+  for (const c of candidates) {
+    const d = parseExifDate(c as string | undefined);
+    if (d) return d;
+  }
+  return null;
+}
+
 async function readHeicExifDate(photoBuffer: Buffer): Promise<Date | null> {
+  // Première tentative : buffer original
   try {
     const tags = ExifReader.load(photoBuffer);
     console.warn(`[inbox-photo] HEIC ExifReader: ${Object.keys(tags).length} tags trouvés`);
-    const candidates = [
-      tags.DateTimeOriginal?.description,
-      tags.CreateDate?.description,
-      tags.DateCreated?.description,
-      tags.DateTime?.description,
-      tags.ModifyDate?.description,
-    ];
-    for (const c of candidates) {
-      const d = parseExifDate(c as string | undefined);
-      if (d) return d;
-    }
+    const date = extractDateFromTags(tags as Record<string, { description?: unknown }>);
+    if (date) return date;
     console.warn('[inbox-photo] HEIC: aucune date utilisable dans les tags');
+    return null;
   } catch (err) {
-    console.warn(`[inbox-photo] HEIC ExifReader threw: ${err instanceof Error ? err.message : String(err)}`);
+    console.warn(`[inbox-photo] HEIC ExifReader threw sur buffer original: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  // 2e tentative : patcher le major brand à 'heic' (certains firmwares iPhone utilisent
+  // des brands exotiques — mif2, qt  , etc. — qu'ExifReader refuse strictement, alors
+  // que le reste du container HEIC est parfaitement valide).
+  try {
+    const patched = Buffer.from(photoBuffer);
+    patched.set(Buffer.from('heic'), 8);
+    const tags = ExifReader.load(patched);
+    console.warn(`[inbox-photo] HEIC ExifReader: ${Object.keys(tags).length} tags trouvés (après patch brand→heic)`);
+    const date = extractDateFromTags(tags as Record<string, { description?: unknown }>);
+    if (date) return date;
+    console.warn('[inbox-photo] HEIC patché: aucune date utilisable dans les tags');
+  } catch (err) {
+    console.warn(`[inbox-photo] HEIC ExifReader threw même après patch brand: ${err instanceof Error ? err.message : String(err)}`);
   }
   return null;
 }
