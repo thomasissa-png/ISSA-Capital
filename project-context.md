@@ -543,6 +543,8 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | orchestrator + fullstack + qa (Session 12 — bugs photos + vidéos + P0 legal) | 2026-05-12 | 4 commits : `c15ed66` (fix routing `image/*` documents vers `handleInboxPhoto` + EXIF DateTimeOriginal au lieu de now, +19/-1 webhook), `832b481` (3 tests non-régression photos, +85 dans `photo-timestamp.test.ts` + `route.test.ts`), `15ccc8d` (vidéos = photos : handler `message.video` + extension `video/*` documents + 6 tests, +248/-13 dans `types.ts` + webhook + `inbox.ts` + 2 fichiers tests), `2129978` (P0 #1 quittance civilité + P0 #4 fin-de-bail dépôt garantie, +helper `extractPdfText` zlib FlateDecode, 3 fichiers). 445/445 tests PASS, 0 erreur TS. | Bugs photos diagnostiqués : (a) photos en mode "Send as file" arrivaient en `message.document` mime `image/*` → fallback `handleInboxDocument` au lieu de `handleInboxPhoto` → upload `_Inbox/Documents/` au lieu de `_Inbox/Photos/`, EXIF non lu (filenames avec `new Date()`). Fix par check MIME avant dispatch. Vidéos non gérées du tout : `message.video` rejetée par catch-all, `message.document` mime `video/*` allait dans Documents. Décision Thomas : vidéos traitées comme photos, même handler, même dossier (verbatim "c'est meme cas dusage"). P0 #1 audit @legal : @fullstack a tracé l'amont et constaté que `workflows/quittance.ts:398` peuplait DÉJÀ `v.locataireNom` avec `locataireNomAvecCivilite(loc)` → faux positif partiel, test de non-régression ajouté quand même. P0 #4 : paragraphe dépôt + délai 1/2 mois + art. 22 ajouté dans `pdf-fin-de-bail.ts:137-149`. | Pattern dispatch webhook par MIME promu en règle CLAUDE.md 24 (couvre L1+L2 P1 lessons). Helper `extractPdfText` créé pour tests PDF (zlib natif, parse opérateurs TJ avec kerning) — éligible à promotion S13 en util partagé. Audit @legal P0 #1 mal localisé : @legal pointait `pdf-quittance.ts:164` mais le fix réel était en amont — leçon P2 propagée pour audits futurs (tracer la chaîne amont avant FAIL). Thomas scope-restrict P0 audit @legal : "Appliquons uniquement p0 #1 et #4" → pattern "livraison en vagues" documenté (préférence fondateur). |
 | legal (Session 12 — Audit juridique 4 P0 + P1 + risques transversaux) | 2026-05-12 | Voir entrée legal 541 (audit déjà documenté) — résultats appliqués : 4 P0 identifiés, 2 actionnables sans Thomas appliqués `2129978` (P0 #1 quittance civilité, P0 #4 fin-de-bail dépôt), 2 P0 bloqués par décision Thomas reportés S13 (P0 #2 encadrement loyers Nanterre+Paris 18 art. 140 ELAN, P0 #3 IRL valeur numérique art. 17-1). | Verdict synthèse : Quittance GO CONDITIONNEL → après `2129978` (P0 #1 résolu, P1 "délivrée gratuitement" reporté S13). Bail meublé NO-GO maintenu (P0 #2 + #3 non résolus). Fin de bail GO CONDITIONNEL → après `2129978` (P0 #4 résolu, P1 référence état des lieux reporté S13). | Risques transversaux non corrigés S12 : clause pénale 3× loyer journalier vulnérable à réduction art. 1231-5 C. civ. (arbitrage Thomas S13), contradiction meublé/nu non tranchée (Thomas doit confirmer). 4 décisions Thomas requises pour reprendre les P0 bail en S13. |
 | main thread (Session 12 — clôture) | 2026-05-12 | `docs/lessons-learned.md` (6 entrées Session 12 : 2 P1 + 4 P2), `CLAUDE.md` (règle 24 webhook MIME dispatch), `project-context.md` (mémo de reprise S13 + closure historique). | Clôture session 12. 9 commits productifs livrés (Phase 3 bail + bugs photos + vidéos + Phases 4+5 + audit legal + P0 legal #1+#4 + docs S12). Gate bloquante propagation P0/P1 : ✅ règle CLAUDE.md 24 ajoutée propage les 2 P1 (dispatch webhook MIME) — statut `propagé`. 4 learnings P2 avec propagation `à-faire` (qa.md/legal.md/reviewer.md/_base-agent-protocol.md/founder-preferences.md/orchestrator.md) — non bloquant gate S13. 445/445 tests PASS, 0 erreur TS, working tree clean, push origin OK. | Pas d'audit TTL project-context.md cette session (priorité moyenne, reporté S13). Pas de propagation P2 agents (acceptable car gate propagation = P0/P1 uniquement). 4 décisions Thomas explicitement documentées dans le mémo S13 (encadrement loyers, IRL API/manuel, clause pénale, meublé/nu) — sans ces inputs le bail reste NO-GO @legal. |
+| main thread + fullstack (Session 13 — hotfixes + Anya inbox workflows + voice STT) | 2026-05-12 | **13 commits productifs** sur branche `claude/issa-capital-s13-hotfix-build-quittance-m7Lkc` : (1) `9864ef5` hotfix build TS6133 (`bail-config.ts` + `pdf-bail.ts` imports docx morts), (2) `0f585f8` fix quittance "Fait à Nanterre" date = 3 du mois (bug `(mois % 12)+1` retournait mois suivant), (3) `8d82d90` fix `/bail` sourcing candidats au lieu de locataires actuels, (4) **7 commits photos HEIC** (be9aa74→6e7bb40 : diagnostics, exifr full segment, brand HEIC élargi, sharp metadata, ExifReader, brand patch fallback, finalement détection JPEG par signature bytes), (5) `1737016` + `bcf873b` workflow `inbox-photo-batch` (photos bufferisées 5s → Anya demande date `[1️⃣ Aujourd'hui] [2️⃣ Hier] [3️⃣ Autre]` → upload avec date choisie, contourne le strip EXIF Telegram iOS), (6) `73eb125` + `697c76d` workflow `inbox-message-router` (texte court → Haiku 4.5 extrait JSON → carte preview `[📅 Calendar] [📋 Todo] [✗ Annuler]`), (7) `b2d57cb` + `8efc35e` script `scripts/test-haiku-dates.ts` (25 cas validation résolution dates+heures FR), (8) `d2bc37e` seuil auto-CR 80 → 100 chars, (9) `2d8fb2e` refresh `docs/ia/anya-spec.md` sessions 12+13, (10) `07c245e` patch plan email-ingest (mindset IA + mutualisation router + Phase 1B Outlook), (11) `172cd14` voice transcription Google STT puis `c95d726` switch Whisper (Google STT nécessitait billing account). **512/512 tests PASS**, 0 erreur TS, build prod OK. | Découverte critique : Telegram iOS strip systématiquement les EXIF des photos HEIC en mode "Send as file" (conversion HEIC→JPEG cliente + strip métadonnées avant arrivée webhook). 8 commits diagnostic révèlent que le `mime=image/heic` ment et que le buffer reçu est en réalité un JPEG sans EXIF. Solution finale = abandon EXIF + workflow batch demandant la date à Thomas. Découverte API Anthropic publique : `input_audio` content block n'existe pas (`400 invalid_request_error`) — assumption initiale fausse. Pipeline voice final : Whisper (audio → texte FR) + Haiku 4.5 (texte → JSON structuré). Sonnet 4.6 conservé pour CR (qualité critique), Haiku 4.5 pour router inbox (~80% économie sur calls fréquents). OAuth scope élargi `drive + calendar.events` (re-OAuth Thomas). | Décisions Thomas verrouillées : (a) batch photos avec date prompt > extraction EXIF (pragmatisme face limite Telegram), (b) boutons Calendar/Todo à chaque texte court > Anya décide auto (zéro risque erreur), (c) Whisper OpenAI > Google STT (Google STT impose billing account même free tier), (d) Haiku 4.5 > Sonnet 4.6 pour router inbox (économie ~80% sans perte de qualité sur extraction JSON simple), (e) seuil auto-CR 100 chars (compromis entre 80 trop bas et 200 trop haut), (f) fenêtre groupement batch photo 5s (8s trop long), (g) mutualisation `inbox-message-router` pour email-ingest futur (zéro duplication telegram-cards). 5h passées sur les photos HEIC = signature de tâtonnement → préférence fondateur "teste avant de pusher" propagée. |
+| main thread (Session 13 — clôture) | 2026-05-12 | `docs/lessons-learned.md` (entrées Session 13 : 3 P1 + 5 P2), `docs/founder-preferences.md` (préférences capturées), `project-context.md` (mémo de reprise S14 + closure historique). | Clôture session 13. 13 commits productifs livrés + 1 script test validation date FR. Gate bloquante propagation P0/P1 : à confirmer dans cette clôture. 512/512 tests PASS, 0 erreur TS, build prod OK, working tree clean. Documentation à jour : `anya-spec.md` reflète tout l'état actuel (workflows photo-batch + message-router, modèles Sonnet/Haiku, scope OAuth, limitation HEIC documentée). Plan email-ingest aligné mindset IA + mutualisation router. | Caps dépassés persistants : CLAUDE.md 481 (cap 125), project-context.md ~720 (cap 250), lessons-learned 85+ (cap 80). Reporté à S14 comme audit profond — non bloquant (dette historique, pattern session 12). 8 commits photos = pattern à éviter (préférence "test before push"). |
 
 ---
 
@@ -630,71 +632,74 @@ Les mémos de reprise des sessions 5, 6, 7, 9, 10 et 11 ont été archivés dans
 
 ---
 
-## Mémo de reprise — Session 13 (clôture session 12 le 2026-05-12)
+## Mémo de reprise — Session 14 (clôture session 13 le 2026-05-12)
 
-### Numéro de session : 13
+### Numéro de session : 14
 
 ### Date de clôture : 2026-05-12
 
-### Branche active S12 : `claude/issa-capital-s12-anya-phase3-bail-P64ir`
+### Branche active S13 : `claude/issa-capital-s13-hotfix-build-quittance-m7Lkc`
 
-### Nom de branche recommandé pour session 13
-`claude/issa-capital-s13-anya-bail-legal-[suffix]`
+### Nom de branche recommandé pour session 14
+`claude/issa-capital-s14-anya-bail-legal-[suffix]`
 
-### Résumé de la session 12 (en 5 lignes)
+### Résumé de la session 13 (en 5 lignes)
 
-Session productive Anya : (1) Phase 3 bail livrée (lib `bail-config.ts` + `pdf-bail.ts` DOCX+PDF 24 sections juridiques + workflow 6 steps + 61 tests, commit `8e759b7`). (2) Bugs photos fixés : `c15ed66` (route `image/*` documents vers `handleInboxPhoto` → EXIF DateTimeOriginal au lieu de now) + `832b481` (3 tests non-régression). (3) Vidéos = photos : `15ccc8d` (handler `message.video` + extension `video/*` documents, même flow `_Inbox/Photos/`). (4) Phases 4+5 livrées : fin-de-bail (PDF 1 page) + candidat (fiche .md frontmatter YAML dans `_Candidats/`), commit `64a1424`. (5) Audit @legal PDFs (`52e028c`) : 4 P0 identifiés, 2 actionnables sans Thomas (#1+#4) appliqués via `2129978` (civilité quittance + dépôt garantie fin-de-bail), 2 P0 bloqués par décisions Thomas reportés S13 (#2 encadrement loyers, #3 IRL numérique). **9 commits productifs**, 445/445 tests, 0 erreur TS.
+Session 13 = hotfixes + extension Anya inbox + voice. **13 commits productifs** : (1) hotfixes build (`bail-config.ts` + `pdf-bail.ts` imports docx morts) et quittance date "Fait à Nanterre" (3 du mois). (2) Fix `/bail` sourcing candidats (`_Candidats/`) au lieu de locataires actuels (qui ont déjà un bail). (3) **8 commits photos HEIC** : diagnostic Telegram iOS strip EXIF, abandonnement extraction EXIF, livraison workflow `inbox-photo-batch` (5s window → Anya demande la date → upload). (4) Workflow `inbox-message-router` : texte court → Haiku 4.5 → carte preview Calendar/Todo/Annuler. (5) Voice : input_audio Anthropic ne marche pas → Google STT essai (refusé : billing) → Whisper OpenAI retenu. **512/512 tests**, 0 erreur TS, build prod OK. Docs `anya-spec.md` + plan email-ingest mis à jour.
 
-### Travaux en cours (à reprendre S13)
+### Travaux en cours (à reprendre S14)
 
-- **P0 #2 bail — encadrement loyers (zone tendue Nanterre + Paris 18)** : bloqué par décision Thomas. **Action Thomas** : aller sur encadrementdesloyers.gouv.fr, récupérer pour chaque bien : loyer de référence (€/m²) + loyer de référence majoré (€/m²). Données à intégrer dans `BailVariables` (champs `loyerReferenceEncadrement` + `loyerReferenceMajore`) et afficher dans la section loyer du PDF. Base légale : art. 140 loi ELAN 2018. Risque actuel sans cette mention : commission de conciliation peut imposer réduction de loyer + restitution trop-perçu rétroactive.
-- **P0 #3 bail — IRL valeur numérique** : bloqué par mini-arbitrage Thomas. **Option A (recommandée)** : appel API INSEE IRL dans `construireVariablesBail()` qui récupère la valeur du trimestre en cours automatiquement. **Option B** : champ manuel à saisir trimestriellement par Thomas. Sans valeur numérique, la révision IRL est inapplicable en cas de litige. Base légale : art. 17-1 loi 89-462.
-- **P1 audit @legal hors scope S12** : (a) quittance ajout "Cette quittance est délivrée gratuitement" art. 21 al. 5 loi 89-462 (pdf-quittance.ts pied de page), (b) fin-de-bail référence état des lieux sortie + art. 22 dans le corps. ~15 min @fullstack.
-- **Clause pénale 3× loyer journalier** : risque transversal identifié par @legal (réduction judiciaire art. 1231-5 C. civ.). Arbitrage Thomas : conserver 3× (dissuasif mais réductible) ou passer à 1× (plus défendable). Documenté dans `docs/legal/anya-pdfs-audit.md` section 4.1.
-- **Contradiction brief vs code — meublé vs nu** : le code génère exclusivement des baux meublés (`bail-config.json` `type_bail: "CONTRAT DE LOCATION MEUBLEE"` + inventaire électroménager). **Action Thomas** : confirmer tous les biens sont meublés OU spécifier les biens nus nécessitant un second template. Régimes juridiques incompatibles (durée, charges, IRL, dépôt).
-- **Promotion candidat → locataire** : feature reportée Phase 6 lors de la livraison Phase 5. Workflow : `/promouvoir <nom_candidat>` → migration `.md` de `_Candidats/` vers `05. Locataires/<nom>/` + création des dossiers standards (Baux/, Quittances/, EDL/) + suppression de la fiche candidat.
-- **Helper `extractPdfText`** : actuellement dupliqué dans `pdf-quittance.test.ts` et `pdf-fin-de-bail.test.ts`. Promotion en `src/lib/test-utils/pdf-text.ts` partagé. Réutilisable pour futurs tests PDF bail.
-- **Audit TTL project-context.md / CLAUDE.md** : project-context.md > 700 lignes (cap historique 250), CLAUDE.md > 480 lignes (cap historique 125). Audit profond délégué pour archiver tout contenu > 5 sessions. Priorité moyenne, hygiène long-terme.
+- **P0 #2 bail — encadrement loyers (zone tendue Nanterre + Paris 18)** : INCHANGÉ depuis S12. Bloqué par décision Thomas. **Action Thomas** : aller sur encadrementdesloyers.gouv.fr, récupérer pour chaque bien loyer de référence + loyer de référence majoré (€/m²). À intégrer dans `BailVariables` (`loyerReferenceEncadrement` + `loyerReferenceMajore`). Art. 140 loi ELAN.
+- **P0 #3 bail — IRL valeur numérique** : INCHANGÉ depuis S12. **Option A (recommandée)** : appel API INSEE auto. **Option B** : saisie manuelle trimestrielle. Art. 17-1 loi 89-462.
+- **P1 audit @legal hors scope** : INCHANGÉS depuis S12. (a) quittance "Cette quittance est délivrée gratuitement" art. 21 al. 5, (b) fin-de-bail référence état des lieux + art. 22.
+- **Clause pénale 3× loyer journalier** : arbitrage Thomas attendu (3× dissuasif réductible vs 1× défendable).
+- **Contradiction brief vs code — meublé vs nu** : confirmer biens tous meublés OU template nu nécessaire.
+- **Promotion candidat → locataire (Phase 6)** : INCHANGÉ depuis S12. `/promouvoir <nom>` → migration `.md` `_Candidats/` → `05. Locataires/01. Actuels/<nom>/` + dossiers Baux/Quittances/EDL/. ~30 min.
+- **Helper `extractPdfText` partagé** : INCHANGÉ depuis S12. À extraire dans `src/lib/test-utils/pdf-text.ts`.
+- **Audit TTL project-context.md / CLAUDE.md / lessons-learned.md** : CRITIQUE — caps dépassés depuis 2 sessions. CLAUDE.md 481 lignes (cap 125, x3.8), project-context.md ~720 lignes (cap 250), lessons-learned.md > 80. Audit profond délégué, archivage > 5 sessions vers archives.
+- **Email-ingest** : plan révisé S13 (mindset IA + mutualisation router + Phase 1B Outlook préparée). Prêt à coller dans nouvelle session @fullstack après stabilisation S14. Estimation Phase 1A Gmail = ~6-7h Claude Code.
+- **Activer `inbox-message-router` en prod** : nécessite que Thomas re-OAuth Google (scope `calendar.events` ajouté S13) + ajoute `OPENAI_API_KEY` dans Replit Secrets pour voice.
 
-### Actions Thomas à valider en début S13
+### Actions Thomas à valider en début S14
 
-1. **Tester `/bail` en prod** : sélection locataire → date début → date signature → récap → bouton Valider → DOCX+PDF générés et envoyés. Vérifier que les 24 sections juridiques apparaissent correctement dans le DOCX.
-2. **Tester `/findebail` en prod** : sélection locataire → date fin → récap → bouton Valider → PDF attestation 1 page envoyé. Vérifier que le paragraphe "dépôt de garantie + délai 1 mois / 2 mois + art. 22" apparaît bien après le corps de l'attestation.
-3. **Tester `/candidat` en prod** : 6 étapes de collecte (nom → contact → situation → garanties → bien → notes) avec "skip" possible sur chaque champ → fiche .md uploadée dans `_Candidats/` sur Drive. **Pré-requis** : `DRIVE_VAULT_ROOT_ID` doit être configuré dans Replit Secrets (navigation `07. Contacts` → `05. Locataires` → `_Candidats`).
-4. **Tester photos en mode "fichier"** (Send as file) : la photo doit atterrir dans `_Inbox/Photos/` avec un nom de fichier reflétant la date EXIF DateTimeOriginal (pas la date d'upload). Vérifier sur Drive.
-5. **Tester vidéos** : envoi vidéo en mode compressé OU "fichier" → doit aller dans `_Inbox/Photos/` (même dossier que les photos, même cas d'usage journal Anya).
-6. **Décisions à fournir avant relance @fullstack sur le bail** :
-   - Encadrement loyers (point 1 ci-dessus) — valeurs €/m² Nanterre + Paris 18
+1. **Tester `inbox-message-router` texte court** : envoie "sortie enfants aquaboulevard le 12/05/2026" en mode inbox → carte preview Calendar/Todo → clic Calendar → événement créé dans `thomas.issa@gmail.com`.
+2. **Tester `inbox-message-router` vocal** : envoie un message vocal Telegram en mode inbox → Whisper transcrit → Haiku extrait → carte preview. Pré-requis : `OPENAI_API_KEY` dans Replit Secrets.
+3. **Tester `inbox-photo-batch`** : envoie 3-4 photos en mode fichier → Anya bufferise 5s → demande la date → réponds "1" → upload avec date du jour. Vérifier nom de fichier dans `_Inbox/Photos/`.
+4. **Décisions à fournir avant relance @fullstack sur le bail** (INCHANGÉ depuis S12) :
+   - Encadrement loyers — valeurs €/m² Nanterre + Paris 18
    - Arbitrage IRL : API INSEE auto OU saisie manuelle trimestrielle ?
    - Arbitrage clause pénale : 3× ou 1× loyer journalier ?
    - Confirmation meublé exclusif OU besoin template location nue ?
+5. **Configurer Replit Secrets** : `DRIVE_VAULT_ROOT_ID` (pour `/candidat`), `OPENAI_API_KEY` (pour voice router).
 
-### Décisions Thomas verrouillées session 12
+### Décisions Thomas verrouillées session 13
 
-- **Phase 3 bail** : DOCX+PDF, 24 sections juridiques, IRL trimestre précédent, clause pénale 10% (montant brut), inventaire interactif par type de bien depuis `bail-config.json`, récap avant génération conservé (contrairement à quittance, car bail = engagement juridique).
-- **Phase 4 fin-de-bail** : PDF seul (pas DOCX — document 1 page non modifiable), upload Drive dans `DRIVE_BAUX_FOLDER_ID` (sous-dossier locataire), date proposée depuis fiche vault si disponible.
-- **Phase 5 candidat** : fiche `.md` avec frontmatter YAML structuré dans `_Candidats/` Drive, 6 champs collectés séquentiellement avec "skip" possible sur chaque (enregistrement minimal = nom seul accepté).
-- **Vidéos = photos** : pas de sous-dossier `_Inbox/Videos/`, tout va dans `_Inbox/Photos/` via `handleInboxPhoto`. Décision verbatim : "que ce soit traité comme photos pour le journal, et que ca aille dans photos, c'est meme cas dusage".
-- **Audit @legal P0 vagues** : Thomas livre en vagues — uniquement P0 #1 + #4 appliqués S12, le reste S13 après ses arbitrages. Verbatim : "Appliquons uniquement p0 #1 et #4". Pattern documenté dans `docs/lessons-learned.md` session 12.
+- **Photos HEIC** : abandon extraction EXIF (Telegram iOS strip systématiquement). Workflow `inbox-photo-batch` demande la date à Thomas via boutons. Fenêtre 5s (8s trop long).
+- **Texte court inbox** : carte preview avec boutons `[📅 Calendar] [📋 Tâches] [✗ Annuler]` — Thomas choisit à chaque fois. Pas de décision automatique. Seuil 100 chars (au lieu de 80) pour basculer vers auto-CR.
+- **Voice transcription** : OpenAI Whisper retenu (Google STT impose billing account même en free tier). Coût ~0,03€/mois.
+- **Modèles LLM Anya** : Sonnet 4.6 pour CR (qualité critique), Haiku 4.5 pour router inbox (économie ~80%, extraction JSON simple).
+- **Email-ingest** : plan révisé avec mindset IA (heures pas jours) + mutualisation router inbox + Phase 1B Outlook préparée. À coder dans nouvelle session après stabilisation S14.
 
-### Prochaines actions recommandées S13 (ordre)
+### Prochaines actions recommandées S14 (ordre)
 
-1. **Aucune gate bloquante** au démarrage S13 — tous les learnings P0/P1 S12 ont propagation = `propagé` (règle CLAUDE.md 24 ajoutée couvre L1+L2). Les 4 learnings P2 S12 ont propagation = `à-faire` (qa.md, legal.md, reviewer.md, _base-agent-protocol.md, founder-preferences.md, orchestrator.md). À traiter en clôture S13 si pas urgent.
-2. **Après inputs Thomas** : @fullstack reprend les P0 bail #2 (encadrement loyers) + #3 (IRL numérique) + 2 P1 quittance/fin-de-bail. ~1h30 de code.
-3. **Phase 6 promotion candidat → locataire** : workflow `/promouvoir <nom>` (~30 min @fullstack).
-4. **Helper extractPdfText partagé** : extraire dans `src/lib/test-utils/pdf-text.ts`, supprimer duplications. ~10 min.
-5. **Audit TTL project-context.md + CLAUDE.md** : audit profond délégué.
+1. **Vérifier qu'aucune gate P0/P1 bloquante** au démarrage (clôture S13 propage les learnings).
+2. **Audit TTL impératif** : CLAUDE.md (481→<250), project-context.md (~720→<400), lessons-learned.md (~100→<80). Archivage > 5 sessions.
+3. **Après inputs Thomas sur bail** : @fullstack applique P0 bail #2 + #3 + 2 P1 quittance/fin-de-bail (~1h30).
+4. **Phase 6 promotion candidat → locataire** (~30 min @fullstack).
+5. **Helper extractPdfText partagé** (~10 min).
+6. **Email-ingest Phase 1A Gmail** si bande passante (~6-7h, plan prêt dans `second-cerveau/Anya - Plan email-ingest.md`).
 
 ### Blockers
 
-- Aucun blocker technique côté code.
-- **4 décisions Thomas requises** pour reprendre les corrections @legal bail (voir "Actions Thomas à valider").
-- **1 pré-requis Replit Secret** pour activer `/candidat` : `DRIVE_VAULT_ROOT_ID` (parent du dossier `07. Contacts`).
+- Aucun blocker technique côté code (512/512 tests, build OK).
+- **4 décisions Thomas** sur bail (INCHANGÉ depuis S12).
+- **2 Replit Secrets à configurer** : `DRIVE_VAULT_ROOT_ID` + `OPENAI_API_KEY`.
+- **Caps fichiers framework dépassés** depuis 2 sessions — dette technique, à traiter S14.
 
-### Commande de reprise S13
+### Commande de reprise S14
 
 ```
-@orchestrator Mode reprise de session ISSA Capital — Session 13. Branche : claude/issa-capital-s13-anya-bail-legal-[suffix]. Lis project-context.md (mémo session 13) + docs/lessons-learned.md (4 learnings P2 S12 avec propagation à-faire, non bloquants). Priorités dans l'ordre : (1) Confirmer décisions Thomas sur 4 arbitrages bail (encadrement loyers Nanterre+Paris 18, IRL API/manuel, clause pénale 3× vs 1×, meublé exclusif vs template nu) ET configuration Replit Secret `DRIVE_VAULT_ROOT_ID` si pas fait. (2) @fullstack applique P0 bail #2 + #3 + P1 quittance "délivrée gratuitement" + P1 fin-de-bail référence état des lieux. (3) Phase 6 promotion candidat → locataire. (4) Helper extractPdfText partagé. (5) Audit TTL si bande passante. Branche S12 précédente : claude/issa-capital-s12-anya-phase3-bail-P64ir (9 commits productifs livrés, 445/445 tests, audit @legal complet livré).
+@orchestrator Mode reprise de session ISSA Capital — Session 14. Branche : claude/issa-capital-s14-anya-bail-legal-[suffix]. Lis project-context.md (mémo session 14) + docs/lessons-learned.md (learnings S13). Priorités : (1) Vérifier que Thomas a configuré `OPENAI_API_KEY` + `DRIVE_VAULT_ROOT_ID` dans Replit Secrets, et re-OAuth Google pour `calendar.events`. (2) Audit TTL impératif fichiers framework (CLAUDE.md 481→<250 lignes, project-context.md 720→<400 lignes via archivage > 5 sessions). (3) Confirmer décisions Thomas sur 4 arbitrages bail. (4) @fullstack applique P0 bail #2 + #3 + P1 quittance/fin-de-bail. (5) Phase 6 promotion candidat → locataire. (6) Email-ingest Phase 1A Gmail si bande passante (plan prêt dans `second-cerveau/Anya - Plan email-ingest.md`, ~6-7h). Branche S13 précédente : claude/issa-capital-s13-hotfix-build-quittance-m7Lkc (13 commits productifs, 512/512 tests, workflows inbox-photo-batch + inbox-message-router livrés).
 ```
 
 ---

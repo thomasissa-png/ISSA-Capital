@@ -2,10 +2,55 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-05-12 — Session 13 Hotfix + corrections Anya**
+> Dernière mise à jour : **2026-05-12 — Clôture Session 13 (13 commits, inbox workflows + voice STT)**
 
 <!-- SESSION: phases=0 tasks_prod=0 tasks_consult=0 -->
 <!-- BRANCH ACTIVE: claude/issa-capital-s13-hotfix-build-quittance-m7Lkc -->
+
+---
+
+## Session 13 — Clôture (2026-05-12)
+
+**Branche** : `claude/issa-capital-s13-hotfix-build-quittance-m7Lkc`
+**Commits productifs** : 13
+**Tests** : 512/512 PASS
+**Statut** : ✅ Livrée
+
+### Phases livrées Session 13
+
+| Phase | Description | Commits |
+|---|---|---|
+| 13a Hotfix build | TS6133 (`bail-config.ts` + `pdf-bail.ts` imports docx morts) | `9864ef5` |
+| 13a Fix quittance | Date "Fait à Nanterre" = 3 du mois (bug `(mois%12)+1`) | `0f585f8` |
+| 13b Fix /bail sourcing | `_Candidats/` au lieu de locataires actuels | `8d82d90` |
+| 13c Diagnostic HEIC | 8 commits, découverte Telegram iOS strip EXIF | `be9aa74` → `6e7bb40` |
+| 13d Workflow `inbox-photo-batch` | Photos bufferisées 5s, Anya demande la date | `1737016` + `bcf873b` |
+| 13e Workflow `inbox-message-router` | Texte court → Haiku 4.5 → carte preview Calendar/Todo | `73eb125` + `697c76d` |
+| 13f Script test dates FR | 25 cas validation résolution dates+heures | `b2d57cb` + `8efc35e` |
+| 13g Seuil auto-CR | 80 → 100 chars | `d2bc37e` |
+| 13h Refresh anya-spec | Sessions 12+13 documentées | `2d8fb2e` |
+| 13i Plan email-ingest patché | Mindset IA + mutualisation router + Phase 1B | `07c245e` |
+| 13j Voice STT | Google STT essai → Whisper OpenAI (billing GCP refusé) | `172cd14` + `c95d726` |
+
+### Décisions Thomas verrouillées S13
+
+- Photos HEIC : abandon EXIF, demande date à Thomas via `inbox-photo-batch`
+- Texte court : boutons à chaque fois (Calendar/Todo/Annuler), pas de décision auto
+- Voice : Whisper OpenAI (Google STT exige billing account même free tier)
+- Modèles : Sonnet 4.6 (CR) + Haiku 4.5 (router inbox)
+- Seuil auto-CR : 100 chars ; fenêtre batch photo : 5s
+
+### Phases restantes (reportées S14+)
+
+| Phase | Statut |
+|---|---|
+| Audit TTL framework (CLAUDE.md 481→<250, project-context 720→<400) | P1 reporté S12+S13 |
+| P0 bail #2 encadrement loyers Nanterre+Paris18 | Bloqué décision Thomas |
+| P0 bail #3 IRL numérique | Bloqué arbitrage Thomas |
+| P1 quittance "délivrée gratuitement" + fin-de-bail état des lieux | Reporté |
+| Phase 6 promotion candidat → locataire | À démarrer |
+| Helper extractPdfText partagé | À démarrer |
+| Email-ingest Phase 1A Gmail | Plan prêt (~6-7h) |
 
 ---
 
