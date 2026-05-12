@@ -29,24 +29,27 @@ export async function resolvePhotoTimestamp(
   telegramMessageDate?: number,
 ): Promise<PhotoTimestamp> {
   // 1. EXIF DateTimeOriginal ou CreateDate
-  // Note : on n'utilise plus { pick: [...] } qui en exifr v7 peut renvoyer null
-  // même quand les tags existent (limitation des segments lus par le parser optimisé).
-  // Le coût CPU d'un parse complet sur un buffer EXIF de quelques Ko est négligeable.
+  // Note importante : exifr v7 supporte HEIC/HEIF nativement, mais SEULEMENT si on lui
+  // laisse l'auto-détection. Avec des options restrictives comme { tiff: true, exif: true },
+  // le parser HEIC (basé sur les box ISO BMFF) n'est pas activé et retourne null pour
+  // toute photo iPhone envoyée en mode fichier.
+  // Solution : parse(buffer, true) = lis tous les segments, auto-détecte le format.
+  // Coût CPU négligeable sur des photos < 1Mo.
   try {
-    const exif = await parse(photoBuffer, { tiff: true, exif: true, translateValues: true, reviveValues: true });
+    const exif = await parse(photoBuffer, true);
     if (exif) {
-      // Dump all tags found so we can see in Replit Logs what's actually in the buffer.
       const tagsFound = Object.keys(exif);
       console.warn(`[inbox-photo] exif tags trouvés (${tagsFound.length}): ${tagsFound.join(', ').slice(0, 200)}`);
     }
-    const candidate = exif?.DateTimeOriginal ?? exif?.CreateDate;
+    // iPhone HEIC peut utiliser CreateDate, DateTimeOriginal, ou DateCreated selon le firmware.
+    const candidate = exif?.DateTimeOriginal ?? exif?.CreateDate ?? exif?.DateCreated ?? exif?.ModifyDate;
     if (candidate instanceof Date && !isNaN(candidate.getTime())) {
       console.warn(`[inbox-photo] timestamp source: exif → ${candidate.toISOString()}`);
       return { date: candidate, source: 'exif' };
     }
     if (exif) {
       const dtoType = candidate === undefined ? 'absent' : typeof candidate;
-      console.warn(`[inbox-photo] exif présent mais DateTimeOriginal/CreateDate non utilisable (type=${dtoType}, value=${String(candidate).slice(0, 80)})`);
+      console.warn(`[inbox-photo] exif présent mais date non utilisable (type=${dtoType}, value=${String(candidate).slice(0, 80)})`);
     } else {
       console.warn('[inbox-photo] exif absent dans le buffer (image envoyée en mode photo Telegram, ou re-encodage)');
     }
