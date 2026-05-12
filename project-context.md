@@ -529,6 +529,12 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | @fullstack (Session 9 — Second cerveau Obsidian) | 2026-04-09 | second-cerveau/ (CLAUDE.md, SETUP.md, 7 templates, Todo.md, structure 10 dossiers) | Vault Obsidian complet remplaçant Craft. Structure : Profil (copie claude-profile), Projets, Contacts, Réunions, Tâches, Journal, Idées, Cuisine, Learnings, Ressources. 7 templates (Réunion, Contact, Journal, Idée, Recette, Learning, Projet). SETUP.md pas-à-pas (Obsidian install, Sync, Cowork, plugins). Routine quotidienne suggérée. | Obsidian Sync retenu (pas iCloud — instable Windows). Google Drive comme backup. Craft abandonné (API complexe, éditeur propriétaire). |
 | main thread (Session 9 continuation — clôture) | 2026-05-10 | docs/founder-preferences.md (créé), docs/lessons-learned.md (archivé + propagé), docs/lessons-learned-archive.md (créé), docs/project-context-archive.md (créé), project-context.md (mémo session 10) | Clôture session 9 : propagation P0 "Zéro MVP" (fullstack.md, ia.md, infrastructure.md) + P2 "Umami" (data-analyst.md). Création docs/founder-preferences.md. Archivage learnings P2/P3 terminés. Archivage memos sessions 5-6. Nettoyage guide MCP Gmail/Calendar inutile (Claude Desktop a intégration native Google). | Guide MCP supprimé car Claude Desktop gère nativement Gmail/Calendar — toujours vérifier les intégrations natives avant de recommander une solution technique complexe. |
 | orchestrator (Session 10 — vault Obsidian + alignement contacts) | 2026-05-10 | second-cerveau/ (8 fiches Projets, 14 fiches Contacts, 6 README dossiers, Dashboard.md, SETUP-ASANA-MCP.md) + docs/product/secretariat-contacts-database.md (corrections Carl/Maxime/Martin/Emmanuel) | Vault Obsidian peuplé : 8 projets pré-remplis depuis project-context.md, 14 contacts (11 complets + 3 partiels famille) depuis contacts.ts + secretariat-contacts-database.md + about-me.md. Arbo Alternative C avec Notes/ (Idées/Learnings/Cuisine/Voyages). Alignement contacts-database.md : Carl Standertskjold-Nordenstam, Maxime Lemoine (noms complets), Martin Yhuel ajouté, Emmanuel Gomez corrigé (ex-Président, conseiller sans contrat). Guide SETUP-ASANA-MCP.md pas-à-pas. | Arbo Alternative C validée par Thomas (regroupe perso dans Notes/ thématique). 14 contacts = liste exhaustive des personnes nommées dans les sources existantes. Zéro placeholder générique (pas de fiche "Expert-comptable" sans nom). Craft API non vérifiable sans WebFetch — à documenter pour Thomas. |
+| main thread (Session 10 — correction MCP natifs + ASCII + SETUP-DRIVE) | 2026-05-10 | second-cerveau/SETUP-ASANA.md + SETUP-CRAFT.md (réécrits), SETUP-DRIVE.md (créé), renommage ASCII Réunions→Reunions, Tâches→Taches, Idées→Idees, Darré→Darre, Guérin→Guerin. CLAUDE.md règles n°19 (connectors natifs avant MCP) et n°20 (noms ASCII pur) ajoutées. ZIP vault recréé avec flag UTF-8. | Asana et Craft sont des connectors natifs Claude (claude.ai/customize/connectors), pas besoin de MCP technique custom. Récidive du learning session 9 P2 (Gmail/Calendar). Tous les noms de fichiers/dossiers avec accents renommés en ASCII pour cross-plateforme. SETUP-DRIVE documente la stratégie Drive Desktop sync + option Obsidian Sync mobile. | Thomas a corrigé en chat : "Asana et Craft ont tous les deux des connecteurs dans claude... J'ai fait la connection". Récidive exacte du learning session 9. Promotion en règle globale n°19 pour empêcher la 3e occurrence. ASCII pour fichiers/dossiers : Thomas a vu noms cassés dans zip (UTF-8 octal `\303\251` au lieu de `é`) — règle n°20 ajoutée. |
+| orchestrator (Session 10 — super-prompt import Craft/Asana) | 2026-05-10 | Réponse en chat : super-prompt clé-en-main pour Claude.ai (inventaire Craft+Asana → IMPORT-PLAN.md formaté pour le vault). Clarification Claude Code (sandbox) vs Claude.ai (connectors) — répartition des rôles. | Workflow Option C hybride : Thomas exécute l'audit Craft+Asana dans Claude.ai (où vivent les connectors), Claude Code formate. Super-prompt impose : fiches existantes à ne pas dupliquer, format IMPORT-PLAN structuré, ASCII strict, frontmatter YAML conforme aux templates, anti-hallucination ("[à compléter par Thomas]"). | Claude Code n'a pas accès aux connectors Claude.ai (sandbox isolé). Thomas pensait que oui — clarification nécessaire. Le super-prompt permet de "déléguer" à Claude.ai sans que Thomas ait à re-briefer son contexte à chaque fois. |
+| fullstack (Session 10 — audit Anya pour extension Inbox) | 2026-05-10 | Audit code Anya (route.ts 1282 lignes + 13 modules) — production de 5 livrables sans code : flow actuel, mode de bascule (3 options), routing par type, diff minimal, stratégie Drive folder. Reco : Option γ enrichie (inbox par défaut + commandes), Option 3 Drive (1 ID parent). | Pattern audit-avant-code : @fullstack lit profondément avant de proposer. Identifie 5 hooks d'extension naturels dans route.ts. Détecte bug : `message.document` est silencieusement ignoré aujourd'hui. Estimate ~350-400 lignes ajoutées, 30-40 modifiées, zéro casse 68 tests existants. | Mode γ vs α (commande explicite) vs β (hashtag) : γ enrichie = zéro friction (80%+ messages spontanés = captures), commandes pour cas exceptionnels. Option 3 Drive vs 1 (4 IDs en env) vs 2 (auto-discovery dangereuse) : 1 seule variable + auto-création sous-dossiers = friction minimale + zéro ambiguïté. |
+| ia (Session 10 — architecture multi-workflows Anya) | 2026-05-10 | Architecture extensible avec distinction Mode (état conversationnel inbox) vs Workflow (pipeline finitaire CR/quittance/bail). Interface Workflow commune + workflowRegistry. Migration 2 phases : Phase 1 = wrap CR + add inbox (zéro casse) ; Phase 2 = quittance/bail (1 fichier + 1 ligne registry par workflow). | Pattern décisif pour scalabilité future. Ajouter quittance = créer workflows/quittance.ts + entry registry. Aucun impact sur CR ni inbox. Machine d'états par workflow, TTL anti-zombie 24h, validation par boutons inline réutilisée. Schéma WorkflowState commun (type, step, data, startedAt, expiresAt). | Mode vs Workflow : distinction conceptuelle clé. Inbox n'a pas d'état (stateless par message), workflows ont machine à états riches. Forcer la même abstraction = over-engineering. Pattern Workflow interface + Registry est l'extension naturelle de l'architecture actuelle, pas une réécriture. |
+| fullstack (Session 10 — implémentation Phase 1 Anya inbox) | 2026-05-10 | 5 fichiers créés (workflows/{types,registry,cr}.ts + inbox.ts + 2 fichiers tests inbox+router), 4 fichiers modifiés (route.ts router 3 niveaux, conversation-store, drive-upload uploadToInbox, types Zod document+media_group). 102/102 tests passent. TypeScript 0 erreur. Commit 282a6d1. | Architecture livrée production-ready. Mode inbox actif par défaut. Commandes /cr /inbox /cancel /status. Auto-CR ≥80 chars (habitude Thomas préservée). Albums photos via media_group_id timer 2s. Edge cases couverts (>20MB, doublons timestamp millisecondes, slugify ASCII, types non supportés). Modèle Sonnet 4.6 conservé pour qualité (décision Thomas "ne gâchons ni l'usage ni la qualité, optimisons ce qui doit l'être tant que pas d'impact négatif"). | Découpage anti-timeout (1 fichier = 1 Write) respecté — 11 étapes séquentielles. Wrapper CR léger (pas de réécriture profonde) = zéro casse des 68 tests CR. Option B (bot pur inbox sans API) rejetée car casse l'UX conversationnel CR. Option C hybride retenue : inbox = 0 API, workflows = Sonnet 4.6 sur API. Coût estimé ~12 €/an, négligeable. |
+| main thread (Session 10 — clôture) | 2026-05-10 | docs/lessons-learned.md (2 nouveaux P1 : MCP récidive, ASCII), docs/founder-preferences.md (préférences capturées), project-context.md (mémo session 11). | Clôture session 10. Propagation P1 effective : règles CLAUDE.md n°19 (connectors natifs avant MCP) et n°20 (noms ASCII pur). Push branch + main. | Boucle fermée propagation : P1 corrigés en session, propagés en clôture, accessibles cross-projets via raw GitHub URLs. |
 
 ---
 
@@ -812,6 +818,68 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 ## Mémos archivés
 
 Les mémos de reprise des sessions 5 et 6 ont été archivés dans `docs/project-context-archive.md` (clôture session 9, 2026-05-10). Consulter ce fichier pour l'historique détaillé de ces sessions.
+
+---
+
+## Mémo de reprise — Session 11 (clôture session 10 le 2026-05-12)
+
+### Numéro de session : 11
+
+### Date de clôture : 2026-05-12
+
+### Branche active : `claude/issa-capital-s10-obsidian-restructure-HFevS` (à renommer pour session 11)
+
+### Nom de branche recommandé pour session 11
+`claude/issa-capital-s11-anya-phase2-quittances-[suffix]`
+(ou autre slug selon priorité — voir prochaines actions ci-dessous)
+
+### Résumé de la session 10
+
+Session dense couvrant vault Obsidian + extension Anya. Travaux majeurs :
+1. **Vault Obsidian peuplé** : 8 fiches Projets + 14 fiches Contacts (zéro invention, sources citées) + Dashboard Dataview + alignement contacts-database.md
+2. **Correction MCP P1 RÉCIDIVE** : Asana et Craft sont des connectors natifs Claude (claude.ai/customize/connectors), pas besoin de MCP technique. SETUP-ASANA-MCP/CRAFT-MCP supprimés, réécrits en SETUP-ASANA/CRAFT (5 lignes chacun)
+3. **Noms ASCII** : tous les dossiers/fichiers avec accents renommés (Reunions, Taches, Idees, Darre, Guerin)
+4. **2 nouvelles règles framework** : CLAUDE.md n°19 (connectors natifs avant MCP) + n°20 (noms ASCII pur)
+5. **SETUP-DRIVE.md** : stratégie Drive Desktop sync + Obsidian Sync mobile
+6. **Super-prompt Claude.ai** : pour audit Craft+Asana via connectors et import dans vault
+7. **Architecture Anya multi-workflows** : Mode (inbox) vs Workflow (CR/quittance/bail). Phase 1 implémentée : workflows/ directory + inbox.ts + router 3 niveaux. 102/102 tests, 0 erreur TS, zéro casse flow CR existant
+
+### Travaux en cours
+
+- **Phase 2 Anya (quittances/baux)** : architecture prête, à implémenter en session future. Pattern : 1 fichier `workflows/quittance.ts` + 1 ligne `workflowRegistry`.
+- **Import Craft+Asana → vault** : Thomas doit exécuter le super-prompt dans Claude.ai, récupérer IMPORT-PLAN.md, le redéposer dans Claude Code pour distribution dans le vault.
+- **Drive ↔ Obsidian sync mobile** : décision Obsidian Sync (8 €/mois) ou iCloud à prendre quand Thomas voudra l'usage mobile.
+- **Favicon session 8** : 3 variantes typographiques toujours en attente décision Thomas (variante A sans-serif / B Didone / C humaniste).
+
+### Prochaines actions recommandées
+
+1. **Activation Anya inbox en prod** (Thomas, ~5 min) :
+   - Révoquer token Telegram exposé en chat (@BotFather)
+   - Créer nouveau token, ajouter en Replit Secrets `TELEGRAM_BOT_TOKEN`
+   - Ajouter en Replit Secrets : `DRIVE_INBOX_FOLDER_ID=18m0Vq_Y1rbdnJ-SfTcoRKWCi0GJ0iCuJ`
+   - Redéployer et tester (photo, texte, voix, doc, album, /cr, /status)
+2. **Phase 2 workflow quittance** (`@fullstack` quand Thomas voudra) — création de `workflows/quittance.ts` + template PDF + tests. ~1 session.
+3. **Import Craft → vault** (Thomas dans Claude.ai puis Claude Code) — quand Thomas voudra rapatrier ses notes Craft.
+
+### Blockers
+
+- Aucun blocker technique
+- Token Telegram : à révoquer/recréer par Thomas (exposé dans une conversation chat session 10)
+- Décision favicon : 3 variantes en attente Thomas depuis session 8
+
+### Décisions Thomas verrouillées session 10
+
+- **Architecture Anya** : Mode `inbox` par défaut (0 API Claude) + Workflows structurés (CR + futurs quittance/bail) sur API Sonnet 4.6
+- **Connectors natifs** : toujours préférer claude.ai/customize/connectors aux setups MCP custom (règle n°19)
+- **ASCII pour fichiers/dossiers** : accents OK dans le contenu, pas dans les chemins (règle n°20)
+- **Pas de dichotomie Pro/Perso** dans vault : un contact reste un contact (préférence fondateur)
+- **Qualité > coût** : "ne gâchons ni l'usage ni la qualité, optimisons ce qui doit l'être tant que pas d'impact négatif"
+
+### Commande de reprise suggérée
+
+```
+@orchestrator Mode reprise de session pour ISSA Capital session 11. Lis project-context.md (mémo session 11) + docs/lessons-learned.md. Vérifie les caps (CLAUDE.md, lessons-learned, founder-preferences, project-context). Si Phase 2 Anya prioritaire → délègue à @fullstack pour implémenter workflow quittance (pattern documenté : workflows/quittance.ts + entrée registry + template PDF + tests). Sinon : suis les 3 prochaines actions du mémo dans l'ordre.
+```
 
 ---
 

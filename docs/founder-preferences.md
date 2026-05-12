@@ -48,3 +48,5 @@
 - **Paralléliser par défaut** : valeur > effort. Ne pas séquencer sans raison.
 - **Après 1 rejet visuel** : toujours fournir 3+ variantes à la passe suivante.
 - **Signal "pauvre/moche/fade"** : déclencher un audit @design complet, pas juste un fix ponctuel.
+- **Qualité > coût** : verbatim session 10 "ne gâchons ni l'usage ni la qualité, optimisons ce qui doit l'être tant que pas d'impact négatif". Refuse les optimisations coût qui dégradent l'UX. Sonnet 4.6 conservé pour les workflows IA (vs Haiku qui économiserait 10€/an). Optimiser ce qui est 100% transparent (ex: mode inbox sans API), pas ce qui dégrade.
+- **Connectors natifs avant MCP custom** : préfère toujours les intégrations 1-clic OAuth dans claude.ai/customize/connectors aux setups MCP techniques (Node.js, PAT, config JSON). 2 récidives observées (Gmail/Calendar session 9, Asana/Craft session 10). Règle CLAUDE.md n°19.
