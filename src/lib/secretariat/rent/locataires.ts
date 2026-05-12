@@ -1,5 +1,5 @@
 /**
- * Lecture des fiches locataires depuis Google Drive.
+ * Lecture des fiches locataires depuis Google Drive + recherche "futée".
  *
  * Source : Drive uniquement (décision verrouillée par Thomas).
  * Chemin Drive : 07. Contacts/05. Locataires/01. Actuels/<Prenom Nom>.md
@@ -16,11 +16,14 @@
  * email: kenan@example.com
  * ---
  *
- * Scope OAuth requis : drive.readonly (Thomas le migre manuellement via /api/drive-auth).
+ * Scope OAuth requis : drive (Thomas l'a migré manuellement via /api/drive-auth).
+ *
+ * Recherche futée : normalisation accents/casse, startsWith, contains,
+ * Levenshtein ≤ 2, match sur nom_officiel du frontmatter.
  */
 
 import { getAccessToken } from '../drive-upload';
-import type { Locataire } from './types';
+import type { Locataire, LocataireMatch, RechercheLocataireResult } from './types';
 
 // ============================================================
 // Constantes Drive
@@ -33,12 +36,15 @@ const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
  * Le script Python cherche dans 01. Actuels/ puis _Candidats/.
  */
 const LOCATAIRE_FOLDERS = [
-  '01. Actuels',
-  '_Candidats',
+  { name: '01. Actuels', source: 'actuels' as const },
+  { name: '_Candidats', source: 'candidats' as const },
 ];
 
 /** Regex pour extraire le frontmatter YAML d'un fichier Markdown */
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
+
+/** TTL du cache en ms (60 secondes) */
+const CACHE_TTL_MS = 60_000;
 
 // ============================================================
 // YAML parser minimaliste (pas de dépendance)
@@ -99,29 +105,84 @@ function parseDate(value: string | number | null | undefined): Date | null {
 }
 
 // ============================================================
+// Normalisation de texte pour matching fuzzy
+// ============================================================
+
+/**
+ * Normalise un texte pour la comparaison :
+ * - lowercase
+ * - suppression diacritiques (é→e, ç→c, etc.)
+ * - suppression espaces multiples + trim
+ */
+export function normalizeForSearch(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ============================================================
+// Levenshtein distance (implémentation native Wagner-Fischer)
+// ============================================================
+
+/**
+ * Calcule la distance de Levenshtein entre deux chaînes.
+ *
+ * Implémentation native (~15 lignes) plutôt qu'un package npm :
+ * - Usage borné (noms courts, max ~30 chars)
+ * - Zéro dépendance pour un algorithme trivial et stable
+ * - Ownership total, zéro risque supply chain
+ */
+export function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+
+  // Optimisation : si l'une des chaînes est vide
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  // Matrice à 2 lignes (optimisation mémoire)
+  let prev = new Array<number>(n + 1);
+  let curr = new Array<number>(n + 1);
+
+  for (let j = 0; j <= n; j++) prev[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        prev[j]! + 1,       // deletion
+        curr[j - 1]! + 1,   // insertion
+        prev[j - 1]! + cost, // substitution
+      );
+    }
+    [prev, curr] = [curr, prev];
+  }
+
+  return prev[n]!;
+}
+
+// ============================================================
 // API Drive
 // ============================================================
 
 /**
  * Recherche des fichiers .md dans un dossier Drive donné.
+ * Ne filtre PAS par nom (on charge tout puis on matche localement).
  *
  * @param accessToken Token OAuth2 valide
- * @param parentPath Chemin du dossier parent (ex: "07. Contacts/05. Locataires/01. Actuels")
- * @param query Optionnel : fragment de nom de fichier pour filtrer
+ * @param folderQuery Condition de requête parent (ex: "'FOLDER_ID' in parents")
  * @returns Liste de fichiers avec id et name
  */
-async function searchDriveFiles(
+async function listDriveMarkdownFiles(
   accessToken: string,
   folderQuery: string,
-  nameFragment?: string,
 ): Promise<Array<{ id: string; name: string }>> {
-  let q = `${folderQuery} and mimeType='text/markdown' and trashed=false`;
-  if (nameFragment) {
-    const escaped = nameFragment.replace(/'/g, "\\'");
-    q += ` and name contains '${escaped}'`;
-  }
-
-  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=50`;
+  const q = `${folderQuery} and mimeType='text/markdown' and trashed=false`;
+  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=100`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -130,7 +191,7 @@ async function searchDriveFiles(
 
   if (!response.ok) {
     const err = await response.text().catch(() => '');
-    console.error(`[locataires] search Drive échoué : HTTP ${response.status} — ${err.slice(0, 200)}`);
+    console.error(`[locataires] list Drive échoué : HTTP ${response.status} — ${err.slice(0, 200)}`);
     return [];
   }
 
@@ -189,18 +250,12 @@ async function readDriveFileContent(
  * Navigue dans l'arborescence Drive pour trouver le dossier locataires.
  *
  * Chemin : root → "07. Contacts" → "05. Locataires" → subfolder
- *
- * @param accessToken Token OAuth2
- * @param rootFolderId ID du dossier racine Obsidian (DRIVE_INBOX_FOLDER_ID parent ou My Drive root)
- * @param subfolder Nom du sous-dossier final ("01. Actuels" ou "_Candidats")
- * @returns ID du dossier trouvé, ou null
  */
 async function navigateToLocataireFolder(
   accessToken: string,
   rootFolderId: string,
   subfolder: string,
 ): Promise<string | null> {
-  // Naviguer dans l'arborescence : root → 07. Contacts → 05. Locataires → subfolder
   const contactsId = await findDriveFolderByName(accessToken, rootFolderId, '07. Contacts');
   if (!contactsId) {
     console.warn(`[locataires] dossier "07. Contacts" non trouvé dans ${rootFolderId}`);
@@ -265,72 +320,319 @@ export function parseFicheLocataire(
   };
 }
 
+// ============================================================
+// Cache en mémoire pour les fiches locataires
+// ============================================================
+
+interface CachedFiche {
+  nomFichier: string;
+  nomOfficiel: string | null;
+  locataire: Locataire;
+  source: 'actuels' | 'candidats';
+}
+
+interface FichesCache {
+  fiches: CachedFiche[];
+  totaux: { actuels: number; candidats: number };
+  loadedAt: number;
+}
+
+let fichesCache: FichesCache | null = null;
+
 /**
- * Recherche un locataire par nom dans le Drive.
- *
- * Ordre de recherche (port fidèle du Python) :
- * 1. 07. Contacts/05. Locataires/01. Actuels/
- * 2. 07. Contacts/05. Locataires/_Candidats/
- *
- * @param query Nom ou fragment (ex: "Kenan", "Kenan Beguigneau")
- * @returns Locataire parsé ou null si non trouvé / frontmatter invalide
+ * Invalide le cache manuellement (utile après ajout/suppression de locataire).
  */
-export async function rechercherLocataire(
-  query: string,
-): Promise<{ locataire: Locataire | null; alternatives: string[] }> {
+export function invalidateLocatairesCache(): void {
+  fichesCache = null;
+}
+
+/**
+ * Charge toutes les fiches locataires depuis Drive (avec cache TTL 60s).
+ *
+ * Charge les fichiers .md de 01. Actuels/ et _Candidats/, lit leur contenu,
+ * parse le frontmatter. Skip silencieusement les fiches invalides.
+ */
+async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
+  const now = Date.now();
+
+  // Retourner le cache s'il est valide
+  if (!forceRefresh && fichesCache && (now - fichesCache.loadedAt) < CACHE_TTL_MS) {
+    return fichesCache;
+  }
+
   const accessToken = await getAccessToken();
   if (!accessToken) {
     console.error('[locataires] pas de token OAuth2 pour Drive');
-    return { locataire: null, alternatives: [] };
+    return { fiches: [], totaux: { actuels: 0, candidats: 0 }, loadedAt: now };
   }
 
-  // ID du dossier racine Obsidian — on utilise le parent du dossier Inbox
-  // ou le dossier spécifié dans DRIVE_VAULT_ROOT_ID
   const rootFolderId = process.env.DRIVE_VAULT_ROOT_ID ?? process.env.DRIVE_INBOX_FOLDER_ID;
   if (!rootFolderId) {
     console.error('[locataires] DRIVE_VAULT_ROOT_ID ou DRIVE_INBOX_FOLDER_ID manquant');
-    return { locataire: null, alternatives: [] };
+    return { fiches: [], totaux: { actuels: 0, candidats: 0 }, loadedAt: now };
   }
 
-  for (const subfolder of LOCATAIRE_FOLDERS) {
-    const folderId = await navigateToLocataireFolder(accessToken, rootFolderId, subfolder);
+  const fiches: CachedFiche[] = [];
+  const totaux = { actuels: 0, candidats: 0 };
+
+  for (const folder of LOCATAIRE_FOLDERS) {
+    const folderId = await navigateToLocataireFolder(accessToken, rootFolderId, folder.name);
     if (!folderId) continue;
 
-    // Chercher les fichiers .md dans ce dossier
     const q = `'${folderId}' in parents`;
-    const files = await searchDriveFiles(accessToken, q, query);
+    const files = await listDriveMarkdownFiles(accessToken, q);
 
-    if (files.length === 0) continue;
+    // Compter avant filtrage
+    const mdFiles = files.filter((f) => !f.name.startsWith('_'));
+    if (folder.source === 'actuels') {
+      totaux.actuels = mdFiles.length;
+    } else {
+      totaux.candidats = mdFiles.length;
+    }
 
-    // Match exact (insensible à la casse, sans extension .md)
-    const normalizedQuery = query.toLowerCase().trim();
-    const exactMatch = files.find(
-      (f) => f.name.replace(/\.md$/i, '').toLowerCase() === normalizedQuery,
+    // Lire le contenu de chaque fiche
+    for (const file of mdFiles) {
+      const content = await readDriveFileContent(accessToken, file.id);
+      if (!content) {
+        console.warn(`[locataires] impossible de lire ${file.name} (id: ${file.id})`);
+        continue;
+      }
+
+      const locataire = parseFicheLocataire(content, file.name);
+      if (!locataire) {
+        console.warn(`[locataires] frontmatter invalide pour ${file.name} — skip`);
+        continue;
+      }
+
+      // Extraire nom_officiel du frontmatter (peut différer de nomAffiche si parseFicheLocataire le modifie)
+      const fmMatch = FRONTMATTER_RE.exec(content);
+      const fm = fmMatch?.[1] ? parseSimpleYaml(fmMatch[1]) : {};
+      const nomOfficiel = typeof fm['nom_officiel'] === 'string' && fm['nom_officiel']
+        ? fm['nom_officiel']
+        : null;
+
+      fiches.push({
+        nomFichier: file.name.replace(/\.md$/i, ''),
+        nomOfficiel,
+        locataire,
+        source: folder.source,
+      });
+    }
+  }
+
+  fichesCache = { fiches, totaux, loadedAt: now };
+  return fichesCache;
+}
+
+// ============================================================
+// Algorithme de matching fuzzy
+// ============================================================
+
+/**
+ * Exécute le matching fuzzy sur une liste de fiches.
+ * Exported pour les tests (permet de tester sans mock Drive).
+ */
+export function matchFiches(
+  query: string,
+  fiches: CachedFiche[],
+): LocataireMatch[] {
+  if (!query.trim()) return [];
+
+  const normalizedQuery = normalizeForSearch(query);
+  if (!normalizedQuery) return [];
+
+  const matches: LocataireMatch[] = [];
+  const seen = new Set<string>(); // éviter les doublons (même fichier matché plusieurs fois)
+
+  function addMatch(fiche: CachedFiche, score: number, matchType: LocataireMatch['matchType']): void {
+    // Garder le meilleur score si déjà vu
+    const key = `${fiche.source}:${fiche.nomFichier}`;
+    if (seen.has(key)) {
+      const existing = matches.find((m) => `${m.source}:${m.nomFichier}` === key);
+      if (existing && existing.score <= score) return; // existant est meilleur ou égal
+      if (existing) {
+        existing.score = score;
+        existing.matchType = matchType;
+        return;
+      }
+    }
+    seen.add(key);
+    matches.push({
+      nomFichier: fiche.nomFichier,
+      nomAffiche: fiche.nomOfficiel ?? fiche.nomFichier,
+      source: fiche.source,
+      score,
+      matchType,
+    });
+  }
+
+  for (const fiche of fiches) {
+    const normalizedNomFichier = normalizeForSearch(fiche.nomFichier);
+    const normalizedNomOfficiel = fiche.nomOfficiel
+      ? normalizeForSearch(fiche.nomOfficiel)
+      : null;
+
+    // Extraire les parties du nom de fichier (prénom, nom de famille)
+    const partsFichier = normalizedNomFichier.split(' ');
+    const prenomFichier = partsFichier[0] ?? '';
+    const nomFamilleFichier = partsFichier.length > 1
+      ? partsFichier[partsFichier.length - 1]!
+      : '';
+
+    // --- Stratégie 1 : Exact match sur nom de fichier normalisé (score 0) ---
+    if (normalizedNomFichier === normalizedQuery) {
+      addMatch(fiche, 0, 'exact');
+      continue;
+    }
+
+    // --- Stratégie 2 : Exact match sur nom_officiel normalisé (score 0) ---
+    if (normalizedNomOfficiel && normalizedNomOfficiel === normalizedQuery) {
+      addMatch(fiche, 0, 'nomOfficiel');
+      continue;
+    }
+
+    // --- Stratégie 3 : StartsWith sur nom de fichier normalisé (score 1) ---
+    if (normalizedNomFichier.startsWith(normalizedQuery)) {
+      addMatch(fiche, 1, 'startsWith');
+      continue;
+    }
+
+    // --- Stratégie 4 : StartsWith sur prénom seul (score 1) ---
+    if (prenomFichier && prenomFichier.startsWith(normalizedQuery)) {
+      addMatch(fiche, 1, 'startsWith');
+      continue;
+    }
+
+    // --- Stratégie 5 : Contains sur nom de fichier normalisé (score 2) ---
+    if (normalizedNomFichier.includes(normalizedQuery)) {
+      addMatch(fiche, 2, 'contains');
+      continue;
+    }
+
+    // --- Stratégie 6 : Contains sur nom_officiel normalisé (score 2) ---
+    if (normalizedNomOfficiel && normalizedNomOfficiel.includes(normalizedQuery)) {
+      addMatch(fiche, 2, 'contains');
+      continue;
+    }
+
+    // --- Stratégie 7 : Levenshtein distance ≤ 2 sur nom complet, prénom ou nom de famille ---
+    const queryParts = normalizedQuery.split(' ');
+
+    // Levenshtein sur le nom complet de fichier
+    const distFull = levenshtein(normalizedQuery, normalizedNomFichier);
+    if (distFull <= 2) {
+      addMatch(fiche, distFull, 'levenshtein');
+      continue;
+    }
+
+    // Levenshtein sur le nom_officiel complet
+    if (normalizedNomOfficiel) {
+      const distOfficiel = levenshtein(normalizedQuery, normalizedNomOfficiel);
+      if (distOfficiel <= 2) {
+        addMatch(fiche, distOfficiel, 'levenshtein');
+        continue;
+      }
+    }
+
+    // Levenshtein sur le prénom seul (si query est un seul mot)
+    if (queryParts.length === 1 && prenomFichier) {
+      const distPrenom = levenshtein(normalizedQuery, prenomFichier);
+      if (distPrenom <= 2) {
+        addMatch(fiche, distPrenom, 'levenshtein');
+        continue;
+      }
+    }
+
+    // Levenshtein sur le nom de famille (si query est un seul mot)
+    if (queryParts.length === 1 && nomFamilleFichier) {
+      const distNom = levenshtein(normalizedQuery, nomFamilleFichier);
+      if (distNom <= 2) {
+        addMatch(fiche, distNom, 'levenshtein');
+        continue;
+      }
+    }
+  }
+
+  // Trier par score croissant, puis par nom pour stabilité
+  matches.sort((a, b) => a.score - b.score || a.nomFichier.localeCompare(b.nomFichier));
+
+  // Top 5
+  return matches.slice(0, 5);
+}
+
+// ============================================================
+// API publique
+// ============================================================
+
+/**
+ * Recherche un locataire par nom dans le Drive (recherche futée).
+ *
+ * Charge toutes les fiches (avec cache 60s), puis applique un matching
+ * fuzzy : exact → startsWith → contains → Levenshtein ≤ 2.
+ * Matche aussi le nom_officiel du frontmatter.
+ *
+ * @param query Nom ou fragment (ex: "Kenan", "Hélla", "Hella Atika Taoutaou")
+ * @param forceRefresh Force le rechargement du cache Drive
+ * @returns Locataire résolu si match unique, candidats si ambigu, totaux si zéro résultat
+ */
+export async function rechercherLocataire(
+  query: string,
+  forceRefresh = false,
+): Promise<RechercheLocataireResult> {
+  const emptyResult: RechercheLocataireResult = {
+    locataire: null,
+    candidats: [],
+    totaux: { actuels: 0, candidats: 0 },
+  };
+
+  if (!query.trim()) return emptyResult;
+
+  const cache = await loadAllFiches(forceRefresh);
+  const matches = matchFiches(query, cache.fiches);
+
+  // Décision : si 1 seul candidat avec score ≤ 1 → match évident
+  if (matches.length === 1 && matches[0]!.score <= 1) {
+    const match = matches[0]!;
+    const fiche = cache.fiches.find(
+      (f) => f.nomFichier === match.nomFichier && f.source === match.source,
     );
-
-    if (exactMatch) {
-      const content = await readDriveFileContent(accessToken, exactMatch.id);
-      if (!content) continue;
-      const locataire = parseFicheLocataire(content, exactMatch.name);
-      return { locataire, alternatives: [] };
-    }
-
-    // Match partiel — si un seul résultat, on le prend
-    if (files.length === 1 && files[0]) {
-      const content = await readDriveFileContent(accessToken, files[0].id);
-      if (!content) continue;
-      const locataire = parseFicheLocataire(content, files[0].name);
-      return { locataire, alternatives: [] };
-    }
-
-    // Plusieurs résultats — retourner les alternatives
     return {
-      locataire: null,
-      alternatives: files.map((f) => f.name.replace(/\.md$/i, '')),
+      locataire: fiche?.locataire ?? null,
+      candidats: [],
+      totaux: cache.totaux,
     };
   }
 
-  return { locataire: null, alternatives: [] };
+  // Si un seul candidat mais score > 1 → quand même retourner comme candidat
+  // Si plusieurs candidats → retourner la liste
+  if (matches.length > 0) {
+    // Cas spécial : si le premier match est score 0 (exact) et le deuxième est > 0,
+    // on prend le match exact directement
+    if (matches[0]!.score === 0 && (matches.length === 1 || matches[1]!.score > 0)) {
+      const match = matches[0]!;
+      const fiche = cache.fiches.find(
+        (f) => f.nomFichier === match.nomFichier && f.source === match.source,
+      );
+      return {
+        locataire: fiche?.locataire ?? null,
+        candidats: [],
+        totaux: cache.totaux,
+      };
+    }
+
+    return {
+      locataire: null,
+      candidats: matches,
+      totaux: cache.totaux,
+    };
+  }
+
+  // Zéro résultat
+  return {
+    locataire: null,
+    candidats: [],
+    totaux: cache.totaux,
+  };
 }
 
 /**
@@ -339,20 +641,9 @@ export async function rechercherLocataire(
  * @returns Liste de noms de fichiers (sans extension)
  */
 export async function listerLocatairesActuels(): Promise<string[]> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) return [];
-
-  const rootFolderId = process.env.DRIVE_VAULT_ROOT_ID ?? process.env.DRIVE_INBOX_FOLDER_ID;
-  if (!rootFolderId) return [];
-
-  const folderId = await navigateToLocataireFolder(accessToken, rootFolderId, '01. Actuels');
-  if (!folderId) return [];
-
-  const q = `'${folderId}' in parents`;
-  const files = await searchDriveFiles(accessToken, q);
-
-  return files
-    .map((f) => f.name.replace(/\.md$/i, ''))
-    .filter((name) => !name.startsWith('_'))
+  const cache = await loadAllFiches();
+  return cache.fiches
+    .filter((f) => f.source === 'actuels')
+    .map((f) => f.nomFichier)
     .sort();
 }

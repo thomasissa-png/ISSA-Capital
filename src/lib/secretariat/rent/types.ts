@@ -37,6 +37,37 @@ export const LocataireSchema = z.object({
 export type Locataire = z.infer<typeof LocataireSchema>;
 
 // ============================================================
+// LocataireMatch — résultat de recherche fuzzy
+// ============================================================
+
+/** Type de match trouvé lors de la recherche */
+export type MatchType = 'exact' | 'normalized' | 'startsWith' | 'contains' | 'levenshtein' | 'nomOfficiel';
+
+/** Un candidat retourné par la recherche fuzzy */
+export interface LocataireMatch {
+  /** Nom du fichier sans extension (ex: "Hella Taoutaou") */
+  nomFichier: string;
+  /** nom_officiel si présent, sinon nomFichier */
+  nomAffiche: string;
+  /** Source du fichier dans l'arborescence Drive */
+  source: 'actuels' | 'candidats';
+  /** Score de match : 0 (parfait) à N (faible). Plus bas = meilleur */
+  score: number;
+  /** Stratégie de matching qui a produit ce résultat */
+  matchType: MatchType;
+}
+
+/** Résultat de la recherche de locataire */
+export interface RechercheLocataireResult {
+  /** Locataire résolu si match unique et évident (score ≤ 1) */
+  locataire: Locataire | null;
+  /** Liste de candidats si ambigu ou multiples matches (triée par score croissant, max 5) */
+  candidats: LocataireMatch[];
+  /** Totaux pour permettre au caller de proposer la liste complète si zéro résultat */
+  totaux: { actuels: number; candidats: number };
+}
+
+// ============================================================
 // Helpers dérivés sur Locataire
 // ============================================================
 

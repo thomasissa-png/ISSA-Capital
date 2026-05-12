@@ -22,7 +22,7 @@
 | Validation | Zod (schémas Telegram + Claude responses) |
 | Stockage | Google Drive (OAuth2 refresh token) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF | PDFKit (compte-rendus A4 avec annexes photographiques) |
-| Tests | Vitest — 210/210 passent (68 CR + 34 inbox/router + 97 rent/quittance + 11 autres) |
+| Tests | Vitest — 252/252 passent (68 CR + 34 inbox/router + 139 rent/quittance + 11 autres) |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -100,12 +100,16 @@ Message reçu
 
 **Machine d'états** : `selecting_locataire` → `confirming_locataire` → `confirming_periode` → `confirming_montants` → `generating` → `done` | `error`
 
+**Recherche futée (session 11)** : la recherche de locataire est tolérante aux typos, accents, et recherche dans le `nom_officiel` du frontmatter. Algorithme en cascade : exact match → startsWith → contains → Levenshtein distance ≤ 2. Cache en mémoire 60s pour éviter les appels Drive répétés. Si plusieurs candidats correspondent → liste proposée. Si zéro résultat → liste complète des locataires actuels affichée.
+
 **Cycle complet** :
 
 1. Thomas tape `/quittance`
-2. Anya liste les locataires actuels (lecture Drive `07. Contacts/05. Locataires/01. Actuels/`)
-3. Thomas sélectionne un locataire (numéro ou nom)
-4. Anya affiche l'aperçu locataire + boutons Confirmer/Modifier/Annuler
+2. Anya charge toutes les fiches locataires (cache 60s) depuis Drive `07. Contacts/05. Locataires/01. Actuels/` et `_Candidats/`
+3. Thomas sélectionne un locataire (numéro, nom exact, prénom seul, ou approximatif — la recherche est futée)
+4. Si match unique (score ≤ 1) → Anya affiche l'aperçu locataire + boutons Confirmer/Modifier/Annuler
+4b. Si plusieurs candidats → Anya affiche la liste et demande de préciser
+4c. Si zéro résultat → Anya affiche la liste complète des locataires actuels
 5. Thomas confirme → Anya demande la période (boutons mois rapide + saisie YYYY-MM)
 6. Thomas sélectionne le mois
 7. Anya affiche le récapitulatif complet (locataire, période, loyer, charges, total en lettres, n° quittance) + boutons Confirmer/Modifier/Annuler
@@ -215,11 +219,11 @@ src/lib/secretariat/types.ts               # schémas Zod
 
 ```bash
 npm test
-# → 210/210 passent
+# → 252/252 passent
 # - 68 tests CR existants (integration + pdf-generator + counter)
 # - 23 tests inbox (slugify, naming, types, edge cases)
 # - 11 tests router (commandes, auto-CR, bascule mode, TTL)
-# - 97 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires, types, pdf, workflow)
+# - 139 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires fuzzy, types, pdf, workflow)
 # - 11 tests autres (contactSchema, rateLimit)
 ```
 

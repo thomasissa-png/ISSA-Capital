@@ -417,6 +417,7 @@ export const quittanceWorkflow: Workflow = {
 /**
  * Étape 1 : sélection du locataire.
  * L'utilisateur envoie un numéro (si liste affichée) ou un nom.
+ * Gère la recherche futée (fuzzy) : exact, startsWith, contains, Levenshtein, nom_officiel.
  */
 async function handleSelectLocataire(
   data: QuittanceWorkflowData,
@@ -435,24 +436,41 @@ async function handleSelectLocataire(
     }
   }
 
-  // Rechercher sur Drive
-  const { locataire, alternatives } = await rechercherLocataire(query);
+  // Rechercher sur Drive (recherche futée)
+  const { locataire, candidats, totaux } = await rechercherLocataire(query);
 
-  if (alternatives.length > 1) {
-    // Plusieurs résultats → demander de préciser
-    const liste = alternatives.map((nom, i) => `${i + 1}. ${nom}`).join('\n');
-    data.locatairesDisponibles = alternatives.map((nom) => ({ nom, adresse: '' }));
+  if (candidats.length > 0) {
+    // Plusieurs résultats ambigus → proposer la liste avec boutons inline
+    const liste = candidats.map((c, i) => `${i + 1}. ${c.nomAffiche}`).join('\n');
+    data.locatairesDisponibles = candidats.map((c) => ({ nom: c.nomFichier, adresse: '' }));
     return {
       newState: makeState('selecting_locataire', data),
       messages: [
         {
-          text: `Plusieurs locataires correspondent :\n\n${liste}\n\nPrécise le numéro ou le nom complet.`,
+          text: `Plusieurs locataires correspondent à "${query}" :\n\n${liste}\n\nPrécise le numéro ou le nom complet.`,
         },
       ],
     };
   }
 
   if (!locataire) {
+    // Zéro résultat → proposer la liste complète des actuels comme boutons
+    const totalActuels = totaux.actuels;
+    if (totalActuels > 0) {
+      // Recharger la liste des noms pour l'afficher
+      const actuels = await listerLocatairesActuels();
+      data.locatairesDisponibles = actuels.map((nom) => ({ nom, adresse: '' }));
+      const liste = actuels.map((nom, i) => `${i + 1}. ${nom}`).join('\n');
+      return {
+        newState: makeState('selecting_locataire', data),
+        messages: [
+          {
+            text: `Aucun locataire ne correspond à "${query}". Voici tes ${totalActuels} locataires actuels :\n\n${liste}\n\nEnvoie le numéro ou le nom.`,
+          },
+        ],
+      };
+    }
+
     return {
       newState: makeState('selecting_locataire', data),
       messages: [
@@ -464,6 +482,17 @@ async function handleSelectLocataire(
   }
 
   // Locataire trouvé → passer à la confirmation
+  return buildLocataireConfirmation(data, locataire);
+}
+
+/**
+ * Construit le message de confirmation du locataire.
+ * Partagé entre handleSelectLocataire et handleCallback (sélection directe par nom).
+ */
+function buildLocataireConfirmation(
+  data: QuittanceWorkflowData,
+  locataire: Locataire,
+): WorkflowResponse {
   data.locataire = locataire;
   data.locataireNom = locataire.nomFichier;
 

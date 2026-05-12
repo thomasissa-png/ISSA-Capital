@@ -288,3 +288,64 @@ Decision Thomas : si une quittance pour le meme mois + locataire existe deja sur
 - `src/app/api/telegram/webhook/route.ts` — commande /quittance + dispatch workflow quittance
 - `docs/ia/anya-spec.md` — documentation workflow quittance
 - `.env.example` — variables Drive quittances
+
+---
+
+## Session 11 — Recherche locataire futée
+
+### Contexte du bug
+
+Thomas tape un nom de locataire dans `/quittance` et le bot repond "non trouve sur Drive". Cause : `searchDriveFiles` utilisait `name contains '<query>'` cote Drive API, trop strict. Les typos ("Hela" au lieu de "Hella"), les accents ("Hella" vs "Hélla"), les noms officiels differents du nom de fichier ("Hella Atika Taoutaou" dans le frontmatter mais le fichier s'appelle "Hella Taoutaou.md") ne matchaient pas.
+
+### Decisions
+
+**1. Chargement de toutes les fiches + matching local (pas de filtre Drive API)**
+
+L'ancienne approche filtrait cote API Drive (`name contains '<query>'`). La nouvelle charge TOUTES les fiches .md des deux dossiers (Actuels + Candidats) et fait le matching en local. Avantage : controle total sur l'algorithme de matching. Cout : O(N) appels `readDriveFileContent` au premier chargement (12 fiches = 12 fetches en ~2s). Mitigation : cache memoire TTL 60s.
+
+**2. Cache memoire TTL 60s**
+
+Simple objet module-level avec timestamp. Pas de lib externe (pas besoin de Redis pour 12 fiches). Le cache est invalide apres 60s ou sur appel explicite `invalidateLocatairesCache()`. Le TTL de 60s est un compromis : assez court pour voir un ajout de fiche rapidement, assez long pour ne pas re-fetcher si Thomas tape plusieurs noms d'affilee.
+
+**3. Levenshtein natif (~20 lignes) plutot que `fastest-levenshtein`**
+
+Meme raisonnement que pour `num-en-lettres` : le scope est borne (noms courts, max ~30 chars), l'algorithme est trivial (Wagner-Fischer), zero dependance, ownership total. L'implementation utilise une optimisation memoire a 2 lignes (O(n) espace au lieu de O(mn)).
+
+**4. Algorithme de matching en cascade**
+
+Ordre de priorite (premier match gagne mais on collecte tous les candidats) :
+1. Exact match sur nom de fichier normalise (score 0)
+2. Exact match sur `nom_officiel` normalise (score 0)
+3. StartsWith sur nom de fichier normalise (score 1)
+4. StartsWith sur prenom seul (score 1)
+5. Contains sur nom de fichier normalise (score 2)
+6. Contains sur `nom_officiel` normalise (score 2)
+7. Levenshtein distance ≤ 2 sur nom complet, prenom ou nom de famille (score = distance)
+
+Decision : si 1 seul candidat avec score ≤ 1 → match direct (pas d'ambiguite). Sinon → liste de candidats triee par score.
+
+**5. Type de retour enrichi**
+
+`rechercherLocataire` retourne maintenant `RechercheLocataireResult` : `{ locataire, candidats, totaux }` au lieu de `{ locataire, alternatives }`. Breaking change volontaire, un seul call site (`quittance.ts`) mis a jour.
+
+**6. Export de `matchFiches` pour les tests**
+
+L'algorithme de matching est exporte separement pour permettre des tests unitaires purs (sans mock Drive). Les 12 fiches reelles du vault sont reproduites comme fixtures dans les tests.
+
+### Tests ajoutes
+
+42 nouveaux tests dans `locataires.test.ts` :
+- 6 tests `normalizeForSearch` (lowercase, accents, espaces, cedilles, vide, caracteres speciaux)
+- 8 tests `levenshtein` (identique, vide, substitution, insertion, suppression, distance 2, distance elevee)
+- 28 tests `matchFiches` (les 10 cas du brief + 18 cas supplementaires : exact, startsWith, contains, Levenshtein, nom_officiel, deduplication, tri, source actuels/candidats, accents, espaces)
+
+Total : 252 tests (vs 210 avant).
+
+### Fichiers modifies
+
+- `src/lib/secretariat/rent/types.ts` — ajout `LocataireMatch`, `RechercheLocataireResult`, `MatchType`
+- `src/lib/secretariat/rent/locataires.ts` — refacto majeure : cache, normalisation, matching fuzzy, Levenshtein natif
+- `src/lib/secretariat/workflows/quittance.ts` — adaptation au nouveau type de retour, gestion ambiguite + zero resultat
+- `src/lib/secretariat/rent/__tests__/locataires.test.ts` — 42 nouveaux tests (total fichier : ~50 tests)
+- `docs/ia/anya-spec.md` — documentation recherche futee, mise a jour compteurs tests
+- `docs/dev-decisions.md` — cette section

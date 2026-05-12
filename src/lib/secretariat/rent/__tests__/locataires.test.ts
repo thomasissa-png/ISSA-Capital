@@ -1,11 +1,68 @@
 /**
- * Tests — locataires.ts (parsing des fiches locataires).
+ * Tests — locataires.ts (parsing + recherche futée).
  *
- * Teste parseFicheLocataire (parsing local) — pas les appels Drive.
+ * Teste :
+ * 1. parseFicheLocataire (parsing local frontmatter)
+ * 2. normalizeForSearch (normalisation accents/casse)
+ * 3. levenshtein (distance d'édition)
+ * 4. matchFiches (algorithme de matching fuzzy — pas d'appel Drive)
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseFicheLocataire } from '../locataires';
+import {
+  parseFicheLocataire,
+  normalizeForSearch,
+  levenshtein,
+  matchFiches,
+} from '../locataires';
+
+// ============================================================
+// Fixtures — fiches locataires simulées (structure CachedFiche)
+// ============================================================
+
+function makeFiche(
+  nomFichier: string,
+  nomOfficiel: string | null,
+  source: 'actuels' | 'candidats' = 'actuels',
+) {
+  return {
+    nomFichier,
+    nomOfficiel,
+    locataire: {
+      nomFichier,
+      nomAffiche: nomOfficiel ?? nomFichier,
+      civilite: null,
+      email: null,
+      adresseBien: '54 rue Henri Barbusse',
+      montantLoyer: 590,
+      montantCharges: 100,
+      dateEntreeBail: null,
+      dateFinBail: null,
+      moyenPaiement: 'Virement bancaire',
+    },
+    source,
+  };
+}
+
+/** Les 12 fiches réelles du vault Thomas */
+const FICHES_REELLES = [
+  makeFiche('Hella Taoutaou', 'Hella Atika Taoutaou'),
+  makeFiche('Jhon Michael Completo', null),
+  makeFiche('Kenan Beguigneau', 'Kenan Beguigneau'),
+  makeFiche('Laurene Leguay', null),
+  makeFiche('Leo Fanorenantsoa', null),
+  makeFiche('Lia Taisnime', null),
+  makeFiche('Lucas Geoffroy', null),
+  makeFiche('Milo Rouille', null),
+  makeFiche('Nzioka Mutheu', null),
+  makeFiche('Pauline Farssi', null),
+  makeFiche('Sacha Tanguy', null),
+  makeFiche('Timilas Mehmel', null),
+];
+
+// ============================================================
+// parseFicheLocataire
+// ============================================================
 
 describe('parseFicheLocataire', () => {
   it('parse un frontmatter complet', () => {
@@ -128,5 +185,271 @@ montant_loyer: 590
     expect(loc).not.toBeNull();
     expect(loc!.civilite).toBeNull();
     expect(loc!.email).toBeNull();
+  });
+});
+
+// ============================================================
+// normalizeForSearch
+// ============================================================
+
+describe('normalizeForSearch', () => {
+  it('convertit en lowercase', () => {
+    expect(normalizeForSearch('HELLA')).toBe('hella');
+  });
+
+  it('supprime les accents', () => {
+    expect(normalizeForSearch('Héllà')).toBe('hella');
+  });
+
+  it('supprime les accents complexes (cédilles, trémas)', () => {
+    expect(normalizeForSearch('François Noël')).toBe('francois noel');
+  });
+
+  it('normalise les espaces multiples', () => {
+    expect(normalizeForSearch('  Hella   Taoutaou  ')).toBe('hella taoutaou');
+  });
+
+  it('gère une chaîne vide', () => {
+    expect(normalizeForSearch('')).toBe('');
+  });
+
+  it('gère les caractères spéciaux sans accent', () => {
+    expect(normalizeForSearch("Kenan-O'Brien")).toBe("kenan-o'brien");
+  });
+});
+
+// ============================================================
+// levenshtein
+// ============================================================
+
+describe('levenshtein', () => {
+  it('retourne 0 pour des chaînes identiques', () => {
+    expect(levenshtein('hella', 'hella')).toBe(0);
+  });
+
+  it('retourne la longueur si une chaîne est vide', () => {
+    expect(levenshtein('', 'abc')).toBe(3);
+    expect(levenshtein('abc', '')).toBe(3);
+  });
+
+  it('retourne 0 pour deux chaînes vides', () => {
+    expect(levenshtein('', '')).toBe(0);
+  });
+
+  it('calcule distance 1 (substitution)', () => {
+    expect(levenshtein('hela', 'hella')).toBe(1);
+  });
+
+  it('calcule distance 1 (insertion)', () => {
+    expect(levenshtein('hell', 'hella')).toBe(1);
+  });
+
+  it('calcule distance 1 (suppression)', () => {
+    expect(levenshtein('hellaa', 'hella')).toBe(1);
+  });
+
+  it('calcule distance 2', () => {
+    expect(levenshtein('hla', 'hella')).toBe(2);
+  });
+
+  it('calcule distance élevée pour des noms très différents', () => {
+    expect(levenshtein('xyz', 'hella')).toBeGreaterThan(2);
+  });
+});
+
+// ============================================================
+// matchFiches — recherche futée
+// ============================================================
+
+describe('matchFiches', () => {
+  // --- Cas demandés dans le brief ---
+
+  it('rechercherLocataire("Hella") → match unique sur "Hella Taoutaou" (startsWith)', () => {
+    const matches = matchFiches('Hella', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+    expect(matches[0]!.matchType).toBe('startsWith');
+    expect(matches[0]!.score).toBe(1);
+  });
+
+  it('rechercherLocataire("hella") → idem (normalisation case)', () => {
+    const matches = matchFiches('hella', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+  });
+
+  it('rechercherLocataire("Hélla") → idem (normalisation accents)', () => {
+    const matches = matchFiches('Hélla', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+  });
+
+  it('rechercherLocataire("Hela") → match Levenshtein distance 1 → unique', () => {
+    const matches = matchFiches('Hela', FICHES_REELLES);
+    // "Hela" est distance 1 de "Hella" (prénom) → devrait matcher
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+    expect(matches[0]!.matchType).toBe('levenshtein');
+    expect(matches[0]!.score).toBeLessThanOrEqual(2);
+  });
+
+  it('rechercherLocataire("Hella Atika Taoutaou") → match sur nom_officiel → unique', () => {
+    const matches = matchFiches('Hella Atika Taoutaou', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+    expect(matches[0]!.nomAffiche).toBe('Hella Atika Taoutaou');
+    expect(matches[0]!.score).toBe(0);
+    expect(matches[0]!.matchType).toBe('nomOfficiel');
+  });
+
+  it('rechercherLocataire("Taoutaou") → match sur nom de famille', () => {
+    const matches = matchFiches('Taoutaou', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+  });
+
+  it('rechercherLocataire("Pa") → ambigu (Pauline + potentiellement autres)', () => {
+    const matches = matchFiches('Pa', FICHES_REELLES);
+    // "Pa" startsWith prénom "pauline" → match Pauline
+    // Peut aussi matcher d'autres via Levenshtein
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    const noms = matches.map((m) => m.nomFichier);
+    expect(noms).toContain('Pauline Farssi');
+  });
+
+  it('rechercherLocataire("Inconnu") → zéro résultat', () => {
+    const matches = matchFiches('Inconnu', FICHES_REELLES);
+    expect(matches.length).toBe(0);
+  });
+
+  it('rechercherLocataire("Leo") → unique match "Leo Fanorenantsoa"', () => {
+    const matches = matchFiches('Leo', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Leo Fanorenantsoa');
+  });
+
+  it('rechercherLocataire("") → zéro résultat sans crash', () => {
+    const matches = matchFiches('', FICHES_REELLES);
+    expect(matches.length).toBe(0);
+  });
+
+  // --- Tests additionnels sur la logique de matching ---
+
+  it('match exact sur nom de fichier complet (score 0)', () => {
+    const matches = matchFiches('Kenan Beguigneau', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Kenan Beguigneau');
+    expect(matches[0]!.score).toBe(0);
+    expect(matches[0]!.matchType).toBe('exact');
+  });
+
+  it('match exact insensible à la casse (score 0)', () => {
+    const matches = matchFiches('kenan beguigneau', FICHES_REELLES);
+    expect(matches[0]!.nomFichier).toBe('Kenan Beguigneau');
+    expect(matches[0]!.score).toBe(0);
+  });
+
+  it('startsWith sur prénom seul (score 1)', () => {
+    const matches = matchFiches('Luc', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Lucas Geoffroy');
+    expect(matches[0]!.score).toBe(1);
+    expect(matches[0]!.matchType).toBe('startsWith');
+  });
+
+  it('contains sur nom de famille (score 2)', () => {
+    const matches = matchFiches('Geoffroy', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Lucas Geoffroy');
+  });
+
+  it('Levenshtein typo simple : "Kenan Beguigneauu" → distance 1', () => {
+    const matches = matchFiches('Kenan Beguigneauu', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Kenan Beguigneau');
+    expect(matches[0]!.matchType).toBe('levenshtein');
+  });
+
+  it('ne retourne pas plus de 5 candidats', () => {
+    // "L" startsWith le prénom de Leo, Lia, Lucas, Laurene → 4 candidats max ici
+    const matches = matchFiches('L', FICHES_REELLES);
+    expect(matches.length).toBeLessThanOrEqual(5);
+  });
+
+  it('respecte le tri par score croissant', () => {
+    const matches = matchFiches('Milo', FICHES_REELLES);
+    for (let i = 1; i < matches.length; i++) {
+      expect(matches[i]!.score).toBeGreaterThanOrEqual(matches[i - 1]!.score);
+    }
+  });
+
+  it('gère les espaces superflus dans la query', () => {
+    const matches = matchFiches('  Hella  ', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Hella Taoutaou');
+  });
+
+  it('source est "actuels" pour les fiches du dossier actuels', () => {
+    const matches = matchFiches('Hella', FICHES_REELLES);
+    expect(matches[0]!.source).toBe('actuels');
+  });
+
+  it('source est "candidats" pour les fiches du dossier candidats', () => {
+    const fichesAvecCandidat = [
+      ...FICHES_REELLES,
+      makeFiche('Jean Test', null, 'candidats'),
+    ];
+    const matches = matchFiches('Jean Test', fichesAvecCandidat);
+    expect(matches[0]!.source).toBe('candidats');
+  });
+
+  it('match "Jhon" correctement (prénom startsWith)', () => {
+    const matches = matchFiches('Jhon', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Jhon Michael Completo');
+  });
+
+  it('match "Completo" via contains (nom de famille)', () => {
+    const matches = matchFiches('Completo', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Jhon Michael Completo');
+  });
+
+  it('match "Nzioka" exactement (prénom startsWith)', () => {
+    const matches = matchFiches('Nzioka', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Nzioka Mutheu');
+  });
+
+  it('ne duplique pas un même fichier dans les résultats', () => {
+    // "Hella Taoutaou" pourrait matcher sur startsWith ET contains — ne devrait apparaître qu'une fois
+    const matches = matchFiches('Hella', FICHES_REELLES);
+    const noms = matches.map((m) => m.nomFichier);
+    const unique = new Set(noms);
+    expect(unique.size).toBe(noms.length);
+  });
+
+  it('match Sacha par prénom exact (score 1, startsWith prénom)', () => {
+    const matches = matchFiches('Sacha', FICHES_REELLES);
+    expect(matches.length).toBe(1);
+    expect(matches[0]!.nomFichier).toBe('Sacha Tanguy');
+  });
+
+  it('match Timilas par prénom (startsWith)', () => {
+    const matches = matchFiches('Tim', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Timilas Mehmel');
+  });
+
+  it('match "Léo" avec accent → normalise vers "leo" (startsWith)', () => {
+    const matches = matchFiches('Léo', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Leo Fanorenantsoa');
+  });
+
+  it('match "Laurène" avec accent grave → normalise (startsWith)', () => {
+    const matches = matchFiches('Laurène', FICHES_REELLES);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0]!.nomFichier).toBe('Laurene Leguay');
   });
 });
