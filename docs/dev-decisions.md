@@ -157,3 +157,63 @@ Exécuté en fin de session :
 4. **@qa** — étendre `tests/e2e/smoke.spec.ts` vers la matrice traçabilité complète des 11 user stories de `functional-specs.md` (gate G27).
 5. **Fonts** — placer Cormorant Garamond + Inter dans `public/fonts/` et rebasculer sur `next/font/local` (ou rebasculer sur `next/font/google` si l'env de build Replit a accès réseau). Fichier concerné : `src/app/layout.tsx` (commentaire TODO déjà en place) + `src/app/globals.css` (variables `--font-cormorant` et `--font-inter`).
 6. **Thomas** — confirmation qualité Président dans les mentions légales (noté `[HYPOTHÈSE]` par @copywriter, affiché tel quel par défaut).
+
+---
+
+## Session 11 — Fix dossiers Inbox dupliqués sur cold start serverless
+
+### Contexte du bug
+
+Le bot Anya en mode inbox uploade les photos vers Google Drive dans un sous-dossier `Photos` sous le dossier parent `_Inbox`. Au premier test, Anya a correctement cree `Photos/` et y a uploade. Au second test (apres cold start serverless), au lieu de reutiliser `Photos/`, elle a cree un doublon `Photos (1)` a cote. Google Drive autorise les noms de dossiers identiques et desambiguise dans l'UI avec `(1)`.
+
+### Cause racine identifiee
+
+**Scope OAuth `drive.file`** (confirme dans `src/app/api/drive-auth/route.ts` ligne 18). Le scope `https://www.googleapis.com/auth/drive.file` limite la visibilite de l'app aux seuls fichiers et dossiers crees par cette meme app OAuth. Entre deux invocations serverless, le cache `globalThis` est perdu. La recherche `files.list` retournait 0 resultat car le scope `drive.file` ne voyait pas le dossier cree par l'instance precedente (potentiellement a cause d'un refresh token regenere ou d'un changement de credentials OAuth entre tests).
+
+Le code original ne logguait pas le statut de la recherche, rendant le diagnostic invisible.
+
+### Corrections appliquees
+
+1. **Logs explicites sur la search** — status HTTP, body en cas d'erreur, nombre de resultats en cas de succes. Permet de diagnostiquer immediatement si le probleme est scope/permissions ou autre.
+
+2. **`supportsAllDrives=true` + `includeItemsFromAllDrives=true`** — ajoutes a la search ET au create. Si le parent `_Inbox` est dans un Shared Drive, la search echouerait silencieusement sans ces parametres.
+
+3. **Escape des quotes** dans `subfolderName` pour la query Google Drive (`subfolderName.replace(/'/g, "\\'")`) — securite defensive.
+
+4. **Env vars pre-configurees (solution principale)** — 4 env vars optionnelles permettent de bypasser completement la recherche/creation :
+   - `DRIVE_INBOX_PHOTOS_FOLDER_ID`
+   - `DRIVE_INBOX_NOTES_FOLDER_ID`
+   - `DRIVE_INBOX_VOICE_FOLDER_ID`
+   - `DRIVE_INBOX_DOCUMENTS_FOLDER_ID`
+
+   Si l'env var est definie pour un sous-dossier, son ID est utilise directement (zero fetch). Sinon, fallback sur le comportement search/create ameliore.
+
+5. **Export de `getOrCreateSubfolder`** — la fonction etait `async function` (privee). Exportee pour permettre les tests unitaires.
+
+### Pourquoi ne pas changer le scope OAuth
+
+Passer de `drive.file` a `drive` (scope complet) resoudrait le probleme de visibilite mais donnerait a l'app un acces total au Drive de Thomas (lecture/ecriture/suppression de tous les fichiers). C'est disproportionne pour un bot secretariat. La solution env vars est plus securisee et plus robuste (zero dependance au scope pour les sous-dossiers configures).
+
+### Tests ajoutes
+
+`src/lib/secretariat/__tests__/drive-subfolder.test.ts` — 11 tests couvrant les 4 chemins de resolution :
+- Env var definie → retour direct sans fetch (4 sous-dossiers + 1 test env var vide)
+- Search retourne un resultat → utilise l'ID + cache globalThis
+- Search retourne vide → creation du sous-dossier
+- Search echoue (HTTP 403) → fallback creation avec log d'erreur
+- Sous-dossier non mappe → fallback search/create
+- Escape des quotes dans le nom
+
+### Action manuelle Thomas
+
+1. Dans Google Drive, ouvrir le dossier `Photos` original (le premier cree), copier son ID depuis l'URL
+2. Dans Replit Secrets, ajouter `DRIVE_INBOX_PHOTOS_FOLDER_ID` avec cet ID
+3. Deplacer les fichiers de `Photos (1)` vers `Photos`, puis supprimer `Photos (1)`
+4. Optionnel : faire de meme pour `Notes`, `Voice`, `Documents` si ces sous-dossiers existent deja
+
+### Fichiers modifies
+
+- `src/lib/secretariat/drive-upload.ts` — fix principal + env vars + logs + export
+- `src/lib/secretariat/__tests__/drive-subfolder.test.ts` — nouveau fichier test (11 tests)
+- `.env.example` — documentation des 4 env vars optionnelles
+- `docs/dev-decisions.md` — cette section

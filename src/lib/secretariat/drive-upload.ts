@@ -157,6 +157,20 @@ export async function uploadToDrive(
 // Inbox upload — sous-dossiers créés à la volée dans _Inbox
 // ============================================================
 
+/**
+ * Mapping sous-dossier name → env var contenant l'ID Drive pré-configuré.
+ * Si l'env var est définie, on skip la recherche/création et on utilise l'ID directement.
+ * Cela résout le problème de doublons sur cold start serverless (le cache globalThis
+ * est perdu entre invocations, et le scope drive.file peut ne pas voir les dossiers
+ * créés par une instance précédente si le refresh token a été régénéré).
+ */
+const SUBFOLDER_ENV_MAP: Record<string, string> = {
+  Photos: 'DRIVE_INBOX_PHOTOS_FOLDER_ID',
+  Notes: 'DRIVE_INBOX_NOTES_FOLDER_ID',
+  Voice: 'DRIVE_INBOX_VOICE_FOLDER_ID',
+  Documents: 'DRIVE_INBOX_DOCUMENTS_FOLDER_ID',
+};
+
 /** Cache globalThis : sous-dossier name → Drive folder ID */
 const INBOX_CACHE_KEY = '__issa_inbox_folder_cache__' as const;
 
@@ -169,44 +183,77 @@ function getInboxFolderCache(): Map<string, string> {
 
 /**
  * Récupère ou crée un sous-dossier dans le dossier Inbox Drive.
- * Cache le folder ID en globalThis pour éviter les appels répétés.
+ *
+ * Ordre de résolution :
+ *   1. Env var pré-configurée (DRIVE_INBOX_PHOTOS_FOLDER_ID, etc.) → skip search/create
+ *   2. Cache globalThis (survit dans la même instance serverless)
+ *   3. Recherche via files.list (scope drive.file — ne voit que les fichiers créés par l'app)
+ *   4. Création via files.create si non trouvé
+ *
+ * Fix session 11 : ajout logs explicites sur search, supportsAllDrives, escape quotes.
  */
-async function getOrCreateSubfolder(
+export async function getOrCreateSubfolder(
   accessToken: string,
   parentFolderId: string,
   subfolderName: string,
 ): Promise<string | null> {
+  // 1. Vérifier si une env var pré-configurée existe pour ce sous-dossier
+  const envKey = SUBFOLDER_ENV_MAP[subfolderName];
+  if (envKey) {
+    const envValue = process.env[envKey];
+    if (envValue) {
+      console.log(`[drive] sous-dossier ${subfolderName} : ID pré-configuré via ${envKey}`);
+      return envValue;
+    }
+  }
+
+  // 2. Vérifier le cache globalThis
   const cache = getInboxFolderCache();
   const cacheKey = `${parentFolderId}/${subfolderName}`;
-
-  // Vérifier le cache
   const cached = cache.get(cacheKey);
   if (cached) {
+    console.log(`[drive] sous-dossier ${subfolderName} : ID trouvé en cache (${cached})`);
     return cached;
   }
 
   try {
-    // Chercher si le sous-dossier existe déjà
+    // 3. Chercher si le sous-dossier existe déjà via files.list
+    const escapedName = subfolderName.replace(/'/g, "\\'");
     const query = encodeURIComponent(
-      `name='${subfolderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      `name='${escapedName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     );
-    const searchUrl = `${DRIVE_FILES_API}?q=${query}&fields=files(id)`;
+    const searchUrl = `${DRIVE_FILES_API}?q=${query}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+    console.log(`[drive] recherche sous-dossier ${subfolderName} dans parent ${parentFolderId}`);
 
     const searchResponse = await fetch(searchUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    if (searchResponse.ok) {
-      const searchData = (await searchResponse.json()) as { files?: Array<{ id: string }> };
+    if (!searchResponse.ok) {
+      const errorBody = await searchResponse.text().catch(() => '(lecture body impossible)');
+      console.error(
+        `[drive] search sous-dossier ${subfolderName} ECHOUEE : HTTP ${searchResponse.status} — ${errorBody.slice(0, 300)}`,
+      );
+      // Ne pas abandonner — tenter la création quand même (le dossier sera peut-être dupliqué,
+      // mais c'est mieux que de refuser l'upload)
+    } else {
+      const searchData = (await searchResponse.json()) as { files?: Array<{ id: string; name: string }> };
+      const filesCount = searchData.files?.length ?? 0;
+      console.log(`[drive] search sous-dossier ${subfolderName} : ${filesCount} résultat(s)`);
+
       if (searchData.files && searchData.files.length > 0 && searchData.files[0]) {
         const folderId = searchData.files[0].id;
+        console.log(`[drive] sous-dossier ${subfolderName} trouvé : ${folderId}`);
         cache.set(cacheKey, folderId);
         return folderId;
       }
     }
 
-    // Créer le sous-dossier
-    const createResponse = await fetch(DRIVE_FILES_API, {
+    // 4. Créer le sous-dossier
+    console.log(`[drive] création sous-dossier ${subfolderName} dans parent ${parentFolderId}`);
+
+    const createResponse = await fetch(`${DRIVE_FILES_API}?supportsAllDrives=true`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -222,13 +269,14 @@ async function getOrCreateSubfolder(
     if (createResponse.ok) {
       const createData = (await createResponse.json()) as { id?: string };
       if (createData.id) {
+        console.log(`[drive] sous-dossier ${subfolderName} créé : ${createData.id}`);
         cache.set(cacheKey, createData.id);
         return createData.id;
       }
     }
 
     const errorText = await createResponse.text().catch(() => '');
-    console.error(`[drive] erreur création sous-dossier ${subfolderName} :`, errorText.slice(0, 200));
+    console.error(`[drive] erreur création sous-dossier ${subfolderName} : HTTP ${createResponse.status} — ${errorText.slice(0, 200)}`);
     return null;
   } catch (err) {
     console.error('[drive] erreur getOrCreateSubfolder :', err instanceof Error ? err.message : err);
@@ -301,7 +349,7 @@ export async function uploadToInbox(
       Buffer.from(footer, 'utf-8'),
     ]);
 
-    const response = await fetch(`${DRIVE_API}?uploadType=multipart&fields=id,webViewLink`, {
+    const response = await fetch(`${DRIVE_API}?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
