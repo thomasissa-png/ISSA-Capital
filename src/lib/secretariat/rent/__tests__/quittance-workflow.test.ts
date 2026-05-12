@@ -1,8 +1,10 @@
 /**
- * Tests — workflow quittance (machine d'états).
+ * Tests — workflow quittance (machine d'états batch).
  *
  * Teste les transitions d'état et le cancel.
  * Les appels Drive sont mockés (pas de réseau dans les tests unitaires).
+ *
+ * Note : les tests détaillés des parseurs sont dans quittance-batch.test.ts.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -28,12 +30,12 @@ describe('quittanceWorkflow', () => {
   });
 
   describe('start', () => {
-    it('démarre à l\'étape selecting_locataire', async () => {
+    it('démarre à l\'étape selecting_locataires', async () => {
       const result = await quittanceWorkflow.start(12345);
 
       expect(result.newState).not.toBeNull();
       expect(result.newState!.type).toBe('quittance');
-      expect(result.newState!.step).toBe('selecting_locataire');
+      expect(result.newState!.step).toBe('selecting_locataires');
       expect(result.messages.length).toBeGreaterThan(0);
       expect(result.messages[0]!.text).toContain('locataire');
     });
@@ -43,7 +45,7 @@ describe('quittanceWorkflow', () => {
     it('retourne newState null et un message de confirmation', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'selecting_locataire',
+        step: 'selecting_locataires',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -60,7 +62,7 @@ describe('quittanceWorkflow', () => {
     it('indique que les photos ne sont pas utilisées', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'selecting_locataire',
+        step: 'selecting_locataires',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -79,7 +81,7 @@ describe('quittanceWorkflow', () => {
     it('indique que les vocaux ne sont pas utilisés', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'selecting_locataire',
+        step: 'selecting_locataires',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -98,7 +100,7 @@ describe('quittanceWorkflow', () => {
     it('q_cancel annule depuis n\'importe quelle étape', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'confirming_montants',
+        step: 'confirming_recap',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -111,11 +113,11 @@ describe('quittanceWorkflow', () => {
     });
   });
 
-  describe('handleMessage — selecting_locataire with Drive unavailable', () => {
+  describe('handleMessage — selecting_locataires with Drive unavailable', () => {
     it('signale locataire non trouvé quand Drive inaccessible', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'selecting_locataire',
+        step: 'selecting_locataires',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -124,7 +126,7 @@ describe('quittanceWorkflow', () => {
       const result = await quittanceWorkflow.handleMessage(12345, state, 'Kenan');
 
       expect(result.newState).not.toBeNull();
-      expect(result.newState!.step).toBe('selecting_locataire');
+      expect(result.newState!.step).toBe('selecting_locataires');
       expect(result.messages[0]!.text).toContain('non trouvé');
     });
   });

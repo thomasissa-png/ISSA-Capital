@@ -26,12 +26,11 @@ export type CRWorkflowStep =
   | 'validated'
   | 'cancelled';
 
-/** Étapes possibles pour le workflow Quittance */
+/** Étapes possibles pour le workflow Quittance (batch N locataires × M mois) */
 export type QuittanceWorkflowStep =
-  | 'selecting_locataire'
-  | 'confirming_locataire'
-  | 'confirming_periode'
-  | 'confirming_montants'
+  | 'selecting_locataires'
+  | 'selecting_periode'
+  | 'confirming_recap'
   | 'generating'
   | 'done'
   | 'error';

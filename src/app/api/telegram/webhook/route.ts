@@ -62,6 +62,8 @@ import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-hi
 import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
 import { getWorkflow } from '@/lib/secretariat/workflows/registry';
 import type { WorkflowState } from '@/lib/secretariat/workflows/types';
+import { generateBatch } from '@/lib/secretariat/workflows/quittance';
+import type { Locataire } from '@/lib/secretariat/rent/types';
 import type { MediaGroupBuffer } from '@/lib/secretariat/types';
 import {
   handleInboxPhoto,
@@ -1634,6 +1636,12 @@ async function handleQuittanceText(
     return Response.json({ ok: true });
   }
 
+  // Si génération en cours, ignorer les messages texte
+  if (state.step === 'generating') {
+    await sendTelegramMessage(chatId, '🔄 Génération en cours, patiente...');
+    return Response.json({ ok: true });
+  }
+
   await sendTypingAction(chatId);
   const result = await qWf.handleMessage(chatId, state, text);
 
@@ -1647,7 +1655,7 @@ async function handleQuittanceText(
   // Envoyer les messages
   await sendQuittanceMessages(chatId, result.messages, result.newState);
 
-  // Si le workflow est terminé (done) avec un PDF, l'envoyer
+  // Si le workflow est terminé (done) avec un PDF (legacy single mode), l'envoyer
   if (result.newState?.step === 'done') {
     await sendQuittancePdfIfAvailable(chatId, result.newState);
     clearActiveWorkflow(chatId);
@@ -1682,7 +1690,13 @@ async function handleQuittanceCallback(
   // Envoyer les messages
   await sendQuittanceMessages(chatId, result.messages, result.newState);
 
-  // Si le workflow est terminé (done) avec un PDF, l'envoyer
+  // If generating → run the batch and send PDFs one by one
+  if (result.newState?.step === 'generating') {
+    await handleQuittanceBatchGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  // Si le workflow est terminé (done) avec un PDF (legacy single mode), l'envoyer
   if (result.newState?.step === 'done') {
     await sendQuittancePdfIfAvailable(chatId, result.newState);
     clearActiveWorkflow(chatId);
@@ -1692,14 +1706,68 @@ async function handleQuittanceCallback(
 }
 
 /**
+ * Exécute la génération batch de quittances (N locataires × M mois).
+ *
+ * Envoie chaque PDF individuellement sur Telegram avec caption courte,
+ * puis un récap final avec les erreurs éventuelles.
+ */
+async function handleQuittanceBatchGeneration(
+  chatId: number,
+  state: WorkflowState,
+): Promise<void> {
+  const data = state.data as Record<string, unknown>;
+  const locataires = data['selectedLocataires'] as Locataire[] | undefined;
+  const moisList = data['selectedMois'] as Array<{ year: number; month: number }> | undefined;
+
+  if (!locataires || !moisList || locataires.length === 0 || moisList.length === 0) {
+    await sendTelegramMessage(chatId, '❌ Erreur : données de batch manquantes.');
+    clearActiveWorkflow(chatId);
+    return;
+  }
+
+  const totalPdfs = locataires.length * moisList.length;
+
+  try {
+    const batchResult = await generateBatch(locataires, moisList);
+
+    // Send each PDF individually
+    for (let i = 0; i < batchResult.results.length; i++) {
+      const r = batchResult.results[i]!;
+      const caption = `📄 ${i + 1}/${totalPdfs} Quittance ${r.locataireNom} - ${r.moisLabel}`;
+      await sendTelegramDocument(chatId, r.pdfBuffer, r.pdfFilename, caption);
+    }
+
+    // Build final summary
+    const parts: string[] = [];
+    if (batchResult.generated > 0) {
+      parts.push(`✅ Terminé ! ${batchResult.generated}/${totalPdfs} quittances générées et uploadées dans Drive.`);
+    }
+    if (batchResult.failed.length > 0) {
+      const failLines = batchResult.failed
+        .map((f) => `  • ${f.locataire} - ${f.mois} (${f.reason})`)
+        .join('\n');
+      parts.push(`\n⚠️ ${batchResult.failed.length} quittance${batchResult.failed.length > 1 ? 's' : ''} non générée${batchResult.failed.length > 1 ? 's' : ''} :\n${failLines}`);
+    }
+    if (batchResult.generated === 0 && batchResult.failed.length === 0) {
+      parts.push('❌ Aucune quittance générée.');
+    }
+
+    await sendTelegramMessage(chatId, parts.join('\n'));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await sendTelegramMessage(chatId, `❌ Erreur batch : ${msg.slice(0, 300)}`);
+  }
+
+  clearActiveWorkflow(chatId);
+}
+
+/**
  * Envoie les messages du workflow quittance.
  *
- * Les messages avec showConfirmation=true sont envoyés avec des boutons inline
- * personnalisés (Confirmer / Modifier / Annuler), préfixés "q_" pour ne pas
- * interférer avec les callbacks CR.
- *
- * Les messages de l'étape confirming_periode reçoivent en plus des boutons
- * pour le mois courant et le mois précédent.
+ * Les messages avec showConfirmation=true reçoivent des boutons inline
+ * adaptés à l'étape courante :
+ * - confirming_recap : "Lancer" + "Annuler" (décision Thomas)
+ * - autres : "Confirmer" + "Annuler"
  */
 async function sendQuittanceMessages(
   chatId: number,
@@ -1710,29 +1778,19 @@ async function sendQuittanceMessages(
     if (msg.showConfirmation) {
       const buttons = [];
 
-      // Si on est à l'étape de la période, ajouter des boutons mois rapide
-      if (state?.step === 'confirming_periode') {
-        const now = new Date();
-        const moisCourant = now.getMonth() + 1;
-        const anneeCourante = now.getFullYear();
-        const moisPrec = moisCourant === 1 ? 12 : moisCourant - 1;
-        const anneePrec = moisCourant === 1 ? anneeCourante - 1 : anneeCourante;
-
-        const MOIS_FR = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-
+      if (state?.step === 'confirming_recap') {
+        // Recap → Lancer / Annuler (décision Thomas)
         buttons.push([
-          { text: `${MOIS_FR[moisPrec]} ${anneePrec}`, callback_data: `q_mois_${anneePrec}_${moisPrec}` },
-          { text: `${MOIS_FR[moisCourant]} ${anneeCourante}`, callback_data: `q_mois_${anneeCourante}_${moisCourant}` },
+          { text: '✅ Lancer', callback_data: 'quittance:launch_batch' },
+          { text: '❌ Annuler', callback_data: 'q_cancel' },
+        ]);
+      } else {
+        // Fallback: generic confirm/cancel
+        buttons.push([
+          { text: 'Confirmer', callback_data: 'q_confirm' },
+          { text: 'Annuler', callback_data: 'q_cancel' },
         ]);
       }
-
-      // Boutons standard Confirmer / Modifier / Annuler
-      buttons.push([
-        { text: 'Confirmer', callback_data: 'q_confirm' },
-        { text: 'Modifier', callback_data: 'q_modify' },
-        { text: 'Annuler', callback_data: 'q_cancel' },
-      ]);
 
       await sendTelegramMessageWithButtons(chatId, msg.text, buttons);
     } else {

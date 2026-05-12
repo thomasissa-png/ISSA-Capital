@@ -172,13 +172,23 @@ export interface QuittanceVariables {
 // ============================================================
 
 export interface QuittanceWorkflowData {
-  /** Nom du locataire sélectionné (nom fichier) */
+  /** Locataires sélectionnés pour le batch (N locataires) */
+  selectedLocataires?: Locataire[];
+  /** Mois sélectionnés pour le batch (M mois) */
+  selectedMois?: Array<{ year: number; month: number }>;
+  /** Liste des locataires actuels affichée à l'utilisateur (pour sélection par numéro) */
+  locatairesDisponibles?: Array<{ nom: string; adresse: string }>;
+  /** Total PDFs à générer (N × M) */
+  totalPdfs?: number;
+
+  // --- Champs legacy pour compatibilité (single mode = N=1, M=1) ---
+  /** Nom du locataire sélectionné (nom fichier) — single mode */
   locataireNom?: string;
-  /** Données locataire parsées depuis Drive */
+  /** Données locataire parsées depuis Drive — single mode */
   locataire?: Locataire;
-  /** Année de la quittance */
+  /** Année de la quittance — single mode */
   annee?: number;
-  /** Mois de la quittance (1-12) */
+  /** Mois de la quittance (1-12) — single mode */
   mois?: number;
   /** Override loyer (si Thomas veut un montant différent) */
   loyerOverride?: number;
@@ -186,10 +196,23 @@ export interface QuittanceWorkflowData {
   chargesOverride?: number;
   /** Override moyen de paiement */
   moyenPaiementOverride?: string;
-  /** Liste des locataires trouvés (pour sélection) */
-  locatairesDisponibles?: Array<{ nom: string; adresse: string }>;
-  /** PDF généré en base64 (pour envoi via Telegram par le router) */
+  /** PDF généré en base64 (pour envoi via Telegram par le router) — single mode */
   pdfBase64?: string;
-  /** Nom du fichier PDF généré */
+  /** Nom du fichier PDF généré — single mode */
   pdfFilename?: string;
+
+  // --- Batch result (stocké dans state pour le router) ---
+  /** Résultat du batch : PDFs générés en base64 avec métadonnées */
+  batchResults?: Array<{
+    locataireNom: string;
+    moisLabel: string;
+    pdfBase64: string;
+    pdfFilename: string;
+  }>;
+  /** Erreurs survenues pendant le batch */
+  batchErrors?: Array<{
+    locataireNom: string;
+    moisLabel: string;
+    reason: string;
+  }>;
 }

@@ -349,3 +349,63 @@ Total : 252 tests (vs 210 avant).
 - `src/lib/secretariat/rent/__tests__/locataires.test.ts` — 42 nouveaux tests (total fichier : ~50 tests)
 - `docs/ia/anya-spec.md` — documentation recherche futee, mise a jour compteurs tests
 - `docs/dev-decisions.md` — cette section
+
+---
+
+## Session 11 — Batch quittance N locataires × M mois
+
+**Date** : 2026-05-12
+**Contexte** : Thomas veut pouvoir generer N quittances × M mois en une seule invocation de `/quittance`, au lieu du mode "1 locataire × 1 mois" precedent.
+
+### Decisions
+
+**1. Nouvelle machine d'etats simplifiee**
+
+Anciens etats : `selecting_locataire` → `confirming_locataire` → `confirming_periode` → `confirming_montants` → `generating` → `done`
+Nouveaux etats : `selecting_locataires` → `selecting_periode` → `confirming_recap` → `generating` → `done`
+
+Skip total de `confirming_locataire` et `confirming_montants` — Thomas fait confiance au vault, pas besoin de re-confirmer chaque fiche.
+
+**2. Parseur de selection locataires**
+
+`parseLocataireSelection(input, totalCount)` → supporte : numeros (`1,3,5`), plages (`1-5`), mix (`1, 3-5, 8`), "tous"/"*", ou recherche textuelle (futee). Deduplication et tri automatiques. Validation bornes 1..totalCount.
+
+**3. Parseur de periode**
+
+`parsePeriodeSelection(input, today)` → supporte : mois unique (`2026-04`, `avril 2026`), liste (`2026-04,2026-05`), plage (`2026-04 a 2026-08`), trimestre (`T2 2026`), annee (`2026`), relatif (`mois en cours`, `mois dernier`). Max 24 mois par batch. Cross-year OK.
+
+**4. Generation batch dans le webhook router**
+
+La generation batch (`generateBatch`) est appelee directement par le webhook router apres le callback `quittance:launch_batch`. Chaque PDF est envoye individuellement sur Telegram (pas de ZIP — decision Thomas). Les erreurs sont accumulees et reportees en recap final, sans interrompre le batch.
+
+**5. Boutons inline recap**
+
+Le recap final affiche "Lancer" + "Annuler" (callback `quittance:launch_batch` / `q_cancel`). Pas de bouton "Modifier" — le cycle est assez court pour relancer.
+
+**6. Compatibilite ascendante**
+
+Le mode N=1 M=1 (un locataire, un mois) reste le cas minimal. La recherche futee par nom textuel est preservee. Aucun changement d'API dans les workflows CR ou inbox.
+
+### Tests ajoutes
+
+54 nouveaux tests dans `quittance-batch.test.ts` :
+- 12 tests `parseLocataireSelection` (tous, indices, plages, mix, erreurs bornes, recherche texte)
+- 22 tests `parsePeriodeSelection` (tous formats : YYYY-MM, nom FR, relatif, liste, plage, trimestre, annee, cross-year, erreurs, max 24)
+- 3 tests `buildNumberedListMessage` (alignement, 10+ items, single)
+- 17 tests workflow batch (start, cancel, callbacks, messages, generating transition)
+
+Tests existants `quittance-workflow.test.ts` mis a jour (step names pluralises).
+
+Total : 306 tests (vs 252 avant).
+
+### Fichiers modifies
+
+- `src/lib/secretariat/workflows/types.ts` — nouveaux step names (`selecting_locataires`, `selecting_periode`, `confirming_recap`)
+- `src/lib/secretariat/rent/types.ts` — `QuittanceWorkflowData` enrichi (selectedLocataires, selectedMois, batchResults, batchErrors)
+- `src/lib/secretariat/rent/locataires.ts` — exports `loadAllFiches`, `CachedFiche`, `FichesCache`
+- `src/lib/secretariat/workflows/quittance.ts` — rewrite complet : parseurs, batch generation, nouvelle machine d'etats
+- `src/app/api/telegram/webhook/route.ts` — `handleQuittanceBatchGeneration`, boutons recap Lancer/Annuler, import generateBatch
+- `src/lib/secretariat/rent/__tests__/quittance-batch.test.ts` — nouveau fichier, 54 tests
+- `src/lib/secretariat/rent/__tests__/quittance-workflow.test.ts` — step names mis a jour
+- `docs/ia/anya-spec.md` — documentation batch, compteurs tests
+- `docs/dev-decisions.md` — cette section

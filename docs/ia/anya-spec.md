@@ -1,7 +1,7 @@
 # Anya — Bot Telegram secrétariat ISSA Capital
 
 > Fiche technique partageable. Source de vérité pour tout autre Claude (Cowork, Desktop, autre repo) qui doit comprendre ou faire évoluer Anya.
-> Dernière mise à jour : 2026-05-12 (session 11 — workflow quittance de loyer Phase 1+2).
+> Dernière mise à jour : 2026-05-12 (session 11 — batch quittance N locataires × M mois).
 
 ---
 
@@ -22,7 +22,7 @@
 | Validation | Zod (schémas Telegram + Claude responses) |
 | Stockage | Google Drive (OAuth2 refresh token) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF | PDFKit (compte-rendus A4 avec annexes photographiques) |
-| Tests | Vitest — 252/252 passent (68 CR + 34 inbox/router + 139 rent/quittance + 11 autres) |
+| Tests | Vitest — 306/306 passent (68 CR + 34 inbox/router + 193 rent/quittance batch + 11 autres) |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -94,31 +94,34 @@ Message reçu
 9. Sauvegarde historique + cleanup
 10. Retour mode inbox
 
-## Comportement par type de message — Workflow Quittance
+## Comportement par type de message — Workflow Quittance (batch N×M)
 
 **Démarrage** : `/quittance`
 
-**Machine d'états** : `selecting_locataire` → `confirming_locataire` → `confirming_periode` → `confirming_montants` → `generating` → `done` | `error`
+**Machine d'états** : `selecting_locataires` → `selecting_periode` → `confirming_recap` → `generating` → `done` | `error`
 
-**Recherche futée (session 11)** : la recherche de locataire est tolérante aux typos, accents, et recherche dans le `nom_officiel` du frontmatter. Algorithme en cascade : exact match → startsWith → contains → Levenshtein distance ≤ 2. Cache en mémoire 60s pour éviter les appels Drive répétés. Si plusieurs candidats correspondent → liste proposée. Si zéro résultat → liste complète des locataires actuels affichée.
+**Mode batch (session 11b)** : une seule invocation de `/quittance` peut produire N locataires × M mois = N×M PDFs.
+
+**Sélection locataires** : numéros séparés par virgule (`1,3,5`), plage (`1-5`), tous (`tous` / `*`), ou recherche futée par nom. La recherche futée (session 11) est préservée : tolérante aux typos, accents, et recherche dans le `nom_officiel` du frontmatter (exact match → startsWith → contains → Levenshtein ≤ 2). Cache en mémoire 60s.
+
+**Sélection période** : mois unique (`2026-05`, `mai 2026`), liste (`2026-04,2026-05`), plage (`2026-04 à 2026-08`), trimestre (`T2 2026`), année (`2026`), ou relatif (`mois en cours`, `mois dernier`). Max 24 mois par batch.
 
 **Cycle complet** :
 
 1. Thomas tape `/quittance`
-2. Anya charge toutes les fiches locataires (cache 60s) depuis Drive `07. Contacts/05. Locataires/01. Actuels/` et `_Candidats/`
-3. Thomas sélectionne un locataire (numéro, nom exact, prénom seul, ou approximatif — la recherche est futée)
-4. Si match unique (score ≤ 1) → Anya affiche l'aperçu locataire + boutons Confirmer/Modifier/Annuler
-4b. Si plusieurs candidats → Anya affiche la liste et demande de préciser
-4c. Si zéro résultat → Anya affiche la liste complète des locataires actuels
-5. Thomas confirme → Anya demande la période (boutons mois rapide + saisie YYYY-MM)
-6. Thomas sélectionne le mois
-7. Anya affiche le récapitulatif complet (locataire, période, loyer, charges, total en lettres, n° quittance) + boutons Confirmer/Modifier/Annuler
-8. Thomas confirme → génération PDF (PDFKit A4, layout fidèle au template Python)
-9. Numéro quittance : `QL-YYYY-MM-INITIALES`
-10. Upload PDF vers Drive (`Quittances/{Locataire}/Quittance-{Locataire}-YYYY-MM.pdf`)
-11. Si le PDF existe déjà → écrasement silencieux (pas de confirmation)
-12. Envoi du PDF via Telegram
-13. Retour mode inbox
+2. Anya charge toutes les fiches locataires (cache 60s) depuis Drive et affiche la liste numérotée
+3. Thomas sélectionne les locataires (numéros, plage, "tous", ou nom)
+4. Anya confirme la sélection et demande la période
+5. Thomas sélectionne la période (un ou plusieurs mois)
+6. Anya affiche le récapitulatif batch (N locataires × M mois = X PDFs) + boutons "Lancer" / "Annuler"
+7. Thomas clique "Lancer" → génération PDF en boucle (PDFKit A4)
+8. Chaque PDF est envoyé individuellement sur Telegram avec caption "X/Y Quittance {Locataire} - {mois}"
+9. Upload simultané vers Drive (`Quittances/{Locataire}/Quittance-{Locataire}-YYYY-MM.pdf`)
+10. Si le PDF existe déjà → écrasement silencieux
+11. Message récap final : "X/Y générées" + erreurs éventuelles ("Pauline Farssi - mai 2026 (montant_loyer manquant)")
+12. Retour mode inbox
+
+**Compatibilité ascendante** : le cas N=1 M=1 (un locataire, un mois) fonctionne identiquement — c'est juste le cas minimal du batch. La recherche futée par nom est toujours disponible.
 
 **Fichiers lib** : `src/lib/secretariat/rent/` (types, locataires, biens, bailleur, num-en-lettres, dates-fr, signature, pdf-quittance)
 
@@ -219,11 +222,11 @@ src/lib/secretariat/types.ts               # schémas Zod
 
 ```bash
 npm test
-# → 252/252 passent
+# → 306/306 passent
 # - 68 tests CR existants (integration + pdf-generator + counter)
 # - 23 tests inbox (slugify, naming, types, edge cases)
 # - 11 tests router (commandes, auto-CR, bascule mode, TTL)
-# - 139 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires fuzzy, types, pdf, workflow)
+# - 193 tests rent/quittance (num-en-lettres, dates-fr, biens, locataires fuzzy, types, pdf, workflow, batch parseurs)
 # - 11 tests autres (contactSchema, rateLimit)
 ```
 
@@ -239,6 +242,7 @@ npm test
 
 - Workflow quittance de loyer : `/quittance` → sélection locataire (Drive) → confirmation → période → montants → PDF A4 → upload Drive + envoi Telegram
 - Lib partagée `src/lib/secretariat/rent/` : types, locataires Drive, biens, bailleur, num-en-lettres, dates-fr, signature, pdf-quittance
+- **Batch N×M** : sélection multi-locataires (numéros, plages, "tous", recherche futée) + multi-mois (plage, trimestre, année) + récap + génération en boucle + envoi individuel Telegram
 
 **Phase 3 — À venir**
 

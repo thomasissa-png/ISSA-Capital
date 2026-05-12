@@ -364,14 +364,14 @@ export function parseFicheLocataire(
 // Cache en mémoire pour les fiches locataires
 // ============================================================
 
-interface CachedFiche {
+export interface CachedFiche {
   nomFichier: string;
   nomOfficiel: string | null;
   locataire: Locataire;
   source: 'actuels' | 'candidats';
 }
 
-interface FichesCache {
+export interface FichesCache {
   fiches: CachedFiche[];
   totaux: { actuels: number; candidats: number };
   loadedAt: number;
@@ -392,7 +392,7 @@ export function invalidateLocatairesCache(): void {
  * Charge les fichiers .md de 01. Actuels/ et _Candidats/, lit leur contenu,
  * parse le frontmatter. Skip silencieusement les fiches invalides.
  */
-async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
+export async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
   const now = Date.now();
 
   // Retourner le cache s'il est valide
