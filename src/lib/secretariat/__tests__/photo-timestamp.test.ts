@@ -142,6 +142,33 @@ describe('resolvePhotoTimestamp', () => {
     expect(result.source).toBe('telegram');
   });
 
+  // Vidéo buffer : exifr.parse retourne null (pas de données EXIF dans un MP4/MOV)
+  // → fallback sur telegramDate (source 'telegram'). Vérifie que resolvePhotoTimestamp
+  // est robuste quand appelé avec un buffer vidéo au lieu d'un buffer image.
+  it('falls back to telegram when buffer is a video (exifr returns null)', async () => {
+    mocks.exifrParse.mockResolvedValue(null);
+
+    const telegramDate = 1715508000; // 2024-05-12T10:00:00.000Z
+    const videoBuffer = Buffer.from('fake mp4 content');
+    const result = await resolvePhotoTimestamp(videoBuffer, telegramDate);
+
+    expect(result.source).toBe('telegram');
+    expect(result.date.toISOString()).toBe('2024-05-12T10:00:00.000Z');
+  });
+
+  // Vidéo buffer : exifr.parse throws (certains containers vidéo provoquent une erreur)
+  // → catch silencieux + fallback telegram. Même comportement que pour les images corrompues.
+  it('falls back to telegram when exifr throws on a video buffer', async () => {
+    mocks.exifrParse.mockRejectedValue(new Error('Unknown file format'));
+
+    const telegramDate = 1715508000;
+    const videoBuffer = Buffer.from('fake mov content');
+    const result = await resolvePhotoTimestamp(videoBuffer, telegramDate);
+
+    expect(result.source).toBe('telegram');
+    expect(result.date.toISOString()).toBe('2024-05-12T10:00:00.000Z');
+  });
+
   // REGRESSION: image envoyée en mode "fichier" (Send as file) conserve ses EXIF,
   // donc resolvePhotoTimestamp DOIT extraire la date EXIF et retourner source 'exif'.
   // Avant le fix c15ed66, ces images étaient routées vers handleInboxDocument

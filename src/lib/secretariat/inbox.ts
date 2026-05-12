@@ -146,14 +146,19 @@ export async function handleInboxPhoto(
     return { success: false, userMessage: sizeError };
   }
 
-  // Extension depuis le MIME type
+  // Extension depuis le MIME type (images + vidéos — même dossier Photos)
   const extMap: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'video/mp4': 'mp4',
+    'video/quicktime': 'mov',
+    'video/x-msvideo': 'avi',
+    'video/webm': 'webm',
   };
-  const ext = extMap[mimeType] ?? 'jpg';
+  const isVideo = mimeType.startsWith('video/');
+  const ext = extMap[mimeType] ?? (isVideo ? 'mp4' : 'jpg');
 
   const buffer = Buffer.from(photoBase64, 'base64');
 
@@ -163,17 +168,19 @@ export async function handleInboxPhoto(
 
   const result = await uploadToInbox(buffer, filename, INBOX_SUBFOLDER.PHOTOS, mimeType);
 
+  const mediaLabel = isVideo ? 'Vidéo' : 'Photo';
+
   if (result.success) {
     const captionInfo = caption ? ` (${caption.slice(0, 30)})` : '';
     return {
       success: true,
-      userMessage: `Photo enregistrée${captionInfo}`,
+      userMessage: `${mediaLabel} enregistrée${captionInfo}`,
     };
   }
 
   return {
     success: false,
-    userMessage: `Erreur upload photo : ${result.error ?? 'inconnue'}`,
+    userMessage: `Erreur upload ${mediaLabel.toLowerCase()} : ${result.error ?? 'inconnue'}`,
   };
 }
 

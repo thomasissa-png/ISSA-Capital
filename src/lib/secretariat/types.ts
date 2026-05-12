@@ -64,6 +64,17 @@ export const TelegramDocumentSchema = z.object({
 });
 export type TelegramDocument = z.infer<typeof TelegramDocumentSchema>;
 
+export const TelegramVideoSchema = z.object({
+  file_id: z.string(),
+  file_unique_id: z.string(),
+  width: z.number().int(),
+  height: z.number().int(),
+  duration: z.number().int(),
+  mime_type: z.string().optional(),
+  file_size: z.number().int().optional(),
+});
+export type TelegramVideo = z.infer<typeof TelegramVideoSchema>;
+
 export const TelegramMessageSchema = z
   .object({
     message_id: z.number().int(),
@@ -74,6 +85,7 @@ export const TelegramMessageSchema = z
     photo: z.array(TelegramPhotoSizeSchema).optional(),
     voice: TelegramVoiceSchema.optional(),
     document: TelegramDocumentSchema.optional(),
+    video: TelegramVideoSchema.optional(),
     caption: z.string().optional(),
     /** Identifiant de groupe média — les photos d'un album partagent le même ID */
     media_group_id: z.string().optional(),

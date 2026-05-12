@@ -1500,12 +1500,12 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Image envoyée en mode "fichier" (Send as file) → router vers handler photo
-      // pour préserver les EXIF (Telegram strippe les EXIF des photos compressées
-      // mais pas des documents). Source : diagnostic bugs photos S12.
+      // Image ou vidéo envoyée en mode "fichier" (Send as file) → router vers handler photo
+      // pour préserver les EXIF (images) et le dossier Photos (vidéos).
+      // Source : diagnostic bugs photos S12, extension vidéos S12.
       const docMimeType = documentData.mime_type ?? 'application/octet-stream';
-      if (docMimeType.startsWith('image/')) {
-        console.warn(`[telegram-webhook] image en document détectée (mime=${docMimeType}) → routage vers handleInboxPhoto`);
+      if (docMimeType.startsWith('image/') || docMimeType.startsWith('video/')) {
+        console.warn(`[telegram-webhook] média en document détecté (mime=${docMimeType}) → routage vers handleInboxPhoto`);
         const inboxPhotoFromDocResult = await handleInboxPhoto(
           chatId,
           docResult.base64,
@@ -1530,13 +1530,49 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ ok: true });
     }
 
-    // 3b-quater. Message sans texte ni photo ni vocal ni document (sticker, vidéo, etc.)
-    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0) && update.message.voice === undefined && update.message.document === undefined) {
+    // 3b-quinquies. Message avec vidéo (envoi compressé Telegram)
+    // Même cas d'usage que les photos : journal Anya + dossier _Inbox/Photos/
+    if (update.message?.video !== undefined) {
+      const videoData = update.message.video;
+      const chatId = update.message.chat.id;
+
+      if (!isAllowedChatId(chatId)) {
+        console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
+        return Response.json({ ok: true });
+      }
+
+      if (videoData.file_size && videoData.file_size > 20 * 1024 * 1024) {
+        await sendTelegramMessage(chatId, 'Vidéo trop volumineuse (> 20 Mo). Réduis la taille et réessaie.');
+        return Response.json({ ok: true });
+      }
+
+      const videoResult = await downloadTelegramFile(videoData.file_id);
+      if (!videoResult.success || !videoResult.base64) {
+        console.error('[telegram-webhook] échec téléchargement vidéo :', videoResult.error);
+        await sendTelegramMessage(chatId, `Erreur téléchargement vidéo : ${videoResult.error ?? 'inconnue'}.`);
+        return Response.json({ ok: true });
+      }
+
+      console.warn(`[telegram-webhook] message.video (mime=${videoData.mime_type ?? 'video/mp4'}) → handleInboxPhoto (même dossier Photos)`);
+      const inboxVideoResult = await handleInboxPhoto(
+        chatId,
+        videoResult.base64,
+        videoData.mime_type ?? 'video/mp4',
+        update.message.caption,
+        videoData.file_size,
+        update.message.date,
+      );
+      await sendTelegramMessage(chatId, inboxVideoResult.userMessage);
+      return Response.json({ ok: true });
+    }
+
+    // 3b-sexies. Message sans texte ni photo ni vocal ni document ni vidéo (sticker, etc.)
+    if (update.message !== undefined && update.message.text === undefined && (update.message.photo === undefined || update.message.photo.length === 0) && update.message.voice === undefined && update.message.document === undefined && update.message.video === undefined) {
       const chatId = update.message.chat.id;
       if (isAllowedChatId(chatId)) {
         await sendTelegramMessage(
           chatId,
-          'Type de fichier non supporté. Envoie du texte, des photos, des vocaux ou des documents (PDF, etc.).',
+          'Type de fichier non supporté. Envoie du texte, des photos, des vidéos, des vocaux ou des documents (PDF, etc.).',
         );
       }
       return Response.json({ ok: true });

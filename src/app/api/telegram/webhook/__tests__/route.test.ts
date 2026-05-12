@@ -741,8 +741,161 @@ describe('POST /api/telegram/webhook', () => {
 
     // Le console.warn de routage est émis
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('image en document détectée'),
+      expect.stringContaining('média en document détecté'),
     );
+
+    warnSpy.mockRestore();
+  });
+
+  // ── Tests vidéo (session 12 — traiter les vidéos comme des photos) ──
+
+  it('route message.video vers handleInboxPhoto (même dossier Photos)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const telegramDate = 1715508000; // 2024-05-12T10:00:00Z
+    const videoPayload = {
+      update_id: 100,
+      message: {
+        message_id: 600,
+        chat: { id: 12345, type: 'private' as const },
+        date: telegramDate,
+        video: {
+          file_id: 'video-file-id',
+          file_unique_id: 'video-unique',
+          width: 1920,
+          height: 1080,
+          duration: 15,
+          mime_type: 'video/mp4',
+          file_size: 2_000_000, // 2 Mo
+        },
+        caption: 'Visite appartement',
+      },
+    };
+
+    const res = await POST(makeRequest(videoPayload));
+    expect(res.status).toBe(200);
+
+    // handleInboxPhoto est appelé exactement 1 fois
+    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+
+    // handleInboxDocument n'est PAS appelé
+    expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
+
+    // Vérification des 6 arguments de handleInboxPhoto
+    const args = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
+    expect(args[0]).toBe(12345);                // chatId
+    expect(args[1]).toBe('abc');                // base64 (mock downloadTelegramFile)
+    expect(args[2]).toBe('video/mp4');          // mimeType
+    expect(args[3]).toBe('Visite appartement'); // caption
+    expect(args[4]).toBe(2_000_000);            // fileSize
+    expect(args[5]).toBe(telegramDate);         // telegramMessageDate
+
+    // Le console.warn de routage vidéo est émis
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('message.video'),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('route un document avec mime_type video/quicktime vers handleInboxPhoto (extension du fix c15ed66)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const telegramDate = 1715508000;
+    const documentVideoPayload = {
+      update_id: 101,
+      message: {
+        message_id: 601,
+        chat: { id: 12345, type: 'private' as const },
+        date: telegramDate,
+        document: {
+          file_id: 'doc-video-file-id',
+          file_unique_id: 'doc-video-unique',
+          file_size: 5_000_000, // 5 Mo
+          mime_type: 'video/quicktime',
+          file_name: 'IMG_1234.MOV',
+        },
+        caption: 'Vidéo terrasse',
+      },
+    };
+
+    const res = await POST(makeRequest(documentVideoPayload));
+    expect(res.status).toBe(200);
+
+    // handleInboxPhoto est appelé (pas handleInboxDocument)
+    expect(mocks.handleInboxPhoto).toHaveBeenCalledOnce();
+    expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
+
+    // Vérification des arguments
+    const args = mocks.handleInboxPhoto.mock.calls[0] as [number, string, string, string | undefined, number | undefined, number | undefined];
+    expect(args[0]).toBe(12345);
+    expect(args[2]).toBe('video/quicktime');
+    expect(args[3]).toBe('Vidéo terrasse');
+    expect(args[5]).toBe(telegramDate);
+
+    warnSpy.mockRestore();
+  });
+
+  it('rejette une vidéo > 20 Mo avec un message utilisateur', async () => {
+    const videoTooLargePayload = {
+      update_id: 102,
+      message: {
+        message_id: 602,
+        chat: { id: 12345, type: 'private' as const },
+        date: Math.floor(Date.now() / 1000),
+        video: {
+          file_id: 'big-video-file-id',
+          file_unique_id: 'big-video-unique',
+          width: 3840,
+          height: 2160,
+          duration: 120,
+          mime_type: 'video/mp4',
+          file_size: 25 * 1024 * 1024, // 25 Mo
+        },
+      },
+    };
+
+    const res = await POST(makeRequest(videoTooLargePayload));
+    expect(res.status).toBe(200);
+
+    // Le message de rejet est envoyé
+    expect(mocks.sendTelegramMessage).toHaveBeenCalledWith(
+      12345,
+      expect.stringContaining('trop volumineuse'),
+    );
+
+    // handleInboxPhoto n'est PAS appelé
+    expect(mocks.handleInboxPhoto).not.toHaveBeenCalled();
+  });
+
+  it('ignore silencieusement message.video si chat_id non autorisé', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const videoUnauthorizedPayload = {
+      update_id: 103,
+      message: {
+        message_id: 603,
+        chat: { id: 99999, type: 'private' as const },
+        date: Math.floor(Date.now() / 1000),
+        video: {
+          file_id: 'unauth-video-file-id',
+          file_unique_id: 'unauth-video-unique',
+          width: 1280,
+          height: 720,
+          duration: 10,
+          mime_type: 'video/mp4',
+          file_size: 1_000_000,
+        },
+      },
+    };
+
+    const res = await POST(makeRequest(videoUnauthorizedPayload));
+    expect(res.status).toBe(200);
+
+    // Aucun handler n'est appelé
+    expect(mocks.handleInboxPhoto).not.toHaveBeenCalled();
+    expect(mocks.handleInboxDocument).not.toHaveBeenCalled();
+    expect(mocks.sendTelegramMessage).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
   });
