@@ -211,17 +211,27 @@ async function findDriveFolderByName(
 ): Promise<string | null> {
   const escaped = folderName.replace(/'/g, "\\'");
   const q = `name='${escaped}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(10_000),
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const err = await response.text().catch(() => '');
+    console.error(`[locataires] findDriveFolderByName HTTP ${response.status} pour "${folderName}" dans ${parentFolderId} — ${err.slice(0, 300)}`);
+    return null;
+  }
 
-  const data = (await response.json()) as { files?: Array<{ id: string }> };
-  return data.files?.[0]?.id ?? null;
+  const data = (await response.json()) as { files?: Array<{ id: string; name: string }> };
+  const found = data.files?.[0];
+  if (!found) {
+    console.warn(`[locataires] findDriveFolderByName : "${folderName}" introuvable dans ${parentFolderId} (query: ${q})`);
+    return null;
+  }
+  console.log(`[locataires] findDriveFolderByName : "${folderName}" trouvé (id=${found.id}) dans ${parentFolderId}`);
+  return found.id;
 }
 
 /**
@@ -371,6 +381,7 @@ async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
     console.error('[locataires] DRIVE_VAULT_ROOT_ID ou DRIVE_INBOX_FOLDER_ID manquant');
     return { fiches: [], totaux: { actuels: 0, candidats: 0 }, loadedAt: now };
   }
+  console.log(`[locataires] loadAllFiches : rootFolderId=${rootFolderId} (source=${process.env.DRIVE_VAULT_ROOT_ID ? 'VAULT_ROOT' : 'INBOX_FALLBACK'})`);
 
   const fiches: CachedFiche[] = [];
   const totaux = { actuels: 0, candidats: 0 };
@@ -381,6 +392,7 @@ async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
 
     const q = `'${folderId}' in parents`;
     const files = await listDriveMarkdownFiles(accessToken, q);
+    console.log(`[locataires] ${folder.name}: ${files.length} fichiers .md trouvés`);
 
     // Compter avant filtrage
     const mdFiles = files.filter((f) => !f.name.startsWith('_'));
