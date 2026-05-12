@@ -5,11 +5,41 @@
 > Dernière mise à jour : **2026-05-12 — Session 13 Hotfix + corrections Anya**
 
 <!-- SESSION: phases=0 tasks_prod=0 tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/issa-capital-s12-anya-phase3-bail-P64ir -->
+<!-- BRANCH ACTIVE: claude/issa-capital-s13-hotfix-build-quittance-m7Lkc -->
 
 ---
 
-## Session 13 — Hotfix + corrections Anya (2026-05-12)
+## Session 13b — Hotfix /bail sourcing candidats (2026-05-12)
+
+**Branche** : `claude/issa-capital-s13-hotfix-build-quittance-m7Lkc`
+**Mode** : hotfix (bug UX signale par Thomas)
+**Complexite** : Legere (1 agent @fullstack, 1 phase)
+
+### Bug signale par Thomas
+
+> "quand je tape /bail il me propose des bails pour les locataires actuels ce qui a pas de sens, il devrait s'agir des candidats ou d'un nouveau profil"
+
+### Diagnostic orchestre
+
+- `bail.ts` ligne 343 : `start()` appelle `listerLocatairesActuels()` qui filtre `source === 'actuels'` (dossier `01. Actuels/`)
+- Les locataires actuels ont deja un bail signe -- re-generer un bail pour eux n'a pas de sens
+- Le workflow devrait sourcer dans `_Candidats/` (fiches creees via `/candidat`) ou permettre un nouveau profil
+- `listerLocatairesActuels()` est aussi utilise par `/quittance` et `/findebail` (correctement) -- NE PAS le modifier
+- Solution : creer `listerCandidats()` dans `locataires.ts`, modifier `bail.ts` pour sourcer les candidats
+
+### Correction a appliquer (@fullstack)
+
+| Etape | Description | Statut |
+|---|---|---|
+| A | Diagnostic code (confirmer le bug) | EN COURS |
+| B | Creer `listerCandidats()` + modifier bail.ts start() + handleSelectLocataire() | EN COURS |
+| C | Gerer edge cases (0 candidats, fiche incomplete) | EN COURS |
+| D | Documenter lien Phase 6 (promotion candidat -> locataire) | EN COURS |
+| E | Tests + build + commit | EN COURS |
+
+---
+
+## Session 13a — Hotfix + corrections Anya (2026-05-12)
 
 **Branche** : `claude/issa-capital-s12-anya-phase3-bail-P64ir` (reprise)
 **Mode** : hotfix (Point 1) + corrections ciblees (Point 2) + verification lecture seule (Point 3)
