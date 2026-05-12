@@ -11,6 +11,8 @@ import type { Workflow, WorkflowType } from './types';
 import { crWorkflow } from './cr';
 import { quittanceWorkflow } from './quittance';
 import { bailWorkflow } from './bail';
+import { finDeBailWorkflow } from './fin-de-bail';
+import { candidatWorkflow } from './candidat';
 
 // ============================================================
 // Registry — tous les workflows disponibles
@@ -20,6 +22,8 @@ const WORKFLOW_REGISTRY: Record<WorkflowType, Workflow> = {
   cr: crWorkflow,
   quittance: quittanceWorkflow,
   bail: bailWorkflow,
+  findebail: finDeBailWorkflow,
+  candidat: candidatWorkflow,
 };
 
 /**

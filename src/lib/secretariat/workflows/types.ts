@@ -12,7 +12,7 @@
 // ============================================================
 
 /** Types de workflow disponibles. Ajouter ici pour chaque nouveau workflow. */
-export type WorkflowType = 'cr' | 'quittance' | 'bail';
+export type WorkflowType = 'cr' | 'quittance' | 'bail' | 'findebail' | 'candidat';
 
 // ============================================================
 // État d'un workflow actif

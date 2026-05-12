@@ -63,6 +63,9 @@ import { getWorkflow } from '@/lib/secretariat/workflows/registry';
 import type { WorkflowState } from '@/lib/secretariat/workflows/types';
 import { generateBatch } from '@/lib/secretariat/workflows/quittance';
 import { generateBail } from '@/lib/secretariat/workflows/bail';
+import { generateFinDeBail } from '@/lib/secretariat/workflows/fin-de-bail';
+import type { FinDeBailWorkflowData, CandidatWorkflowData } from '@/lib/secretariat/rent/types';
+import { uploadCandidatFiche } from '@/lib/secretariat/workflows/candidat';
 import type { Locataire, BailWorkflowData } from '@/lib/secretariat/rent/types';
 import type { MediaGroupBuffer } from '@/lib/secretariat/types';
 import {
@@ -871,6 +874,54 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
     return Response.json({ ok: true });
   }
 
+  // /findebail — démarrer le workflow fin de bail (attestation PDF)
+  if (normalizedText === '/findebail') {
+    const existingWf = getActiveWorkflow(chatId);
+    if (existingWf) {
+      clearActiveWorkflow(chatId);
+    }
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+
+    const fdbWf = getWorkflow('findebail');
+    if (fdbWf) {
+      await sendTypingAction(chatId);
+      const startResult = await fdbWf.start(chatId);
+      if (startResult.newState) {
+        setActiveWorkflow(chatId, startResult.newState);
+      }
+      for (const msg of startResult.messages) {
+        await sendTelegramMessage(chatId, msg.text);
+      }
+    }
+    return Response.json({ ok: true });
+  }
+
+  // /candidat — démarrer le workflow fiche candidat
+  if (normalizedText === '/candidat') {
+    const existingWf = getActiveWorkflow(chatId);
+    if (existingWf) {
+      clearActiveWorkflow(chatId);
+    }
+    clearPendingDraft(chatId);
+    clearConversation(chatId);
+    clearPhotos(chatId);
+
+    const candWf = getWorkflow('candidat');
+    if (candWf) {
+      await sendTypingAction(chatId);
+      const startResult = await candWf.start(chatId);
+      if (startResult.newState) {
+        setActiveWorkflow(chatId, startResult.newState);
+      }
+      for (const msg of startResult.messages) {
+        await sendTelegramMessage(chatId, msg.text);
+      }
+    }
+    return Response.json({ ok: true });
+  }
+
   // /cr — démarrer le workflow CR
   if (normalizedText === '/cr') {
     const crWf = getWorkflow('cr');
@@ -949,7 +1000,7 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
   // Commande inconnue
   await sendTelegramMessage(
     chatId,
-    'Commande inconnue. Commandes disponibles : /cr, /quittance, /inbox, /cancel, /status',
+    'Commande inconnue. Commandes disponibles : /cr, /quittance, /bail, /findebail, /candidat, /inbox, /cancel, /status',
   );
   return Response.json({ ok: true });
 }
@@ -1152,6 +1203,14 @@ export async function POST(request: Request): Promise<Response> {
         // Workflow bail : dispatch direct vers le workflow
         if (activeWorkflow.type === 'bail') {
           return await handleBailText(chatId, activeWorkflow, text);
+        }
+        // Workflow fin de bail : dispatch direct vers le workflow
+        if (activeWorkflow.type === 'findebail') {
+          return await handleFinDeBailText(chatId, activeWorkflow, text);
+        }
+        // Workflow candidat : dispatch direct vers le workflow
+        if (activeWorkflow.type === 'candidat') {
+          return await handleCandidatText(chatId, activeWorkflow, text);
         }
         // Le workflow CR en Phase 1 est pass-through :
         // la logique reste dans ce fichier, le state sert juste de flag
@@ -1510,6 +1569,18 @@ export async function POST(request: Request): Promise<Response> {
       const bailWf = getActiveWorkflow(callbackChatId);
       if (bailWf && bailWf.type === 'bail') {
         return await handleBailCallback(callbackChatId, bailWf, callbackData);
+      }
+
+      // Workflow fin de bail — callbacks préfixés par "fdb_"
+      const fdbWf = getActiveWorkflow(callbackChatId);
+      if (fdbWf && fdbWf.type === 'findebail') {
+        return await handleFinDeBailCallback(callbackChatId, fdbWf, callbackData);
+      }
+
+      // Workflow candidat — callbacks préfixés par "cand_"
+      const candWf = getActiveWorkflow(callbackChatId);
+      if (candWf && candWf.type === 'candidat') {
+        return await handleCandidatCallback(callbackChatId, candWf, callbackData);
       }
 
       const pendingDraft = getPendingDraft(callbackChatId);
@@ -2005,6 +2076,254 @@ async function handleBailGeneration(
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[bail] erreur génération : ${msg}`);
     await sendTelegramMessage(chatId, `❌ Erreur bail : ${msg.slice(0, 300)}`);
+  }
+
+  clearActiveWorkflow(chatId);
+}
+
+// ============================================================
+// Fin de bail workflow handlers
+// ============================================================
+
+/**
+ * Gère un message texte dans le contexte du workflow fin de bail.
+ */
+async function handleFinDeBailText(
+  chatId: number,
+  state: WorkflowState,
+  text: string,
+): Promise<Response> {
+  const fdbWf = getWorkflow('findebail');
+  if (!fdbWf) {
+    return Response.json({ ok: true });
+  }
+
+  if (state.step === 'generating') {
+    await sendTelegramMessage(chatId, '🔄 Génération de l\'attestation en cours, patiente…');
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await fdbWf.handleMessage(chatId, state, text);
+
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  if (result.newState?.step === 'generating') {
+    await handleFinDeBailGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Gère un callback inline dans le contexte du workflow fin de bail.
+ */
+async function handleFinDeBailCallback(
+  chatId: number,
+  state: WorkflowState,
+  callbackData: string,
+): Promise<Response> {
+  const fdbWf = getWorkflow('findebail');
+  if (!fdbWf) {
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await fdbWf.handleCallback(chatId, state, callbackData);
+
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  if (result.newState?.step === 'generating') {
+    await handleFinDeBailGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Exécute la génération de l'attestation fin de bail (PDF),
+ * uploade sur Drive, envoie sur Telegram.
+ */
+async function handleFinDeBailGeneration(
+  chatId: number,
+  state: WorkflowState,
+): Promise<void> {
+  const data = state.data as unknown as FinDeBailWorkflowData;
+
+  if (!data.selectedLocataire || !data.dateFin) {
+    await sendTelegramMessage(chatId, '❌ Données incomplètes. Relance /findebail.');
+    clearActiveWorkflow(chatId);
+    return;
+  }
+
+  try {
+    const dateFin = new Date(data.dateFin);
+    const dateEmission = data.dateEmission ? new Date(data.dateEmission) : undefined;
+
+    const result = await generateFinDeBail(data.selectedLocataire, dateFin, dateEmission);
+
+    if (!result.success || !result.pdfBuffer || !result.filenameBase) {
+      await sendTelegramMessage(chatId, `❌ Erreur : ${result.error ?? 'génération échouée'}`);
+      clearActiveWorkflow(chatId);
+      return;
+    }
+
+    // Envoyer le PDF sur Telegram
+    await sendTelegramDocument(
+      chatId,
+      result.pdfBuffer,
+      `${result.filenameBase}.pdf`,
+      `📄 Attestation fin de bail — ${data.selectedLocataire.nomAffiche}`,
+    );
+
+    // Message de confirmation avec lien Drive
+    const parts = [`✅ Attestation fin de bail générée pour ${data.selectedLocataire.nomAffiche}`];
+    if (result.driveLink) {
+      parts.push(`\n📁 Drive : ${result.driveLink}`);
+    }
+    parts.push('\nMode inbox réactivé.');
+
+    await sendTelegramMessage(chatId, parts.join('\n'));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[fin-de-bail] erreur génération : ${msg}`);
+    await sendTelegramMessage(chatId, `❌ Erreur fin de bail : ${msg.slice(0, 300)}`);
+  }
+
+  clearActiveWorkflow(chatId);
+}
+
+// ============================================================
+// Candidat workflow handlers
+// ============================================================
+
+/**
+ * Gère un message texte dans le contexte du workflow candidat.
+ */
+async function handleCandidatText(
+  chatId: number,
+  state: WorkflowState,
+  text: string,
+): Promise<Response> {
+  const candWf = getWorkflow('candidat');
+  if (!candWf) {
+    return Response.json({ ok: true });
+  }
+
+  if (state.step === 'creating_fiche') {
+    await sendTelegramMessage(chatId, '🔄 Création de la fiche en cours, patiente…');
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await candWf.handleMessage(chatId, state, text);
+
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  if (result.newState?.step === 'creating_fiche') {
+    await handleCandidatCreation(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Gère un callback inline dans le contexte du workflow candidat.
+ */
+async function handleCandidatCallback(
+  chatId: number,
+  state: WorkflowState,
+  callbackData: string,
+): Promise<Response> {
+  const candWf = getWorkflow('candidat');
+  if (!candWf) {
+    return Response.json({ ok: true });
+  }
+
+  await sendTypingAction(chatId);
+  const result = await candWf.handleCallback(chatId, state, callbackData);
+
+  if (result.newState) {
+    setActiveWorkflow(chatId, result.newState);
+  } else {
+    clearActiveWorkflow(chatId);
+  }
+
+  for (const msg of result.messages) {
+    await sendTelegramMessage(chatId, msg.text);
+  }
+
+  if (result.newState?.step === 'creating_fiche') {
+    await handleCandidatCreation(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ ok: true });
+}
+
+/**
+ * Exécute la création de la fiche candidat sur Drive,
+ * confirme sur Telegram.
+ */
+async function handleCandidatCreation(
+  chatId: number,
+  state: WorkflowState,
+): Promise<void> {
+  const data = state.data as unknown as CandidatWorkflowData;
+
+  if (!data.nom || !data.prenom) {
+    await sendTelegramMessage(chatId, '❌ Données incomplètes. Relance /candidat.');
+    clearActiveWorkflow(chatId);
+    return;
+  }
+
+  try {
+    const result = await uploadCandidatFiche(data);
+
+    if (!result.success) {
+      await sendTelegramMessage(chatId, `❌ Erreur : ${result.error ?? 'création échouée'}`);
+      clearActiveWorkflow(chatId);
+      return;
+    }
+
+    const parts = [`✅ Fiche candidat créée : ${data.prenom} ${data.nom}`];
+    if (result.webViewLink) {
+      parts.push(`\n📁 Drive : ${result.webViewLink}`);
+    }
+    parts.push('\nMode inbox réactivé.');
+
+    await sendTelegramMessage(chatId, parts.join('\n'));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[candidat] erreur création fiche : ${msg}`);
+    await sendTelegramMessage(chatId, `❌ Erreur candidat : ${msg.slice(0, 300)}`);
   }
 
   clearActiveWorkflow(chatId);

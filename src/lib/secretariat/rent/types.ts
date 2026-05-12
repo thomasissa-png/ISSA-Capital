@@ -316,3 +316,76 @@ export interface BailVariables {
   // Inventaire
   inventaire: Record<string, string[]> | null;
 }
+
+// ============================================================
+// État du workflow fin-de-bail (data persistée dans WorkflowState.data)
+// ============================================================
+
+export interface FinDeBailWorkflowData {
+  /** Locataire sélectionné */
+  selectedLocataire?: Locataire;
+  /** Liste des locataires affichée (pour sélection par numéro) */
+  locatairesDisponibles?: Array<{ nom: string; adresse: string }>;
+  /** Date de fin du bail (YYYY-MM-DD) */
+  dateFin?: string;
+  /** Date d'émission de l'attestation (YYYY-MM-DD, défaut : aujourd'hui) */
+  dateEmission?: string;
+  /** PDF généré en base64 */
+  pdfBase64?: string;
+  /** Nom du fichier PDF généré (sans extension) */
+  filenameBase?: string;
+}
+
+// ============================================================
+// Variables fin-de-bail — input pour le rendu PDF
+// ============================================================
+
+export interface FinDeBailVariables {
+  /** Nom complet du bailleur */
+  bailleurNom: string;
+  /** Date de naissance du bailleur (formatée en français) */
+  bailleurDateNaissance: string;
+  /** Lieu de naissance du bailleur */
+  bailleurLieuNaissance: string;
+  /** Adresse du bailleur */
+  bailleurAdresse: string;
+  /** Code postal et ville du bailleur */
+  bailleurCpVille: string;
+  /** Image signature en base64 (PNG) */
+  signaturePngBase64: string | null;
+  /** Largeur de la signature en mm */
+  signatureLargeurMm: number;
+  /** Nom complet du locataire (avec civilité) */
+  locataireNom: string;
+  /** Adresse propre du bien (ligne1, cpVille) */
+  adresseBien: string;
+  /** Date de fin du bail */
+  dateFin: Date;
+  /** Date d'émission de l'attestation */
+  dateEmission: Date;
+  /** Lieu de signature (ex: "Nanterre") */
+  lieuSignature: string;
+}
+
+// ============================================================
+// État du workflow candidat (data persistée dans WorkflowState.data)
+// ============================================================
+
+export interface CandidatWorkflowData {
+  /** Nom du candidat */
+  nom?: string;
+  /** Prénom du candidat */
+  prenom?: string;
+  /** Email du candidat */
+  email?: string;
+  /** Téléphone du candidat */
+  telephone?: string;
+  /** Situation professionnelle */
+  situationPro?: string;
+  /** Garanties (garant, Visale, etc.) */
+  garanties?: string;
+  /** Bien visé (adresse ou description) */
+  bienVise?: string;
+  /** Notes complémentaires */
+  notes?: string;
+}
