@@ -380,9 +380,8 @@ function construireVariables(
   const finJour = dernierJourDuMois(annee, mois);
   const fin = new Date(annee, mois - 1, finJour);
 
-  const emissionMois = (mois % 12) + 1;
-  const emissionAnnee = annee + Math.floor(mois / 12);
-  const dateEmission = new Date(emissionAnnee, emissionMois - 1, 3);
+  // Date d'émission = le 3 du mois de la quittance (décision Thomas S13)
+  const dateEmission = new Date(annee, mois - 1, 3);
 
   const datePaiement = new Date(annee, mois - 1, 2);
 

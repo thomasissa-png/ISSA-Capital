@@ -2,10 +2,61 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-05-12 — Session 12 Phases 3+4+5 LIVRÉES (434 tests)**
+> Dernière mise à jour : **2026-05-12 — Session 13 Hotfix + corrections Anya**
 
-<!-- SESSION: phases=phase345_done tasks_prod=ongoing tasks_consult=0 -->
+<!-- SESSION: phases=0 tasks_prod=0 tasks_consult=0 -->
 <!-- BRANCH ACTIVE: claude/issa-capital-s12-anya-phase3-bail-P64ir -->
+
+---
+
+## Session 13 — Hotfix + corrections Anya (2026-05-12)
+
+**Branche** : `claude/issa-capital-s12-anya-phase3-bail-P64ir` (reprise)
+**Mode** : hotfix (Point 1) + corrections ciblees (Point 2) + verification lecture seule (Point 3)
+**Complexite** : Legere (2 agents, 1 phase)
+
+### 3 points Thomas
+
+| # | Description | Type | Owner | Statut |
+|---|---|---|---|---|
+| 1 | Build TypeScript casse — import `nombreEnLettres` inutilise dans `bail-config.ts` | HOTFIX P0 | @orchestrator (edit mineur) | DONE |
+| 2 | Date "Fait a Nanterre" sur quittances = mois suivant au lieu du mois de la quittance | Correction | @orchestrator (edit mineur) | DONE |
+| 3 | Verification commandes bail Anya (lecture seule) | Verification | @orchestrator | DONE |
+
+### Point 3 — Rapport de verification commandes bail Anya
+
+Commandes bail implementees dans `src/app/api/telegram/webhook/route.ts` :
+
+| Commande | Ligne | Workflow | Steps | Fichiers generes | Upload Drive |
+|---|---|---|---|---|---|
+| `/quittance` | 827 | `quittance.ts` (6 steps) | selecting_locataires -> selecting_periode -> generating -> done | PDF (PDFKit) | DRIVE_QUITTANCES_FOLDER_ID |
+| `/bail` | 853 | `bail.ts` (6 steps) | selecting_locataire -> date_debut -> date_signature -> confirming_recap -> generating -> done | DOCX + PDF | DRIVE_BAUX_FOLDER_ID |
+| `/findebail` | 878 | `fin-de-bail.ts` (5 steps) | selecting_locataire -> collecting_date_fin -> confirming_recap -> generating -> done | PDF (attestation) | DRIVE_BAUX_FOLDER_ID |
+| `/candidat` | (registry) | `candidat.ts` (9 steps) | collecting_nom -> ... -> creating_fiche -> done | .md (fiche candidat) | DRIVE_VAULT_ROOT_ID/_Candidats |
+
+**Verdict** : les 3 commandes bail (/quittance, /bail, /findebail) + /candidat sont bien implementees et fonctionnelles. Chaque commande a son workflow complet avec machine d'etats, generation de documents, et upload Drive. Pas de gap detecte par rapport aux specs.
+
+### Corrections appliquees
+
+**Point 1 — Hotfix build** :
+- Fichier : `src/lib/secretariat/rent/bail-config.ts`
+- Correction : suppression import mort `nombreEnLettres` + `dateEnLettres` (lignes 15-16 originales)
+- Diagnostic : `nombreEnLettres` est utilise dans `pdf-bail.ts` et `dates-fr.ts` mais pas dans `bail-config.ts`. `dateEnLettres` n'est utilise nulle part dans ce fichier. Import residuel de la session 12 (port Python -> TypeScript).
+- Impact : 0 regression (les modules qui utilisent `nombreEnLettres` importent directement depuis `num-en-lettres.ts`)
+
+**Point 2 — Date quittance "Fait a Nanterre"** :
+- Fichier : `src/lib/secretariat/workflows/quittance.ts` (fonction `construireVariables`, lignes 383-385)
+- Bug : la logique calculait le 3 du mois SUIVANT la quittance (`(mois % 12) + 1`). Quittance mai -> "Fait a Nanterre, le 03/06/2026"
+- Correction : `new Date(annee, mois - 1, 3)` — le 3 du mois de la quittance. Quittance mai -> "Fait a Nanterre, le 03/05/2026"
+- Test corrige : `src/lib/secretariat/rent/__tests__/pdf-quittance.test.ts` fixture `dateEmission` mis a jour de `03/06/2026` a `03/05/2026`
+- Comportement retroactif confirme : quittance avril emise en mai -> "Fait a Nanterre, le 03/04/2026" (correct)
+
+### Budget
+
+| Phase | Tasks prod | Cumul |
+|---|---|---|
+| Corrections directes (edits mineurs) | 0 (pas de Task) | 0/18 |
+| **Total** | **0** | **0/18** |
 
 ---
 

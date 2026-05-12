@@ -93,7 +93,7 @@ function makeVariables(overrides: Partial<QuittanceVariables> = {}): QuittanceVa
     datePaiement: '02/05/2026',
     moyenPaiement: 'Virement bancaire',
     lieuEmission: 'Nanterre',
-    dateEmission: '03/06/2026',
+    dateEmission: '03/05/2026',
     numeroQuittance: 'QL-2026-05-KBE',
     ...overrides,
   };
