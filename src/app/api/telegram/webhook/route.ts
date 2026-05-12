@@ -82,6 +82,12 @@ import {
   cancelBatch,
 } from '@/lib/secretariat/workflows/inbox-photo-batch';
 import type { BatchPhoto } from '@/lib/secretariat/workflows/inbox-photo-batch';
+import {
+  handleInboxMessage,
+  handleInboxVoiceMessage,
+  handleRouterCallback,
+  ROUTER_CALLBACK_PREFIX,
+} from '@/lib/secretariat/workflows/inbox-message-router';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1248,7 +1254,21 @@ export async function POST(request: Request): Promise<Response> {
         return await handleCRText(chatId, text, normalizedText);
       }
 
-      // Texte court en mode inbox → sauvegarder comme note Drive
+      // Texte court en mode inbox → essayer le router message (Calendar/Todo)
+      // Si le router extrait un titre structuré → carte preview avec boutons
+      // Sinon fallback → sauvegarder comme note Drive (comportement existant)
+      // Priorité handlers texte (documenté session 13) :
+      //   1. Commande slash → handleSlashCommand
+      //   2. Workflow actif → handler du workflow
+      //   3. Batch photo en attente de date → handleDateReply
+      //   4. Texte long → auto-CR
+      //   5. Texte court → router message (Calendar/Todo) ou note Drive
+      const routerHandled = await handleInboxMessage(chatId, text);
+      if (routerHandled) {
+        return Response.json({ ok: true });
+      }
+
+      // Fallback : sauvegarder comme note Drive
       const inboxResult = await handleInboxText(chatId, text);
       await sendTelegramMessage(chatId, inboxResult.userMessage);
       return Response.json({ ok: true });
@@ -1428,7 +1448,19 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
 
-      // Mode inbox — upload direct vers Drive (pas de transcription)
+      // Mode inbox — essayer le router message (transcription vocale + Calendar/Todo)
+      // Si le router extrait un titre structuré → carte preview avec boutons
+      // Sinon fallback → upload direct vers Drive (comportement existant)
+      const voiceRouterHandled = await handleInboxVoiceMessage(
+        chatId,
+        audioResult.base64,
+        audioResult.mimeType ?? 'audio/ogg',
+      );
+      if (voiceRouterHandled) {
+        return Response.json({ ok: true });
+      }
+
+      // Fallback : upload direct vers Drive (pas de transcription)
       const inboxVoiceResult = await handleInboxVoice(
         chatId,
         audioResult.base64,
@@ -1597,6 +1629,13 @@ export async function POST(request: Request): Promise<Response> {
       }
 
       if (!isAllowedChatId(callbackChatId)) {
+        return Response.json({ ok: true });
+      }
+
+      // Inbox message router — callbacks préfixés par "inbox_router:"
+      if (callbackData.startsWith(ROUTER_CALLBACK_PREFIX)) {
+        const routerMsg = await handleRouterCallback(callbackChatId, callbackData);
+        await sendTelegramMessage(callbackChatId, routerMsg);
         return Response.json({ ok: true });
       }
 

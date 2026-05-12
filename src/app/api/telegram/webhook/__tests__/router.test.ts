@@ -62,6 +62,10 @@ const mocks = vi.hoisted(() => ({
   handleInboxVoice: vi.fn().mockResolvedValue({ success: true, userMessage: 'Vocal enregistré' }),
   handleInboxDocument: vi.fn().mockResolvedValue({ success: true, userMessage: 'Document enregistré' }),
   handleInboxAlbum: vi.fn().mockResolvedValue({ success: true, userMessage: 'Album enregistré' }),
+  // Inbox message router
+  handleInboxMessage: vi.fn().mockResolvedValue(false),
+  handleInboxVoiceMessage: vi.fn().mockResolvedValue(false),
+  handleRouterCallback: vi.fn().mockResolvedValue('Action traitée'),
   // Workflow
   workflowStart: vi.fn().mockResolvedValue({
     newState: {
@@ -174,6 +178,13 @@ vi.mock('@/lib/secretariat/inbox', () => ({
   handleInboxVoice: mocks.handleInboxVoice,
   handleInboxDocument: mocks.handleInboxDocument,
   handleInboxAlbum: mocks.handleInboxAlbum,
+}));
+
+vi.mock('@/lib/secretariat/workflows/inbox-message-router', () => ({
+  handleInboxMessage: mocks.handleInboxMessage,
+  handleInboxVoiceMessage: mocks.handleInboxVoiceMessage,
+  handleRouterCallback: mocks.handleRouterCallback,
+  ROUTER_CALLBACK_PREFIX: 'inbox_router:',
 }));
 
 // ============================================================
