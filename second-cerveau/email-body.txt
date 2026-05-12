@@ -1,0 +1,50 @@
+# Modèle d'email d'envoi (corps du message)
+#
+# Variables disponibles :
+#   {prenom}            - prénom du locataire (extrait du nom_fichier)
+#   {tu_vous}           - "tu" ou "vous" selon le frontmatter `tutoiement` de la fiche (défaut: vous)
+#   {periode_unique}    - "Mai 2026" si une seule quittance
+#   {periode_plage}     - "Janvier à Mars 2026" si plusieurs quittances
+#   {nb_quittances}     - 1, 2, 3...
+
+# Variante 1 mois — ton bref (style Thomas avec Kenan)
+[1-mois-direct]
+objet: Quittance {periode_unique}
+corps: |
+  Hello {prenom},
+
+  Voici la quittance pour {periode_unique}.
+
+  Thomas
+
+# Variante plusieurs mois — ton bref
+[plage-direct]
+objet: Quittances {periode_plage}
+corps: |
+  Hello {prenom},
+
+  Voici les {nb_quittances} quittances pour {periode_plage}.
+
+  Thomas
+
+# Variante neutre / vouvoiement — pour locataires plus distants
+[neutre-vouvoiement]
+objet: Quittance de loyer — {periode_unique}
+corps: |
+  Bonjour,
+
+  Veuillez trouver ci-joint la quittance pour {periode_unique}.
+
+  Cordialement,
+  Thomas Issa
+
+# Variante neutre / plage
+[neutre-plage]
+objet: Quittances de loyer — {periode_plage}
+corps: |
+  Bonjour,
+
+  Veuillez trouver ci-joint les {nb_quittances} quittances pour {periode_plage}.
+
+  Cordialement,
+  Thomas Issa
