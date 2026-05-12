@@ -3,13 +3,32 @@
  *
  * Couvre :
  * - parseDateInput (ISO, FR chiffres, FR texte)
- * - bailWorkflow.start
- * - Sélection locataire (réutilise parseLocataireSelection)
+ * - bailWorkflow.start (source candidats, pas locataires actuels)
+ * - Sélection locataire / "Nouveau profil" (saisie manuelle)
  * - Étapes date_debut, date_signature, confirmation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseDateInput, bailWorkflow } from '../../workflows/bail';
+
+// Mock listerCandidats (appelé par bail start)
+vi.mock('../../rent/locataires', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../rent/locataires')>();
+  return {
+    ...actual,
+    listerCandidats: vi.fn().mockResolvedValue([]),
+    loadAllFiches: vi.fn().mockResolvedValue({
+      fiches: [],
+      totaux: { actuels: 0, candidats: 0 },
+      loadedAt: Date.now(),
+    }),
+    rechercherLocataire: vi.fn().mockResolvedValue({
+      locataire: null,
+      candidats: [],
+      totaux: { actuels: 0, candidats: 0 },
+    }),
+  };
+});
 
 // ============================================================
 // Tests : parseDateInput
@@ -109,13 +128,27 @@ describe('parseDateInput', () => {
 
 describe('bailWorkflow', () => {
   describe('start', () => {
-    it('démarre à l\'étape selecting_locataire', async () => {
+    it('affiche "Aucun candidat" quand la liste est vide', async () => {
       const result = await bailWorkflow.start(123);
       expect(result.newState).not.toBeNull();
       expect(result.newState!.type).toBe('bail');
       expect(result.newState!.step).toBe('selecting_locataire');
       expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0]!.text).toContain('Aucun candidat');
+      expect(result.messages[0]!.text).toContain('Nouveau profil');
+    });
+
+    it('affiche la liste des candidats quand il y en a', async () => {
+      const { listerCandidats } = await import('../../rent/locataires');
+      vi.mocked(listerCandidats).mockResolvedValueOnce(['Alice Dupont', 'Bob Martin']);
+      const result = await bailWorkflow.start(123);
+      expect(result.newState).not.toBeNull();
+      expect(result.newState!.type).toBe('bail');
+      expect(result.newState!.step).toBe('selecting_locataire');
       expect(result.messages[0]!.text).toContain('Bail meublé');
+      expect(result.messages[0]!.text).toContain('Alice Dupont');
+      expect(result.messages[0]!.text).toContain('Bob Martin');
+      expect(result.messages[0]!.text).toContain('Nouveau profil');
     });
   });
 
@@ -186,6 +219,51 @@ describe('bailWorkflow', () => {
       const result = await bailWorkflow.cancel(123, state);
       expect(result.newState).toBeNull();
       expect(result.messages[0]!.text).toContain('annulé');
+    });
+  });
+
+  describe('handleMessage — selecting_locataire — Nouveau profil', () => {
+    it('ouvre la saisie manuelle quand on tape le numéro Nouveau profil', async () => {
+      const state = {
+        type: 'bail' as const,
+        step: 'selecting_locataire',
+        data: {
+          locatairesDisponibles: [
+            { nom: 'Alice Dupont', adresse: '' },
+            { nom: 'Bob Martin', adresse: '' },
+          ],
+        },
+        startedAt: Date.now(),
+        expiresAt: Date.now() + 3600000,
+      };
+      // Nouveau profil = candidats.length + 1 = 3
+      const result = await bailWorkflow.handleMessage(123, state, '3');
+      expect(result.messages[0]!.text).toContain('Saisie manuelle');
+    });
+
+    it('ouvre la saisie manuelle quand on tape "nouveau profil"', async () => {
+      const state = {
+        type: 'bail' as const,
+        step: 'selecting_locataire',
+        data: {},
+        startedAt: Date.now(),
+        expiresAt: Date.now() + 3600000,
+      };
+      const result = await bailWorkflow.handleMessage(123, state, 'nouveau profil');
+      expect(result.messages[0]!.text).toContain('Saisie manuelle');
+    });
+
+    it('ouvre la saisie manuelle quand la liste est vide et on tape "1"', async () => {
+      const state = {
+        type: 'bail' as const,
+        step: 'selecting_locataire',
+        data: {},
+        startedAt: Date.now(),
+        expiresAt: Date.now() + 3600000,
+      };
+      // 0 candidats → Nouveau profil = 1
+      const result = await bailWorkflow.handleMessage(123, state, '1');
+      expect(result.messages[0]!.text).toContain('Saisie manuelle');
     });
   });
 

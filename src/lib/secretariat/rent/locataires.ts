@@ -711,3 +711,16 @@ export async function listerLocatairesActuels(): Promise<string[]> {
     .map((f) => f.nomFichier)
     .sort();
 }
+
+/**
+ * Liste tous les candidats depuis le Drive (dossier _Candidats/).
+ *
+ * @returns Liste de noms de fichiers (sans extension)
+ */
+export async function listerCandidats(): Promise<string[]> {
+  const cache = await loadAllFiches();
+  return cache.fiches
+    .filter((f) => f.source === 'candidats')
+    .map((f) => f.nomFichier)
+    .sort();
+}

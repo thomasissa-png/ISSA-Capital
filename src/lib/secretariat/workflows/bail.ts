@@ -19,7 +19,7 @@ import type { Workflow, WorkflowState, WorkflowResponse } from './types';
 import type { Locataire, BailWorkflowData } from '../rent/types';
 import {
   rechercherLocataire,
-  listerLocatairesActuels,
+  listerCandidats,
   loadAllFiches,
 } from '../rent/locataires';
 import {
@@ -340,18 +340,19 @@ export const bailWorkflow: Workflow = {
   // ----------------------------------------------------------
 
   async start(_chatId: number, _initialText?: string): Promise<WorkflowResponse> {
-    const locataires = await listerLocatairesActuels();
+    const candidats = await listerCandidats();
     const data: BailWorkflowData = {};
 
-    if (locataires.length > 0) {
-      data.locatairesDisponibles = locataires.map((nom) => ({ nom, adresse: '' }));
-      const liste = buildNumberedListMessage(locataires);
+    if (candidats.length > 0) {
+      data.locatairesDisponibles = candidats.map((nom) => ({ nom, adresse: '' }));
+      const liste = buildNumberedListMessage(candidats);
       return {
         newState: makeState('selecting_locataire', data),
         messages: [
           {
             text:
-              `📋 Bail meublé — Choisis le locataire :\n\n${liste}\n\n` +
+              `📋 Bail meublé — Choisis le candidat pour qui générer le bail :\n\n${liste}\n` +
+              `${candidats.length + 1}. Nouveau profil (saisie manuelle)\n\n` +
               `Envoie le numéro, le nom, ou tape un nom (recherche futée).`,
           },
         ],
@@ -362,7 +363,10 @@ export const bailWorkflow: Workflow = {
       newState: makeState('selecting_locataire', data),
       messages: [
         {
-          text: 'Bail meublé — envoie le nom du locataire (prénom nom).',
+          text:
+            `Aucun candidat. Crée d'abord une fiche avec /candidat ou choisis « Nouveau profil ».\n\n` +
+            '1. Nouveau profil (saisie manuelle)\n\n' +
+            'Envoie 1 ou tape le nom du candidat (prénom nom).',
         },
       ],
     };
@@ -475,8 +479,32 @@ async function handleSelectLocataire(
   data: BailWorkflowData,
   text: string,
 ): Promise<WorkflowResponse> {
-  const totalCount = data.locatairesDisponibles?.length ?? 0;
-  const parsed = parseLocataireSelection(text, totalCount);
+  // "Nouveau profil" : le numéro est candidats.length + 1
+  // Si la liste est vide, le seul choix affiché est "1. Nouveau profil"
+  const candidatCount = data.locatairesDisponibles?.length ?? 0;
+  const nouveauProfilIdx = candidatCount + 1;
+
+  // Détection rapide "nouveau profil" par numéro ou texte
+  const trimmed = text.trim().toLowerCase();
+  const asNum = parseInt(text.trim(), 10);
+  if (
+    asNum === nouveauProfilIdx ||
+    trimmed === 'nouveau profil' ||
+    trimmed === 'nouveau' ||
+    trimmed === 'saisie manuelle'
+  ) {
+    return {
+      newState: makeState('selecting_locataire', data),
+      messages: [
+        {
+          text: 'Saisie manuelle — envoie le nom du candidat (prénom nom).',
+        },
+      ],
+    };
+  }
+
+  // Parse sélection avec le nombre de candidats (sans compter "Nouveau profil")
+  const parsed = parseLocataireSelection(text, candidatCount);
 
   if ('error' in parsed) {
     return {
@@ -514,7 +542,7 @@ async function handleSelectLocataire(
     const locInfo = data.locatairesDisponibles[idx - 1]!;
     const cache = await loadAllFiches();
     const fiche = cache.fiches.find(
-      (f) => f.nomFichier === locInfo.nom && f.source === 'actuels',
+      (f) => f.nomFichier === locInfo.nom && f.source === 'candidats',
     );
     if (fiche) {
       locataire = fiche.locataire;
@@ -534,22 +562,24 @@ async function handleSelectLocataire(
         newState: makeState('selecting_locataire', data),
         messages: [
           {
-            text: `Plusieurs locataires correspondent à "${parsed.query}" :\n\n${liste}\n\nPrécise le numéro.`,
+            text: `Plusieurs candidats correspondent à "${parsed.query}" :\n\n${liste}\n\nPrécise le numéro.`,
           },
         ],
       };
     }
 
     if (!found) {
-      if (totaux.actuels > 0) {
-        const actuels = await listerLocatairesActuels();
-        data.locatairesDisponibles = actuels.map((nom) => ({ nom, adresse: '' }));
-        const liste = buildNumberedListMessage(actuels);
+      if (totaux.candidats > 0) {
+        const candidatsList = await listerCandidats();
+        data.locatairesDisponibles = candidatsList.map((nom) => ({ nom, adresse: '' }));
+        const liste = buildNumberedListMessage(candidatsList);
         return {
           newState: makeState('selecting_locataire', data),
           messages: [
             {
-              text: `Aucun locataire ne correspond à "${parsed.query}". Voici tes ${totaux.actuels} locataires :\n\n${liste}`,
+              text:
+                `Aucun candidat ne correspond à "${parsed.query}". Voici tes ${totaux.candidats} candidats :\n\n${liste}\n` +
+                `${candidatsList.length + 1}. Nouveau profil (saisie manuelle)`,
             },
           ],
         };
@@ -557,7 +587,7 @@ async function handleSelectLocataire(
 
       return {
         newState: makeState('selecting_locataire', data),
-        messages: [{ text: `Locataire "${parsed.query}" non trouvé. Vérifie le nom et réessaie.` }],
+        messages: [{ text: `Candidat "${parsed.query}" non trouvé. Vérifie le nom et réessaie.` }],
       };
     }
 
