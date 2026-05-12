@@ -167,7 +167,7 @@ export async function handleInboxPhoto(
   const buffer = Buffer.from(photoBase64, 'base64');
 
   // Résoudre le timestamp via EXIF → Telegram → now
-  const { date, source } = await resolvePhotoTimestamp(buffer, telegramMessageDate);
+  const { date, source } = await resolvePhotoTimestamp(buffer, telegramMessageDate, mimeType);
   const filename = buildInboxFilename(ext, caption, undefined, date);
 
   const result = await uploadToInbox(buffer, filename, INBOX_SUBFOLDER.PHOTOS, mimeType);
@@ -351,7 +351,7 @@ export async function handleInboxAlbum(
 
   // Résoudre le timestamp via la première photo de l'album
   const firstBuffer = Buffer.from(photos[0]!.base64, 'base64');
-  const { date: resolvedDate } = await resolvePhotoTimestamp(firstBuffer, telegramMessageDate);
+  const { date: resolvedDate } = await resolvePhotoTimestamp(firstBuffer, telegramMessageDate, photos[0]!.mimeType);
 
   const pad = (n: number): string => String(n).padStart(2, '0');
 

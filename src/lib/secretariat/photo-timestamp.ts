@@ -23,11 +23,18 @@ export interface PhotoTimestamp {
   source: 'exif' | 'telegram' | 'now';
 }
 
-function isHeicBuffer(buf: Buffer): boolean {
-  if (buf.length < 12) return false;
+function isHeicBuffer(buf: Buffer, mimeType?: string): boolean {
+  // Si le MIME est connu et explicite, faire confiance (Telegram nous le donne)
+  if (mimeType && /^image\/(heic|heif|avif)$/i.test(mimeType)) {
+    return true;
+  }
+  if (buf.length < 24) return false;
   if (buf.subarray(4, 8).toString('ascii') !== 'ftyp') return false;
-  const brand = buf.subarray(8, 12).toString('ascii');
-  return ['heic', 'heix', 'hevc', 'heim', 'heis', 'mif1', 'msf1', 'hevx'].includes(brand);
+  // Le ftyp box contient le major brand (bytes 8-11) puis les compatible brands.
+  // iPhone utilise différents brands selon firmware (heic, heix, mif1, mif2, msf1, ...).
+  // Scan des 24 premiers bytes (couvre major brand + 3-4 compatible brands).
+  const ftypBox = buf.subarray(8, 24).toString('ascii');
+  return /heic|heix|hevc|heim|heis|mif1|msf1|mif2|hevx|avif|heif/i.test(ftypBox);
 }
 
 /**
@@ -87,8 +94,10 @@ async function readGenericExifDate(photoBuffer: Buffer): Promise<Date | null> {
 export async function resolvePhotoTimestamp(
   photoBuffer: Buffer,
   telegramMessageDate?: number,
+  mimeType?: string,
 ): Promise<PhotoTimestamp> {
-  const isHeic = isHeicBuffer(photoBuffer);
+  const isHeic = isHeicBuffer(photoBuffer, mimeType);
+  console.warn(`[inbox-photo] isHeicBuffer=${isHeic} (mime=${mimeType ?? 'n/a'}, first12=${photoBuffer.subarray(0, 12).toString('ascii').replace(/\0/g, '.').slice(0, 12)})`);
   const exifDate = isHeic
     ? await readHeicExifDate(photoBuffer)
     : await readGenericExifDate(photoBuffer);
