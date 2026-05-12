@@ -180,102 +180,64 @@ async function extractFromText(text: string): Promise<{
 }
 
 /**
- * Transcrit un buffer audio via Google Cloud Speech-to-Text API.
+ * Transcrit un buffer audio via OpenAI Whisper API.
  *
  * L'API Anthropic publique ne supporte pas input_audio (vérifié Session 13).
- * Google STT reste dans l'écosystème Google déjà OAuth, gratuit ≤ 60min/mois.
- * Réutilise le refresh token Google existant — il faut juste élargir le scope
- * OAuth pour inclure cloud-platform (cf. /api/drive-auth).
+ * Google STT nécessitait un billing account → on passe à Whisper :
+ * juste une clé API standalone, ~$0.006/min, robuste sur le français.
  *
- * Endpoint : https://speech.googleapis.com/v1/speech:recognize
- * Format Telegram voice : OGG Opus 48kHz mono.
+ * Endpoint : https://api.openai.com/v1/audio/transcriptions
+ * Format Telegram voice : OGG Opus 48kHz mono — supporté nativement.
  */
-async function transcribeWithGoogleSTT(
+async function transcribeWithWhisper(
   audioBase64: string,
   audioMimeType: string,
 ): Promise<{ success: boolean; text?: string; error?: string }> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-  if (!clientId || !clientSecret || !refreshToken) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return {
       success: false,
-      error: 'OAuth Google incomplet (GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN)',
+      error: 'OPENAI_API_KEY non défini dans Replit Secrets — la transcription vocale est désactivée',
     };
   }
 
-  const encodingMap: Record<string, { encoding: string; sampleRateHertz: number }> = {
-    'audio/ogg': { encoding: 'OGG_OPUS', sampleRateHertz: 48000 },
-    'audio/mpeg': { encoding: 'MP3', sampleRateHertz: 16000 },
-    'audio/mp4': { encoding: 'MP3', sampleRateHertz: 16000 },
-    'audio/webm': { encoding: 'WEBM_OPUS', sampleRateHertz: 48000 },
-    'audio/wav': { encoding: 'LINEAR16', sampleRateHertz: 16000 },
+  const extMap: Record<string, string> = {
+    'audio/ogg': 'ogg',
+    'audio/mpeg': 'mp3',
+    'audio/mp4': 'm4a',
+    'audio/webm': 'webm',
+    'audio/wav': 'wav',
   };
-  const config = encodingMap[audioMimeType] ?? { encoding: 'OGG_OPUS', sampleRateHertz: 48000 };
+  const ext = extMap[audioMimeType] ?? 'ogg';
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30_000);
 
   try {
-    // 1. Obtenir un access token via refresh token (même flow que Drive Calendar)
-    const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-      signal: controller.signal,
-    });
-    if (!tokenResp.ok) {
-      const errText = await tokenResp.text();
-      return { success: false, error: `OAuth refresh ${tokenResp.status} : ${errText.slice(0, 200)}` };
-    }
-    const tokenJson = (await tokenResp.json()) as { access_token?: string };
-    if (!tokenJson.access_token) {
-      return { success: false, error: 'OAuth refresh sans access_token' };
-    }
+    const buffer = Buffer.from(audioBase64, 'base64');
+    const blob = new Blob([buffer], { type: audioMimeType });
+    const form = new FormData();
+    form.append('file', blob, `voice.${ext}`);
+    form.append('model', 'whisper-1');
+    form.append('language', 'fr');
 
-    // 2. Appel Google Speech-to-Text
-    const resp = await fetch('https://speech.googleapis.com/v1/speech:recognize', {
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${tokenJson.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        config: {
-          encoding: config.encoding,
-          sampleRateHertz: config.sampleRateHertz,
-          languageCode: 'fr-FR',
-          enableAutomaticPunctuation: true,
-          model: 'default',
-        },
-        audio: { content: audioBase64 },
-      }),
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
       signal: controller.signal,
     });
 
     if (!resp.ok) {
       const errText = await resp.text();
-      return { success: false, error: `Google STT ${resp.status} : ${errText.slice(0, 200)}` };
+      return { success: false, error: `Whisper ${resp.status} : ${errText.slice(0, 200)}` };
     }
 
-    const json = (await resp.json()) as {
-      results?: Array<{ alternatives?: Array<{ transcript?: string }> }>;
-    };
-    const transcript = json.results
-      ?.map((r) => r.alternatives?.[0]?.transcript ?? '')
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-
-    if (!transcript) {
-      return { success: false, error: 'Google STT : aucune transcription retournée (audio vide ou inaudible)' };
+    const json = (await resp.json()) as { text?: string };
+    if (!json.text) {
+      return { success: false, error: 'Whisper response sans champ text' };
     }
-    return { success: true, text: transcript };
+    return { success: true, text: json.text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { success: false, error: msg };
@@ -286,7 +248,7 @@ async function transcribeWithGoogleSTT(
 
 /**
  * Extrait les données structurées d'un message vocal.
- * Pipeline : Google STT (audio → texte FR) → Haiku 4.5 (texte → JSON).
+ * Pipeline : Whisper (audio → texte FR) → Haiku 4.5 (texte → JSON).
  */
 async function extractFromVoice(
   audioBase64: string,
@@ -296,13 +258,13 @@ async function extractFromVoice(
   data?: ExtractedMessage;
   error?: string;
 }> {
-  const transcript = await transcribeWithGoogleSTT(audioBase64, audioMimeType);
+  const transcript = await transcribeWithWhisper(audioBase64, audioMimeType);
   if (!transcript.success || !transcript.text) {
-    console.warn(`[inbox-router] transcription Google STT échouée : ${transcript.error}`);
-    return { success: false, error: transcript.error ?? 'Google STT failure' };
+    console.warn(`[inbox-router] transcription Whisper échouée : ${transcript.error}`);
+    return { success: false, error: transcript.error ?? 'Whisper failure' };
   }
 
-  console.warn(`[inbox-router] transcription Google STT : "${transcript.text.slice(0, 120)}"`);
+  console.warn(`[inbox-router] transcription Whisper : "${transcript.text.slice(0, 120)}"`);
   return await extractFromText(transcript.text);
 }
 

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/cloud-platform';
+const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events';
 
 export async function GET(request: Request): Promise<Response> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -88,9 +88,8 @@ export async function GET(request: Request): Promise<Response> {
       !grantedScope.includes('drive.readonly');
     const isLimitedFile = grantedScope.includes('drive.file');
     const hasCalendar = grantedScope.includes('calendar.events') || grantedScope.includes('calendar');
-    const hasCloud = grantedScope.includes('cloud-platform') || grantedScope.includes('cloud-speech');
     const scopeRequested = SCOPES;
-    const allScopesOk = isFullDrive && hasCalendar && hasCloud;
+    const allScopesOk = isFullDrive && hasCalendar;
     const scopeColor = allScopesOk ? '#16a34a' : '#dc2626';
     const driveStatus = isFullDrive
       ? '✅ Drive OK'
@@ -100,12 +99,9 @@ export async function GET(request: Request): Promise<Response> {
     const calendarStatus = hasCalendar
       ? '✅ Calendar OK'
       : '❌ Calendar manquant — Anya ne pourra pas créer d\'événements';
-    const cloudStatus = hasCloud
-      ? '✅ Speech-to-Text OK'
-      : '❌ Cloud Platform manquant — transcription vocale désactivée';
     const scopeStatus = allScopesOk
-      ? '<strong style="color:#16a34a">✅ SCOPES OK</strong> — Anya a accès à Drive, Google Calendar et Speech-to-Text.'
-      : `<strong style="color:#dc2626">⚠️ SCOPES PARTIELS</strong><br>${driveStatus}<br>${calendarStatus}<br>${cloudStatus}<br><br>Si un scope manque : révoque l\'accès dans <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>, redéploie le code, puis recommence cette procédure.`;
+      ? '<strong style="color:#16a34a">✅ SCOPES OK</strong> — Anya a accès à Drive et Google Calendar. La transcription vocale utilise OpenAI Whisper (clé OPENAI_API_KEY).'
+      : `<strong style="color:#dc2626">⚠️ SCOPES PARTIELS</strong><br>${driveStatus}<br>${calendarStatus}<br><br>Si un scope manque : révoque l\'accès dans <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>, redéploie le code, puis recommence cette procédure.`;
 
     return new Response(
       `<!DOCTYPE html>

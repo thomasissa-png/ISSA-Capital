@@ -237,29 +237,18 @@ describe('handleInboxVoiceMessage', () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    process.env.GOOGLE_CLIENT_ID = 'test-client-id';
-    process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
-    process.env.GOOGLE_REFRESH_TOKEN = 'test-refresh-token';
+    process.env.OPENAI_API_KEY = 'test-openai-key';
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
 
-  it('transcrit via Google STT puis extrait via Haiku', async () => {
-    // 1er fetch : OAuth refresh → access_token
-    // 2e fetch : Google STT → transcript
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ access_token: 'fake-access-token' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          results: [{ alternatives: [{ transcript: 'sortie enfants aquaboulevard' }] }],
-        }),
-      });
+  it('transcrit via Whisper puis extrait via Haiku', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ text: 'sortie enfants aquaboulevard' }),
+    });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const fakeAudio = Buffer.from('fake-audio').toString('base64');
@@ -267,33 +256,27 @@ describe('handleInboxVoiceMessage', () => {
 
     expect(handled).toBe(true);
     expect(mocks.sendTypingAction).toHaveBeenCalledWith(CHAT_ID);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    // 2e appel vers speech.googleapis.com
-    expect(fetchMock.mock.calls[1]![0]).toContain('speech.googleapis.com');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]![0]).toContain('api.openai.com/v1/audio/transcriptions');
     // Haiku appelé sur le texte transcrit
     expect(mocks.messagesCreate).toHaveBeenCalledTimes(1);
     expect(mocks.sendTelegramMessageWithButtons).toHaveBeenCalledTimes(1);
   });
 
-  it('retourne false si Google STT échoue (500)', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ access_token: 'fake-access-token' }),
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: async () => 'internal error',
-      });
+  it('retourne false si Whisper échoue (500)', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'internal error',
+    });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const handled = await handleInboxVoiceMessage(CHAT_ID, 'fakebase64', 'audio/ogg');
     expect(handled).toBe(false);
   });
 
-  it('retourne false si OPENAI/GOOGLE refresh manque', async () => {
-    delete process.env.GOOGLE_REFRESH_TOKEN;
+  it('retourne false si OPENAI_API_KEY manque', async () => {
+    delete process.env.OPENAI_API_KEY;
     const handled = await handleInboxVoiceMessage(CHAT_ID, 'fakebase64', 'audio/ogg');
     expect(handled).toBe(false);
   });
