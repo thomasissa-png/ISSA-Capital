@@ -180,8 +180,113 @@ async function extractFromText(text: string): Promise<{
 }
 
 /**
- * Extrait les données structurées d'un message vocal via Claude Sonnet.
- * Utilise le support audio natif de Claude (input_audio content block).
+ * Transcrit un buffer audio via Google Cloud Speech-to-Text API.
+ *
+ * L'API Anthropic publique ne supporte pas input_audio (vérifié Session 13).
+ * Google STT reste dans l'écosystème Google déjà OAuth, gratuit ≤ 60min/mois.
+ * Réutilise le refresh token Google existant — il faut juste élargir le scope
+ * OAuth pour inclure cloud-platform (cf. /api/drive-auth).
+ *
+ * Endpoint : https://speech.googleapis.com/v1/speech:recognize
+ * Format Telegram voice : OGG Opus 48kHz mono.
+ */
+async function transcribeWithGoogleSTT(
+  audioBase64: string,
+  audioMimeType: string,
+): Promise<{ success: boolean; text?: string; error?: string }> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    return {
+      success: false,
+      error: 'OAuth Google incomplet (GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN)',
+    };
+  }
+
+  const encodingMap: Record<string, { encoding: string; sampleRateHertz: number }> = {
+    'audio/ogg': { encoding: 'OGG_OPUS', sampleRateHertz: 48000 },
+    'audio/mpeg': { encoding: 'MP3', sampleRateHertz: 16000 },
+    'audio/mp4': { encoding: 'MP3', sampleRateHertz: 16000 },
+    'audio/webm': { encoding: 'WEBM_OPUS', sampleRateHertz: 48000 },
+    'audio/wav': { encoding: 'LINEAR16', sampleRateHertz: 16000 },
+  };
+  const config = encodingMap[audioMimeType] ?? { encoding: 'OGG_OPUS', sampleRateHertz: 48000 };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+
+  try {
+    // 1. Obtenir un access token via refresh token (même flow que Drive Calendar)
+    const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+      signal: controller.signal,
+    });
+    if (!tokenResp.ok) {
+      const errText = await tokenResp.text();
+      return { success: false, error: `OAuth refresh ${tokenResp.status} : ${errText.slice(0, 200)}` };
+    }
+    const tokenJson = (await tokenResp.json()) as { access_token?: string };
+    if (!tokenJson.access_token) {
+      return { success: false, error: 'OAuth refresh sans access_token' };
+    }
+
+    // 2. Appel Google Speech-to-Text
+    const resp = await fetch('https://speech.googleapis.com/v1/speech:recognize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenJson.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        config: {
+          encoding: config.encoding,
+          sampleRateHertz: config.sampleRateHertz,
+          languageCode: 'fr-FR',
+          enableAutomaticPunctuation: true,
+          model: 'default',
+        },
+        audio: { content: audioBase64 },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { success: false, error: `Google STT ${resp.status} : ${errText.slice(0, 200)}` };
+    }
+
+    const json = (await resp.json()) as {
+      results?: Array<{ alternatives?: Array<{ transcript?: string }> }>;
+    };
+    const transcript = json.results
+      ?.map((r) => r.alternatives?.[0]?.transcript ?? '')
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    if (!transcript) {
+      return { success: false, error: 'Google STT : aucune transcription retournée (audio vide ou inaudible)' };
+    }
+    return { success: true, text: transcript };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Extrait les données structurées d'un message vocal.
+ * Pipeline : Google STT (audio → texte FR) → Haiku 4.5 (texte → JSON).
  */
 async function extractFromVoice(
   audioBase64: string,
@@ -191,67 +296,14 @@ async function extractFromVoice(
   data?: ExtractedMessage;
   error?: string;
 }> {
-  try {
-    const client = getAnthropicClient();
-    const today = new Date().toISOString().split('T')[0]!;
-    const systemPrompt = buildExtractionPrompt(today) +
-      '\n\nLe message arrive sous forme de note vocale Telegram. Transcris-le mentalement puis extrais le JSON structuré.';
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
-
-    type AudioBlock = {
-      type: 'input_audio';
-      source: { type: 'base64'; media_type: string; data: string };
-    };
-    type TextBlock = { type: 'text'; text: string };
-    type ContentBlock = AudioBlock | TextBlock;
-
-    const contentBlocks: ContentBlock[] = [
-      {
-        type: 'input_audio',
-        source: {
-          type: 'base64',
-          media_type: audioMimeType,
-          data: audioBase64,
-        },
-      },
-      {
-        type: 'text',
-        text: 'Extrais le JSON structuré de ce message vocal.',
-      },
-    ];
-
-    let message;
-    try {
-      message = await client.messages.create(
-        {
-          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
-          max_tokens: 512,
-          system: systemPrompt,
-          messages: [{
-            role: 'user',
-            content: contentBlocks as unknown as Anthropic.MessageCreateParams['messages'][number]['content'],
-          }],
-        },
-        { signal: controller.signal },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-
-    const rawText = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
-
-    return parseExtractionResult(rawText);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[inbox-router] erreur extraction vocale : ${msg}`);
-    return { success: false, error: msg };
+  const transcript = await transcribeWithGoogleSTT(audioBase64, audioMimeType);
+  if (!transcript.success || !transcript.text) {
+    console.warn(`[inbox-router] transcription Google STT échouée : ${transcript.error}`);
+    return { success: false, error: transcript.error ?? 'Google STT failure' };
   }
+
+  console.warn(`[inbox-router] transcription Google STT : "${transcript.text.slice(0, 120)}"`);
+  return await extractFromText(transcript.text);
 }
 
 /**

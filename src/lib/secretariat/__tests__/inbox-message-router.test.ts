@@ -234,27 +234,66 @@ describe('handleInboxMessage', () => {
 // ============================================================
 
 describe('handleInboxVoiceMessage', () => {
-  it('transcrit et extrait depuis un vocal', async () => {
-    const fakeAudio = Buffer.from('fake-audio').toString('base64');
+  const originalFetch = globalThis.fetch;
 
+  beforeEach(() => {
+    process.env.GOOGLE_CLIENT_ID = 'test-client-id';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
+    process.env.GOOGLE_REFRESH_TOKEN = 'test-refresh-token';
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('transcrit via Google STT puis extrait via Haiku', async () => {
+    // 1er fetch : OAuth refresh → access_token
+    // 2e fetch : Google STT → transcript
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fake-access-token' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [{ alternatives: [{ transcript: 'sortie enfants aquaboulevard' }] }],
+        }),
+      });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const fakeAudio = Buffer.from('fake-audio').toString('base64');
     const handled = await handleInboxVoiceMessage(CHAT_ID, fakeAudio, 'audio/ogg');
 
     expect(handled).toBe(true);
     expect(mocks.sendTypingAction).toHaveBeenCalledWith(CHAT_ID);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // 2e appel vers speech.googleapis.com
+    expect(fetchMock.mock.calls[1]![0]).toContain('speech.googleapis.com');
+    // Haiku appelé sur le texte transcrit
     expect(mocks.messagesCreate).toHaveBeenCalledTimes(1);
-
-    // Vérifier que le content block audio est envoyé
-    const createCall = mocks.messagesCreate.mock.calls[0]![0];
-    const userContent = createCall.messages[0].content;
-    expect(Array.isArray(userContent)).toBe(true);
-    expect(userContent[0].type).toBe('input_audio');
-
     expect(mocks.sendTelegramMessageWithButtons).toHaveBeenCalledTimes(1);
   });
 
-  it('retourne false si extraction vocale échoue', async () => {
-    mocks.messagesCreate.mockRejectedValueOnce(new Error('Audio failed'));
+  it('retourne false si Google STT échoue (500)', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fake-access-token' }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'internal error',
+      });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
+    const handled = await handleInboxVoiceMessage(CHAT_ID, 'fakebase64', 'audio/ogg');
+    expect(handled).toBe(false);
+  });
+
+  it('retourne false si OPENAI/GOOGLE refresh manque', async () => {
+    delete process.env.GOOGLE_REFRESH_TOKEN;
     const handled = await handleInboxVoiceMessage(CHAT_ID, 'fakebase64', 'audio/ogg');
     expect(handled).toBe(false);
   });
