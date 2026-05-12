@@ -134,6 +134,22 @@ export async function genererFinDeBailPdf(vars: FinDeBailVariables): Promise<Buf
 
       doc.moveDown(1);
 
+      // ── Mention dépôt de garantie (art. 22 loi 89-462) ──────────────────────────────
+      const depotGarantie =
+        'Le dépôt de garantie versé lors de la signature du bail sera restitué dans ' +
+        'le délai légal (1 mois si l\'état des lieux de sortie est conforme à l\'état ' +
+        'des lieux d\'entrée, 2 mois en cas de dégradations constatées) à compter de ' +
+        'la remise des clés, conformément à l\'article 22 de la loi n° 89-462 du ' +
+        '6 juillet 1989.';
+
+      doc.text(depotGarantie, {
+        width: pageWidth,
+        lineGap: FONT_SIZE_NORMAL * (LINE_HEIGHT - 1),
+        align: 'justify',
+      });
+
+      doc.moveDown(1);
+
       // ── Formule de politesse ──────────────────────────────
       doc.text('Très cordialement,');
 

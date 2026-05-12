@@ -5,8 +5,71 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { inflateSync } from 'zlib';
 import { genererQuittancePdf } from '../pdf-quittance';
 import type { QuittanceVariables } from '../types';
+
+/**
+ * Décode une hex string PDF (<4d6f6e...>) en texte latin1.
+ */
+function decodeHex(hex: string): string {
+  let result = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    result += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
+  }
+  return result;
+}
+
+/**
+ * Extrait le texte brut des streams compressés (FlateDecode) d'un PDF.
+ * Décompresse chaque stream, parse les opérateurs TJ/Tj,
+ * et retourne le texte en clair avec espaces reconstitués.
+ */
+function extractPdfText(buffer: Buffer): string {
+  const raw = buffer.toString('binary');
+  const textParts: string[] = [];
+  const streamRegex = /stream\r?\n([\s\S]*?)endstream/g;
+  let match: RegExpExecArray | null;
+  while ((match = streamRegex.exec(raw)) !== null) {
+    try {
+      const streamBytes = Buffer.from(match[1]!, 'binary');
+      const inflated = inflateSync(streamBytes).toString('latin1');
+      // Parse les opérateurs TJ : [...] TJ — array de hex strings + nombres (kerning)
+      // Les nombres négatifs > 100 en valeur absolue représentent un espace inter-mots
+      const tjArrayRegex = /\[([\s\S]*?)\]\s*TJ/g;
+      let tjMatch: RegExpExecArray | null;
+      while ((tjMatch = tjArrayRegex.exec(inflated)) !== null) {
+        const arrayContent = tjMatch[1]!;
+        // Extraire les éléments : hex strings <...> et nombres
+        const elemRegex = /<([0-9a-fA-F]+)>|(-?\d+(?:\.\d+)?)/g;
+        let elemMatch: RegExpExecArray | null;
+        let segment = '';
+        while ((elemMatch = elemRegex.exec(arrayContent)) !== null) {
+          if (elemMatch[1] !== undefined) {
+            // Hex string
+            segment += decodeHex(elemMatch[1]);
+          } else if (elemMatch[2] !== undefined) {
+            // Nombre : les valeurs < -100 indiquent un espace inter-mots
+            const val = parseFloat(elemMatch[2]);
+            if (val < -100) {
+              segment += ' ';
+            }
+          }
+        }
+        textParts.push(segment);
+      }
+      // Aussi extraire les literal strings (...) Tj (texte non-array)
+      const litRegex = /\(([^)]*)\)\s*Tj/g;
+      let litMatch: RegExpExecArray | null;
+      while ((litMatch = litRegex.exec(inflated)) !== null) {
+        textParts.push(litMatch[1]!);
+      }
+    } catch {
+      // Stream non compressé ou autre format — ignorer
+    }
+  }
+  return textParts.join(' ');
+}
 
 function makeVariables(overrides: Partial<QuittanceVariables> = {}): QuittanceVariables {
   return {
@@ -113,5 +176,17 @@ describe('genererQuittancePdf', () => {
     });
     const buffer = await genererQuittancePdf(vars);
     expect(buffer.length).toBeGreaterThan(1000);
+  });
+
+  it('contient la civilité du locataire dans le texte juridique (P0 #1 audit legal)', async () => {
+    // Le builder upstream (workflows/quittance.ts) peuple locataireNom avec
+    // la civilité via locataireNomAvecCivilite(loc). Ce test vérifie que le
+    // PDF résultant contient bien la civilité dans le texte juridique central.
+    const vars = makeVariables({ locataireNom: 'Monsieur Kenan Beguigneau' });
+    const buffer = await genererQuittancePdf(vars);
+    const text = extractPdfText(buffer);
+    // Le texte juridique doit contenir "Monsieur" et le nom complet
+    expect(text).toContain('Monsieur');
+    expect(text).toContain('Kenan Beguigneau');
   });
 });
