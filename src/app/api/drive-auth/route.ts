@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive';
 
 export async function GET(request: Request): Promise<Response> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
