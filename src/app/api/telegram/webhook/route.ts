@@ -97,7 +97,7 @@ export const dynamic = 'force-dynamic';
 // ============================================================
 
 /** Seuil de caractères pour la détection auto CR (texte long → workflow CR) */
-const AUTO_CR_TEXT_THRESHOLD = 80;
+const AUTO_CR_TEXT_THRESHOLD = 100;
 
 // ============================================================
 // System prompt — chargement et cache singleton

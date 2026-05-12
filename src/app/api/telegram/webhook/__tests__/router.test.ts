@@ -6,8 +6,8 @@
  * - /inbox → retour mode inbox + clear workflow
  * - /cancel → annulation workflow actif
  * - /status → affichage état
- * - Texte >= 80 chars sans workflow → démarrage CR auto
- * - Texte < 80 chars sans workflow → mode inbox
+ * - Texte >= 100 chars sans workflow → démarrage CR auto
+ * - Texte < 100 chars sans workflow → mode inbox
  * - Workflow expiré (TTL dépassé) → cleanup + retour inbox
  */
 
@@ -333,9 +333,9 @@ describe('Router 3 niveaux', () => {
   });
 
   // ----------------------------------------------------------
-  // Texte >= 80 chars sans workflow → démarrage CR auto
+  // Texte >= 100 chars sans workflow → démarrage CR auto
   // ----------------------------------------------------------
-  it('démarre le CR automatiquement pour un texte long (>= 80 chars)', async () => {
+  it('démarre le CR automatiquement pour un texte long (>= 100 chars)', async () => {
     const longText = 'Déjeuner de travail avec Karim Benmoussa au restaurant Le Voltaire pour discuter de la stratégie de diversification';
     mocks.create.mockResolvedValueOnce({
       content: [{ type: 'text', text: JSON.stringify({
@@ -359,7 +359,7 @@ describe('Router 3 niveaux', () => {
   });
 
   // ----------------------------------------------------------
-  // Texte < 80 chars sans workflow → mode inbox
+  // Texte < 100 chars sans workflow → mode inbox
   // ----------------------------------------------------------
   it('traite un texte court comme une note inbox', async () => {
     const res = await POST(makeRequest(textMessage('Rappeler Jean-Pierre')));
