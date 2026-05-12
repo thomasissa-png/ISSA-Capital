@@ -1,8 +1,8 @@
 ---
 type: outil
 nom: Anya — Plan d'implémentation email-ingest
-date_mise_a_jour: 2026-05-12
-statut: à implémenter
+date_mise_a_jour: 2026-05-12 (révisé Session 13)
+statut: prêt pour prochaine session @fullstack
 tags:
   - outils
   - ia
@@ -11,6 +11,8 @@ tags:
   - email
   - plan
 ---
+
+> **Révisions Session 13 (2026-05-12)** : (1) mindset IA — estimations en heures au lieu de jours, (2) Phase 1B Outlook préparée pour exécuter dès Phase 1A Gmail stable (Versi/Sarani sont sur Outlook pro), (3) mutualisation avec workflow `inbox-message-router` livré Session 13 (carte preview + boutons inline déjà en place), (4) backup vault clarifié = Drive revisions natives (30j auto), (5) re-OAuth Gmail à grouper avec calendar.events déjà déployé. Voir section 2.5 (mutualisation) ajoutée et tableau décisions section 1 mis à jour.
 
 # Anya — Plan d'implémentation email-ingest
 
@@ -39,6 +41,12 @@ Les deux phases sont dans ce plan (même architecture, même service Anya), exé
 | Audit trail | Logs JSONL dans `_Inbox/AnyaLogs/YYYY-MM-DD.jsonl` — chaque opération vault loggée avant exécution |
 | Drafts de réponse | **Inclus en phase 2** dans ce même plan, exécutés après validation phase 1 |
 | Budget cible | <60€/an total (phase 1 + phase 2 cumulées) |
+| **Phase 1A Gmail / Phase 1B Outlook** | **Gmail d'abord en isolation (jalons 0-4). Outlook (jalon 5) prêt à enchaîner dès Phase 1A stable** — Thomas a Versi/Sarani sur Outlook pro, donc Phase 1B critique mais pas bloquante pour démarrer |
+| **Mutualisation router Telegram** | **Réutiliser `inbox-message-router` livré Session 13** (carte preview + boutons inline + dispatch callback) au lieu de créer `telegram-cards.ts` / `callback-handler.ts` en doublon. Voir section 2.5 |
+| **Format frontmatter vault** | **Validé par Thomas le 2026-05-12** : fiches existantes respectent la structure prévue (Contacts, Locataires, Bien) — parser construit dessus sans surprise |
+| **Re-OAuth Gmail** | À grouper avec `calendar.events` déjà déployé Session 13. Scopes cibles finaux : `drive + calendar.events + gmail.readonly + gmail.labels` (1 seul re-OAuth Thomas) |
+| **Backup vault** | Drive **revisions natives** (30j auto, restauration en 1 clic). Pas de backup additionnel nécessaire avant chaque write |
+| **Vélocité IA** | Estimations en heures Claude Code (pas jours dev humain). Jalons revus section 3 |
 
 ## 2. Architecture cible
 
@@ -131,13 +139,17 @@ interface TriageResult {
 }
 ```
 
-### Couche 4 — Telegram validation UI
+### Couche 4 — Telegram validation UI (mutualisée Session 13)
 
-```
-src/lib/secretariat/email-ingest/
-├── telegram-cards.ts   # construit les messages Telegram avec InlineKeyboard
-└── callback-handler.ts # traite [Oui] / [Non] / [Voir email]
-```
+**Décision Session 13** : pas de `telegram-cards.ts` / `callback-handler.ts` dédiés. Réutiliser le workflow `inbox-message-router` (livré Session 13) qui fait déjà :
+- Carte preview avec inline keyboard
+- Stockage cache RAM des données en attente de validation (TTL configurable)
+- Parsing callback `<prefix>:<action>:<cacheKey>`
+- Dispatch vers handler approprié
+
+Pour email-ingest, on ajoute simplement un nouveau **prefix de callback** (`email_ingest:`) et un nouveau **type de carte** (extension de `buildPreviewMessage` avec la mise en forme email). Le routage callback dans le webhook ajoute une 3e branche (`inbox_router:` existant + `email_ingest:` nouveau).
+
+Voir section 2.5 ci-dessous pour le plan de mutualisation exact.
 
 Format type d'une carte Telegram (texte) :
 
@@ -157,11 +169,37 @@ Actions proposées :
 [ Valider ] [ Modifier ] [ Voir email ] [ Skip ]
 ```
 
+## 2.5 Mutualisation avec `inbox-message-router` (Session 13)
+
+Le workflow `inbox-message-router` livré Session 13 fournit déjà l'infrastructure de validation Telegram avec carte preview + boutons inline. Email-ingest doit s'y greffer pour éviter de dupliquer le code.
+
+**Réutilisable tel quel** :
+- Pattern cache RAM `Map<cacheKey, { ...données, createdAt }>` avec TTL → réutilisable avec un autre namespace
+- Pattern `sendTelegramMessage` avec `reply_markup` inline keyboard
+- Pattern callback_query parsing `<prefix>:<action>:<cacheKey>` (router ajoute juste un nouveau prefix)
+- Pattern fonction `handleXxxCallback(chatId, action, cacheKey)` côté handler
+
+**À ajouter pour email-ingest** :
+- Nouvelle entrée dans le cache (namespace différent, ex : `emailIngestCache`)
+- Nouveau prefix callback `email_ingest:` (en plus de `inbox_router:`)
+- Nouvelle fonction `buildEmailPreviewMessage(email, triageResult)` qui formate le rendu (objet, sender, intent, actions proposées)
+- Nouveau handler `handleEmailIngestCallback(chatId, action, cacheKey)` qui exécute les actions vault sur "Valider"
+- Câblage webhook : `if (callbackData.startsWith('email_ingest:'))` avant le fallback workflow
+
+**Pas à toucher** :
+- `inbox-message-router.ts` reste tel quel (calendrier/todo)
+- `inbox-photo-batch.ts` reste tel quel (date prompt photos)
+- Webhook router 5 niveaux reste tel quel — seuls les callbacks ajoutent une branche
+
+**Gain estimé** : ~30% de code en moins vs créer 2 fichiers `telegram-cards.ts` + `callback-handler.ts` dédiés, et **un seul système de validation Telegram** à maintenir (pas deux qui dérivent).
+
 ## 3. Plan en jalons
 
 Chaque jalon est livrable indépendamment et testable end-to-end avant de passer au suivant. Pas de big bang.
 
-### Jalon 0 — Setup (0,5 jour)
+**Estimations en heures Claude Code** (vélocité IA, pas équivalent humain). Un jalon "1h" = un message @fullstack avec brief précis + tests + commit. Le total Phase 1 (Gmail) tient en **1-2 sessions Claude Code** au lieu de la semaine d'origine.
+
+### Jalon 0 — Setup (~30 min)
 
 - Branch git `feature/email-ingest` dans `thomasissa-png/ISSA-Capital`
 - Ajouter env vars Replit (cf. §5)
@@ -170,7 +208,7 @@ Chaque jalon est livrable indépendamment et testable end-to-end avant de passer
 
 **Critère de réussite** : `npm run dev` démarre sans erreur, env vars chargées.
 
-### Jalon 1 — Vault client (2-3 jours, le plus critique)
+### Jalon 1 — Vault client (~2-3 h, le plus critique)
 
 Implémenter `vault-client/` complet avec tests Vitest exhaustifs (couverture cible 95%).
 
@@ -190,7 +228,7 @@ Implémenter `vault-client/` complet avec tests Vitest exhaustifs (couverture ci
 
 **Critère de réussite** : 30+ tests verts, lecture/écriture d'une fiche locataire prouvée bit-parfaite sur la sauvegarde.
 
-### Jalon 2 — Source Gmail (1 jour)
+### Jalon 2 — Source Gmail (~1 h)
 
 `gmail-source.ts` :
 - Liste les messages avec `q='-label:Anya/traité is:inbox newer_than:7d'`
@@ -202,7 +240,7 @@ Implémenter `vault-client/` complet avec tests Vitest exhaustifs (couverture ci
 
 **Critère de réussite** : lancement manuel `npm run ingest:gmail --dry-run` liste les nouveaux emails sans rien modifier.
 
-### Jalon 3 — Triage Haiku (1 jour)
+### Jalon 3 — Triage Haiku (~1 h)
 
 `triage.ts` :
 - Prompt système versionné (`prompts/triage-v1.md`) qui contient :
@@ -222,7 +260,7 @@ Implémenter `vault-client/` complet avec tests Vitest exhaustifs (couverture ci
 
 **Critère de réussite** : matrice de confusion documentée dans `tests/fixtures/triage-eval.md`.
 
-### Jalon 4 — Handlers + Telegram UI (2 jours)
+### Jalon 4 — Handlers + extension router Telegram mutualisé (~2 h)
 
 Implémenter dans cet ordre :
 1. `handlers/a-classifier.ts` (le plus simple, fait juste un append dans `05. Notes/A classifier/<YYYY-MM-DD - sujet>.md`)
@@ -239,13 +277,13 @@ Chaque handler retourne `Array<ActionProposal>`, jamais `void`. La validation Te
 
 **Critère de réussite** : un email locataire test → carte Telegram reçue → clic "Valider" → fiche locataire mise à jour vérifiée manuellement.
 
-### Jalon 5 — Source Outlook (1 jour)
+### Jalon 5 — Source Outlook Phase 1B (~1 h, après stabilisation 1A)
 
 Calqué sur Gmail mais via MSAL + Graph API. Catégories Outlook au lieu de labels.
 
 **Critère de réussite** : pipeline identique fonctionnel sur Outlook.
 
-### Jalon 6 — Polling cron + monitoring (0,5 jour)
+### Jalon 6 — Polling cron + monitoring (~30 min)
 
 - Cron Replit toutes les 5 min
 - Logger structuré (JSON) qui écrit dans `secretariat/logs/email-ingest-YYYY-MM-DD.jsonl`
@@ -256,7 +294,12 @@ Calqué sur Gmail mais via MSAL + Graph API. Catégories Outlook au lieu de labe
 
 ## 4. Total estimé
 
-**8-9 jours dev** pour un dev qui connaît le repo Anya. Jalon 1 (vault client) est le plus risqué, ne pas le sous-estimer.
+**Vélocité IA (Claude Code)** :
+- **Phase 1A Gmail** (jalons 0-4 + 6) : **~6-7 h Claude Code** = 1-2 sessions @fullstack avec brief précis. Jalon 1 (vault client) reste le plus risqué — nécessite les fixtures de fiches vault pour tests bit-parfaits.
+- **Phase 1B Outlook** (jalon 5) : **~1 h** supplémentaire, à enchaîner dès Phase 1A stable (≥ 7 jours en prod sans régression).
+- **Phase 2 (drafts de réponse)** : voir section 11 — jalons 7-10 = **~4 h Claude Code** additionnelles, à attaquer après ≥ 30 jours Phase 1 en prod (cf. pré-requis section 11).
+
+**Total cumulé Phase 1 + 2** : **~10-12 h Claude Code**, étalées sur ~6 semaines calendaires (le temps n'est pas dans le code mais dans la stabilisation en prod entre phases).
 
 ## 5. Variables d'environnement à ajouter
 
@@ -295,7 +338,7 @@ Alerte budget à câbler dans le code : si dépense mensuelle > 5€, ping Teleg
 
 | Risque | Mitigation |
 |---|---|
-| Vault client casse silencieusement une fiche existante | Tests bit-parfaits sur tous les templates (jalon 1). Backup quotidien du vault avant chaque MAJ (déjà fait via Drive) |
+| Vault client casse silencieusement une fiche existante | Tests bit-parfaits sur tous les templates (jalon 1). **Backup = Drive revisions natives** (30j auto, restauration en 1 clic via interface Drive) — pas de backup additionnel nécessaire avant chaque write |
 | Haiku classe mal un email pro en locataire | Validation Telegram obligatoire (décision Thomas), donc erreur visible avant écriture |
 | Token OAuth Gmail expire | Refresh token (déjà géré pour Anya CR) + monitoring expiry < 7j |
 | Bug fait 200 MAJ en boucle sur même fiche | Lock d'écriture par path (jalon 1) + dédup par thread_id (Gmail) / internetMessageId (Outlook) |
