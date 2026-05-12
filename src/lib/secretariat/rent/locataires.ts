@@ -204,14 +204,29 @@ async function listDriveMarkdownFiles(
  *
  * @returns ID du dossier trouvé, ou null
  */
+/**
+ * Normalise un nom de dossier pour matching local : lowercase + suppression
+ * diacritiques + collapse espaces multiples.
+ */
+function normalizeFolderName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function findDriveFolderByName(
   accessToken: string,
   parentFolderId: string,
   folderName: string,
 ): Promise<string | null> {
-  const escaped = folderName.replace(/'/g, "\\'");
-  const q = `name='${escaped}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  // Approche robuste : lister TOUS les sous-dossiers du parent puis matcher
+  // localement (avec normalisation accents/casse/espaces). Évite tout bug lié
+  // à la syntaxe `name='X'` côté Drive Query Language.
+  const q = `'${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=200`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -220,18 +235,33 @@ async function findDriveFolderByName(
 
   if (!response.ok) {
     const err = await response.text().catch(() => '');
-    console.error(`[locataires] findDriveFolderByName HTTP ${response.status} pour "${folderName}" dans ${parentFolderId} — ${err.slice(0, 300)}`);
+    console.error(`[locataires] findDriveFolderByName HTTP ${response.status} pour parent=${parentFolderId} — ${err.slice(0, 300)}`);
     return null;
   }
 
   const data = (await response.json()) as { files?: Array<{ id: string; name: string }> };
-  const found = data.files?.[0];
-  if (!found) {
-    console.warn(`[locataires] findDriveFolderByName : "${folderName}" introuvable dans ${parentFolderId} (query: ${q})`);
-    return null;
+  const folders = data.files ?? [];
+
+  // Diagnostic : log la liste effective des sous-dossiers visibles
+  console.warn(`[locataires] parent ${parentFolderId} contient ${folders.length} sous-dossier(s) visible(s) : [${folders.map((f) => f.name).join(' | ')}]`);
+
+  // 1. Match exact
+  const exact = folders.find((f) => f.name === folderName);
+  if (exact) {
+    console.warn(`[locataires] match exact "${folderName}" → id=${exact.id}`);
+    return exact.id;
   }
-  console.log(`[locataires] findDriveFolderByName : "${folderName}" trouvé (id=${found.id}) dans ${parentFolderId}`);
-  return found.id;
+
+  // 2. Match normalisé (accents, casse, espaces)
+  const target = normalizeFolderName(folderName);
+  const normalized = folders.find((f) => normalizeFolderName(f.name) === target);
+  if (normalized) {
+    console.warn(`[locataires] match normalisé "${folderName}" → "${normalized.name}" (id=${normalized.id})`);
+    return normalized.id;
+  }
+
+  console.warn(`[locataires] "${folderName}" introuvable dans ${parentFolderId} (sous-dossiers visibles ci-dessus)`);
+  return null;
 }
 
 /**
