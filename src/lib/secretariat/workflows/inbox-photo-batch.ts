@@ -54,7 +54,7 @@ export interface PhotoBatch {
 // ============================================================
 
 /** Délai d'attente pour accumuler les photos du batch */
-const GROUPING_WINDOW_MS = 8_000;
+const GROUPING_WINDOW_MS = 5_000;
 
 /** Timeout avant auto-apply "aujourd'hui" */
 const DATE_REPLY_TIMEOUT_MS = 5 * 60 * 1_000;

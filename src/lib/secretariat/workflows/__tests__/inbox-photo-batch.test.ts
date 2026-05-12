@@ -156,22 +156,22 @@ describe('inbox-photo-batch', () => {
       expect(msg).toContain('5 photos');
     });
 
-    it('reset le timer à chaque nouvelle photo (photo à 7s ne trigger pas)', async () => {
+    it('reset le timer à chaque nouvelle photo (photo à 4s ne trigger pas)', async () => {
       startOrExtendBatch(CHAT_ID, makePhoto());
 
-      // Avancer 7s (pas encore 8s)
-      await vi.advanceTimersByTimeAsync(7_000);
+      // Avancer 4s (pas encore 5s)
+      await vi.advanceTimersByTimeAsync(4_000);
       expect(isWaitingForInboxPhotoDate(CHAT_ID)).toBe(false);
 
       // Envoyer une 2e photo — reset le timer
       startOrExtendBatch(CHAT_ID, makePhoto());
 
-      // Avancer 7s de plus (14s total, mais seulement 7s depuis la 2e photo)
-      await vi.advanceTimersByTimeAsync(7_000);
+      // Avancer 4s de plus (8s total, mais seulement 4s depuis la 2e photo)
+      await vi.advanceTimersByTimeAsync(4_000);
       expect(isWaitingForInboxPhotoDate(CHAT_ID)).toBe(false);
       expect(sendTelegramMessage).not.toHaveBeenCalled();
 
-      // Avancer 1s de plus → 8s depuis la dernière photo
+      // Avancer 1s de plus → 5s depuis la dernière photo
       await vi.advanceTimersByTimeAsync(1_000);
       expect(isWaitingForInboxPhotoDate(CHAT_ID)).toBe(true);
       expect(sendTelegramMessage).toHaveBeenCalledTimes(1);
