@@ -383,7 +383,7 @@ async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
     });
     if (scopeResp.ok) {
       const info = (await scopeResp.json()) as { scope?: string; email?: string };
-      console.log(`[locataires] OAuth scope actif : "${info.scope}" (compte: ${info.email ?? 'inconnu'})`);
+      console.warn(`[locataires] OAuth scope actif : "${info.scope}" (compte: ${info.email ?? 'inconnu'})`);
     } else {
       console.warn(`[locataires] tokeninfo HTTP ${scopeResp.status}`);
     }
@@ -396,7 +396,7 @@ async function loadAllFiches(forceRefresh = false): Promise<FichesCache> {
     console.error('[locataires] DRIVE_VAULT_ROOT_ID ou DRIVE_INBOX_FOLDER_ID manquant');
     return { fiches: [], totaux: { actuels: 0, candidats: 0 }, loadedAt: now };
   }
-  console.log(`[locataires] loadAllFiches : rootFolderId=${rootFolderId} (source=${process.env.DRIVE_VAULT_ROOT_ID ? 'VAULT_ROOT' : 'INBOX_FALLBACK'})`);
+  console.warn(`[locataires] loadAllFiches : rootFolderId=${rootFolderId} (source=${process.env.DRIVE_VAULT_ROOT_ID ? 'VAULT_ROOT' : 'INBOX_FALLBACK'})`);
 
   const fiches: CachedFiche[] = [];
   const totaux = { actuels: 0, candidats: 0 };
