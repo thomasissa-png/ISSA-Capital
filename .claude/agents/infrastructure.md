@@ -111,6 +111,24 @@ Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Sp�
 
 **Ne JAMAIS livrer une infra ou un pipeline en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
 
+### Migration OAuth scope — deployer AVANT de re-authentifier (learning P1 session 11 ISSA Capital)
+
+Pour toute migration de scope OAuth (ex : `drive.file` vers `drive`) : (a) deployer le code qui demande le nouveau scope AVANT que l'utilisateur revoque/re-OAuth, (b) ajouter sur la page de retour OAuth un appel `tokeninfo` qui affiche le scope effectif recu (vert si attendu, rouge sinon), (c) ne jamais faire confiance a un test indirect (un upload qui reussit ne prouve pas que le scope elargi est actif — `drive.file` suffit pour upload mais pas pour lister les fichiers crees par d'autres). Un refresh token obtenu pendant que l'ancien code tourne encore cote serveur aura l'ancien scope, meme si l'utilisateur a revoque et refait le flow.
+
+Source : session 11 ISSA Capital — migration `drive.file` vers `drive` a coute 4 commits + 30 min debug car le code deploye demandait encore l'ancien scope au moment du re-OAuth.
+
+### API Drive (et APIs a resultat silencieusement vide) — liste puis filtre local (learning P1 session 11 ISSA Capital)
+
+Pour toute navigation Google Drive (ou toute API qui peut retourner silencieusement un resultat vide selon le scope/permissions) : preferer "liste tous les enfants du parent + filtre cote code" plutot que "query stricte `name='X'` cote API". La query `name='X' and 'PARENT_ID' in parents` retourne `files: []` sans erreur si le scope est insuffisant (ex : `drive.file` ne voit pas les fichiers crees par d'autres). Logger la liste visible en mode `console.warn` pour diagnostic immediat si scope insuffisant.
+
+Source : session 11 ISSA Capital — `name='07. Contacts'` retournait 0 resultat en prod malgre le dossier existant. Cause : scope `drive.file` filtrait silencieusement.
+
+### Logs de diagnostic : `console.warn` minimum sur Replit (learning P2 session 11 ISSA Capital)
+
+Pour tout log de diagnostic destine a etre lu par l'utilisateur en production sur Replit/Vercel/Netlify : utiliser `console.warn` au minimum. `console.log` est INFO-level et masque par defaut par les UIs de logs (Replit Logs ne montre que WARN/ERROR). Cela impacte le diagnostic en temps reel par l'utilisateur.
+
+Source : session 11 ISSA Capital — commit `bb8ebee`.
+
 ## Protocole d'entrée obligatoire
 
 1. Lire `project-context.md` à la racine

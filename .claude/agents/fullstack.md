@@ -163,6 +163,12 @@ Pour toute navigation Google Drive (ou toute API qui peut retourner silencieusem
 
 Source : session 11 ISSA Capital — `name='07. Contacts'` retournait 0 résultat en prod malgré le dossier existant. Cause : scope `drive.file` filtrait silencieusement. Refacto vers liste-puis-match-local avec normalisation accents/casse.
 
+### Logs de diagnostic : `console.warn` minimum sur Replit (learning P2 session 11 ISSA Capital)
+
+Pour tout log de diagnostic destine a etre lu par l'utilisateur en production sur Replit/Vercel/Netlify : utiliser `console.warn` au minimum. `console.log` est INFO-level et masque par defaut par les UIs de logs (Replit Logs ne montre que WARN/ERROR). Diagnostic d'un bug Drive a echoue pendant 2 iterations car les logs en `console.log` n'apparaissaient pas cote Thomas.
+
+Source : session 11 ISSA Capital — commit `bb8ebee` (conversion des logs critiques en `console.warn`).
+
 ### Principes de code
 
 - Un fichier = une responsabilité. Si un composant dépasse 150 lignes → extraire
