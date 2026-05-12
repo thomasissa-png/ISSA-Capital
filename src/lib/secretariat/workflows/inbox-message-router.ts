@@ -43,7 +43,9 @@ interface CachedEntry {
 
 const CACHE_TTL_MS = 10 * 60 * 1_000; // 10 minutes
 const ANTHROPIC_TIMEOUT_MS = 30_000;
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+// Haiku 4.5 : suffisant pour extraction JSON simple + résolution date FR
+// + transcription audio native. ~5x moins cher et ~2x plus rapide que Sonnet.
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
 /** Préfixe callback_data pour les boutons du router */
 export const ROUTER_CALLBACK_PREFIX = 'inbox_router:';
