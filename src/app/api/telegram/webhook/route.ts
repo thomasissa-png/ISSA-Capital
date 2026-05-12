@@ -32,7 +32,6 @@ import {
   downloadTelegramPhoto,
   downloadTelegramFile,
   sendTypingAction,
-  sendTelegramMessageWithButtons,
 } from '@/lib/secretariat/telegram';
 import {
   renderCrForTelegram,
@@ -1655,6 +1654,13 @@ async function handleQuittanceText(
   // Envoyer les messages
   await sendQuittanceMessages(chatId, result.messages, result.newState);
 
+  // Si la période vient d'être validée → lancer directement la génération batch
+  // (décision Thomas : pas de récap, pas de confirmation)
+  if (result.newState?.step === 'generating') {
+    await handleQuittanceBatchGeneration(chatId, result.newState);
+    return Response.json({ ok: true });
+  }
+
   // Si le workflow est terminé (done) avec un PDF (legacy single mode), l'envoyer
   if (result.newState?.step === 'done') {
     await sendQuittancePdfIfAvailable(chatId, result.newState);
@@ -1764,38 +1770,17 @@ async function handleQuittanceBatchGeneration(
 /**
  * Envoie les messages du workflow quittance.
  *
- * Les messages avec showConfirmation=true reçoivent des boutons inline
- * adaptés à l'étape courante :
- * - confirming_recap : "Lancer" + "Annuler" (décision Thomas)
- * - autres : "Confirmer" + "Annuler"
+ * Plus de boutons de confirmation depuis la suppression du récap final
+ * (décision Thomas). showConfirmation est ignoré côté code pour rétro-
+ * compatibilité — les messages sont envoyés en texte simple.
  */
 async function sendQuittanceMessages(
   chatId: number,
   messages: Array<{ text: string; showConfirmation?: boolean }>,
-  state: WorkflowState | null,
+  _state: WorkflowState | null,
 ): Promise<void> {
   for (const msg of messages) {
-    if (msg.showConfirmation) {
-      const buttons = [];
-
-      if (state?.step === 'confirming_recap') {
-        // Recap → Lancer / Annuler (décision Thomas)
-        buttons.push([
-          { text: '✅ Lancer', callback_data: 'quittance:launch_batch' },
-          { text: '❌ Annuler', callback_data: 'q_cancel' },
-        ]);
-      } else {
-        // Fallback: generic confirm/cancel
-        buttons.push([
-          { text: 'Confirmer', callback_data: 'q_confirm' },
-          { text: 'Annuler', callback_data: 'q_cancel' },
-        ]);
-      }
-
-      await sendTelegramMessageWithButtons(chatId, msg.text, buttons);
-    } else {
-      await sendTelegramMessage(chatId, msg.text);
-    }
+    await sendTelegramMessage(chatId, msg.text);
   }
 }
 

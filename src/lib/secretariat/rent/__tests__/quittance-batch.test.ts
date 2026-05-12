@@ -273,12 +273,14 @@ describe('parsePeriodeSelection', () => {
     });
   });
 
-  describe('max batch limit (24 mois)', () => {
-    it('3 years range → error', () => {
+  describe('no batch limit (Thomas decision: aucune limite)', () => {
+    it('3 years range → 36 mois sans erreur', () => {
       const result = parsePeriodeSelection('2024-01 à 2026-12', today);
-      expect('error' in result).toBe(true);
-      if ('error' in result) {
-        expect(result.error).toContain('24');
+      expect('error' in result).toBe(false);
+      if (!('error' in result)) {
+        expect(result.mois).toHaveLength(36);
+        expect(result.mois[0]).toEqual({ year: 2024, month: 1 });
+        expect(result.mois[35]).toEqual({ year: 2026, month: 12 });
       }
     });
   });
@@ -376,7 +378,7 @@ describe('quittanceWorkflow (batch)', () => {
     it('q_cancel annule depuis n\'importe quelle étape', async () => {
       const state = {
         type: 'quittance' as const,
-        step: 'confirming_recap',
+        step: 'selecting_periode',
         data: {},
         startedAt: Date.now(),
         expiresAt: Date.now() + 3600000,
@@ -386,39 +388,6 @@ describe('quittanceWorkflow (batch)', () => {
 
       expect(result.newState).toBeNull();
       expect(result.messages[0]!.text).toContain('annulée');
-    });
-  });
-
-  describe('handleCallback — launch_batch', () => {
-    it('quittance:launch_batch transitions to generating', async () => {
-      const state = {
-        type: 'quittance' as const,
-        step: 'confirming_recap',
-        data: { selectedLocataires: [], selectedMois: [] },
-        startedAt: Date.now(),
-        expiresAt: Date.now() + 3600000,
-      };
-
-      const result = await quittanceWorkflow.handleCallback(12345, state, 'quittance:launch_batch');
-
-      expect(result.newState).not.toBeNull();
-      expect(result.newState!.step).toBe('generating');
-      expect(result.messages[0]!.text).toContain('Génération');
-    });
-
-    it('quittance:launch_batch ignored if not in confirming_recap', async () => {
-      const state = {
-        type: 'quittance' as const,
-        step: 'selecting_locataires',
-        data: {},
-        startedAt: Date.now(),
-        expiresAt: Date.now() + 3600000,
-      };
-
-      const result = await quittanceWorkflow.handleCallback(12345, state, 'quittance:launch_batch');
-
-      // Should NOT transition to generating
-      expect(result.newState!.step).toBe('selecting_locataires');
     });
   });
 
@@ -479,7 +448,7 @@ describe('quittanceWorkflow (batch)', () => {
   });
 
   describe('handleMessage — selecting_periode', () => {
-    it('parses "2026-04 à 2026-05" and moves to confirming_recap', async () => {
+    it('parses "2026-04 à 2026-05" and moves directly to generating (no recap)', async () => {
       const mockLocataire = {
         nomFichier: 'Test User',
         nomAffiche: 'Test User',
@@ -506,10 +475,9 @@ describe('quittanceWorkflow (batch)', () => {
       const result = await quittanceWorkflow.handleMessage(12345, state, '2026-04 à 2026-05');
 
       expect(result.newState).not.toBeNull();
-      expect(result.newState!.step).toBe('confirming_recap');
-      expect(result.messages[0]!.text).toContain('Récapitulatif');
+      expect(result.newState!.step).toBe('generating');
+      expect(result.messages[0]!.text).toContain('Génération');
       expect(result.messages[0]!.text).toContain('2');
-      expect(result.messages[0]!.showConfirmation).toBe(true);
     });
 
     it('rejects invalid period format', async () => {

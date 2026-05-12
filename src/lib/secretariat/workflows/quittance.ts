@@ -4,8 +4,10 @@
  * Batch mode : N locataires × M mois = N×M PDFs en une seule invocation.
  *
  * États :
- *   selecting_locataires → selecting_periode → confirming_recap
- *   → generating → done | error
+ *   selecting_locataires → selecting_periode → generating → done | error
+ *
+ * Génération directe sans confirmation (décision Thomas) : dès que la période
+ * est validée, le batch démarre. Aucune limite sur N×M.
  *
  * Le workflow est entièrement auto-contenu : il gère la lecture Drive,
  * la résolution du bien, le calcul des variables, la génération PDF,
@@ -56,9 +58,6 @@ const MOIS_FR_LOWER: Record<string, number> = {
 const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
 const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3/files';
 
-/** Limite de sécurité : max 24 mois par batch */
-const MAX_MOIS_BATCH = 24;
-
 // ============================================================
 // Étapes du workflow
 // ============================================================
@@ -66,7 +65,6 @@ const MAX_MOIS_BATCH = 24;
 type QuittanceStep =
   | 'selecting_locataires'
   | 'selecting_periode'
-  | 'confirming_recap'
   | 'generating'
   | 'done'
   | 'error';
@@ -251,9 +249,6 @@ export function parsePeriodeSelection(
       }
 
       const count = endVal - startVal + 1;
-      if (count > MAX_MOIS_BATCH) {
-        return { error: `Trop de mois (${count}). Maximum : ${MAX_MOIS_BATCH} mois par batch.` };
-      }
 
       const result: Array<{ year: number; month: number }> = [];
       let y = startParsed.year;
@@ -278,10 +273,6 @@ export function parsePeriodeSelection(
         return { error: `Mois non reconnu : "${part}". Utilise le format YYYY-MM ou "mois année".` };
       }
       result.push(parsed);
-    }
-
-    if (result.length > MAX_MOIS_BATCH) {
-      return { error: `Trop de mois (${result.length}). Maximum : ${MAX_MOIS_BATCH} mois par batch.` };
     }
 
     return { mois: result };
@@ -711,8 +702,6 @@ export const quittanceWorkflow: Workflow = {
     state: WorkflowState,
     callbackData: string,
   ): Promise<WorkflowResponse> {
-    const data = getData(state);
-
     // Cancel from any step
     if (callbackData === 'q_cancel') {
       return {
@@ -721,17 +710,9 @@ export const quittanceWorkflow: Workflow = {
       };
     }
 
-    // "Lancer" from confirming_recap → the router handles the actual generation
-    if (callbackData === 'quittance:launch_batch' && state.step === 'confirming_recap') {
-      return {
-        newState: makeState('generating', data),
-        messages: [{ text: '🔄 Génération en cours...' }],
-      };
-    }
-
     return {
       newState: state,
-      messages: [{ text: 'Utilise les boutons pour confirmer ou annuler.' }],
+      messages: [{ text: 'Action non reconnue.' }],
     };
   },
 
@@ -917,7 +898,8 @@ function buildPeriodePrompt(data: QuittanceWorkflowData): WorkflowResponse {
 }
 
 /**
- * Step 2: selecting_periode — parse input, show recap.
+ * Step 2: selecting_periode — parse input, lance directement la génération.
+ * Pas de récap, pas de confirmation (décision Thomas).
  */
 async function handleSelectPeriode(
   data: QuittanceWorkflowData,
@@ -938,26 +920,11 @@ async function handleSelectPeriode(
   const totalPdfs = locCount * moisCount;
   data.totalPdfs = totalPdfs;
 
-  // Build recap message
-  const locNames = (data.selectedLocataires ?? [])
-    .map((l) => `  • ${l.nomFichier}`)
-    .join('\n');
-  const moisNames = result.mois
-    .map((m) => `  • ${moisLabel(m)}`)
-    .join('\n');
-
-  const recapText =
-    `📋 Récapitulatif\n\n` +
-    `🏠 Locataires (${locCount}) :\n${locNames}\n\n` +
-    `📅 Mois (${moisCount}) :\n${moisNames}\n\n` +
-    `📄 Total : ${totalPdfs} quittance${totalPdfs > 1 ? 's' : ''} PDF à générer`;
-
   return {
-    newState: makeState('confirming_recap', data),
+    newState: makeState('generating', data),
     messages: [
       {
-        text: recapText,
-        showConfirmation: true,
+        text: `🔄 Génération de ${totalPdfs} quittance${totalPdfs > 1 ? 's' : ''} en cours...`,
       },
     ],
   };
