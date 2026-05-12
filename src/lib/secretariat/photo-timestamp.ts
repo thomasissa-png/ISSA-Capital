@@ -23,16 +23,16 @@ export interface PhotoTimestamp {
   source: 'exif' | 'telegram' | 'now';
 }
 
-function isHeicBuffer(buf: Buffer, mimeType?: string): boolean {
-  // Si le MIME est connu et explicite, faire confiance (Telegram nous le donne)
-  if (mimeType && /^image\/(heic|heif|avif)$/i.test(mimeType)) {
-    return true;
-  }
+function isHeicBuffer(buf: Buffer, _mimeType?: string): boolean {
+  // CRITIQUE : on n'utilise plus le MIME du tout — Telegram/iPhone mentent
+  // systématiquement (file_name='IMG.JPG', mime='image/heic', mais le buffer
+  // est en réalité un JPEG converti côté client). Seule la signature des
+  // bytes dit la vérité.
   if (buf.length < 24) return false;
+  // JPEG SOI marker (FF D8 FF) → ce n'est PAS un HEIC, peu importe le MIME.
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return false;
+  // ISO BMFF HEIC container : bytes 4-7 = "ftyp", puis brand (major + compatible).
   if (buf.subarray(4, 8).toString('ascii') !== 'ftyp') return false;
-  // Le ftyp box contient le major brand (bytes 8-11) puis les compatible brands.
-  // iPhone utilise différents brands selon firmware (heic, heix, mif1, mif2, msf1, ...).
-  // Scan des 24 premiers bytes (couvre major brand + 3-4 compatible brands).
   const ftypBox = buf.subarray(8, 24).toString('ascii');
   return /heic|heix|hevc|heim|heis|mif1|msf1|mif2|hevx|avif|heif/i.test(ftypBox);
 }
