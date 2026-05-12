@@ -37,9 +37,6 @@ import {
   Paragraph,
   TextRun,
   AlignmentType,
-  HeadingLevel,
-  TabStopPosition,
-  TabStopType,
   PageBreak,
   convertMillimetersToTwip,
 } from 'docx';

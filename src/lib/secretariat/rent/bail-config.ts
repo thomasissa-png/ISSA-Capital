@@ -12,8 +12,7 @@
 import bailConfigData from './data/bail-config.json';
 import { chargerBiens, resoudreBien } from './biens';
 import type { Locataire, BailVariables } from './types';
-import { nombreEnLettres } from './num-en-lettres';
-import { dateEnLettres, formatDateFr } from './dates-fr';
+import { formatDateFr } from './dates-fr';
 import { chargerSignatureBase64 } from './signature';
 
 // ============================================================
