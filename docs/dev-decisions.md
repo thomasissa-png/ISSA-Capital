@@ -449,3 +449,89 @@ Lib npm `exifr` choisie pour l'extraction EXIF :
 ### Limite connue
 
 Telegram en mode "photo" (envoi direct depuis galerie) compresse l'image et supprime les EXIF. La majorite des photos envoyees par Thomas tomberont donc sur le fallback 2 (`message.date`). Pour preserver les EXIF, Thomas doit envoyer en mode "fichier" (icone trombone → joindre fichier → choisir photo).
+
+---
+
+## Session 14 — Jalon 0 email-ingest : variables d'environnement
+
+**Date** : 2026-05-13
+**Contexte** : démarrage du plan email-ingest Anya (validé Thomas 2026-05-12). Jalon 0 = setup des env vars. Pas de Gmail/Outlook API à activer maintenant (Jalon 2+).
+
+### Variables d'environnement à ajouter (Replit Secrets)
+
+**Gmail (Phase 1A — Jalon 2+, pas maintenant)** :
+```
+GMAIL_USER_EMAIL=thomas.issa@gmail.com
+GMAIL_LABEL_TRAITE=Anya/traité
+GMAIL_LABEL_A_REVOIR=Anya/à-revoir
+```
+
+**Email-ingest (Phase 1A — Jalon 4+)** :
+```
+EMAIL_INGEST_ENABLED=true
+EMAIL_INGEST_INTERVAL_MIN=5
+EMAIL_INGEST_LOOKBACK_DAYS=7
+EMAIL_INGEST_DRY_RUN=false
+```
+
+**Non nécessaires pour Jalon 1** : toutes ces vars sont pour les jalons 2+. Le Jalon 1 (vault-client) utilise uniquement les vars Drive déjà configurées (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, `DRIVE_VAULT_ROOT_ID`).
+
+### Décision technique : pas de gray-matter
+
+Le plan email-ingest recommandait `gray-matter` pour le parsing frontmatter. Décision : ne PAS installer de dépendance externe.
+
+**Justification** :
+- Le projet utilise déjà un parseur YAML minimaliste natif dans `locataires.ts` (testé, en prod)
+- La contrainte bit-parfait (frontmatter préservé caractère pour caractère sauf modifications explicites) est INCOMPATIBLE avec gray-matter qui re-sérialise via js-yaml et réordonne les clés
+- L'approche retenue : travailler sur le texte brut, extraire le frontmatter par regex, parser les champs nécessaires, et lors de la re-sérialisation ne modifier QUE les lignes changées (patch chirurgical)
+- 0 dépendance ajoutée, ownership total, comportement bit-parfait garanti
+
+### Décision technique : mutualisation code Drive existant
+
+Le vault-client réutilise les fonctions Drive existantes :
+- `getAccessToken()` depuis `drive-upload.ts`
+- Pattern `findDriveFolderByName()` depuis `rent/locataires.ts` (navigation arbo avec normalisation)
+- Pattern `readDriveFileContent()` depuis `rent/locataires.ts`
+- Pattern `updateFileContent()` depuis `drive-todo.ts`
+
+Pas de duplication. Les fonctions communes sont importées directement.
+
+---
+
+## Session 14 — Jalon 1 vault-client : architecture et décisions
+
+**Date** : 2026-05-13
+
+### Architecture vault-client
+
+```
+src/lib/secretariat/vault-client/
+├── vault-paths.ts      # constantes statiques (chemins logiques vault)
+├── drive-resolver.ts   # path logique → fileId Drive (cache TTL 1h + invalidation 404)
+├── obsidian-file.ts    # read/write .md via Drive API (UTF-8, préserve BOM si présent)
+├── frontmatter.ts      # parse + patch YAML frontmatter (préserve ordre clés)
+├── markdown-append.ts  # append à section H2 (chrono inverse)
+├── audit-log.ts        # log JSONL dans _Inbox/AnyaLogs/
+├── write-lock.ts       # sérialisation écriture par path (queue)
+├── index.ts            # API publique
+└── __tests__/
+    ├── frontmatter.test.ts
+    ├── markdown-append.test.ts
+    ├── write-lock.test.ts
+    ├── drive-resolver.test.ts
+    ├── obsidian-file.test.ts
+    └── index.test.ts
+```
+
+Note : `write-lock.ts` ajouté par rapport au plan initial. Le plan mentionnait les locks dans les contraintes mais pas comme fichier séparé. C'est plus propre isolé.
+
+### Stratégie frontmatter bit-parfait
+
+Au lieu de parser le YAML en objet puis re-sérialiser (ce qui réordonne les clés), le frontmatter est traité comme du texte brut :
+1. Extraction par regex `^---\n([\s\S]*?)\n---`
+2. Le bloc YAML est splitté en lignes
+3. Pour UPDATE : on cherche la ligne `clé:` et on remplace sa valeur
+4. Pour READ : on parse les valeurs nécessaires
+5. Le body Markdown après `---` n'est JAMAIS touché sauf par `markdown-append.ts`
+
+Résultat : le fichier re-sérialisé est bit-identique à l'original sauf pour la/les ligne(s) modifiée(s).
