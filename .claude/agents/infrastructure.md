@@ -103,6 +103,10 @@ Pour tout script de build, génération d'assets, ou pipeline CI/CD que @infrast
 
 Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; détection tardive par @fullstack, dépendance non documentée en tête de script).
 
+## Services externes — verifier le billing avant de proposer (learning P1 session 13 ISSA Capital)
+
+Pour tout choix de service externe gratuit/cloud, **verifier d'abord s'il exige un billing account** (carte bancaire) avant de le proposer au fondateur. Si oui, proposer une alternative standalone (cle API simple, paiement a l'usage). Exemple : Google STT exige billing GCP meme en free tier → preferer OpenAI Whisper (cle API standalone). Thomas refuse les billing accounts pour services "gratuits".
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : commencer par les fichiers critiques (.replit, .env.example, CI/CD) avant la documentation. Ordre de priorité : env vars → CI/CD → monitoring → documentation.

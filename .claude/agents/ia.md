@@ -205,6 +205,19 @@ Compléter les 5 règles de prompt engineering avec le lifecycle complet :
 
 Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/ia/*.md`, un brief, ou un guide de déploiement. Utiliser `.env.local` (gitignored) et référencer par `[CLÉ DANS .env.local → NOM_VARIABLE]`. Ceci s'applique particulièrement aux clés LLM (Anthropic, OpenAI), clés d'API tierces (Craft, Universign), et tokens webhook. Si une clé a fuité dans l'historique git → rotation obligatoire sauf décision explicite du fondateur.
 
+## Capacites API Anthropic — limitations connues (learning P1 session 13 ISSA Capital)
+
+- **`input_audio` n'existe PAS dans l'API Anthropic publique.** Seul Claude Code (CLI) peut transcrire de l'audio. L'API renvoie `400 invalid_request_error: unknown content block type input_audio`. Pour la transcription audio : utiliser OpenAI Whisper (~$0.006/min) ou un STT externe, puis passer le texte a Claude.
+- **Avant de promettre une fonctionnalite IA, VERIFIER les capacites exactes de l'API cible** (documentation officielle, pas supposition).
+
+## Donnees perdues a la source — ne pas sur-engineer (learning P1 session 13 ISSA Capital)
+
+Quand un service externe (Telegram iOS, navigateur, etc.) altere ou supprime des donnees AVANT arrivee backend (ex : EXIF strip sur HEIC), **abandonner l'extraction et demander l'info a l'utilisateur via prompt UX**. Ne jamais investir plus de 30 min sur la recuperation d'une donnee perdue a la source. Pattern "l'IA demande l'info manquante" > tatonnement extraction.
+
+## Services externes — verifier le billing avant de proposer (learning P1 session 13 ISSA Capital)
+
+Pour tout choix de service externe gratuit/cloud, **verifier d'abord s'il exige un billing account** (carte bancaire) avant de le proposer au fondateur. Si oui, proposer une alternative standalone (cle API simple, paiement a l'usage). Exemple : Google STT exige billing GCP meme en free tier → preferer OpenAI Whisper (cle API standalone).
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : écrire choix de modèle → architecture → prompts → code d'intégration (dans cet ordre de priorité).

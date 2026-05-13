@@ -46,3 +46,47 @@
 | ISSA Capital — session 7-8 | 2026-04-09 | préférence fondateur | P3 | Favicon : 3 variantes dès le 2ème rejet + page comparison HTML. | fait | propagé |
 | ISSA Capital — session 7-8 | 2026-04-09 | préférence fondateur | P3 | Délais promises vitrine : réalistes, pas ambitieux. "sous 72h". | fait | propagé |
 | ISSA Capital — session 7-8 | 2026-04-09 | préférence fondateur | P3 | Forme collégiale "l'un des membres de la famille" plutôt que "Thomas Issa". | fait | n/a (local) |
+
+## Archive session 14 TTL audit — Entries terminated from sessions Cadrage-11
+
+> Archivees le 2026-05-13 lors de l'audit TTL session 14. Format condense (colonnes cles uniquement).
+
+| Session | Date | Cat | Sev | Description resumee | Correction | Propagation |
+|---|---|---|---|---|---|---|
+| Cadrage | 2026-04-07 | pref fondateur | P0 | Mission vs Valeurs — Mission=interets famille. Valeurs=filtres pas finalite. | fait | propag |
+| Cadrage | 2026-04-07 | pref fondateur | P0 | Identite libanaise — SAS francaise MAIS famille LIBANAISE. | fait | propag |
+| Cadrage | 2026-04-07 | pref fondateur | P0 | VITRINE PAS CONVERSION — "On est pas la pour plaire au prospect." | fait | propag |
+| Cadrage | 2026-04-07 | probleme | P0 | Tagline fausse promesse "On ne vend pas. On garde." — ISSA DOIT pouvoir vendre. | en-cours | propag |
+| Cadrage | 2026-04-07 | insistance | P0 | Simplicite > Demonstration — Thomas "Simple, j'insiste." 3 rappels. | fait | propag |
+| S4 | 2026-04-08 | probleme | P1 | Placeholder `[Nom agence]` recopie par @fullstack. | fait | propag |
+| S4 | 2026-04-08 | recommandation | P2 | Dispersion marqueurs `[NOM]` Carl/Maxime dans 4 livrables. | en-cours | propag |
+| S5 | 2026-04-08 | probleme | P1 | Sub-orchestrator n'a pas Task — limitation env sub-sub-agent. | fait | propag |
+| S5 | 2026-04-08 | probleme | P1 | Duplication apres propagation chirurgicale copy. | fait | propag |
+| S5 | 2026-04-08 | requete | P1 | Favicon "Paint" — lettres en rectangles, pas Bezier. | fait | propag |
+| S6 | 2026-04-08 | probleme | P1 | Date 2J 1994→2016 — fait biographique non verifie, propage 3 sessions. | fait | propag |
+| S6 | 2026-04-08 | insistance | P2 | Bio trop longue — Thomas "trop de famille". | fait | propag |
+| S6 | 2026-04-08 | pref fondateur | P1 | Anti-justifications — "une marque sure d'elle ne se justifie pas". | fait | propag |
+| S7-8 | 2026-04-09 | pattern | P1 | Mega-passe @fullstack 7 chantiers en 1 Task — briefer par blocs numerotes. | fait | n/a |
+| S7-8 | 2026-04-09 | probleme | P1 | Credentials en clair dans .md committe — cle Craft. | fait | propag |
+| S7-8 | 2026-04-09 | probleme | P2 | tsconfig capture sous-dossier — monorepo Next.js + Node separes. | fait | propag |
+| S9 | 2026-04-09 | insistance | P0 | Zero MVP — "Le mot MVP doit etre banni. Je veux des trucs finis." | fait | propag |
+| S9 | 2026-04-09 | probleme | P1 | SDK Anthropic peerDep zod ^3.25 casse npm install. | fait | n/a |
+| S9 | 2026-04-09 | probleme | P1 | Claude JSON dans bloc markdown casse JSON.parse. | fait | n/a |
+| S9 | 2026-04-09 | pref fondateur | P1 | "famille libanaise" interdit (retour Jean-Pierre). | fait | propag |
+| S9 | 2026-04-09 | pref fondateur | P2 | Umami uniquement — jamais Plausible ni GA4. | fait | propag |
+| S9 | 2026-05-10 | probleme | P2 | Guide technique inutile MCP Gmail/Calendar. | fait | n/a |
+| S10 | 2026-05-10 | pref fondateur | P2 | Pas de dichotomie Pro/Perso dans le vault. | fait | propag |
+| S10 | 2026-05-10 | probleme | P1 | Vault session 9 livre vide — 0 contenu pre-rempli. | fait | n/a |
+| S10 | 2026-05-10 | probleme (RECIDIVE) | P1 | Guides MCP techniques inutiles pour Asana ET Craft — regle 19 ajoutee. | fait | propag |
+| S10 | 2026-05-12 | pattern | P2 | Architecture Mode vs Workflow — distinction conceptuelle. | fait | propag |
+| S10 | 2026-05-12 | pref fondateur | P1 | "Qualite > cout" — Thomas refuse optimisations qui degradent UX. | fait | propag |
+| S11 | 2026-05-12 | probleme | P1 | Drift documentation/realite sur `DRIVE_INBOX_FOLDER_ID`. | fait | propag |
+| S11 | 2026-05-12 | pattern | P2 | Diagnostic bug Anya en 2 questions avant d'investiguer le code. | fait | n/a |
+| S11 | 2026-05-12 | probleme | P1 | OAuth scope ne se propage pas tant que code deploye demande ancien scope. Regle 21. | fait | propag |
+| S11 | 2026-05-12 | probleme | P1 | Drive Query `name='X'` retourne files:[] silencieusement. Regle 23. | fait | propag |
+| S11 | 2026-05-12 | probleme | P2 | Replit logs filtre console.log (INFO) par defaut. Regle 22. | fait | propag |
+| S11 | 2026-05-12 | pattern | P1 | Batch quittance N×M sans confirmation = pattern gagnant. | fait | n/a |
+| S11 | 2026-05-12 | pref fondateur | P1 | Thomas veut "Anya futee" pas litterale — fuzzy Levenshtein. | fait | propag |
+| S11 | 2026-05-12 | pref fondateur | P1 | Thomas ne veut pas valider des donnees deja saisies. | fait | propag |
+| S12 | 2026-05-12 | probleme | P1 | Photos mode "fichier" Telegram tombaient dans Documents. Regle 24. | fait | propag |
+| S12 | 2026-05-12 | probleme | P1 | Videos non gerees par le bot Anya. Regle 24. | fait | propag |

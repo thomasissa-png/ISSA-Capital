@@ -278,6 +278,34 @@ Session massive couvrant 91 commits. Travaux majeurs :
 - Aucun blocker technique
 - Actions Thomas (Phase 8) non démarrées — nécessitent des démarches juridiques/administratives
 
+---
+
+## Historique des interventions agents — Sessions 1-9
+
+> Archivé depuis project-context.md en session 14 (2026-05-13). Les entrées ci-dessous couvrent toutes les interventions agents des sessions 1 à 9.
+
+| Agent | Date | Fichiers produits | Décisions clés | Pourquoi / Alternatives écartées |
+|-------|------|-------------------|----------------|----------------------------------|
+| creative-strategy | 2026-04-07 | brand-platform.md, personas.md, competitive-benchmark.md | Positionnement holding familiale lisible. Archétype Ruler/Caregiver puis Ruler/Outlaw. Personas : Karim (principal), Leila (secondaire), Marc (journaliste). | Golden Circle + Prisme Kapferer. Espace libre identifié par WebSearch. |
+| creative-strategy (révision) | 2026-04-07 | personas.md, brand-platform.md | Suppression Hélène+Sophie (scope invalide), création Karim+Leila. Baseline "Racines libanaises. Exigences sans exception." | Scope business recadré par Thomas : immo + participations, pas cession PME. |
+| legal | 2026-04-07 | legal-audit.md, rgpd-checklist.md | Risque L.411-1 CMF maîtrisé. Plausible cookieless = pas de bandeau. DPA Resend obligatoire. | Consentement > intérêt légitime pour formulaire. |
+| product-manager | 2026-04-07 | product-vision.md, functional-specs.md, execution-plan.md | Site vitrine pur, 10 anti-features, KPI = demandes qualifiées/mois, formulaire 7 champs. | Formulaire qualifiant > générique. |
+| design | 2026-04-07 | design-system.md, design-tokens.json, component-library.md, page-compositions.md | Palette noir-crème-ocre, EB Garamond + Inter, tokens 3 tiers, WCAG 2.2 AA. | Ocre levantin > bleu corporate. Typo as hero (budget 0€). |
+| copywriter (×5) | 2026-04-07 | brand-voice.md, landing-page-copy.md, page-mission.md, page-accompagnement.md, page-opportunites.md, page-participations.md, page-contact.md, page-legal.md | Vouvoiement universel, 2 CTAs Karim/Leila, filiation Jean-Pierre Issa, anti-L.411-1 CMF. | Frameworks BAB/PAS/FAB par page. |
+| ux | 2026-04-07 | user-flows.md, wireframes.md, ux-audit.md | 2 pages /accompagnement + /opportunites (parcours incompatibles). Formulaire 4 vs 7 champs. | Split parcours Karim/Leila. |
+| design (WCAG) | 2026-04-07 | design-tokens.json, page-compositions.md, component-library.md, design-system.md | levant-600 pour text-accent (4.6:1 PASS). levant-500 interdit texte normal fond clair. | levant-600 > levant-700 (visuellement plus proche charte). |
+| product-manager (personas) | 2026-04-07 | functional-specs.md | Remplacement Hélène/Sophie par Karim/Leila dans toutes les US. 3 nouvelles US ajoutées. | Formulaire immo recalé sur Leila. |
+| seo | 2026-04-07 | seo-strategy.md, keyword-map.md, metadata-templates.md, structured-data.md | SEO défensif marque, 12 requêtes, Schema JSON-LD, robots.ts AI crawlers autorisés. | Défensif > offensif (vitrine, pas funnel). |
+| design (assets) | 2026-04-07 | SVG logos/favicons, og-image-source.svg, site.webmanifest, assets-handoff.md | Monogramme IC, palette verrouillée, manifest PWA. | Direction A IC choisie (silhouette 16px). |
+| creative-strategy (S6-8) | 2026-04-08 | gradient-one-angle-options.md, mission-vs-apropos-audit.md, favicon-brief-session6.md, mission-refonte-10-10.md, participations-refonte-10-10.md, accompagnement-refonte-10-10.md | Refontes 10/10 des 3 pages. Fusion /a-propos dans /mission. Favicon IC Direction A. | Variantes RICHE/A/A recommandées. |
+| fullstack (×10+) | 2026-04-07→09 | Code TSX complet 6 pages, formulaires, JSON-LD, sitemap, favicon binaires, logo SVG fill, monopage S9, bot Anya, vault Obsidian | Implémentation de tous les retours Thomas, pipeline G28 PASS systématique. | Edits chirurgicaux, idempotence vérifiée. |
+| reviewer (×3) | 2026-04-07→08 | cross-review-report.md, cross-review-session4.md, cross-review-session5.md | GO CONDITIONNEL systématique, score 9.4-9.5/10. | Audit par gate (fail-fast) > par livrable. |
+| qa | 2026-04-08 | qa-bloc4-final-review.md, qa-session5-report.md | Pipeline 5/5 PASS, 154/156 Playwright, 11/11 US couvertes. | Vérification indépendante du pipeline @fullstack. |
+| ia | 2026-04-08→09 | secretariat-architecture.md, secretariat-system-prompt.md, secretariat-implementation-plan.md, claude-profile (9 fichiers) | Architecture Anya 14 endpoints, RBAC, compteur IC-CR, Claude Profile cross-projets. | SQLite > JSON (transactions exclusives). 1 prompt unique > 7 templates. |
+| infrastructure | 2026-04-07 | REPLIT_ACTIONS.md, infrastructure.md | Procédure déploiement 9 étapes, Autoscale, apex sans www, rollback 1 clic. | Autoscale > Reserved VM (vitrine faible trafic). |
+| copywriter (S4-6) | 2026-04-08 | hero-tagline-alternatives.md, simplification-audit.md, copy-audit-antifiller.md, about-page-copy.md | Règle "Simple > Démonstratif", purge antithèses, about-page copy. | Simplicité > Démonstration promue en P0. |
+| main thread (S9 clôture) | 2026-05-10 | founder-preferences.md, lessons-learned.md, project-context-archive.md | Propagation P0 "Zéro MVP", archivage, création founder-preferences.md. | Guide MCP supprimé (Claude Desktop intégrations natives). |
+
 ### Nom de branche recommandé session 10
 
 `claude/issa-capital-s10-deploy-anya-`

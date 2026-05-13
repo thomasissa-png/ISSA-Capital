@@ -67,6 +67,10 @@ Quand un agent produit un livrable destiné à l'utilisateur final ou aux client
 
 ---
 
+## Zero commit essai-erreur (standard — learning P1 session 13 ISSA Capital)
+
+Avant tout push d'un fix sur un bug reproductible, **TESTER en local** sur le fichier/donnees qui foire. Si l'utilisateur a signale 2 iterations sans succes → STOP push, demander un sample du cas qui foire, ecrire un test, valider, PUIS pusher. Regle : "0 commit hypothetique sur un bug recurrent." Voir CLAUDE.md regle 26.
+
 ## Gestion des timeouts (standard)
 
 Claude Code a une limite de temps par réponse. Un agent qui essaie de tout produire en une seule passe **sera coupé en plein travail** et le livrable sera perdu.

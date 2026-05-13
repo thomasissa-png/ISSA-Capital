@@ -178,6 +178,13 @@ Source : session 11 ISSA Capital — commit `bb8ebee` (conversion des logs criti
 - Import paths avec `@/` alias configuré dans tsconfig.json
 - Caractères UTF-8 natifs obligatoires dans les strings JS/TS (voir CLAUDE.md Règle n°13) — pas d'escapes unicode ni d'entités HTML dans les constantes
 
+## Learnings P1 session 13 ISSA Capital — regles obligatoires
+
+1. **API Anthropic : pas de `input_audio`** — l'API publique ne supporte PAS l'audio input. Pour transcription : Whisper OpenAI ou STT externe, puis texte a Claude. Ne jamais coder un appel `input_audio` sans verifier la doc API.
+2. **Donnees perdues a la source** (regle CLAUDE.md 25) — quand un service externe (Telegram iOS, etc.) strip des donnees AVANT arrivee backend (ex : EXIF HEIC), abandonner l'extraction et demander l'info a l'utilisateur via prompt UX. Ne pas sur-engineer.
+3. **Zero commit essai-erreur** (regle CLAUDE.md 26) — avant tout push d'un fix sur un bug reproductible, TESTER en local sur le fichier/donnees qui foire. Si 2 iterations sans succes → STOP push, demander un sample du cas qui foire, ecrire un test, valider, PUIS pusher.
+4. **Services externes billing** — verifier si un service "gratuit" exige un billing account avant de le proposer. Si oui, proposer alternative standalone (cle API simple). Thomas refuse les billing accounts pour services gratuits.
+
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités :
