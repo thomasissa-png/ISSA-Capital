@@ -1,0 +1,218 @@
+/**
+ * Tests unitaires — handler locataire.
+ *
+ * Vérifie :
+ * - Fiche trouvée : append_historique + update_frontmatter + mark_processed
+ * - Intent quittance → add_todo supplémentaire
+ * - Intent non-quittance → pas d'add_todo
+ * - Locataire inconnu (fiche non trouvée) → warning add_todo + mark_processed
+ * - Cibles et payloads corrects
+ * - mark_processed toujours en dernière position
+ * - Regex quittance case-insensitive
+ * - Description humaine correcte dans chaque action
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { TriageResult } from '../../triage/types';
+import type { EmailMessage } from '../../gmail-source/types';
+
+// ============================================================
+// Mocks — déclarés AVANT les imports
+// ============================================================
+
+const mocks = vi.hoisted(() => ({
+  findContactByEmail: vi.fn(),
+}));
+
+vi.mock('../../vault-client', () => ({
+  findContactByEmail: mocks.findContactByEmail,
+}));
+
+// ============================================================
+// Imports (après mocks)
+// ============================================================
+
+import { handleLocataire } from '../locataire';
+
+// ============================================================
+// Fixtures
+// ============================================================
+
+function makeEmail(overrides: Partial<EmailMessage> = {}): EmailMessage {
+  return {
+    source: 'gmail',
+    id: 'msg_loc_001',
+    from: { email: 'alice.martin@gmail.com', name: 'Alice Martin' },
+    to: [{ email: 'thomas@issacapital.com' }],
+    cc: [],
+    subject: 'Demande de quittance mai',
+    bodyPlain: 'Bonjour, pourriez-vous me transmettre la quittance de mai ?',
+    receivedAt: new Date('2026-05-13T09:00:00Z'),
+    attachments: [],
+    rawRef: 'https://mail.google.com/mail/u/0/#inbox/msg_loc_001',
+    ...overrides,
+  };
+}
+
+function makeTriage(overrides: Partial<TriageResult> = {}): TriageResult {
+  return {
+    category: 'locataire',
+    intent: 'demande_quittance_mai',
+    confidence: 0.95,
+    matchedContact: 'Alice Martin',
+    summary: 'Demande de quittance pour le mois de mai 2026.',
+    suggestedActions: [],
+    ...overrides,
+  };
+}
+
+const existingLocataire = {
+  name: 'Alice Martin',
+  folderPath: '07. Contacts/05. Locataires/01. Actuels',
+  emails: ['alice.martin@gmail.com'],
+  content: '---\nnom: Alice Martin\n---\n# Alice Martin',
+  fileId: 'drive_file_loc_001',
+};
+
+// ============================================================
+// Tests
+// ============================================================
+
+describe('handleLocataire', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // --- Locataire connu, intent quittance ---
+
+  it('retourne 4 actions si locataire connu + intent quittance', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions).toHaveLength(4);
+    expect(actions[0]!.type).toBe('append_historique');
+    expect(actions[1]!.type).toBe('update_frontmatter');
+    expect(actions[2]!.type).toBe('add_todo');
+    expect(actions[3]!.type).toBe('mark_processed');
+  });
+
+  it('add_todo contient le nom du contact et l\'intent quittance', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    const todoAction = actions[2]!;
+    expect(todoAction.type).toBe('add_todo');
+    expect(todoAction.payload.task).toContain('Alice Martin');
+    expect(todoAction.payload.task).toContain('demande_quittance_mai');
+    expect(todoAction.payload.priority).toBe('P1');
+  });
+
+  // --- Locataire connu, intent non-quittance ---
+
+  it('retourne 3 actions si locataire connu + intent non-quittance', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const triage = makeTriage({ intent: 'signalement_probleme' });
+    const actions = await handleLocataire(triage, makeEmail());
+
+    expect(actions).toHaveLength(3);
+    expect(actions[0]!.type).toBe('append_historique');
+    expect(actions[1]!.type).toBe('update_frontmatter');
+    expect(actions[2]!.type).toBe('mark_processed');
+  });
+
+  it('cible la fiche locataire au bon chemin', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    const expectedTarget = '07. Contacts/05. Locataires/01. Actuels/Alice Martin.md';
+    expect(actions[0]!.target).toBe(expectedTarget);
+    expect(actions[1]!.target).toBe(expectedTarget);
+  });
+
+  it('payload append_historique contient section, content et date ISO', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    const payload = actions[0]!.payload;
+    expect(payload.section).toBe('demande_quittance_mai');
+    expect(payload.content).toBe('Demande de quittance pour le mois de mai 2026.');
+    expect(payload.date).toBe('2026-05-13T09:00:00.000Z');
+  });
+
+  it('payload update_frontmatter contient la date YYYY-MM-DD', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions[1]!.payload.date_derniere_interaction).toBe('2026-05-13');
+  });
+
+  // --- Détection quittance case-insensitive ---
+
+  it('détecte l\'intent quittance en majuscules', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const triage = makeTriage({ intent: 'DEMANDE_QUITTANCE_JUIN' });
+    const actions = await handleLocataire(triage, makeEmail());
+
+    const types = actions.map((a) => a.type);
+    expect(types).toContain('add_todo');
+  });
+
+  it('ne déclenche pas add_todo pour un intent "quittance" sans le préfixe demande_quittance_', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const triage = makeTriage({ intent: 'envoi_quittance_mai' });
+    const actions = await handleLocataire(triage, makeEmail());
+
+    const types = actions.map((a) => a.type);
+    expect(types).not.toContain('add_todo');
+  });
+
+  // --- Locataire inconnu ---
+
+  it('retourne 2 actions si locataire non trouvé (warning)', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions).toHaveLength(2);
+    expect(actions[0]!.type).toBe('add_todo');
+    expect(actions[1]!.type).toBe('mark_processed');
+  });
+
+  it('action warning contient l\'email du locataire inconnu', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions[0]!.payload.task).toContain('alice.martin@gmail.com');
+    expect(actions[0]!.payload.task).toContain('Vérifier locataire inconnu');
+  });
+
+  it('locataire inconnu a priorité P2', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions[0]!.payload.priority).toBe('P2');
+  });
+
+  // --- mark_processed ---
+
+  it('mark_processed est toujours la dernière action', async () => {
+    // Cas locataire connu + quittance (4 actions)
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+    expect(actions[actions.length - 1]!.type).toBe('mark_processed');
+
+    // Cas locataire inconnu (2 actions)
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions2 = await handleLocataire(makeTriage(), makeEmail());
+    expect(actions2[actions2.length - 1]!.type).toBe('mark_processed');
+  });
+
+  it('mark_processed contient le messageId', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const email = makeEmail({ id: 'msg_loc_specific' });
+    const actions = await handleLocataire(makeTriage(), email);
+
+    const last = actions[actions.length - 1]!;
+    expect(last.payload.messageId).toBe('msg_loc_specific');
+    expect(last.target).toBeNull();
+  });
+});
