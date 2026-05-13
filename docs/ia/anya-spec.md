@@ -278,6 +278,15 @@ src/lib/secretariat/workflows/inbox-photo-batch.ts    # Session 13 : photos + da
 src/lib/secretariat/workflows/inbox-message-router.ts # Session 13 : router Calendar/Todo
 src/lib/google/calendar.ts                     # client Google Calendar API (Session 13)
 src/lib/secretariat/rent/                      # lib partagée bail/quittance/findebail
+src/lib/secretariat/vault-client/              # Session 14 : vault client Obsidian/Drive (7 modules, 81 tests)
+src/lib/secretariat/vault-client/index.ts      # API publique : findContactByEmail, appendToHistorique, updateFrontmatter, createVaultFile
+src/lib/secretariat/vault-client/frontmatter.ts # Parser frontmatter bit-perfect (zéro gray-matter)
+src/lib/secretariat/vault-client/drive-resolver.ts # Résolution path logique → fileId (cache TTL 1h)
+src/lib/secretariat/vault-client/obsidian-file.ts  # Lecture/écriture fichiers .md via Drive API
+src/lib/secretariat/vault-client/markdown-append.ts # Append chrono-inverse H3 sous H2
+src/lib/secretariat/vault-client/write-lock.ts     # Sérialisation écriture par path
+src/lib/secretariat/vault-client/audit-log.ts      # Audit trail JSONL dans _Inbox/AnyaLogs/
+src/lib/secretariat/vault-client/vault-paths.ts    # Constantes chemins logiques vault
 scripts/test-haiku-dates.ts                    # validation empirique résolution dates FR
 ```
 
@@ -285,7 +294,7 @@ scripts/test-haiku-dates.ts                    # validation empirique résolutio
 
 ```bash
 npm test
-# → 511/511 passent
+# → 592/592 passent (511 existants + 81 vault-client)
 ```
 
 Couverture :
@@ -294,6 +303,7 @@ Couverture :
 - Tests photo-timestamp (14 tests dont HEIC ExifReader + brand patch)
 - Tests rent lib (num-en-lettres, dates-fr, biens, locataires fuzzy, etc.)
 - Tests registry, router, conversation store, drive-upload
+- Tests vault-client (81 tests) : frontmatter bit-perfect (7 fixtures réelles), markdown-append chrono-inverse, write-lock sérialisation, drive-resolver cache TTL, obsidian-file I/O, API publique (findContactByEmail, appendToHistorique, updateFrontmatter)
 
 ## Roadmap
 
@@ -306,8 +316,16 @@ Couverture :
 - Workflow `inbox-photo-batch` (Phase 4 — Session 13) — bypass strip EXIF Telegram iOS
 - Workflow `inbox-message-router` Calendar + Todo (Phase 4 — Session 13)
 
+**Email-ingest (plan Anya S14+)** :
+
+- **Jalon 0 — Setup env vars** : FAIT (Session 14) — variables documentées dans dev-decisions.md
+- **Jalon 1 — Vault client** : FAIT (Session 14) — `src/lib/secretariat/vault-client/` (7 modules, 81 tests, frontmatter bit-perfect, cache TTL 1h, write-lock, audit trail)
+
 **À venir** :
 
+- **Jalon 2 — Gmail reader** : lecture inbox via Gmail API, parsing From/Subject/Body, extraction pièces jointes
+- **Jalon 3 — Triage router** : classification email par type (locataire, candidat, pro, spam) via LLM
+- **Jalon 4-9** : handlers spécialisés (quittance, relance, candidature, etc.) — voir `second-cerveau/Anya - Plan email-ingest.md`
 - **Phase 5 — Promotion candidat → locataire** : commande `/promouvoir <nom>` déplace fiche `_Candidats/` vers `05. Locataires/01. Actuels/<nom>/`
 - **Phase 6 — Corrections juridiques bail** : encadrement loyers (€/m²), IRL automatique INSEE, clause pénale (décisions Thomas en attente)
 - **Phase 7 — Envoi email locataire** : envoi automatique quittances par Gmail API
