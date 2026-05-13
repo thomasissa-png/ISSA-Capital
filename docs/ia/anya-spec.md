@@ -210,7 +210,7 @@ Le menu auto-complétion Telegram (suggestions quand Thomas tape `/`) est synchr
 - **Token Telegram** : `TELEGRAM_BOT_TOKEN` (jamais en clair, jamais committé)
 - **Secret webhook** : `X-Telegram-Bot-Api-Secret-Token` vérifié via `timingSafeEqual` (`TELEGRAM_WEBHOOK_SECRET`)
 - **Whitelist statique** : `TELEGRAM_ALLOWED_CHAT_IDS` (chat_id de Thomas) — refuse tout autre user
-- **OAuth Google** : `GOOGLE_REFRESH_TOKEN` avec scope **`drive + calendar.events`** (Session 13 : scope élargi pour la création d'événements Calendar)
+- **OAuth Google** : `GOOGLE_REFRESH_TOKEN` avec scope **`drive + calendar.events + gmail.readonly + gmail.labels + gmail.compose`** (Session 14 : scopes Gmail ajoutés pour email-ingest)
 - **Anti-replay Telegram** : retourne toujours 200 OK pour éviter les reposts agressifs
 
 ## Variables d'environnement requises
@@ -294,12 +294,14 @@ scripts/test-haiku-dates.ts                    # validation empirique résolutio
 
 ```bash
 npm test
-# → 592/592 passent (511 existants + 81 vault-client)
+# → 694/694 passent (593 existants + 101 gmail-source/triage)
 ```
 
 Couverture :
 - Tests CR, quittance, bail, findebail, candidat (workflows complets)
 - Tests inbox-photo-batch (39 tests) + inbox-message-router (23 tests)
+- Tests gmail-source (49 tests : gmail-client 27, gmail-source 12, label-resolver 10)
+- Tests triage (52 tests : triage 30, triage-eval 22)
 - Tests photo-timestamp (14 tests dont HEIC ExifReader + brand patch)
 - Tests rent lib (num-en-lettres, dates-fr, biens, locataires fuzzy, etc.)
 - Tests registry, router, conversation store, drive-upload
@@ -320,11 +322,11 @@ Couverture :
 
 - **Jalon 0 — Setup env vars** : FAIT (Session 14) — variables documentées dans dev-decisions.md
 - **Jalon 1 — Vault client** : FAIT (Session 14) — `src/lib/secretariat/vault-client/` (7 modules, 81 tests, frontmatter bit-perfect, cache TTL 1h, write-lock, audit trail)
+- **Jalon 2 — Gmail source** : FAIT (Session 14) — `src/lib/secretariat/gmail-source/` (4 modules, 49 tests). Client Gmail API mutualisé, label-resolver cache TTL 1h, listing+filtre local. OAuth étendu (3 scopes Gmail). CLI `npm run ingest:gmail -- --dry-run`.
+- **Jalon 3 — Triage Haiku** : FAIT (Session 14) — `src/lib/secretariat/triage/` (3 modules, 52 tests). Prompt versionné triage-v1.md. Haiku 4.5 (`claude-haiku-4-5-20251001`), validation Zod, retry x1, override confidence < 0.7. Matrice confusion 20 fixtures : 100% catégorie, 100% intent.
 
 **À venir** :
 
-- **Jalon 2 — Gmail reader** : lecture inbox via Gmail API, parsing From/Subject/Body, extraction pièces jointes
-- **Jalon 3 — Triage router** : classification email par type (locataire, candidat, pro, spam) via LLM
 - **Jalon 4-9** : handlers spécialisés (quittance, relance, candidature, etc.) — voir `second-cerveau/Anya - Plan email-ingest.md`
 - **Phase 5 — Promotion candidat → locataire** : commande `/promouvoir <nom>` déplace fiche `_Candidats/` vers `05. Locataires/01. Actuels/<nom>/`
 - **Phase 6 — Corrections juridiques bail** : encadrement loyers (€/m²), IRL automatique INSEE, clause pénale (décisions Thomas en attente)

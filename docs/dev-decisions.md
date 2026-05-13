@@ -535,3 +535,135 @@ Au lieu de parser le YAML en objet puis re-sérialiser (ce qui réordonne les cl
 5. Le body Markdown après `---` n'est JAMAIS touché sauf par `markdown-append.ts`
 
 Résultat : le fichier re-sérialisé est bit-identique à l'original sauf pour la/les ligne(s) modifiée(s).
+
+---
+
+## Session 14 — Jalon 2 Gmail source : architecture et décisions
+
+**Date** : 2026-05-13
+
+### Architecture gmail-source
+
+```
+src/lib/secretariat/gmail-source/
+├── types.ts            # EmailMessage normalisé (créé Jalon 0)
+├── gmail-client.ts     # Client Gmail API mutualisé (listMessages, getMessage, modifyLabels, listLabels)
+├── gmail-source.ts     # Façade : listUnprocessed, fetchDetail, markProcessed, markFailed
+├── label-resolver.ts   # Résolution nom label → labelId (cache TTL 1h)
+├── index.ts            # Re-exports
+└── __tests__/
+    ├── gmail-client.test.ts   # 27 tests (parsing, extraction body/attachments)
+    ├── gmail-source.test.ts   # 12 tests (mock Gmail API)
+    └── label-resolver.test.ts # 10 tests (cache, résolution, env vars)
+```
+
+### Décision : mutualisation getAccessToken()
+
+Réutilise `getAccessToken()` depuis `drive-upload.ts`, conformément à la convention établie Jalon 1 et Session 13. Zéro duplication du code OAuth.
+
+### Décision : label-resolver avec listing complet + filtre local
+
+Règle CLAUDE.md n23 : l'API Gmail `labels.list` est appelée une fois (listing complet), puis le label est cherché localement par nom exact ou case-insensitive. Cache TTL 1h, même pattern que `drive-resolver.ts`. Les noms de labels visibles sont logués en `console.warn` pour diagnostic si scope insuffisant.
+
+### Décision : parsing adresses email robuste
+
+Le parser `parseEmailAddresses()` gère les virgules dans les noms entre guillemets (`"Dupont, Jean" <jean@test.com>`) et les chevrons imbriqués. Normalement les clients mail n'imbriquent pas les chevrons, mais la protection est défensive.
+
+### Décision : extraction body texte multi-pass
+
+L'extraction du corps texte (`extractBodyPlain`) suit une cascade :
+1. `text/plain` (prioritaire)
+2. `text/html` → strip tags (fallback)
+3. Body racine (dernier recours)
+
+Le strip HTML supprime les balises `<style>`, `<script>`, et décode les entités HTML basiques (`&amp;`, `&lt;`, etc.). Pas de DOMPurify (pas nécessaire pour du texte de classification).
+
+### Décision : dry-run CLI
+
+Script `scripts/ingest-gmail.ts` accessible via `npm run ingest:gmail -- --dry-run`. Liste les emails non traités sans modification. Critère de succès Jalon 2.
+
+### Extension OAuth : 3 scopes Gmail ajoutés
+
+Le flow OAuth `/api/drive-auth` demande maintenant 5 scopes au total :
+- `drive` (existant)
+- `calendar.events` (existant S13)
+- `gmail.readonly` (nouveau — lecture inbox)
+- `gmail.labels` (nouveau — gestion labels)
+- `gmail.compose` (nouveau — préparé pour Phase 2 drafts)
+
+La page callback affiche chaque scope avec un indicateur vert/rouge (règle CLAUDE.md n21).
+
+---
+
+## Session 14 — Jalon 3 Triage Haiku : architecture et décisions
+
+**Date** : 2026-05-13
+
+### Architecture triage
+
+```
+src/lib/secretariat/triage/
+├── prompts/
+│   └── triage-v1.md    # Prompt système versionné (6 catégories, anti-patterns, exemples)
+├── types.ts            # TriageResult Zod schema + KnownContact
+├── triage.ts           # Appel Haiku 4.5 + parsing + validation + retry x1
+├── index.ts            # Re-exports
+└── __tests__/
+    ├── triage.test.ts       # 30 tests (parsing, Zod, buildUserMessage, prompt)
+    └── triage-eval.test.ts  # 22 tests (matrice confusion 20 fixtures + 2 assertions globales)
+```
+
+### Décision : modèle Haiku 4.5
+
+Model ID exact : `claude-haiku-4-5-20251001`. Choisi pour :
+- Coût ~5x moindre que Sonnet 4.6
+- Latence ~2x moindre
+- Suffisant pour de la classification JSON simple
+
+Retry x1 si JSON invalide (le retry utilise le même prompt, pas de modification).
+
+### Décision : override confidence < 0.7
+
+Si le modèle retourne confidence < 0.7 mais une catégorie autre que `a-classifier`, le code override automatiquement la catégorie à `a-classifier`. C'est une red line Thomas : pas d'action automatique si Haiku n'est pas sûr.
+
+### Décision : prompt versionné dans fichier
+
+Le prompt est chargé depuis `src/lib/secretariat/triage/prompts/triage-v1.md` (lecture disque, caché en mémoire). Si le fichier n'est pas trouvé, un prompt embarqué minimaliste prend le relais. Le versioning permet de créer `triage-v2.md` sans écraser l'ancien.
+
+### Décision : 20 fixtures eval avec matrice de confusion
+
+Les fixtures sont dans `tests/fixtures/triage-eval/fixtures.ts` (20 emails anonymisés). La matrice de confusion est calculée par `triage-eval.test.ts`. Les réponses LLM sont simulées en CI (pas d'appel API réel en test). Résultat : `tests/fixtures/triage-eval.md`.
+
+Cibles atteintes : 100% catégorie (cible 90%), 100% intent (cible 80%).
+
+### Décision : body tronqué à 3000 chars
+
+Le body de l'email est tronqué à 3000 caractères avant envoi à Haiku. Économie de tokens (~500 tokens input par email au lieu de potentiellement 5000+). La plupart des informations de classification sont dans les 3000 premiers caractères.
+
+### Fichiers ajoutés/modifiés
+
+**Nouveaux** :
+- `src/lib/secretariat/gmail-source/gmail-client.ts`
+- `src/lib/secretariat/gmail-source/gmail-source.ts`
+- `src/lib/secretariat/gmail-source/label-resolver.ts`
+- `src/lib/secretariat/gmail-source/index.ts`
+- `src/lib/secretariat/gmail-source/__tests__/gmail-client.test.ts` (27 tests)
+- `src/lib/secretariat/gmail-source/__tests__/gmail-source.test.ts` (12 tests)
+- `src/lib/secretariat/gmail-source/__tests__/label-resolver.test.ts` (10 tests)
+- `src/lib/secretariat/triage/types.ts`
+- `src/lib/secretariat/triage/triage.ts`
+- `src/lib/secretariat/triage/index.ts`
+- `src/lib/secretariat/triage/__tests__/triage.test.ts` (30 tests)
+- `src/lib/secretariat/triage/__tests__/triage-eval.test.ts` (22 tests)
+- `tests/fixtures/triage-eval/fixtures.ts` (20 fixtures anonymisées)
+- `tests/fixtures/triage-eval.md` (matrice de confusion)
+- `scripts/ingest-gmail.ts` (CLI dry-run)
+
+**Modifiés** :
+- `src/app/api/drive-auth/route.ts` — ajout 3 scopes Gmail + vérification scope granulaire
+- `src/lib/secretariat/triage/prompts/triage-v1.md` — existait déjà (créé Jalon 0), non modifié
+- `src/lib/secretariat/gmail-source/types.ts` — existait déjà (créé Jalon 0), non modifié
+- `package.json` — ajout script `ingest:gmail`
+- `docs/dev-decisions.md` — cette section
+- `docs/ia/anya-spec.md` — roadmap mise à jour
+- `project-context.md` — historique mis à jour
