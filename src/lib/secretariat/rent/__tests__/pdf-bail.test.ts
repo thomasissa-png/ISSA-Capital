@@ -7,7 +7,7 @@
  * - Les 24 sections juridiques sont présentes (vérification par contenu PDF)
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { genererBailDocx, genererBailPdf } from '../pdf-bail';
 import type { BailVariables } from '../types';
 

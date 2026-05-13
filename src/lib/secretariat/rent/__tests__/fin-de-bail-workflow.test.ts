@@ -10,7 +10,7 @@
  * - construireVariablesFinDeBail
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { finDeBailWorkflow, construireVariablesFinDeBail } from '../../workflows/fin-de-bail';
 
 // ============================================================
