@@ -14,6 +14,7 @@
     "test:visual": "playwright test tests/visual",
     "generate:assets": "node scripts/generate-assets.mjs",
     "ingest:gmail": "npx tsx scripts/ingest-gmail.ts",
+    "triage:dry": "npx tsx scripts/triage-dry.ts",
     "verify": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
