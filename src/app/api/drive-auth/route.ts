@@ -15,7 +15,13 @@ export const dynamic = 'force-dynamic';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events';
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.labels',
+  'https://www.googleapis.com/auth/gmail.compose',
+].join(' ');
 
 export async function GET(request: Request): Promise<Response> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -88,8 +94,11 @@ export async function GET(request: Request): Promise<Response> {
       !grantedScope.includes('drive.readonly');
     const isLimitedFile = grantedScope.includes('drive.file');
     const hasCalendar = grantedScope.includes('calendar.events') || grantedScope.includes('calendar');
+    const hasGmailReadonly = grantedScope.includes('gmail.readonly');
+    const hasGmailLabels = grantedScope.includes('gmail.labels');
+    const hasGmailCompose = grantedScope.includes('gmail.compose');
     const scopeRequested = SCOPES;
-    const allScopesOk = isFullDrive && hasCalendar;
+    const allScopesOk = isFullDrive && hasCalendar && hasGmailReadonly && hasGmailLabels && hasGmailCompose;
     const scopeColor = allScopesOk ? '#16a34a' : '#dc2626';
     const driveStatus = isFullDrive
       ? '✅ Drive OK'
@@ -98,10 +107,20 @@ export async function GET(request: Request): Promise<Response> {
         : '⚠️ Drive inattendu';
     const calendarStatus = hasCalendar
       ? '✅ Calendar OK'
-      : '❌ Calendar manquant — Anya ne pourra pas créer d\'événements';
+      : '❌ Calendar manquant';
+    const gmailReadonlyStatus = hasGmailReadonly
+      ? '✅ Gmail readonly OK'
+      : '❌ Gmail readonly manquant';
+    const gmailLabelsStatus = hasGmailLabels
+      ? '✅ Gmail labels OK'
+      : '❌ Gmail labels manquant';
+    const gmailComposeStatus = hasGmailCompose
+      ? '✅ Gmail compose OK (Phase 2 drafts)'
+      : '❌ Gmail compose manquant';
+    const scopeStatusLines = [driveStatus, calendarStatus, gmailReadonlyStatus, gmailLabelsStatus, gmailComposeStatus];
     const scopeStatus = allScopesOk
-      ? '<strong style="color:#16a34a">✅ SCOPES OK</strong> — Anya a accès à Drive et Google Calendar. La transcription vocale utilise OpenAI Whisper (clé OPENAI_API_KEY).'
-      : `<strong style="color:#dc2626">⚠️ SCOPES PARTIELS</strong><br>${driveStatus}<br>${calendarStatus}<br><br>Si un scope manque : révoque l\'accès dans <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>, redéploie le code, puis recommence cette procédure.`;
+      ? `<strong style="color:#16a34a">✅ TOUS LES SCOPES OK</strong> — Anya a accès complet : Drive, Calendar, Gmail (lecture + labels + compose).<br><br>${scopeStatusLines.join('<br>')}`
+      : `<strong style="color:#dc2626">⚠️ SCOPES PARTIELS</strong><br>${scopeStatusLines.join('<br>')}<br><br>Si un scope manque : révoque l\'accès dans <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>, redéploie le code, puis recommence cette procédure.`;
 
     return new Response(
       `<!DOCTYPE html>
