@@ -121,13 +121,13 @@ Quand @fullstack doit appliquer une **propagation chirurgicale** depuis un livra
 1. Aucune duplication créée entre le H2 et le corps du paragraphe (si la phrase apparaît deux fois = FAIL, il faut supprimer l'occurrence en doublon)
 2. Aucune phrase orpheline laissée (reste d'une ancienne formulation qui n'a plus de sens dans le nouveau contexte)
 3. La logique narrative du bloc complet reste cohérente (une reformulation de H2 peut nécessiter d'ajuster la transition du paragraphe 1)
-4. Les liens / références internes qui pointaient vers l'ancienne formulation restent valides
+4. Les liens / références internes qui pointaient vers l'ancienne formulation restent validés
 
 Si une duplication est détectée → aligner le code sur la source de vérité copy (le livrable @copywriter est la référence, pas le code existant). Documenter la correction dans le commit message.
 
 Source : learning ISSA Capital session 5 (P1 — duplication H2 ↔ corps après propagation de "Un fondateur ou dirigeant qui a déjà fait ses preuves." Détecté par @fullstack en relisant la section complète, corrigé avant merge).
 
-### Scripts de build / generation — Vérification des dépendances
+### Scripts de build / génération — Vérification des dépendances
 
 Pour tout script de build ou génération d'assets (ex : `scripts/generate-assets.mjs`, scripts d'import de données, scripts CI/CD), @fullstack DOIT :
 1. **Lister les dépendances en tête du script** sous forme de commentaire `// Dépendances : public/favicon-source.svg, public/apple-touch-icon.svg, ...`
@@ -147,7 +147,7 @@ Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant
 
 ### Migration OAuth scope — déployer AVANT de ré-authentifier (learning P1 session 11 ISSA Capital)
 
-Pour toute migration de scope OAuth (ex : `drive.file` vers `drive`) : (a) déployer le code qui demande le nouveau scope AVANT que l'utilisateur révoque/ré-OAuth, (b) ajouter sur la page de retour OAuth un appel `tokeninfo` qui affiche le scope effectif reçu (vert si attendu, rouge sinon), (c) ne jamais faire confiance a un test indirect (un upload qui réussit ne prouve pas que le scope élargi est actif — `drive.file` suffit pour upload mais pas pour lister les fichiers créés par d'autres). Un refresh token obtenu pendant que l'ancien code tourne encore côté serveur aura l'ancien scope, même si l'utilisateur a révoqué et refait le flow.
+Pour toute migration de scope OAuth (ex : `drive.file` vers `drive`) : (a) déployer le code qui demande le nouveau scope AVANT que l'utilisateur révoque/ré-OAuth, (b) ajouter sur la page de retour OAuth un appel `tokeninfo` qui affiche le scope effectif reçu (vert si attendu, rouge sinon), (c) ne jamais faire confiance à un test indirect (un upload qui réussit ne prouve pas que le scope élargi est actif — `drive.file` suffit pour upload mais pas pour lister les fichiers créés par d'autres). Un refresh token obtenu pendant que l'ancien code tourne encore côté serveur aura l'ancien scope, même si l'utilisateur a révoqué et refait le flow.
 
 Source : session 11 ISSA Capital — migration `drive.file` vers `drive` a coûté 4 commits + 30 min debug car le code déployé demandait encore l'ancien scope au moment du re-OAuth.
 
@@ -155,7 +155,7 @@ Source : session 11 ISSA Capital — migration `drive.file` vers `drive` a coût
 
 Quand 2 projets Node distincts cohabitent dans le même repo (ex : site Next.js à la racine + serveur Express dans un sous-dossier), le `tsconfig.json` racine avec `include: ["**/*.ts"]` capture récursivement les fichiers du sous-projet → erreurs TypeScript sur des dépendances manquantes (`@anthropic-ai/sdk`, `better-sqlite3`, etc.). **Vérification obligatoire** : après la création d'un sous-projet Node, ajouter immédiatement son dossier dans `exclude: [...]` du tsconfig racine. Tester avec `tsc --noEmit` depuis la racine pour confirmer 0 erreur.
 
-Source : session 7-8 ISSA Capital — `secretariat/` capturé par le tsconfig Next.js racine.
+Source : session 7-8 ISSA Capital — `secrétariat/` capturé par le tsconfig Next.js racine.
 
 ### API Drive (et APIs à résultat silencieusement vide) — liste puis filtre local (learning P1 session 11 ISSA Capital)
 
@@ -165,7 +165,7 @@ Source : session 11 ISSA Capital — `name='07. Contacts'` retournait 0 résulta
 
 ### Logs de diagnostic : `console.warn` minimum sur Replit (learning P2 session 11 ISSA Capital)
 
-Pour tout log de diagnostic destine a etre lu par l'utilisateur en production sur Replit/Vercel/Netlify : utiliser `console.warn` au minimum. `console.log` est INFO-level et masque par defaut par les UIs de logs (Replit Logs ne montre que WARN/ERROR). Diagnostic d'un bug Drive a echoue pendant 2 iterations car les logs en `console.log` n'apparaissaient pas cote Thomas.
+Pour tout log de diagnostic destine a être lu par l'utilisateur en production sur Replit/Vercel/Netlify : utiliser `console.warn` au minimum. `console.log` est INFO-level et masque par défaut par les UIs de logs (Replit Logs ne montre que WARN/ERROR). Diagnostic d'un bug Drive a echoue pendant 2 iterations car les logs en `console.log` n'apparaissaient pas côté Thomas.
 
 Source : session 11 ISSA Capital — commit `bb8ebee` (conversion des logs critiques en `console.warn`).
 
@@ -178,12 +178,12 @@ Source : session 11 ISSA Capital — commit `bb8ebee` (conversion des logs criti
 - Import paths avec `@/` alias configuré dans tsconfig.json
 - Caractères UTF-8 natifs obligatoires dans les strings JS/TS (voir CLAUDE.md Règle n°13) — pas d'escapes unicode ni d'entités HTML dans les constantes
 
-## Learnings P1 session 13 ISSA Capital — regles obligatoires
+## Learnings P1 session 13 ISSA Capital — règles obligatoires
 
-1. **API Anthropic : pas de `input_audio`** — l'API publique ne supporte PAS l'audio input. Pour transcription : Whisper OpenAI ou STT externe, puis texte a Claude. Ne jamais coder un appel `input_audio` sans verifier la doc API.
-2. **Donnees perdues a la source** (regle CLAUDE.md 25) — quand un service externe (Telegram iOS, etc.) strip des donnees AVANT arrivee backend (ex : EXIF HEIC), abandonner l'extraction et demander l'info a l'utilisateur via prompt UX. Ne pas sur-engineer.
-3. **Zero commit essai-erreur** (regle CLAUDE.md 26) — avant tout push d'un fix sur un bug reproductible, TESTER en local sur le fichier/donnees qui foire. Si 2 iterations sans succes → STOP push, demander un sample du cas qui foire, ecrire un test, valider, PUIS pusher.
-4. **Services externes billing** — verifier si un service "gratuit" exige un billing account avant de le proposer. Si oui, proposer alternative standalone (cle API simple). Thomas refuse les billing accounts pour services gratuits.
+1. **API Anthropic : pas de `input_audio`** — l'API publique ne supporte PAS l'audio input. Pour transcription : Whisper OpenAI ou STT externe, puis texte a Claude. Ne jamais coder un appel `input_audio` sans vérifier la doc API.
+2. **Données perdues à la source** (règle CLAUDE.md 25) — quand un service externe (Telegram iOS, etc.) strip des données AVANT arrivee backend (ex : EXIF HEIC), abandonner l'extraction et demander l'info à l'utilisateur via prompt UX. Ne pas sur-engineer.
+3. **Zéro commit essai-erreur** (règle CLAUDE.md 26) — avant tout push d'un fix sur un bug reproductible, TESTER en local sur le fichier/données qui foire. Si 2 iterations sans succès → STOP push, demander un sample du cas qui foire, écrire un test, valider, PUIS pusher.
+4. **Services externes billing** — vérifier si un service "gratuit" exige un billing account avant de le proposer. Si oui, proposer alternative standalone (clé API simple). Thomas refuse les billing accounts pour services gratuits.
 
 ## Gestion des timeouts
 
@@ -250,7 +250,7 @@ Avant de coder une page, lire dans cet ordre de priorité :
 - Tout élément interactif a un label accessible (aria-label, aria-labelledby, ou label HTML)
 - Navigation clavier complète : focus visible, tab order logique, Escape ferme les modals
 - Images : alt descriptif obligatoire (sauf décoratives : `alt=""`)
-- Formulaires : erreurs liées au champ via `aria-describedby`, live regions pour feedback async
+- Formulaires : erreurs liées au champ via `aria-describedby`, live régions pour feedback async
 - Semantic HTML : utiliser les bons éléments (`nav`, `main`, `article`, `section`, `button` vs `div`)
 
 ### Optimistic UI + State Management

@@ -241,9 +241,9 @@ Si project-context.md indique un modèle B2B :
 - Non-régression UX : chaque écart de docs/ux/ux-review.md corrigé est converti en test E2E permanent
 - Audit tokens dans le code : Grep src/ pour valeurs CSS hardcodées qui ont un équivalent dans design-tokens.json
 
-## Zero commit essai-erreur (learning P1 session 13 ISSA Capital)
+## Zéro commit essai-erreur (learning P1 session 13 ISSA Capital)
 
-Avant tout push d'un fix sur un bug reproductible, **TESTER en local** sur le fichier/donnees qui foire. Si l'utilisateur a signale 2 iterations sans succes → STOP push, demander un sample du cas qui foire, ecrire un test, valider, PUIS pusher. Regle : "0 commit hypothetique sur un bug recurrent." Voir CLAUDE.md regle 26.
+Avant tout push d'un fix sur un bug reproductible, **TESTER en local** sur le fichier/données qui foire. Si l'utilisateur a signalé 2 itérations sans succès → STOP push, demander un sample du cas qui foire, écrire un test, valider, PUIS pusher. Règle : "0 commit hypothétique sur un bug récurrent." Voir CLAUDE.md règle 26.
 
 ## Gestion des timeouts
 

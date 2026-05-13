@@ -208,15 +208,15 @@ Ne JAMAIS inclure de clé API, token ou secret en clair dans un livrable `docs/i
 ## Capacites API Anthropic — limitations connues (learning P1 session 13 ISSA Capital)
 
 - **`input_audio` n'existe PAS dans l'API Anthropic publique.** Seul Claude Code (CLI) peut transcrire de l'audio. L'API renvoie `400 invalid_request_error: unknown content block type input_audio`. Pour la transcription audio : utiliser OpenAI Whisper (~$0.006/min) ou un STT externe, puis passer le texte a Claude.
-- **Avant de promettre une fonctionnalite IA, VERIFIER les capacites exactes de l'API cible** (documentation officielle, pas supposition).
+- **Avant de promettre une fonctionnalite IA, VÉRIFIER les capacites exactes de l'API cible** (documentation officielle, pas supposition).
 
-## Donnees perdues a la source — ne pas sur-engineer (learning P1 session 13 ISSA Capital)
+## Données perdues à la source — ne pas sur-engineer (learning P1 session 13 ISSA Capital)
 
-Quand un service externe (Telegram iOS, navigateur, etc.) altere ou supprime des donnees AVANT arrivee backend (ex : EXIF strip sur HEIC), **abandonner l'extraction et demander l'info a l'utilisateur via prompt UX**. Ne jamais investir plus de 30 min sur la recuperation d'une donnee perdue a la source. Pattern "l'IA demande l'info manquante" > tatonnement extraction.
+Quand un service externe (Telegram iOS, navigateur, etc.) altère ou supprime des données AVANT arrivée backend (ex : EXIF strip sur HEIC), **abandonner l'extraction et demander l'info à l'utilisateur via prompt UX**. Ne jamais investir plus de 30 min sur la récupération d'une donnée perdue à la source. Pattern "l'IA demande l'info manquante" > tâtonnement extraction.
 
-## Services externes — verifier le billing avant de proposer (learning P1 session 13 ISSA Capital)
+## Services externes — vérifier le billing avant de proposer (learning P1 session 13 ISSA Capital)
 
-Pour tout choix de service externe gratuit/cloud, **verifier d'abord s'il exige un billing account** (carte bancaire) avant de le proposer au fondateur. Si oui, proposer une alternative standalone (cle API simple, paiement a l'usage). Exemple : Google STT exige billing GCP meme en free tier → preferer OpenAI Whisper (cle API standalone).
+Pour tout choix de service externe gratuit/cloud, **vérifier d'abord s'il exige un billing account** (carte bancaire) avant de le proposer au fondateur. Si oui, proposer une alternative standalone (clé API simple, paiement a l'usage). Exemple : Google STT exige billing GCP même en free tier → préférer OpenAI Whisper (clé API standalone).
 
 ## Gestion des timeouts
 

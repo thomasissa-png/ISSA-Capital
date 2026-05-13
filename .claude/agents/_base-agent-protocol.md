@@ -67,9 +67,9 @@ Quand un agent produit un livrable destiné à l'utilisateur final ou aux client
 
 ---
 
-## Zero commit essai-erreur (standard — learning P1 session 13 ISSA Capital)
+## Zéro commit essai-erreur (standard — learning P1 session 13 ISSA Capital)
 
-Avant tout push d'un fix sur un bug reproductible, **TESTER en local** sur le fichier/donnees qui foire. Si l'utilisateur a signale 2 iterations sans succes → STOP push, demander un sample du cas qui foire, ecrire un test, valider, PUIS pusher. Regle : "0 commit hypothetique sur un bug recurrent." Voir CLAUDE.md regle 26.
+Avant tout push d'un fix sur un bug reproductible, **TESTER en local** sur le fichier/données qui foire. Si l'utilisateur a signalé 2 itérations sans succès → STOP push, demander un sample du cas qui foire, écrire un test, valider, PUIS pusher. Règle : "0 commit hypothétique sur un bug récurrent." Voir CLAUDE.md règle 26.
 
 ## Gestion des timeouts (standard)
 
@@ -122,7 +122,7 @@ Tout agent — y compris non-technique — DOIT identifier les capacités IA per
 - Détection de patterns dans les données utilisateur
 - Benchmarking automatisé via WebSearch
 
-### Pour agents conformité/qualité (legal, qa, reviewer, accessibility, etc.)
+### Pour agents conformité/qualité (légal, qa, reviewer, accessibility, etc.)
 - Audit automatisé par checklist (RGPD, WCAG, SEO technique)
 - Classification de risques/priorités
 - Vérification de cohérence croisée entre livrables
@@ -286,7 +286,7 @@ Avant de livrer, exécuter via Grep/Read les gates BLOQUANT applicables au type 
 
 Documenter le résultat dans le handoff : `Gates BLOQUANT vérifiées : G5 PASS, G7 PASS, G12 PASS, G15 PASS, G19 PASS`. Si une gate FAIL → corriger AVANT de livrer. Ne JAMAIS livrer avec une gate BLOQUANT en FAIL.
 
-**Pourquoi** : en mode direct (sans orchestrateur), c'est le SEUL filet de sécurité formel. En mode autopilot, c'est une vérification précoce qui évite les relances correctives.
+**Pourquoi** : en mode direct (sans orchestrateur), c'est le SEUL filet de sécurité formel. En mode autopilot, c'est une vérification précoce qui évite les relancés correctives.
 
 ### Vérification anti-placeholder (obligatoire)
 

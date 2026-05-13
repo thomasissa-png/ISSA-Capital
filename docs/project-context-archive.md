@@ -38,7 +38,7 @@ Les mémos de reprise des sessions 5 et 6, ainsi que les détails d'implémentat
 3. Incipit "Notre raison d'être" — suppression "Cette holding n'est pas née en 2026." (src/app/page.tsx l.102)
 
 **Phase 2 vague 2.2 — 5 corrections justifications explicites (commit `7bcea0c`)** :
-- 2 SUPPRIMER + 3 REFORMULER sur /accompagnement + /home + /opportunites
+- 2 SUPPRIMER + 3 REFORMULER sur /accompagnement + /home + /opportunités
 - P0 "Dans les deux cas : aucun tarif affiché..." → déplacée dans intro formulaire sous forme incarnée
 
 **Phase 3+5 fusion — Mega-passe TSX (commit `cd30dbb`)** :
@@ -145,7 +145,7 @@ Les mémos de reprise des sessions 5 et 6, ainsi que les détails d'implémentat
 ### État à la clôture session 8
 - **Branche active session 7-8** : `claude/resume-issa-session-7-1SjaO` (HEAD commit `2efe806`)
 - **Site vitrine** : Pipeline G28 vert (tsc 0 / lint 0 / vitest 7/7 / build 15/15 / Playwright 21/21)
-- **Secrétariat ISSA** : Pipeline vert (tsc 0 / 254/254 tests / build OK). Toutes les Phases code livrées (1-7). Deployment guide dans `secretariat/DEPLOYMENT.md`.
+- **Secrétariat ISSA** : Pipeline vert (tsc 0 / 254/254 tests / build OK). Toutes les Phases code livrées (1-7). Deployment guide dans `secrétariat/DEPLOYMENT.md`.
 - **Compteur producteurs session 7-8** : 18/18 Tasks (ALERTE ROUGE atteinte)
 
 ### Chantiers livrés session 7-8
@@ -155,7 +155,7 @@ Les mémos de reprise des sessions 5 et 6, ainsi que les détails d'implémentat
 - Favicon Variante A (sans-serif géométrique Futura-like) centrée dans sceau circulaire (ink-950 + parchment-100 + levant-500)
 - Bio Thomas /mission V1+++ : "TEOS bâtie de zéro en moins d'un an, déployée dans sept régions du monde" + "agence internationale de quarante experts"
 - /participations : Gradient One en encart dédié, Calendrier Tempo ajouté (2026), grille 3 colonnes section tech
-- /opportunites : section S2 fantôme supprimée (fusionnée Hero), tone S4 elevated, tone S7 subtle
+- /opportunités : section S2 fantôme supprimée (fusionnée Hero), tone S4 elevated, tone S7 subtle
 - Menu : ordre Opportunités → Accompagnement inversé
 - Délais réponse : "dans la journée" → "sous 72h"
 - Formulaire contact : "Thomas Issa" → "l'un des membres de la famille", placeholder "Antoine Vasseur"
@@ -165,7 +165,7 @@ Les mémos de reprise des sessions 5 et 6, ainsi que les détails d'implémentat
 - "Depuis 2020, il co-fonde ISSA Capital" → "Depuis 2026"
 - Parenthèse "— 2J Impression, l'écosystème ISSA Capital —" retirée
 
-**Secrétariat ISSA (sous-dossier `secretariat/`)** :
+**Secrétariat ISSA (sous-dossier `secrétariat/`)** :
 - Phase 1 : Express + SQLite 8 tables + env.ts Zod + logger Pino + health endpoint (20 tests)
 - Phase 2 : WhatsApp Cloud API — webhooks + HMAC + whitelist + sessions 24h + dispatcher (36 tests)
 - Phase 3 : Anthropic SDK + prompt caching + routes draft/drafts + validation Zod (32 tests)
@@ -176,7 +176,7 @@ Les mémos de reprise des sessions 5 et 6, ainsi que les détails d'implémentat
 
 ### Phase 8 — Actions Thomas (NON DÉMARRÉES)
 
-Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.md` :
+Toutes les actions sont documentées step-by-step dans `secrétariat/DEPLOYMENT.md` :
 1. DPA Anthropic + DPA Replit + vérification DPF
 2. Email RGPD Art. 13 → Carl + Maxime
 3. NDA + mandat Carl + Maxime
@@ -221,22 +221,22 @@ Toutes les actions sont documentées step-by-step dans `secretariat/DEPLOYMENT.m
 - 6 README dans les dossiers vides (Réunions, Journal, Notes/Idées, Notes/Learnings, Notes/Cuisine, Notes/Voyages)
 - Dashboard.md avec requêtes Dataview
 - SETUP-ASANA.md + SETUP-CRAFT.md (60 secondes chacun, via directory connectors natifs Claude)
-- Alignement docs/product/secretariat-contacts-database.md (Carl, Maxime, Martin, Emmanuel)
-- Renommage ASCII des dossiers/fichiers (Reunions, Taches, Idees, Darre, Guerin) — règle CLAUDE.md n°20
+- Alignement docs/product/secrétariat-contacts-database.md (Carl, Maxime, Martin, Emmanuel)
+- Renommage ASCII des dossiers/fichiers (Reunions, Taches, Idées, Darre, Guerin) — règle CLAUDE.md n°20
 
-**Asana + Craft = connectors natifs Claude** : claude.ai/customize/connectors -> 1 clic OAuth, tous plans Claude. Ne JAMAIS proposer de setup MCP technique custom (Node.js, PAT, config JSON) avant d'avoir verifie le directory natif. Regle CLAUDE.md n19 ajoutee.
+**Asana + Craft = connectors natifs Claude** : claude.ai/customize/connectors -> 1 clic OAuth, tous plans Claude. Ne JAMAIS proposer de setup MCP technique custom (Node.js, PAT, config JSON) avant d'avoir vérifié le directory natif. Règle CLAUDE.md n19 ajoutée.
 
-**Clarification Claude Code vs Claude.ai (session 10)** : les connectors natifs (Craft, Asana, Google Drive) vivent dans l'interface Claude.ai/Desktop et sont lies au compte utilisateur de Thomas. Claude Code (Replit sandbox) n'y a PAS acces. Workflow valide : Thomas utilise Claude.ai pour l'extraction (connectors), Claude Code pour le formatage et la redistribution dans le repo/vault. SETUP-DRIVE.md documente comment connecter le vault Obsidian a Google Drive pour que Claude.ai puisse y ecrire directement a terme.
+**Clarification Claude Code vs Claude.ai (session 10)** : les connectors natifs (Craft, Asana, Google Drive) vivent dans l'interface Claude.ai/Desktop et sont lies au compte utilisateur de Thomas. Claude Code (Replit sandbox) n'y a PAS acces. Workflow valide : Thomas utilise Claude.ai pour l'extraction (connectors), Claude Code pour le formatage et la redistribution dans le repo/vault. SETUP-DRIVE.md documente comment connecter le vault Obsidian a Google Drive pour que Claude.ai puisse y écrire directement à terme.
 
 ### Actions Thomas session 10
 
 1. **Ouvrir le vault dans Obsidian** — pointer vers le dossier `second-cerveau/`
 2. **Installer les plugins Dataview + Homepage** — suivre SETUP.md section 7
 3. **Compléter les champs `[à compléter par Thomas]`** dans les fiches Projets et Contacts
-4. **~~Asana + Craft~~** — deja connectes par Thomas via les connectors natifs claude.ai/customize/connectors
-5. **Audit Craft + Asana via Claude.ai** — copier le super-prompt (fourni par Claude Code session 10) dans une conversation Claude.ai/Desktop (avec connectors Craft + Asana actifs). Claude.ai produit un fichier IMPORT-PLAN.md. Thomas copie le resultat et le donne a Claude Code pour redistribution dans le vault. IMPORTANT : Claude Code (Replit) n'a PAS acces aux connectors Craft/Asana/Drive — seul Claude.ai/Desktop les voit.
-6. **Setup Google Drive pour le vault** — suivre `second-cerveau/SETUP-DRIVE.md` (Option A recommandee : vault dans dossier Google Drive synchronise localement). Cela permettra a Claude.ai d'ecrire directement dans le vault via le connector Drive.
-7. **Donner le resultat IMPORT-PLAN.md a Claude Code** — une fois que Claude.ai a produit l'inventaire, le transmettre a Claude Code pour redistribution automatique dans les bonnes fiches du vault
+4. **~~Asana + Craft~~** — déjà connectes par Thomas via les connectors natifs claude.ai/customize/connectors
+5. **Audit Craft + Asana via Claude.ai** — copier le super-prompt (fourni par Claude Code session 10) dans une conversation Claude.ai/Desktop (avec connectors Craft + Asana actifs). Claude.ai produit un fichier IMPORT-PLAN.md. Thomas copie le résultat et le donne a Claude Code pour redistribution dans le vault. IMPORTANT : Claude Code (Replit) n'a PAS acces aux connectors Craft/Asana/Drive — seul Claude.ai/Desktop les voit.
+6. **Setup Google Drive pour le vault** — suivre `second-cerveau/SETUP-DRIVE.md` (Option A recommandée : vault dans dossier Google Drive synchronise localement). Cela permettra a Claude.ai d'écrire directement dans le vault via le connector Drive.
+7. **Donner le résultat IMPORT-PLAN.md a Claude Code** — une fois que Claude.ai a produit l'inventaire, le transmettre a Claude Code pour redistribution automatique dans les bonnes fiches du vault
 
 ### Résumé de la session 9
 
@@ -288,11 +288,11 @@ Session massive couvrant 91 commits. Travaux majeurs :
 |-------|------|-------------------|----------------|----------------------------------|
 | creative-strategy | 2026-04-07 | brand-platform.md, personas.md, competitive-benchmark.md | Positionnement holding familiale lisible. Archétype Ruler/Caregiver puis Ruler/Outlaw. Personas : Karim (principal), Leila (secondaire), Marc (journaliste). | Golden Circle + Prisme Kapferer. Espace libre identifié par WebSearch. |
 | creative-strategy (révision) | 2026-04-07 | personas.md, brand-platform.md | Suppression Hélène+Sophie (scope invalide), création Karim+Leila. Baseline "Racines libanaises. Exigences sans exception." | Scope business recadré par Thomas : immo + participations, pas cession PME. |
-| legal | 2026-04-07 | legal-audit.md, rgpd-checklist.md | Risque L.411-1 CMF maîtrisé. Plausible cookieless = pas de bandeau. DPA Resend obligatoire. | Consentement > intérêt légitime pour formulaire. |
+| légal | 2026-04-07 | légal-audit.md, rgpd-checklist.md | Risque L.411-1 CMF maîtrisé. Plausible cookieless = pas de bandeau. DPA Resend obligatoire. | Consentement > intérêt légitime pour formulaire. |
 | product-manager | 2026-04-07 | product-vision.md, functional-specs.md, execution-plan.md | Site vitrine pur, 10 anti-features, KPI = demandes qualifiées/mois, formulaire 7 champs. | Formulaire qualifiant > générique. |
 | design | 2026-04-07 | design-system.md, design-tokens.json, component-library.md, page-compositions.md | Palette noir-crème-ocre, EB Garamond + Inter, tokens 3 tiers, WCAG 2.2 AA. | Ocre levantin > bleu corporate. Typo as hero (budget 0€). |
 | copywriter (×5) | 2026-04-07 | brand-voice.md, landing-page-copy.md, page-mission.md, page-accompagnement.md, page-opportunites.md, page-participations.md, page-contact.md, page-legal.md | Vouvoiement universel, 2 CTAs Karim/Leila, filiation Jean-Pierre Issa, anti-L.411-1 CMF. | Frameworks BAB/PAS/FAB par page. |
-| ux | 2026-04-07 | user-flows.md, wireframes.md, ux-audit.md | 2 pages /accompagnement + /opportunites (parcours incompatibles). Formulaire 4 vs 7 champs. | Split parcours Karim/Leila. |
+| ux | 2026-04-07 | user-flows.md, wireframes.md, ux-audit.md | 2 pages /accompagnement + /opportunités (parcours incompatibles). Formulaire 4 vs 7 champs. | Split parcours Karim/Leila. |
 | design (WCAG) | 2026-04-07 | design-tokens.json, page-compositions.md, component-library.md, design-system.md | levant-600 pour text-accent (4.6:1 PASS). levant-500 interdit texte normal fond clair. | levant-600 > levant-700 (visuellement plus proche charte). |
 | product-manager (personas) | 2026-04-07 | functional-specs.md | Remplacement Hélène/Sophie par Karim/Leila dans toutes les US. 3 nouvelles US ajoutées. | Formulaire immo recalé sur Leila. |
 | seo | 2026-04-07 | seo-strategy.md, keyword-map.md, metadata-templates.md, structured-data.md | SEO défensif marque, 12 requêtes, Schema JSON-LD, robots.ts AI crawlers autorisés. | Défensif > offensif (vitrine, pas funnel). |
@@ -301,7 +301,7 @@ Session massive couvrant 91 commits. Travaux majeurs :
 | fullstack (×10+) | 2026-04-07→09 | Code TSX complet 6 pages, formulaires, JSON-LD, sitemap, favicon binaires, logo SVG fill, monopage S9, bot Anya, vault Obsidian | Implémentation de tous les retours Thomas, pipeline G28 PASS systématique. | Edits chirurgicaux, idempotence vérifiée. |
 | reviewer (×3) | 2026-04-07→08 | cross-review-report.md, cross-review-session4.md, cross-review-session5.md | GO CONDITIONNEL systématique, score 9.4-9.5/10. | Audit par gate (fail-fast) > par livrable. |
 | qa | 2026-04-08 | qa-bloc4-final-review.md, qa-session5-report.md | Pipeline 5/5 PASS, 154/156 Playwright, 11/11 US couvertes. | Vérification indépendante du pipeline @fullstack. |
-| ia | 2026-04-08→09 | secretariat-architecture.md, secretariat-system-prompt.md, secretariat-implementation-plan.md, claude-profile (9 fichiers) | Architecture Anya 14 endpoints, RBAC, compteur IC-CR, Claude Profile cross-projets. | SQLite > JSON (transactions exclusives). 1 prompt unique > 7 templates. |
+| ia | 2026-04-08→09 | secrétariat-architecture.md, secrétariat-system-prompt.md, secrétariat-implementation-plan.md, claude-profile (9 fichiers) | Architecture Anya 14 endpoints, RBAC, compteur IC-CR, Claude Profile cross-projets. | SQLite > JSON (transactions exclusives). 1 prompt unique > 7 templates. |
 | infrastructure | 2026-04-07 | REPLIT_ACTIONS.md, infrastructure.md | Procédure déploiement 9 étapes, Autoscale, apex sans www, rollback 1 clic. | Autoscale > Reserved VM (vitrine faible trafic). |
 | copywriter (S4-6) | 2026-04-08 | hero-tagline-alternatives.md, simplification-audit.md, copy-audit-antifiller.md, about-page-copy.md | Règle "Simple > Démonstratif", purge antithèses, about-page copy. | Simplicité > Démonstration promue en P0. |
 | main thread (S9 clôture) | 2026-05-10 | founder-preferences.md, lessons-learned.md, project-context-archive.md | Propagation P0 "Zéro MVP", archivage, création founder-preferences.md. | Guide MCP supprimé (Claude Desktop intégrations natives). |
@@ -335,7 +335,7 @@ reprise ISSA Capital session 10 — Branche : claude/issa-capital-s10-deploy-any
 Session dense couvrant vault Obsidian + extension Anya. Travaux majeurs :
 1. **Vault Obsidian peuplé** : 8 fiches Projets + 14 fiches Contacts (zéro invention, sources citées) + Dashboard Dataview + alignement contacts-database.md
 2. **Correction MCP P1 RÉCIDIVE** : Asana et Craft sont des connectors natifs Claude (claude.ai/customize/connectors), pas besoin de MCP technique. SETUP-ASANA-MCP/CRAFT-MCP supprimés, réécrits en SETUP-ASANA/CRAFT (5 lignes chacun)
-3. **Noms ASCII** : tous les dossiers/fichiers avec accents renommés (Reunions, Taches, Idees, Darre, Guerin)
+3. **Noms ASCII** : tous les dossiers/fichiers avec accents renommés (Reunions, Taches, Idées, Darre, Guerin)
 4. **2 nouvelles règles framework** : CLAUDE.md n°19 (connectors natifs avant MCP) + n°20 (noms ASCII pur)
 5. **SETUP-DRIVE.md** : stratégie Drive Desktop sync + Obsidian Sync mobile
 6. **Super-prompt Claude.ai** : pour audit Craft+Asana via connectors et import dans vault
