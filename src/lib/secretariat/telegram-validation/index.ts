@@ -1,0 +1,28 @@
+/**
+ * Telegram validation — re-exports publics.
+ *
+ * Point d'entrée unique pour le module de validation email-ingest via Telegram.
+ * Utilisé par le pipeline email-ingest (Jalon 4C) et le webhook Telegram.
+ */
+
+export {
+  buildValidationCard,
+  sendValidationCard,
+  editMessageText,
+  sendSimpleMessage,
+  escapeHtml,
+  VALIDATION_CALLBACK_PREFIX,
+} from './telegram-cards';
+
+export type { PendingValidation, TelegramKeyboard } from './telegram-cards';
+
+export {
+  savePending,
+  getPending,
+  deletePending,
+  purgeExpired,
+  listAllPending,
+} from './pending-store';
+
+export { handleTelegramCallback } from './callback-handler';
+export type { TelegramCallback } from './callback-handler';
