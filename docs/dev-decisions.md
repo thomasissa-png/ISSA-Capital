@@ -667,3 +667,99 @@ Le body de l'email est tronqué à 3000 caractères avant envoi à Haiku. Écono
 - `docs/dev-decisions.md` — cette section
 - `docs/ia/anya-spec.md` — roadmap mise à jour
 - `project-context.md` — historique mis à jour
+
+---
+
+## Session 14 — Jalon 4 V1 email-ingest complète : architecture et décisions
+
+**Date** : 2026-05-14
+
+### Découpage 4A / 4B / 4C
+
+Le Jalon 4 a été découpé en 3 sous-phases pour éviter les timeouts (règle n3) :
+- **4A** (commit `995cfaf`) : 4 handlers (locataire, contact-pro, apporteur, a-classifier) + types ActionProposal
+- **4B** (commit `05cbb50`) : module telegram-validation (cards HTML, pending-store Drive, callback-handler)
+- **4C** (commits `3bca41b`, `2e0c828`, ce commit) : pipeline runner, pré-filtre, contacts cache, endpoint API, intégration webhook
+
+### Architecture email-ingest complète
+
+```
+src/lib/secretariat/
+├── email-ingest/
+│   ├── email-ingest-runner.ts   # Pipeline orchestrateur (runEmailIngest)
+│   ├── pre-filter.ts            # Heuristique spam/newsletter (3 regex)
+│   ├── contacts-cache.ts        # Cache contacts Drive TTL 1h
+│   └── __tests__/
+│       ├── email-ingest-runner.test.ts (16 tests)
+│       ├── pre-filter.test.ts          (24 tests)
+│       └── contacts-cache.test.ts      (9 tests)
+├── handlers/                    # 4A — handlers par catégorie
+├── telegram-validation/         # 4B — cards + pending-store + callback
+├── gmail-source/                # Jalon 2 — source Gmail
+└── triage/                      # Jalon 3 — triage Haiku 4.5
+
+src/app/api/
+├── secretariat/email-ingest/
+│   ├── route.ts                 # POST endpoint (auth secret query param)
+│   └── __tests__/route.test.ts  (6 tests)
+└── telegram/webhook/route.ts    # dispatch email_val: ajouté (1 test)
+```
+
+### Décision : pré-filtre heuristique (~70% économie tokens)
+
+3 regex complémentaires :
+1. **AUTOMATED_FROM_RE** : adresses automatisées (noreply, notifications, mailer-daemon, etc.)
+2. **BULK_DOMAIN_RE** : domaines mass-mailing (sendgrid, mailgun, amazonses, *newsletter*, *marketing*)
+3. **NEWSLETTER_SUBJECT_RE** : sujets newsletter/digest/weekly
+
+Si au moins 1 matche → markProcessed + audit "auto-spam-prefilter", skip Haiku. Estimation : ~70% des emails de Thomas sont du bruit automatisé. Économie : ~70% des appels Haiku.
+
+### Décision : direct-spam bypass (Haiku confidence > 0.9)
+
+Si Haiku classe un email comme `spam` avec `confidence > 0.9` → markProcessed + audit "auto-spam-haiku", pas de carte Telegram. Seuil > 0.9 (pas >=) pour garder une marge. Les spams confidence <= 0.9 passent par handleAClassifier → carte Telegram pour validation Thomas.
+
+### Décision : cache contacts 1h
+
+Cache mémoire TTL 1h (`Map<'contacts', { data, ts }>`). Sur cache miss : listing Drive locataires actuels (tous) + contacts pro (top 20 par ordre alpha). Si listing échoue → retourne tableau vide + `console.warn` (le pipeline tourne même sans contexte). L'enrichissement du contexte est optionnel.
+
+### Décision : stockage pending sur Drive (pas Replit FS)
+
+Les PendingValidation sont stockées dans `_Inbox/AnyaState/pending-validations.json` sur Google Drive (décision 4B). Raison : le filesystem Replit est éphémère — les données disparaissent après redéploiement. Drive persiste les données entre les déploiements.
+
+### Décision : action "modifier" hors scope V1
+
+Le bouton "Modifier" sur les cartes Telegram est présent mais renvoie un message "non implémenté en V1". Raison : la modification d'actions proposées nécessite un workflow interactif complexe (choix d'action à modifier, saisie nouvelle valeur, re-validation). Trop risqué pour la V1. Thomas peut utiliser "Skip" et traiter manuellement.
+
+### Décision : pas de retry automatique sur action vault échouée
+
+Si une action vault (appendToHistorique, createVaultFile) échoue pendant la validation "Valider", l'erreur est logée dans l'audit trail et le message Telegram indique "certaines actions en erreur". Pas de retry automatique. Raison : un retry sur Drive pourrait créer des duplications. Thomas voit l'erreur et peut relancer manuellement.
+
+### Décision : endpoint auth par secret query param
+
+L'endpoint POST `/api/secretariat/email-ingest?secret=<token>` est protégé par un secret env var (`EMAIL_INGEST_TRIGGER_SECRET`), pas par session utilisateur. Raison : l'endpoint est appelé par cron externe ou manuellement, pas par un navigateur authentifié.
+
+### Compteur tests global
+
+856 tests verts (799 avant Jalon 4C + 57 nouveaux).
+
+### Fichiers ajoutés/modifiés
+
+**Commit 4C.1** :
+- `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — pipeline orchestrateur
+- `src/lib/secretariat/email-ingest/pre-filter.ts` — fix regex sendgrid/mailgun
+- `src/lib/secretariat/email-ingest/contacts-cache.ts` — cache contacts Drive TTL 1h
+- `src/lib/secretariat/email-ingest/__tests__/email-ingest-runner.test.ts` (16 tests)
+- `src/lib/secretariat/email-ingest/__tests__/pre-filter.test.ts` (24 tests)
+- `src/lib/secretariat/email-ingest/__tests__/contacts-cache.test.ts` (9 tests)
+
+**Commit 4C.2** :
+- `src/app/api/secretariat/email-ingest/route.ts` — POST endpoint
+- `src/app/api/secretariat/email-ingest/__tests__/route.test.ts` (6 tests)
+- `src/app/api/telegram/webhook/route.ts` — dispatch email_val: + import
+- `src/app/api/telegram/webhook/__tests__/route.test.ts` — mock telegram-validation + 1 test
+
+**Commit 4C.3** :
+- `docs/dev-decisions.md` — cette section
+- `docs/ia/anya-spec.md` — Jalon 4 FAIT, compteurs tests
+- `project-context.md` — historique S14
+- `.env.example` — EMAIL_INGEST_TRIGGER_SECRET

@@ -1,7 +1,7 @@
 # Anya — Bot Telegram secrétariat ISSA Capital
 
 > Fiche technique partageable. Source de vérité pour tout autre Claude (Cowork, Desktop, autre repo) qui doit comprendre ou faire évoluer Anya.
-> Dernière mise à jour : 2026-05-12 (session 13 — workflows inbox-photo-batch + inbox-message-router).
+> Dernière mise à jour : 2026-05-14 (session 14 — V1 email-ingest complète, Jalons 0-4).
 
 ---
 
@@ -23,7 +23,7 @@
 | Stockage | Google Drive (OAuth2 refresh token, scope `drive + calendar.events`) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF / DOCX | PDFKit (CR, quittance, fin de bail) + docx (bail meublé) |
 | EXIF photos | exifr (JPEG) + ExifReader (HEIC) — détection par signature bytes, pas par MIME |
-| Tests | Vitest — **511/511 passent** |
+| Tests | Vitest — **856/856 passent** |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -287,14 +287,21 @@ src/lib/secretariat/vault-client/markdown-append.ts # Append chrono-inverse H3 s
 src/lib/secretariat/vault-client/write-lock.ts     # Sérialisation écriture par path
 src/lib/secretariat/vault-client/audit-log.ts      # Audit trail JSONL dans _Inbox/AnyaLogs/
 src/lib/secretariat/vault-client/vault-paths.ts    # Constantes chemins logiques vault
+src/lib/secretariat/gmail-source/               # Session 14 J2 : source Gmail (list, fetch, mark)
+src/lib/secretariat/triage/                     # Session 14 J3 : triage Haiku 4.5 (prompt versionné, Zod)
+src/lib/secretariat/handlers/                   # Session 14 J4A : handlers email-ingest (4 catégories)
+src/lib/secretariat/telegram-validation/        # Session 14 J4B : cards Telegram + pending Drive + callbacks
+src/lib/secretariat/email-ingest/               # Session 14 J4C : pipeline runner + pré-filtre + contacts cache
+src/app/api/secretariat/email-ingest/route.ts   # Session 14 J4C : endpoint API trigger
 scripts/test-haiku-dates.ts                    # validation empirique résolution dates FR
+scripts/triage-dry.ts                          # CLI dry-run triage (zéro modif)
 ```
 
 ## Tests
 
 ```bash
 npm test
-# → 694/694 passent (593 existants + 101 gmail-source/triage)
+# → 856/856 passent
 ```
 
 Couverture :
@@ -306,6 +313,11 @@ Couverture :
 - Tests rent lib (num-en-lettres, dates-fr, biens, locataires fuzzy, etc.)
 - Tests registry, router, conversation store, drive-upload
 - Tests vault-client (81 tests) : frontmatter bit-perfect (7 fixtures réelles), markdown-append chrono-inverse, write-lock sérialisation, drive-resolver cache TTL, obsidian-file I/O, API publique (findContactByEmail, appendToHistorique, updateFrontmatter)
+- Tests handlers email-ingest (40 tests : a-classifier 10, locataire 10, contact-pro 10, apporteur 10)
+- Tests telegram-validation (46 tests : telegram-cards 16, pending-store 15, callback-handler 15)
+- Tests email-ingest 4C (49 tests : runner 16, pre-filter 24, contacts-cache 9)
+- Tests API email-ingest endpoint (6 tests)
+- Tests webhook dispatch email_val (1 test dans route.test.ts)
 
 ## Roadmap
 
@@ -318,16 +330,20 @@ Couverture :
 - Workflow `inbox-photo-batch` (Phase 4 — Session 13) — bypass strip EXIF Telegram iOS
 - Workflow `inbox-message-router` Calendar + Todo (Phase 4 — Session 13)
 
-**Email-ingest (plan Anya S14+)** :
+**Email-ingest V1 complète (plan Anya S14)** :
 
 - **Jalon 0 — Setup env vars** : FAIT (Session 14) — variables documentées dans dev-decisions.md
 - **Jalon 1 — Vault client** : FAIT (Session 14) — `src/lib/secretariat/vault-client/` (7 modules, 81 tests, frontmatter bit-perfect, cache TTL 1h, write-lock, audit trail)
 - **Jalon 2 — Gmail source** : FAIT (Session 14) — `src/lib/secretariat/gmail-source/` (4 modules, 49 tests). Client Gmail API mutualisé, label-resolver cache TTL 1h, listing+filtre local. OAuth étendu (3 scopes Gmail). CLI `npm run ingest:gmail -- --dry-run`.
 - **Jalon 3 — Triage Haiku** : FAIT (Session 14) — `src/lib/secretariat/triage/` (3 modules, 52 tests). Prompt versionné triage-v1.md. Haiku 4.5 (`claude-haiku-4-5-20251001`), validation Zod, retry x1, override confidence < 0.7. Matrice confusion 20 fixtures : 100% catégorie, 100% intent.
+- **Jalon 4 — V1 complète** : FAIT (Session 14) — 3 sous-phases :
+  - **4A** : 4 handlers (locataire, contact-pro, apporteur, a-classifier) + types ActionProposal
+  - **4B** : module telegram-validation (cards HTML, pending-store Drive, callback-handler)
+  - **4C** : pipeline runner `runEmailIngest()`, pré-filtre heuristique (~70% économie Haiku), contacts cache TTL 1h, endpoint POST `/api/secretariat/email-ingest?secret=<token>`, dispatch webhook `email_val:`. 57 tests ajoutés (856 total).
 
 **À venir** :
 
-- **Jalon 4-9** : handlers spécialisés (quittance, relance, candidature, etc.) — voir `second-cerveau/Anya - Plan email-ingest.md`
+- **Jalon 5+** : handlers spécialisés V2 (quittance auto, relance impayé, candidature enrichie, etc.) — voir `second-cerveau/Anya - Plan email-ingest.md`
 - **Phase 5 — Promotion candidat → locataire** : commande `/promouvoir <nom>` déplace fiche `_Candidats/` vers `05. Locataires/01. Actuels/<nom>/`
 - **Phase 6 — Corrections juridiques bail** : encadrement loyers (€/m²), IRL automatique INSEE, clause pénale (décisions Thomas en attente)
 - **Phase 7 — Envoi email locataire** : envoi automatique quittances par Gmail API
