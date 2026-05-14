@@ -82,6 +82,8 @@ const mocks = vi.hoisted(() => ({
   }),
   // fs
   readFileSync: vi.fn(),
+  // Email-ingest validation
+  handleEmailValCallback: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ============================================================
@@ -175,6 +177,10 @@ vi.mock('@/lib/secretariat/reference-counter', () => ({
 
 vi.mock('@/lib/secretariat/contacts', () => ({
   formatContactsForPrompt: mocks.formatContactsForPrompt,
+}));
+
+vi.mock('@/lib/secretariat/telegram-validation', () => ({
+  handleTelegramCallback: mocks.handleEmailValCallback,
 }));
 
 // ============================================================
@@ -911,5 +917,19 @@ describe('POST /api/telegram/webhook', () => {
     expect(mocks.sendTelegramMessage).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
+  });
+
+  it('dispatch les callbacks email_val: vers handleEmailValCallback', async () => {
+    const payload = callbackQuery('email_val:valider:uuid-123');
+    const res = await POST(makeRequest(payload));
+
+    expect(res.status).toBe(200);
+    expect(mocks.handleEmailValCallback).toHaveBeenCalledTimes(1);
+    expect(mocks.handleEmailValCallback).toHaveBeenCalledWith({
+      callback_query_id: 'cb-123',
+      data: 'email_val:valider:uuid-123',
+      message_id: 200,
+      chat_id: 12345,
+    });
   });
 });

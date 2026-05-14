@@ -88,6 +88,7 @@ import {
   handleRouterCallback,
   ROUTER_CALLBACK_PREFIX,
 } from '@/lib/secretariat/workflows/inbox-message-router';
+import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1636,6 +1637,17 @@ export async function POST(request: Request): Promise<Response> {
       if (callbackData.startsWith(ROUTER_CALLBACK_PREFIX)) {
         const routerMsg = await handleRouterCallback(callbackChatId, callbackData);
         await sendTelegramMessage(callbackChatId, routerMsg);
+        return Response.json({ ok: true });
+      }
+
+      // Email-ingest validation — callbacks préfixés par "email_val:"
+      if (callbackData.startsWith('email_val:')) {
+        await handleEmailValCallback({
+          callback_query_id: callbackQueryId,
+          data: callbackData,
+          message_id: update.callback_query.message?.message_id ?? 0,
+          chat_id: callbackChatId,
+        });
         return Response.json({ ok: true });
       }
 
