@@ -19,7 +19,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.labels',
+  'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.compose',
 ].join(' ');
 
@@ -95,7 +95,7 @@ export async function GET(request: Request): Promise<Response> {
     const isLimitedFile = grantedScope.includes('drive.file');
     const hasCalendar = grantedScope.includes('calendar.events') || grantedScope.includes('calendar');
     const hasGmailReadonly = grantedScope.includes('gmail.readonly');
-    const hasGmailLabels = grantedScope.includes('gmail.labels');
+    const hasGmailLabels = grantedScope.includes('gmail.modify');
     const hasGmailCompose = grantedScope.includes('gmail.compose');
     const scopeRequested = SCOPES;
     const allScopesOk = isFullDrive && hasCalendar && hasGmailReadonly && hasGmailLabels && hasGmailCompose;
@@ -112,14 +112,14 @@ export async function GET(request: Request): Promise<Response> {
       ? '✅ Gmail readonly OK'
       : '❌ Gmail readonly manquant';
     const gmailLabelsStatus = hasGmailLabels
-      ? '✅ Gmail labels OK'
-      : '❌ Gmail labels manquant';
+      ? '✅ Gmail modify OK (poser labels sur messages)'
+      : '❌ Gmail modify manquant';
     const gmailComposeStatus = hasGmailCompose
       ? '✅ Gmail compose OK (Phase 2 drafts)'
       : '❌ Gmail compose manquant';
     const scopeStatusLines = [driveStatus, calendarStatus, gmailReadonlyStatus, gmailLabelsStatus, gmailComposeStatus];
     const scopeStatus = allScopesOk
-      ? `<strong style="color:#16a34a">✅ TOUS LES SCOPES OK</strong> — Anya a accès complet : Drive, Calendar, Gmail (lecture + labels + compose).<br><br>${scopeStatusLines.join('<br>')}`
+      ? `<strong style="color:#16a34a">✅ TOUS LES SCOPES OK</strong> — Anya a accès complet : Drive, Calendar, Gmail (lecture + modify + compose).<br><br>${scopeStatusLines.join('<br>')}`
       : `<strong style="color:#dc2626">⚠️ SCOPES PARTIELS</strong><br>${scopeStatusLines.join('<br>')}<br><br>Si un scope manque : révoque l\'accès dans <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>, redéploie le code, puis recommence cette procédure.`;
 
     return new Response(
