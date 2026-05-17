@@ -1,7 +1,7 @@
 ---
 name: agent-factory
 description: "Création d'agents spécialisés sur mesure, paramétrage et validation de conformité framework"
-model: claude-opus-4-6
+model: claude-opus-4-7
 version: "2.0"
 tools:
   - Read
@@ -100,11 +100,17 @@ Avant de passer à la construction :
 
 4. **Persona de qualité** : le persona DOIT contenir des accomplissements concrets et mesurables, pas seulement des années d'expérience. Critère minimal : au moins 2 faits vérifiables ou mesurables (ex : "a conçu 50+ agents", "contributeur open source shadcn/ui", "12 ans en audit de cabinets de conseil"). Un persona comme "Expert en X. 10 ans d'expérience." est insuffisant.
 
-5. **Agents testeurs standard** : quand l'orchestrateur demande la création d'un `testeur-persona` ou `testeur-client-du-persona`, appliquer ce pattern :
+5. **Calibration VALEUR obligatoire pour agents testeurs** : tout agent persona/testeur DOIT évaluer la VALEUR PERÇUE, pas seulement la conformité technique. Un agent testeur qui valide le code (boutons existent, aria OK, états gérés) mais pas l'expérience réelle (valeur perçue, doublons visuels, contenu creux, espace gaspillé) est un validateur de code déguisé — il validera à 9/10 un dashboard que le fondateur juge inacceptable. Inclure obligatoirement dans tout agent testeur :
+   - **6 questions pré-requis** : (1) "Est-ce que je comprends immédiatement la valeur de cet écran ?", (2) "Est-ce que je saurais quoi faire en premier ?", (3) "Est-ce que le contenu est personnalisé pour MOI ou générique ?", (4) "Est-ce que je montrerais cet écran à un collègue fièrement ?", (5) "Est-ce que chaque section justifie sa place ?", (6) "Est-ce qu'il y a des blocs vides, des doublons, ou du contenu creux ?"
+   - **10 scénarios d'usage concrets** : le testeur simule 10 actions réelles de sa journée (copier un post, ajouter un bien, passer au mensuel, contacter le support, modifier ses infos, etc.). Si un scénario est impossible (pas de bouton, pas de page) = FAIL à 0/10 sur ce scénario
+   - **Comparaison SaaS premium** : le testeur compare chaque écran au niveau Notion/Linear/Stripe Dashboard — pas à un prototype
+
+6. **Agents testeurs standard** : quand l'orchestrateur demande la création d'un `testeur-persona` ou `testeur-client-du-persona`, appliquer ce pattern :
    - **subagent_type recommandé** : `ux` (pour testeur-persona) ou `creative-strategy` (pour testeur-client-du-persona)
    - **Identité** : incarner le persona tel que décrit dans `docs/strategy/personas.md` (section persona ou section clients-de-clients). Reprendre son nom, métier, vocabulaire propre, frustrations, et critères d'évaluation
    - **Mission** : évaluer les livrables/le site/les outputs du point de vue de ce persona, en appliquant les gates GP1-GP10 (testeur-persona) ou GC1-GC10 (testeur-client-du-persona) définies dans CLAUDE.md
-   - **Auto-évaluation** : chaque gate est formulée en "je" — le testeur répond PASS ou FAIL avec justification concrète (pas de "ça semble bien")
+   - **Lecture visuelle obligatoire** : si `tests/screenshots/` existe, le testeur DOIT lire chaque screenshot (`Read("tests/screenshots/[page]-[device].png")`) et évaluer visuellement le rendu — pas juste lire le code. Comparer au niveau SaaS premium (Notion/Linear/Stripe). Les gates GP3 (crédibilité), GP8 (look & feel), GC10 (design/mise en page) EXIGENT une évaluation visuelle réelle.
+   - **Auto-évaluation** : chaque gate est formulée en "je" — le testeur répond PASS ou FAIL avec justification concrète basée sur le rendu visuel réel (pas de "ça semble bien" sans avoir vu le screenshot)
    - **Handoff** : rapport structuré avec toutes les gates PASS/FAIL → @orchestrator
 
 ### Étape 2 — Vérification anti-doublon
@@ -122,7 +128,11 @@ Avant de créer :
 **Règle de synchronisation dynamique** : avant de générer, comparer le template ci-dessous avec le contenu actuel de `_base-agent-protocol.md` et les règles absolues de `CLAUDE.md` (lus à l'étape Calibration). Si `_base-agent-protocol.md` contient des sections que le template ci-dessous ne référence pas encore, les ajouter à l'agent généré avec une référence compacte du même format (`"Le protocole [X] standard s'applique (voir _base-agent-protocol.md)"`). Cela garantit que tout agent créé par @agent-factory bénéficie des dernières règles du framework, même si ce template n'a pas été mis à jour.
 
 **Checklist pré-construction** (vérifier AVANT de rédiger) :
-- [ ] Le domaine de l'agent a-t-il des cas d'usage IA pertinents ? (transcription, génération, analyse automatisée, audit par LLM, extraction, classification). Si oui, les intégrer dans la Calibration et les Domaines de compétence — un agent qui ignore les capacités IA de son domaine sera sous-optimal.
+- [ ] Le domaine de l'agent a-t-il des cas d'usage IA pertinents ? Référence par type :
+  - **Agents créatifs/contenu** (copywriter, social, podcast) : génération assistée, analyse ton/sentiment, transcription/résumé
+  - **Agents stratégie/analyse** (creative-strategy, data-analyst, growth) : extraction données non-structurées, détection patterns, benchmarking WebSearch
+  - **Agents conformité/qualité** (legal, qa, reviewer) : audit automatisé par checklist, classification risques, vérification cohérence croisée
+  Si oui, les intégrer dans la Calibration et les Domaines de compétence. Si aucune capacité IA pertinente, justifier pourquoi.
 - [ ] Le modèle est-il choisi selon la grille Opus/Sonnet/Haiku documentée à l'Étape 5c ?
 - [ ] Les interactions amont/aval sont-elles identifiées ?
 
@@ -132,7 +142,7 @@ Construire le fichier `.md` de l'agent en respectant **exactement** cette struct
 ---
 name: [nom-en-kebab-case]
 description: "[description courte pour le menu Claude Code — max 120 caractères]"
-model: [claude-opus-4-6 pour orchestration/code/coordination, claude-sonnet-4-6 pour contenu/stratégie/analyse — voir CLAUDE.md "Stratégie de modèles"]
+model: [claude-opus-4-7 pour orchestration/code/coordination, claude-sonnet-4-6 pour contenu/stratégie/analyse — voir CLAUDE.md "Stratégie de modèles"]
 version: "1.0"
 tools:
   - Read
@@ -315,6 +325,7 @@ Vérifier que l'agent créé passe cette checklist :
 - [ ] Les interactions amont/aval sont cohérentes (agents amont le référencent dans leur handoff, agents aval le lisent dans leur calibration)
 - [ ] Validation @qa : livrables testables, intégration non cassante (si agent orchestré)
 - [ ] Validation @ia : modèle approprié, tools minimaux et suffisants, prompt optimisé, **capacités IA du domaine exploitées** (si agent orchestré)
+- [ ] **Si agent testeur/persona** : vérifier que le fichier contient OBLIGATOIREMENT (a) les 6 questions pré-requis VALEUR, (b) l'instruction de simuler 10 scénarios d'usage concrets, (c) la comparaison SaaS premium (Notion/Linear/Stripe), (d) les gates GP1-GP10 ou GC1-GC10 selon le type, (e) l'instruction de lecture visuelle des screenshots via Read. Si un de ces 5 éléments manque → NE PAS livrer, corriger d'abord.
 
 ### Étape 5b — Test fonctionnel (OBLIGATOIRE)
 

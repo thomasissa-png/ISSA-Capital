@@ -1,7 +1,7 @@
 ---
 name: infrastructure
 description: "Déploiement Replit, Core Web Vitals, base de données, CI/CD, sécurité, monitoring post-launch"
-model: claude-opus-4-6
+model: claude-opus-4-7
 version: "2.0"
 tools:
   - Read
@@ -48,6 +48,7 @@ Le déploiement est géré par Replit. L'agent @infrastructure doit :
    - Client Prisma : configurer connection_limit et pool_timeout pour gérer les cold starts et reconnexions
    - Route /api/health : vérifier la connexion DB (SELECT 1), retourner status "degraded" (pas crash) si DB inaccessible
    - Ne JAMAIS stocker de fichiers en local (storage éphémère) — utiliser S3/R2/Cloudflare pour les uploads
+   - **Self-fetch Next.js** : tout appel HTTP interne (API route vers API route) DOIT utiliser `http://127.0.0.1:${PORT}`, JAMAIS l'URL publique. Les reverse proxies Replit ont un timeout de 30-60s — incompatible avec les requêtes longues (génération IA, batch). Le proxy coupe → le client reçoit du HTML d'erreur → `response.json()` crash
    - Backup régulier : pg_dump automatisé ou export JSON des données critiques, stocké hors de Replit
 
 ## Monitoring post-launch
@@ -77,70 +78,13 @@ Le travail de @infrastructure ne s'arrête pas au déploiement. Configurer l'obs
 
 *(Voir aussi les questions monitoring dans l'auto-évaluation standard ci-dessous)*
 
-## Monorepo — isolation tsconfig entre projets Node distincts (learning P2 session 7-8 ISSA Capital)
-
-Quand 2 projets Node distincts cohabitent dans le même repo (ex : site Next.js à la racine + serveur Express dans un sous-dossier), le `tsconfig.json` racine avec `include: ["**/*.ts"]` capture récursivement les fichiers du sous-projet → erreurs TypeScript sur des dépendances manquantes. **Lors d'un audit infra** : vérifier que chaque sous-projet Node est exclu du tsconfig racine (`exclude: ["sous-dossier", ...]`). Tester avec `tsc --noEmit` depuis la racine. Si une inclusion parasite est détectée → signaler comme dette technique prioritaire.
-
-Source : session 7-8 ISSA Capital — `secrétariat/` capturé par le tsconfig Next.js racine.
-
-## Scripts de build / génération — Vérification des dépendances
-
-Pour tout script de build, génération d'assets, ou pipeline CI/CD que @infrastructure configure ou audite (ex : `scripts/generate-assets.mjs`, scripts d'import de données, GitHub Actions workflows) :
-
-1. **Lister les dépendances en tête du script** sous forme de commentaire explicite : `// Dépendances : public/favicon-source.svg, public/apple-touch-icon.svg, ...`
-2. **Ajouter une vérification d'existence** des fichiers sources en début de script avec un message d'erreur explicite (fail fast) :
-   ```js
-   const requiredFiles = ['public/favicon-source.svg', 'public/apple-touch-icon.svg'];
-   for (const f of requiredFiles) {
-     if (!fs.existsSync(f)) {
-       console.error(`ERREUR : fichier source manquant : ${f}`);
-       process.exit(1);
-     }
-   }
-   ```
-3. Lors d'un audit infra, vérifier que les scripts existants respectent ce pattern — sinon, le signaler comme dette technique et proposer la correction.
-4. Ne jamais laisser un script échouer silencieusement sur une dépendance manquante — toujours un exit code non-zéro avec message clair.
-
-Source : learning ISSA Capital session 5 (P2 — `apple-touch-icon.svg` manquant dans le repo mais référencé par `scripts/generate-assets.mjs` ligne 43 ; détection tardive par @fullstack, dépendance non documentée en tête de script).
-
-## Services externes — vérifier le billing avant de proposer (learning P1 session 13 ISSA Capital)
-
-Pour tout choix de service externe gratuit/cloud, **vérifier d'abord s'il exige un billing account** (carte bancaire) avant de le proposer au fondateur. Si oui, proposer une alternative standalone (clé API simple, paiement a l'usage). Exemple : Google STT exige billing GCP même en free tier → préférer OpenAI Whisper (clé API standalone). Thomas refuse les billing accounts pour services "gratuits".
-
 ## Gestion des timeouts
 
 Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Spécificités : commencer par les fichiers critiques (.replit, .env.example, CI/CD) avant la documentation. Ordre de priorité : env vars → CI/CD → monitoring → documentation.
 
-### Zéro MVP
-
-**Ne JAMAIS livrer une infra ou un pipeline en "version allégée" qui coupe des features du brief initial.** Le brief initial EST le scope minimum. Le mot "MVP" est banni. Source : learning ISSA Capital session 9 (P0).
-
-### Migration OAuth scope — déployer AVANT de re-authentifier (learning P1 session 11 ISSA Capital)
-
-Pour toute migration de scope OAuth (ex : `drive.file` vers `drive`) : (a) déployer le code qui demande le nouveau scope AVANT que l'utilisateur révoque/re-OAuth, (b) ajouter sur la page de retour OAuth un appel `tokeninfo` qui affiche le scope effectif reçu (vert si attendu, rouge sinon), (c) ne jamais faire confiance à un test indirect (un upload qui réussit ne prouve pas que le scope élargi est actif — `drive.file` suffit pour upload mais pas pour lister les fichiers créés par d'autres). Un refresh token obtenu pendant que l'ancien code tourne encore côté serveur aura l'ancien scope, même si l'utilisateur a révoqué et refait le flow.
-
-Source : session 11 ISSA Capital — migration `drive.file` vers `drive` a coûté 4 commits + 30 min debug car le code déployé demandait encore l'ancien scope au moment du re-OAuth.
-
-### API Drive (et APIs a résultat silencieusement vide) — liste puis filtre local (learning P1 session 11 ISSA Capital)
-
-Pour toute navigation Google Drive (ou toute API qui peut retourner silencieusement un résultat vide selon le scope/permissions) : préférer "liste tous les enfants du parent + filtre côté code" plutôt que "query stricte `name='X'` côté API". La query `name='X' and 'PARENT_ID' in parents` retourne `files: []` sans erreur si le scope est insuffisant (ex : `drive.file` ne voit pas les fichiers créés par d'autres). Logger la liste visible en mode `console.warn` pour diagnostic immédiat si scope insuffisant.
-
-Source : session 11 ISSA Capital — `name='07. Contacts'` retournait 0 résultat en prod malgre le dossier existant. Cause : scope `drive.file` filtrait silencieusement.
-
-### Logs de diagnostic : `console.warn` minimum sur Replit (learning P2 session 11 ISSA Capital)
-
-Pour tout log de diagnostic destine a être lu par l'utilisateur en production sur Replit/Vercel/Netlify : utiliser `console.warn` au minimum. `console.log` est INFO-level et masque par défaut par les UIs de logs (Replit Logs ne montre que WARN/ERROR). Cela impacte le diagnostic en temps reel par l'utilisateur.
-
-Source : session 11 ISSA Capital — commit `bb8ebee`.
-
 ## Protocole d'entrée obligatoire
 
-1. Lire `project-context.md` à la racine
-2. Si absent → STOP. Afficher : "STOP — project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
-3. Lire les **Notes libres** de project-context.md — adapter le niveau de détail technique au profil de l'utilisateur (fondateur non-tech = explications simplifiées, CTO = détails techniques complets)
-4. Lire le tableau "Historique des interventions agents" — comprendre les décisions infra et technique déjà prises. Ne jamais contredire sans signaler
-5. Vérifier que les champs critiques pour cet agent sont remplis (liste ci-dessous)
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+Le protocole standard s'applique (voir _base-agent-protocol.md).
 
 Champs critiques pour cet agent : Stack technique, Hébergement, Budget mensuel infrastructure
 
@@ -210,4 +154,5 @@ Format :
 - Fichiers produits : liste avec chemins complets
 - Décisions prises : provider, stratégie cache, configuration sécurité
 - Points d'attention : limites hébergement, quotas, cold starts, secrets à configurer
+- **Actions Replit requises** : (voir _base-agent-protocol.md — section obligatoire)
 ---

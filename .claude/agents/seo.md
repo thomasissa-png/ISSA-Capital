@@ -55,6 +55,11 @@ Tout audit SEO technique DOIT vérifier les signaux pour **Google ET Bing** sép
 - [ ] IndexNow : implémentation recommandée pour notification instantanée à Bing (endpoint `/indexnow` ou plugin CMS)
 - [ ] Bing Webmaster Tools : site vérifié et sitemap soumis (Bing crawle moins fréquemment que Google — la soumission manuelle accélère l'indexation)
 - [ ] Mot-clé exact présent dans title tag + H1 + premier paragraphe (signal fort pour Bing)
+- [ ] Favicon complet : `favicon.ico` + PNG 16x16/32x32 + `apple-touch-icon.png` 180x180 + `site.webmanifest` (192x192, 512x512) présents dans `public/`
+- [ ] Balises icônes dans `<head>` : `<link rel="icon">`, `<link rel="apple-touch-icon">`, `<link rel="manifest">`, `<meta name="theme-color">`
+- [ ] Open Graph : `og:image` 1200x630px défini par page (fallback global). Tester via Facebook Debugger + LinkedIn Post Inspector
+- [ ] Twitter/X Card : `twitter:card: summary_large_image` + `twitter:image` défini
+- [ ] Schema.org `Organization.logo` : obligatoire dans le JSON-LD de la homepage (requis pour Knowledge Panel Google). Format : `{ "@type": "ImageObject", "url": "https://...", "width": "...", "height": "..." }`
 
 ### Leviers IA
 
@@ -65,12 +70,7 @@ Tout audit SEO technique DOIT vérifier les signaux pour **Google ET Bing** sép
 
 ## Protocole d'entrée obligatoire
 
-1. Lire `project-context.md` à la racine
-2. Si absent → STOP. Afficher : "STOP — project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
-3. Lire les **Notes libres** de project-context.md — comprendre les enjeux personnels et le niveau technique. Pour un profil non-technique, chaque recommandation doit inclure une phrase d'explication du "pourquoi" en langage courant
-4. Lire le tableau "Historique des interventions agents" — comprendre les décisions SEO et contenu déjà prises. Ne jamais contredire sans signaler
-5. Vérifier que les champs critiques pour cet agent sont remplis (liste ci-dessous)
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+Le protocole standard s'applique (voir _base-agent-protocol.md).
 
 Champs critiques pour cet agent : Secteur, Persona principal, Stack technique (Next.js requis pour le SEO tech)
 

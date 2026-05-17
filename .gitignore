@@ -53,3 +53,6 @@ tests/screenshots/**/actual/
 # IDE
 .vscode/
 .idea/
+
+# Gradient Agents update backup (local rollback, never commit)
+.claude/agents/.backup/
