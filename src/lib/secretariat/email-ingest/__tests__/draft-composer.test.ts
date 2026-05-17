@@ -85,6 +85,13 @@ function makeTriage(overrides: Partial<TriageResult> = {}): TriageResult {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Ré-appliquer les implémentations par défaut (clearAllMocks ne les reset pas)
+  mockFindContactCached.mockResolvedValue(null);
+  mockReadVaultFile.mockResolvedValue({ success: false });
+  mockCreateDraft.mockResolvedValue({ success: false, error: 'mock' });
+  mockMessagesCreate.mockResolvedValue({
+    content: [{ type: 'text', text: 'Bonjour, merci pour votre message.\n\nCordialement,\nThomas Issa' }],
+  });
   // Env par défaut
   process.env['ANTHROPIC_API_KEY'] = 'test-api-key';
   process.env['GMAIL_USER_EMAIL'] = 'thomas@issacapital.com';

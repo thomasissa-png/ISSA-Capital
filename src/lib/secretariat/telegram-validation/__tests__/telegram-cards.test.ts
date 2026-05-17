@@ -164,10 +164,16 @@ describe('buildValidationCard', () => {
     const pending = makePending({ id: 'abc-123' });
     const { inlineKeyboard } = buildValidationCard(pending);
 
-    expect(inlineKeyboard[0]![0]!.callback_data).toBe(`${VALIDATION_CALLBACK_PREFIX}valider:abc-123`);
-    expect(inlineKeyboard[0]![1]!.callback_data).toBe(`${VALIDATION_CALLBACK_PREFIX}skip:abc-123`);
-    expect(inlineKeyboard[1]![0]!.callback_data).toBe(`${VALIDATION_CALLBACK_PREFIX}voir:abc-123`);
-    expect(inlineKeyboard[1]![1]!.callback_data).toBe(`${VALIDATION_CALLBACK_PREFIX}modifier:abc-123`);
+    // Les boutons d'action utilisent callback_data (pas url)
+    const btn = (row: number, col: number) => {
+      const button = inlineKeyboard[row]![col]!;
+      return 'callback_data' in button ? button.callback_data : '';
+    };
+
+    expect(btn(0, 0)).toBe(`${VALIDATION_CALLBACK_PREFIX}valider:abc-123`);
+    expect(btn(0, 1)).toBe(`${VALIDATION_CALLBACK_PREFIX}skip:abc-123`);
+    expect(btn(1, 0)).toBe(`${VALIDATION_CALLBACK_PREFIX}voir:abc-123`);
+    expect(btn(1, 1)).toBe(`${VALIDATION_CALLBACK_PREFIX}modifier:abc-123`);
   });
 
   it('échappe les caractères HTML dans le subject', () => {
@@ -246,6 +252,51 @@ describe('buildValidationCard', () => {
 
     expect(text).toContain('12 mai 2026');
   });
+
+  // --- Draft Gmail (Jalon 5B) ---
+
+  it('ajoute une 3ème rangée avec bouton "Voir dans Gmail" si draftGmailUrl est présent', () => {
+    const pending = makePending({
+      draftGmailUrl: 'https://mail.google.com/mail/u/0/#drafts?compose=abc',
+      draftPreview: 'Bonjour Martin, merci pour votre message.',
+    });
+    const { text, inlineKeyboard } = buildValidationCard(pending);
+
+    // 3 rangées au lieu de 2
+    expect(inlineKeyboard).toHaveLength(3);
+
+    // La 3ème rangée a un bouton URL
+    const draftButton = inlineKeyboard[2]![0]!;
+    expect(draftButton.text).toContain('Voir dans Gmail');
+    expect('url' in draftButton).toBe(true);
+    if ('url' in draftButton) {
+      expect(draftButton.url).toBe('https://mail.google.com/mail/u/0/#drafts?compose=abc');
+    }
+
+    // Le texte contient la preview
+    expect(text).toContain('Brouillon de réponse prêt');
+    expect(text).toContain('Bonjour Martin, merci pour votre message.');
+  });
+
+  it('ne montre PAS le bouton draft si draftGmailUrl est absent', () => {
+    const pending = makePending(); // pas de draftGmailUrl
+    const { text, inlineKeyboard } = buildValidationCard(pending);
+
+    expect(inlineKeyboard).toHaveLength(2);
+    expect(text).not.toContain('Brouillon de réponse prêt');
+  });
+
+  it('affiche le bouton draft sans preview si draftPreview est absent', () => {
+    const pending = makePending({
+      draftGmailUrl: 'https://mail.google.com/mail/u/0/#drafts',
+    });
+    const { text, inlineKeyboard } = buildValidationCard(pending);
+
+    expect(inlineKeyboard).toHaveLength(3);
+    expect(text).toContain('Brouillon de réponse prêt');
+    // Pas de preview italic — vérifier qu'aucune ligne ne commence par <i> (la preview serait sur sa propre ligne)
+    expect(text).not.toMatch(/^\s*<i>/m);
+  });
 });
 
 // ============================================================
@@ -276,6 +327,7 @@ describe('sendValidationCard', () => {
 
     const body = JSON.parse((callArgs[1] as { body: string }).body);
     expect(body.parse_mode).toBe('HTML');
+    // 2 rangées standard (pas de draft dans ce pending)
     expect(body.reply_markup.inline_keyboard).toHaveLength(2);
   });
 
