@@ -32,6 +32,7 @@ import {
   handleAClassifier,
   handleContactPro,
   handleApporteur,
+  handleCandidat,
 } from '../handlers';
 import {
   savePending,
@@ -68,7 +69,7 @@ type HandlerFn = (triage: TriageResult, email: EmailMessage) => Promise<ActionPr
 /**
  * Mapping catégorie triage → handler.
  *
- * candidat → handleAClassifier en V1 (pas de handler dédié).
+ * candidat → handleCandidat (handler dédié depuis Jalon 4D-1).
  * spam (confidence ≤ 0.9) → handleAClassifier (carte Telegram quand même).
  */
 function getHandler(category: string): HandlerFn {
@@ -80,6 +81,7 @@ function getHandler(category: string): HandlerFn {
     case 'apporteur':
       return handleApporteur;
     case 'candidat':
+      return handleCandidat;
     case 'a-classifier':
     case 'spam':
     default:

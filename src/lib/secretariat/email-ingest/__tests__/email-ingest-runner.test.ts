@@ -55,12 +55,14 @@ const mockHandleLocataire = vi.fn().mockResolvedValue([]);
 const mockHandleAClassifier = vi.fn().mockResolvedValue([]);
 const mockHandleContactPro = vi.fn().mockResolvedValue([]);
 const mockHandleApporteur = vi.fn().mockResolvedValue([]);
+const mockHandleCandidat = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../handlers', () => ({
   handleLocataire: (...args: unknown[]) => mockHandleLocataire(...args),
   handleAClassifier: (...args: unknown[]) => mockHandleAClassifier(...args),
   handleContactPro: (...args: unknown[]) => mockHandleContactPro(...args),
   handleApporteur: (...args: unknown[]) => mockHandleApporteur(...args),
+  handleCandidat: (...args: unknown[]) => mockHandleCandidat(...args),
 }));
 
 const mockSavePending = vi.fn().mockResolvedValue(undefined);
@@ -273,15 +275,19 @@ describe('runEmailIngest', () => {
     expect(mockHandleApporteur).toHaveBeenCalled();
   });
 
-  it('dispatch candidat vers handleAClassifier (V1)', async () => {
+  it('dispatch candidat vers handleCandidat (handler dédié depuis Jalon 4D-1)', async () => {
     const email = makeEmail({ id: 'msg_cand' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_cand' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'candidat' }));
+    mockHandleCandidat.mockResolvedValue([
+      { type: 'create_file', target: 'test', payload: {}, description: 'Test' },
+    ]);
 
     await runEmailIngest();
 
-    expect(mockHandleAClassifier).toHaveBeenCalled();
+    expect(mockHandleCandidat).toHaveBeenCalled();
+    expect(mockHandleAClassifier).not.toHaveBeenCalled();
   });
 
   it('dispatch spam confidence ≤ 0.9 vers handleAClassifier + carte Telegram', async () => {

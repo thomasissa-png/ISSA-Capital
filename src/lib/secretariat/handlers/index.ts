@@ -8,4 +8,5 @@ export { handleAClassifier } from './a-classifier';
 export { handleContactPro } from './contact-pro';
 export { handleLocataire } from './locataire';
 export { handleApporteur } from './apporteur';
+export { handleCandidat } from './candidat';
 export type { ActionProposal, ActionType, EmailHandler } from './types';
