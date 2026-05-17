@@ -1640,8 +1640,9 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Email-ingest validation — callbacks préfixés par "email_val:"
-      if (callbackData.startsWith('email_val:')) {
+      // Email-ingest validation — callbacks préfixés par "email_val:" ou "email_nomatch:"
+      // (handleTelegramCallback dispatch en interne entre les 2 préfixes)
+      if (callbackData.startsWith('email_val:') || callbackData.startsWith('email_nomatch:')) {
         await handleEmailValCallback({
           callback_query_id: callbackQueryId,
           data: callbackData,
