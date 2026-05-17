@@ -1068,3 +1068,58 @@ Tout état interactif que Thomas doit valider manuellement : TTL minimum **7 jou
 - TODO #1 (section Tonalité dans `Thomas Issa.md` vault) : **toujours bloquant 5B**. Fallback tonalité générique acceptable si Thomas tarde.
 - TODO #2 (re-test E2E TTL 7j) : indépendant de S15.
 - TODO #3/#4 (encadrement loyers, IRL INSEE) : hors scope S15.
+
+---
+
+## Session 15 — Jalon 5A : Cron email-ingest 1h (Replit scheduled task)
+
+**Date** : 2026-05-17
+
+### Architecture
+
+```
+src/app/api/secretariat/cron-email-ingest/
+├── route.ts             # GET handler — auth Bearer + appel runEmailIngest()
+└── __tests__/
+    └── route.test.ts    # 8 tests (auth, happy path, erreurs)
+```
+
+### Décisions
+
+**1. GET au lieu de POST pour le cron**
+
+Replit scheduled tasks envoient des requêtes GET par défaut. L'endpoint existant `/api/secretariat/email-ingest` est en POST (trigger manuel). Le nouvel endpoint cron est en GET pour coller au comportement Replit sans configuration supplémentaire.
+
+**2. Auth par header Authorization: Bearer (pas query param)**
+
+L'endpoint existant utilise `?secret=` (query param). Pour le cron, on utilise le header `Authorization: Bearer <CRON_SECRET>` — meilleure pratique (le secret n'apparaît pas dans les logs d'URL). Replit scheduled tasks supportent les headers custom.
+
+**3. Pas de déduplication messageId supplémentaire**
+
+La déduplication est déjà native dans le pipeline :
+- `listUnprocessed()` requête Gmail avec `-label:Anya/traité` — les emails déjà traités sont exclus par Gmail lui-même
+- `markProcessed(messageId)` pose le label après traitement réussi
+- Même si le cron fire 2x en rafale, le second appel verra 0 email non traité (le label est posé entre-temps)
+
+Un store de messageIds séparé serait redondant et ajouterait une complexité inutile.
+
+**4. Configuration Replit scheduled task**
+
+Pas de fichier `.replit` dans le repo (le projet est déjà déployé sur Replit sans). La configuration du scheduled task se fait via le Dashboard Replit :
+1. Aller dans l'onglet "Deployments" → "Scheduled tasks" (ou "Cron jobs")
+2. Ajouter un job : `GET https://<domain>/api/secretariat/cron-email-ingest`
+3. Header : `Authorization: Bearer <valeur de CRON_SECRET dans Replit Secrets>`
+4. Schedule : `0 * * * *` (toutes les heures, minute 0)
+
+### Actions manuelles Thomas
+
+1. **Ajouter le secret Replit** : dans l'onglet "Secrets" de Replit, ajouter `CRON_SECRET` = `openssl rand -hex 32`
+2. **Configurer le scheduled task** : voir étapes ci-dessus (Dashboard Replit → Deployments → Scheduled tasks)
+3. **Vérifier** : après 1h, checker les logs Replit pour `[cron-email-ingest] terminé`
+
+### Fichiers ajoutés
+
+- `src/app/api/secretariat/cron-email-ingest/route.ts` — endpoint GET
+- `src/app/api/secretariat/cron-email-ingest/__tests__/route.test.ts` — 8 tests
+- `.env.example` — ajout `CRON_SECRET`
+- `docs/dev-decisions.md` — cette section

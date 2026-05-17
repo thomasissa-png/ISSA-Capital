@@ -44,6 +44,7 @@ import {
 } from '../telegram-validation';
 import type { NoMatchPending } from '../telegram-validation';
 import { writeAuditLog } from '../vault-client/audit-log';
+import { createTickTickTaskForEmail } from './ticktick-integration';
 
 // ============================================================
 // Types
@@ -336,6 +337,17 @@ async function processOneEmail(
         `[email-ingest] erreur envoi carte no-match pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+  }
+
+  // Créer une tâche TickTick pour les emails nécessitant une action
+  // (toutes les catégories sauf spam auto-filtré — ceux qui arrivent ici sont actionnables)
+  try {
+    await createTickTickTaskForEmail(detail, triage);
+  } catch (err) {
+    // Non bloquant — la tâche TickTick est un bonus, pas un prérequis
+    console.warn(
+      `[email-ingest] erreur création tâche TickTick pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   stats.pendingCreated++;
