@@ -851,3 +851,98 @@ Décision Thomas : la destination unique du workflow Bail est `02. Projets/01. P
 - `src/lib/secretariat/email-ingest/__tests__/email-ingest-runner.test.ts` — test dispatch candidat mis à jour
 - `docs/dev-decisions.md` — cette section
 - `project-context.md` — historique mis à jour
+
+---
+
+## Jalon 4D-2 — No-match : UX 5 boutons au lieu de stub auto (2026-05-17)
+
+> Sources amont : docs/dev-decisions.md (Jalon 4D-1), second-cerveau/Anya - Plan email-ingest.md
+
+### Problème résolu
+
+Quand un email arrive d'un expéditeur inconnu (pas de fiche contact dans le vault), les handlers `contact-pro` et `locataire` créaient automatiquement une fiche stub dans le dossier cible. Problème : (a) le nom/prénom parsé depuis l'en-tête `From:` est souvent incomplet ou erroné, (b) le classement automatique (pro vs famille vs amis) n'est pas fiable sans input humain, (c) Thomas se retrouve avec des fiches à corriger manuellement.
+
+### Décision : validation humaine via carte Telegram secondaire
+
+Au lieu de créer une fiche stub automatiquement, le pipeline :
+1. Dépose l'email dans `05. Notes/A classifier/` (zone tampon, pas de classement prématuré)
+2. Envoie une carte Telegram principale (validation des actions habituelles, sans l'action `prompt_create_contact_choice`)
+3. Envoie une carte Telegram secondaire avec 5 boutons : Pro / Famille / Amis / Autres / Skip
+
+Thomas choisit le type de contact. Le callback handler crée alors la fiche dans le bon dossier vault avec le bon frontmatter. Si Thomas clique Skip, aucune fiche n'est créée.
+
+### Nouveau type d'action : `prompt_create_contact_choice`
+
+Ajouté dans le union type `ActionType` (déjà présent depuis la préparation 4D-1). Ce type est **filtré** du `PendingValidation` dans le runner : il ne fait pas partie des actions soumises à la validation principale. Il sert uniquement de signal pour déclencher le flux no-match secondaire.
+
+Payload :
+```typescript
+{
+  emailFrom: string;
+  nameFrom: string | null;
+  defaultType: ContactType; // 'pro' | 'famille' | 'amis' | 'autres'
+  emailMessageId: string;
+  emailThreadRef: string;
+}
+```
+
+### Store séparé : `nomatch-pendings.json`
+
+Les no-match pendings sont stockés dans un fichier Drive séparé (`_Inbox/AnyaState/nomatch-pendings.json`), distinct du `pending-validations.json` existant. Raisons :
+- Cycle de vie différent (la validation principale et le choix no-match sont indépendants)
+- Mutex séparé pour éviter les contentions
+- Purge TTL indépendante (même durée 48h)
+
+Fonctions : `saveNoMatch`, `getNoMatch`, `deleteNoMatch`, `purgeExpiredNoMatch`.
+
+### Callback prefix : `email_nomatch:`
+
+Les boutons de la carte no-match utilisent le préfixe `email_nomatch:` (vs `email_val:` pour la validation principale). Format du `callback_data` : `email_nomatch:<type>:<noMatchId>`.
+
+Le dispatch dans `handleTelegramCallback()` route vers `handleNoMatchDispatch()` si le préfixe correspond. Ce handler :
+- **Pro/Famille/Amis/Autres** : crée la fiche contact dans le dossier vault correspondant (`VAULT_PATHS.contactsPro`, `contactsFamille`, `contactsAmis`, `contactsAutres`), supprime le noMatch pending, édite le message Telegram avec confirmation
+- **Skip** : supprime le noMatch pending, édite le message Telegram avec "Skippé"
+
+### Mapping type → dossier vault
+
+| Type | Dossier vault |
+|------|---------------|
+| pro | `07. Contacts/03. Pro/` |
+| famille | `07. Contacts/01. Famille/` |
+| amis | `07. Contacts/02. Amis/` |
+| autres | `07. Contacts/04. Autres/` |
+
+### Handler candidat : exclu du no-match
+
+Le handler `candidat.ts` conserve son comportement d'origine (création automatique dans `_Candidats/`). Un candidat sans fiche contact = un vrai nouveau candidat, le workflow est légitime.
+
+### Tests
+
++40 tests (906 → 946 total) répartis sur 6 fichiers :
+- `handlers/__tests__/contact-pro.test.ts` : 15 tests (réécrits pour no-match)
+- `handlers/__tests__/locataire.test.ts` : 16 tests (réécrits pour no-match)
+- `telegram-validation/__tests__/no-match-card.test.ts` : 14 tests (nouveau fichier)
+- `telegram-validation/__tests__/callback-handler.test.ts` : +12 tests no-match dispatch
+- `telegram-validation/__tests__/pending-store.test.ts` : +8 tests NoMatch store
+- `email-ingest/__tests__/email-ingest-runner.test.ts` : +4 tests flux no-match
+
+### Fichiers
+
+**Nouveaux** :
+- `src/lib/secretariat/telegram-validation/no-match-card.ts` — carte Telegram 5 boutons + envoi
+- `src/lib/secretariat/telegram-validation/__tests__/no-match-card.test.ts` — 14 tests
+
+**Modifiés** :
+- `src/lib/secretariat/handlers/contact-pro.ts` — `buildNoMatchActions` remplace `buildNewContactActions`
+- `src/lib/secretariat/handlers/locataire.ts` — `buildUnknownLocataireActions` → A classifier + prompt
+- `src/lib/secretariat/telegram-validation/pending-store.ts` — fonctions NoMatch store (fichier+mutex séparés)
+- `src/lib/secretariat/telegram-validation/callback-handler.ts` — dispatch `email_nomatch:` callbacks
+- `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — filtre prompt + envoi carte secondaire
+- `src/lib/secretariat/telegram-validation/index.ts` — re-exports NoMatch
+- `src/lib/secretariat/handlers/__tests__/contact-pro.test.ts` — tests réécrits
+- `src/lib/secretariat/handlers/__tests__/locataire.test.ts` — tests réécrits
+- `src/lib/secretariat/telegram-validation/__tests__/callback-handler.test.ts` — +12 tests
+- `src/lib/secretariat/telegram-validation/__tests__/pending-store.test.ts` — +8 tests
+- `src/lib/secretariat/email-ingest/__tests__/email-ingest-runner.test.ts` — +4 tests
+- `docs/dev-decisions.md` — cette section
+- `project-context.md` — historique mis à jour
