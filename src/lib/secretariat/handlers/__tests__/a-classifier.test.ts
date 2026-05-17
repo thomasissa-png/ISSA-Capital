@@ -2,18 +2,22 @@
  * Tests unitaires — handler a-classifier.
  *
  * Vérifie :
- * - Création du fichier dans le bon dossier (05. Notes/A classifier/)
- * - Nom de fichier avec date + sujet sanitizé
+ * - Création du fichier dans VAULT_PATHS.notesAClassifier
+ * - Nom de fichier avec date + em-dash + sujet slugifié
  * - Contenu YAML frontmatter valide
- * - Sujet sanitizé (caractères interdits retirés)
+ * - Sujet slugifié (accents retirés, caractères interdits retirés)
  * - Corps tronqué si > 1000 caractères
  * - Sujet vide → fallback "sans-objet"
  * - mark_processed en dernière action
  * - Infos triage (intent, confidence) dans le frontmatter
+ * - Référence email Gmail dans le résumé triage
+ *
+ * Fix Jalon 4D-1 : path via VAULT_PATHS, slugify, em-dash, ref email.
  */
 
 import { describe, it, expect } from 'vitest';
 import { handleAClassifier } from '../a-classifier';
+import { VAULT_PATHS, EM_DASH } from '../vault-paths';
 import type { TriageResult } from '../../triage/types';
 import type { EmailMessage } from '../../gmail-source/types';
 
@@ -61,11 +65,13 @@ describe('handleAClassifier', () => {
     expect(actions[1]!.type).toBe('mark_processed');
   });
 
-  it('crée le fichier dans 05. Notes/A classifier/ avec le bon nom', async () => {
+  it('crée le fichier dans VAULT_PATHS.notesAClassifier avec em-dash et sujet slugifié', async () => {
     const actions = await handleAClassifier(makeTriage(), makeEmail());
-    expect(actions[0]!.target).toBe(
-      '05. Notes/A classifier/2026-05-13 - Proposition de service.md',
-    );
+    const target = actions[0]!.target as string;
+
+    expect(target).toContain(VAULT_PATHS.notesAClassifier);
+    expect(target).toContain('05. Notes/A classifier');
+    expect(target).toContain(`2026-05-13 ${EM_DASH} Proposition de service.md`);
   });
 
   it('contient le frontmatter YAML avec les champs triage', async () => {
@@ -86,7 +92,7 @@ describe('handleAClassifier', () => {
     expect(content).toContain('Jean Inconnu <inconnu@example.com>');
   });
 
-  it('sanitize les caractères interdits du sujet dans le nom de fichier', async () => {
+  it('slugifie les caractères interdits et accents dans le nom de fichier', async () => {
     const email = makeEmail({ subject: 'Re: Offre "spéciale" <urgent>' });
     const actions = await handleAClassifier(makeTriage(), email);
 
@@ -94,16 +100,16 @@ describe('handleAClassifier', () => {
     expect(target).not.toContain('<');
     expect(target).not.toContain('>');
     expect(target).not.toContain('"');
-    expect(target).toContain('Re Offre spéciale urgent');
+    // slugifyVaultFilename retire accents : spéciale → speciale
+    expect(target).toContain('Re Offre speciale urgent');
   });
 
   it('utilise "sans-objet" si le sujet est vide', async () => {
     const email = makeEmail({ subject: '' });
     const actions = await handleAClassifier(makeTriage(), email);
 
-    expect(actions[0]!.target).toBe(
-      '05. Notes/A classifier/2026-05-13 - sans-objet.md',
-    );
+    const target = actions[0]!.target as string;
+    expect(target).toContain('sans-objet');
   });
 
   it('tronque le corps à 1000 caractères avec indicateur [... tronqué]', async () => {
@@ -137,25 +143,34 @@ describe('handleAClassifier', () => {
     expect(markProcessed.target).toBeNull();
   });
 
-  it('tronque le sujet à 60 caractères dans le nom de fichier', async () => {
-    const longSubject = 'A'.repeat(80);
+  it('slugifie le sujet à max 80 caractères dans le nom de fichier', async () => {
+    const longSubject = 'A'.repeat(100);
     const email = makeEmail({ subject: longSubject });
     const actions = await handleAClassifier(makeTriage(), email);
 
     const target = actions[0]!.target as string;
     const filename = target.split('/').pop()!;
-    // "2026-05-13 - " (14 chars) + 60 chars + ".md" (3 chars) = 77 chars max
-    const subjectPart = filename.replace('2026-05-13 - ', '').replace('.md', '');
-    expect(subjectPart.length).toBeLessThanOrEqual(60);
+    // "2026-05-13 — " (prefix) + slugified subject (max 80) + ".md" (3)
+    // slugifyVaultFilename truncates to 80, so subject part ≤ 80
+    const parts = filename.replace('.md', '').split(` ${EM_DASH} `);
+    expect(parts[1]!.length).toBeLessThanOrEqual(80);
   });
 
-  it('inclut le résumé triage et le lien rawRef dans le contenu', async () => {
+  it('inclut la référence email Gmail dans le résumé triage', async () => {
     const triage = makeTriage({ summary: 'Résumé test spécifique.' });
-    const email = makeEmail({ rawRef: 'https://mail.google.com/special' });
+    const email = makeEmail({ id: 'msg_gmail_ref_test' });
     const actions = await handleAClassifier(triage, email);
     const content = actions[0]!.payload.content as string;
 
     expect(content).toContain('Résumé test spécifique.');
+    expect(content).toContain('(cf. thread Gmail msg_gmail_ref_test)');
+  });
+
+  it('inclut le lien rawRef dans le contenu', async () => {
+    const email = makeEmail({ rawRef: 'https://mail.google.com/special' });
+    const actions = await handleAClassifier(makeTriage(), email);
+    const content = actions[0]!.payload.content as string;
+
     expect(content).toContain('https://mail.google.com/special');
   });
 

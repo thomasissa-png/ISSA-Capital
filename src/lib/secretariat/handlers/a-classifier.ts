@@ -6,11 +6,18 @@
  * avec la date, le sujet et le résumé du triage.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §1.
+ * Fix Jalon 4D-1 : path via VAULT_PATHS, slugify filename, em-dash, ref email.
  */
 
 import type { TriageResult } from '../triage/types';
 import type { EmailMessage } from '../gmail-source/types';
 import type { ActionProposal } from './types';
+import {
+  VAULT_PATHS,
+  slugifyVaultFilename,
+  buildEmailRef,
+  EM_DASH,
+} from './vault-paths';
 
 /**
  * Génère les actions pour un email classé "a-classifier" ou "autre".
@@ -23,15 +30,16 @@ export async function handleAClassifier(
   email: EmailMessage,
 ): Promise<ActionProposal[]> {
   const date = email.receivedAt.toISOString().slice(0, 10);
-  const safeSubject = sanitizeFilename(email.subject || 'sans-objet');
-  const filename = `${date} - ${safeSubject}.md`;
-  const target = `05. Notes/A classifier/${filename}`;
+  const safeSubject = slugifyVaultFilename(email.subject || 'sans-objet');
+  const filename = `${date} ${EM_DASH} ${safeSubject}.md`;
+  const target = `${VAULT_PATHS.notesAClassifier}/${filename}`;
 
   // Contenu du fichier .md
   const fromDisplay = email.from.name
     ? `${email.from.name} <${email.from.email}>`
     : email.from.email;
 
+  const emailRef = buildEmailRef(email.source, email.id);
   const bodyPreview = email.bodyPlain.slice(0, 1000).trim();
 
   const content = [
@@ -52,7 +60,7 @@ export async function handleAClassifier(
     '',
     `### Résumé triage`,
     '',
-    triage.summary,
+    `${triage.summary} ${emailRef}`,
     '',
     `### Contenu`,
     '',
@@ -80,19 +88,6 @@ export async function handleAClassifier(
 // ============================================================
 // Utilitaires
 // ============================================================
-
-/**
- * Nettoie un sujet email pour en faire un nom de fichier valide.
- * Retire les caractères interdits et tronque à 60 caractères.
- */
-function sanitizeFilename(subject: string): string {
-  return subject
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 60)
-    || 'sans-objet';
-}
 
 /**
  * Échappe les guillemets doubles pour les valeurs YAML.

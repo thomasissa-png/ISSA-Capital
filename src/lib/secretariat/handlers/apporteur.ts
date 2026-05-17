@@ -4,14 +4,22 @@
  * Gère les emails identifiés comme provenant d'un apporteur d'affaires.
  * Extrait les informations bien (adresse, prix, surface, rendement)
  * via regex depuis le corps de l'email, puis crée une fiche bien stub
- * dans le pipeline immobilier.
+ * dans le dossier Opportunités.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §4.
+ * Fix Jalon 4D-1 : path corrigé vers VAULT_PATHS.opportunitesApporteurs.
  */
 
 import type { TriageResult } from '../triage/types';
 import type { EmailMessage } from '../gmail-source/types';
 import type { ActionProposal } from './types';
+import {
+  VAULT_PATHS,
+  slugifyVaultFilename,
+  buildEmailRef,
+  buildHistoriqueTitle,
+  EM_DASH,
+} from './vault-paths';
 
 // ============================================================
 // Handler principal
@@ -31,8 +39,8 @@ export async function handleApporteur(
   const date = email.receivedAt.toISOString().slice(0, 10);
   const infos = extractBienInfos(email.bodyPlain);
   const stubName = buildStubName(date, infos.adresse);
-  const filename = `${stubName}.md`;
-  const target = `02. Projets/Immobilier/Pipeline/${filename}`;
+  const filename = `${slugifyVaultFilename(stubName)}.md`;
+  const target = `${VAULT_PATHS.opportunitesApporteurs}/${filename}`;
 
   const content = buildBienStubContent(email, triage, infos, date);
 
@@ -193,6 +201,7 @@ function buildStubName(date: string, adresse: string | null): string {
 
 /**
  * Construit le contenu Markdown de la fiche bien stub.
+ * Inclut une section Historique avec em-dash et ref email (Cowork D3).
  */
 function buildBienStubContent(
   email: EmailMessage,
@@ -203,10 +212,11 @@ function buildBienStubContent(
   const fromDisplay = email.from.name
     ? `${email.from.name} <${email.from.email}>`
     : email.from.email;
+  const emailRef = buildEmailRef(email.source, email.id);
 
   return [
     '---',
-    `statut: à qualifier`,
+    `statut: a qualifier`,
     `source: email-ingest`,
     `apporteur: "${fromDisplay}"`,
     `date_reception: ${date}`,
@@ -216,7 +226,7 @@ function buildBienStubContent(
     infos.rendement ? `rendement: "${infos.rendement}"` : 'rendement: ""',
     '---',
     '',
-    `# Bien — ${infos.adresse || 'Adresse à compléter'}`,
+    `# Bien ${EM_DASH} ${infos.adresse || 'Adresse à compléter'}`,
     '',
     '## Informations clés',
     '',
@@ -232,9 +242,11 @@ function buildBienStubContent(
     `**Date** : ${email.receivedAt.toLocaleDateString('fr-FR')}`,
     `**Lien** : ${email.rawRef}`,
     '',
-    `### Résumé triage`,
+    '## Historique',
     '',
-    triage.summary,
+    buildHistoriqueTitle(date, 'Réception opportunité'),
+    '',
+    `${triage.summary} ${emailRef}`,
     '',
   ].join('\n');
 }

@@ -6,12 +6,19 @@
  * l'historique + update frontmatter. Sinon, crée une nouvelle fiche.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §2.
+ * Fix Jalon 4D-1 : paths vault corrigés (07. Contacts/03. Pro, pas 01. Pro).
  */
 
 import type { TriageResult } from '../triage/types';
 import type { EmailMessage } from '../gmail-source/types';
 import type { ActionProposal } from './types';
 import { findContactByEmail } from '../vault-client';
+import {
+  VAULT_PATHS,
+  slugifyVaultFilename,
+  buildEmailRef,
+  buildHistoriqueTitle,
+} from './vault-paths';
 
 // ============================================================
 // Handler principal
@@ -47,8 +54,9 @@ function buildExistingContactActions(
   contact: { name: string; folderPath: string },
   date: string,
 ): ActionProposal[] {
-  const filename = `${contact.name}.md`;
+  const filename = `${slugifyVaultFilename(contact.name)}.md`;
   const target = `${contact.folderPath}/${filename}`;
+  const emailRef = buildEmailRef(email.source, email.id);
 
   return [
     {
@@ -56,8 +64,9 @@ function buildExistingContactActions(
       target,
       payload: {
         section: triage.intent,
-        content: triage.summary,
+        content: `${triage.summary} ${emailRef}`,
         date: email.receivedAt.toISOString(),
+        title: buildHistoriqueTitle(date, triage.intent),
       },
       description: `Ajouter à l'historique de ${contact.name} : ${triage.intent}`,
     },
@@ -86,8 +95,9 @@ function buildNewContactActions(
   date: string,
 ): ActionProposal[] {
   const displayName = extractDisplayName(email.from);
-  const filename = `${displayName}.md`;
-  const target = `07. Contacts/01. Pro/${filename}`;
+  const slugName = slugifyVaultFilename(displayName);
+  const filename = `${slugName}.md`;
+  const target = `${VAULT_PATHS.contactsPro}/${filename}`;
 
   const content = buildNewContactContent(email, triage, displayName, date);
 
@@ -131,6 +141,7 @@ function extractDisplayName(from: { email: string; name?: string }): string {
 
 /**
  * Construit le contenu Markdown d'une nouvelle fiche contact pro.
+ * Frontmatter aligné sur le format réel du vault (cf. Cowork D1).
  */
 function buildNewContactContent(
   email: EmailMessage,
@@ -138,23 +149,31 @@ function buildNewContactContent(
   displayName: string,
   date: string,
 ): string {
+  const emailRef = buildEmailRef(email.source, email.id);
+
   return [
     '---',
-    `nom: "${displayName}"`,
-    `email: "${email.from.email}"`,
-    `type: pro`,
-    `date_creation: ${date}`,
+    'type: contact',
+    'categorie: pro',
+    'societe: ',
+    'role: ',
+    `email: ${email.from.email}`,
+    'telephone: ',
+    'rencontre_via: ',
+    `date_premier_contact: ${date}`,
     `date_derniere_interaction: ${date}`,
-    `source: email-ingest`,
+    'classification: ',
+    'tags:',
+    '  - pro',
     '---',
     '',
     `# ${displayName}`,
     '',
     '## Historique',
     '',
-    `### ${date} — ${triage.intent}`,
+    buildHistoriqueTitle(date, triage.intent),
     '',
-    triage.summary,
+    `${triage.summary} ${emailRef}`,
     '',
   ].join('\n');
 }

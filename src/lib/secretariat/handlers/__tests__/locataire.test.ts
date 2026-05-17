@@ -3,13 +3,15 @@
  *
  * Vérifie :
  * - Fiche trouvée : append_historique + update_frontmatter + mark_processed
- * - Intent quittance → add_todo supplémentaire
+ * - Intent quittance → add_todo supplémentaire avec target VAULT_PATHS.todoMd
  * - Intent non-quittance → pas d'add_todo
  * - Locataire inconnu (fiche non trouvée) → warning add_todo + mark_processed
- * - Cibles et payloads corrects
+ * - Cibles et payloads corrects (slugified, em-dash, ref Gmail)
  * - mark_processed toujours en dernière position
  * - Regex quittance case-insensitive
  * - Description humaine correcte dans chaque action
+ *
+ * Fix Jalon 4D-1 : paths via VAULT_PATHS, slugify, em-dash, ref email.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -33,6 +35,7 @@ vi.mock('../../vault-client', () => ({
 // ============================================================
 
 import { handleLocataire } from '../locataire';
+import { VAULT_PATHS } from '../vault-paths';
 
 // ============================================================
 // Fixtures
@@ -107,6 +110,15 @@ describe('handleLocataire', () => {
     expect(todoAction.payload.priority).toBe('P1');
   });
 
+  it('add_todo cible 03. Tâches/Todo.md (pas null)', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingLocataire);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    const todoAction = actions[2]!;
+    expect(todoAction.target).toBe(VAULT_PATHS.todoMd);
+    expect(todoAction.target).toBe('03. Tâches/Todo.md');
+  });
+
   // --- Locataire connu, intent non-quittance ---
 
   it('retourne 3 actions si locataire connu + intent non-quittance', async () => {
@@ -120,7 +132,7 @@ describe('handleLocataire', () => {
     expect(actions[2]!.type).toBe('mark_processed');
   });
 
-  it('cible la fiche locataire au bon chemin', async () => {
+  it('cible la fiche locataire au bon chemin (slugified)', async () => {
     mocks.findContactByEmail.mockResolvedValue(existingLocataire);
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
@@ -129,14 +141,17 @@ describe('handleLocataire', () => {
     expect(actions[1]!.target).toBe(expectedTarget);
   });
 
-  it('payload append_historique contient section, content et date ISO', async () => {
+  it('payload append_historique contient section, content avec ref Gmail, date ISO et title em-dash', async () => {
     mocks.findContactByEmail.mockResolvedValue(existingLocataire);
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
     const payload = actions[0]!.payload;
     expect(payload.section).toBe('demande_quittance_mai');
-    expect(payload.content).toBe('Demande de quittance pour le mois de mai 2026.');
+    expect(payload.content).toContain('Demande de quittance pour le mois de mai 2026.');
+    expect(payload.content).toContain('(cf. thread Gmail msg_loc_001)');
     expect(payload.date).toBe('2026-05-13T09:00:00.000Z');
+    expect(payload.title).toBe('### 2026-05-13 — demande_quittance_mai');
+    expect(payload.title).toContain('—');
   });
 
   it('payload update_frontmatter contient la date YYYY-MM-DD', async () => {
@@ -144,6 +159,18 @@ describe('handleLocataire', () => {
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
     expect(actions[1]!.payload.date_derniere_interaction).toBe('2026-05-13');
+  });
+
+  // --- Slugify filename ---
+
+  it('slugifie les accents dans le nom de fichier', async () => {
+    mocks.findContactByEmail.mockResolvedValue({
+      ...existingLocataire,
+      name: 'Hélla Taoutaou',
+    });
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+
+    expect(actions[0]!.target).toContain('Hella Taoutaou.md');
   });
 
   // --- Détection quittance case-insensitive ---

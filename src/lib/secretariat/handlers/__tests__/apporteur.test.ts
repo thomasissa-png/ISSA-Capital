@@ -3,18 +3,22 @@
  *
  * Vérifie :
  * - Extraction regex : adresse, prix, surface, rendement
- * - Création fichier stub dans le bon dossier pipeline
- * - Nom du stub avec date + adresse courte
- * - Stub sans adresse → "Bien à identifier"
+ * - Création fichier stub dans VAULT_PATHS.opportunitesApporteurs
+ * - Nom du stub slugifié avec date + adresse courte
+ * - Stub sans adresse → "Bien a identifier" (slugified)
  * - Infos manquantes (adresse ou prix) → add_todo
  * - Infos complètes → pas d'add_todo
  * - Contenu du frontmatter (statut, source, apporteur, etc.)
+ * - Section Historique avec em-dash + ref Gmail
  * - mark_processed en dernière position
  * - Extraction patterns variés (150k €, 850k €, 7.5%, 85 m²)
+ *
+ * Fix Jalon 4D-1 : path corrigé + slugify + em-dash + ref email.
  */
 
 import { describe, it, expect } from 'vitest';
 import { handleApporteur, extractBienInfos } from '../apporteur';
+import { VAULT_PATHS } from '../vault-paths';
 import type { TriageResult } from '../../triage/types';
 import type { EmailMessage } from '../../gmail-source/types';
 
@@ -109,8 +113,6 @@ describe('extractBienInfos', () => {
   });
 
   it('ne matche pas un prix à 6 chiffres avec espaces (limité au pattern regex)', () => {
-    // Le regex couvre \d{2,3}\d{3}\d{3} (8-9 chiffres) et \d{2,4}k
-    // Les prix 6 chiffres standard (850 000) doivent utiliser le format "850k €"
     const body = 'Prix demandé : 850 000 €';
     const infos = extractBienInfos(body);
     expect(infos.prix).toBeNull();
@@ -155,29 +157,31 @@ describe('extractBienInfos', () => {
 // ============================================================
 
 describe('handleApporteur', () => {
-  it('crée le fichier stub dans 02. Projets/Immobilier/Pipeline/', async () => {
+  it('crée le fichier stub dans VAULT_PATHS.opportunitesApporteurs', async () => {
     const actions = await handleApporteur(makeTriage(), makeEmail());
 
     expect(actions[0]!.type).toBe('create_file');
-    expect(actions[0]!.target).toContain('02. Projets/Immobilier/Pipeline/');
+    expect(actions[0]!.target).toContain(VAULT_PATHS.opportunitesApporteurs);
+    expect(actions[0]!.target).toContain('02. Projets/01. Perso/Immobilier Direct/Opportunités');
+    expect(actions[0]!.target).not.toContain('Pipeline');
   });
 
-  it('nom du stub contient la date et l\'adresse courte', async () => {
+  it('nom du stub contient la date et l\'adresse courte (slugified)', async () => {
     const actions = await handleApporteur(makeTriage(), makeEmail());
     const target = actions[0]!.target as string;
 
     expect(target).toContain('2026-05-13');
-    expect(target).toContain('rue de la République');
+    expect(target).toContain('rue de la Republique');
   });
 
-  it('utilise "Bien à identifier" si pas d\'adresse', async () => {
+  it('utilise "Bien a identifier" si pas d\'adresse (slugified)', async () => {
     const email = makeEmail({
       bodyPlain: 'Bonjour, j\'ai un bien intéressant pour vous. Appelez-moi.',
     });
     const actions = await handleApporteur(makeTriage(), email);
     const target = actions[0]!.target as string;
 
-    expect(target).toContain('Bien à identifier');
+    expect(target).toContain('Bien a identifier');
   });
 
   it('pas d\'add_todo si adresse ET prix sont présents', async () => {
@@ -225,7 +229,7 @@ describe('handleApporteur', () => {
     const actions = await handleApporteur(makeTriage(), makeEmail());
     const content = actions[0]!.payload.content as string;
 
-    expect(content).toContain('statut: à qualifier');
+    expect(content).toContain('statut: a qualifier');
     expect(content).toContain('source: email-ingest');
     expect(content).toContain('apporteur: "Carl Delacroix <carl@apporteur.com>"');
     expect(content).toContain('date_reception: 2026-05-13');
@@ -239,6 +243,16 @@ describe('handleApporteur', () => {
     expect(content).toContain('850k €');
     expect(content).toContain('320 m²');
     expect(content).toContain('7,5 %');
+  });
+
+  it('contenu du stub contient une section Historique avec em-dash et ref Gmail', async () => {
+    const actions = await handleApporteur(makeTriage(), makeEmail());
+    const content = actions[0]!.payload.content as string;
+
+    expect(content).toContain('## Historique');
+    expect(content).toContain('### 2026-05-13 — Réception opportunité');
+    expect(content).toContain('—');
+    expect(content).toContain('(cf. thread Gmail msg_apport_001)');
   });
 
   it('mark_processed est toujours la dernière action', async () => {

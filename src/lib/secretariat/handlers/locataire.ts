@@ -7,12 +7,19 @@
  * Si non trouvée (cas anormal) → warning + add_todo.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §3.
+ * Fix Jalon 4D-1 : paths via VAULT_PATHS, slugify, em-dash, ref Gmail.
  */
 
 import type { TriageResult } from '../triage/types';
 import type { EmailMessage } from '../gmail-source/types';
 import type { ActionProposal } from './types';
 import { findContactByEmail } from '../vault-client';
+import {
+  VAULT_PATHS,
+  slugifyVaultFilename,
+  buildEmailRef,
+  buildHistoriqueTitle,
+} from './vault-paths';
 
 // ============================================================
 // Handler principal
@@ -49,8 +56,9 @@ function buildLocataireActions(
   contact: { name: string; folderPath: string },
   date: string,
 ): ActionProposal[] {
-  const filename = `${contact.name}.md`;
+  const filename = `${slugifyVaultFilename(contact.name)}.md`;
   const target = `${contact.folderPath}/${filename}`;
+  const emailRef = buildEmailRef(email.source, email.id);
 
   const actions: ActionProposal[] = [
     {
@@ -58,8 +66,9 @@ function buildLocataireActions(
       target,
       payload: {
         section: triage.intent,
-        content: triage.summary,
+        content: `${triage.summary} ${emailRef}`,
         date: email.receivedAt.toISOString(),
+        title: buildHistoriqueTitle(date, triage.intent),
       },
       description: `Ajouter à l'historique de ${contact.name} : ${triage.intent}`,
     },
@@ -71,11 +80,11 @@ function buildLocataireActions(
     },
   ];
 
-  // Détection intent quittance → action add_todo
+  // Détection intent quittance → action add_todo vers 03. Tâches/Todo.md
   if (isQuittanceIntent(triage.intent)) {
     actions.push({
       type: 'add_todo',
-      target: null,
+      target: VAULT_PATHS.todoMd,
       payload: {
         task: `Générer quittance ${triage.intent} pour ${contact.name}`,
         priority: 'P1',
