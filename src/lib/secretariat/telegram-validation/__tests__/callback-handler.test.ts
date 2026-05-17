@@ -4,10 +4,13 @@
  * Mocks : vault-client, gmail-source, pending-store, telegram, fetch global.
  * telegram-cards est utilisé réellement (fonctions pures) sauf les fonctions
  * qui font des appels réseau (editMessageText, sendSimpleMessage) — mockées via fetch.
+ *
+ * Fix Jalon 4D-2 : ajout tests pour dispatch email_nomatch: (5 boutons contact).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { PendingValidation } from '../telegram-cards';
+import type { NoMatchPending } from '../no-match-card';
 import type { TelegramCallback } from '../callback-handler';
 import { handleTelegramCallback } from '../callback-handler';
 
@@ -17,10 +20,14 @@ import { handleTelegramCallback } from '../callback-handler';
 
 const mockGetPending = vi.fn();
 const mockDeletePending = vi.fn().mockResolvedValue(undefined);
+const mockGetNoMatch = vi.fn();
+const mockDeleteNoMatch = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../pending-store', () => ({
   getPending: (...args: unknown[]) => mockGetPending(...args),
   deletePending: (...args: unknown[]) => mockDeletePending(...args),
+  getNoMatch: (...args: unknown[]) => mockGetNoMatch(...args),
+  deleteNoMatch: (...args: unknown[]) => mockDeleteNoMatch(...args),
 }));
 
 const mockAppendToHistorique = vi.fn().mockResolvedValue(true);
@@ -135,11 +142,34 @@ function makePending(overrides: Partial<PendingValidation> = {}): PendingValidat
   };
 }
 
+function makeNoMatchPending(overrides: Partial<NoMatchPending> = {}): NoMatchPending {
+  return {
+    id: 'nomatch-abc123',
+    parentPendingId: 'pending-abc123',
+    emailFrom: 'francois@exemple.com',
+    nameFrom: 'François Lambert',
+    defaultType: 'pro',
+    emailMessageId: 'msg-nm-001',
+    emailThreadRef: '(cf. thread Gmail msg-nm-001)',
+    createdAt: '2026-05-17T10:00:00Z',
+    ...overrides,
+  };
+}
+
 function makeCallback(action: string, pendingId = 'pending-abc123'): TelegramCallback {
   return {
     callback_query_id: 'cq-001',
     data: `email_val:${action}:${pendingId}`,
     message_id: 42,
+    chat_id: 123456,
+  };
+}
+
+function makeNoMatchCallback(type: string, noMatchId = 'nomatch-abc123'): TelegramCallback {
+  return {
+    callback_query_id: 'cq-nm-001',
+    data: `email_nomatch:${type}:${noMatchId}`,
+    message_id: 55,
     chat_id: 123456,
   };
 }
@@ -153,6 +183,8 @@ beforeEach(() => {
   vi.stubEnv('TELEGRAM_BOT_TOKEN', 'test-token');
   mockGetPending.mockResolvedValue(makePending());
   mockDeletePending.mockResolvedValue(undefined);
+  mockGetNoMatch.mockResolvedValue(makeNoMatchPending());
+  mockDeleteNoMatch.mockResolvedValue(undefined);
   mockAppendToHistorique.mockResolvedValue(true);
   mockUpdateFrontmatter.mockResolvedValue(true);
   mockCreateVaultFile.mockResolvedValue(true);
@@ -167,10 +199,10 @@ afterEach(() => {
 });
 
 // ============================================================
-// Tests
+// Tests — Validation principale (email_val:)
 // ============================================================
 
-describe('handleTelegramCallback', () => {
+describe('handleTelegramCallback — validation principale', () => {
   it('valider : exécute toutes les actions + markProcessed + delete pending', async () => {
     await handleTelegramCallback(makeCallback('valider'));
 
@@ -437,5 +469,127 @@ describe('handleTelegramCallback', () => {
     // Le body brut dans le <pre> devrait être tronqué (pas les 2000 A complets)
     const aCount = (msgText.match(/A/g) ?? []).length;
     expect(aCount).toBeLessThanOrEqual(1500);
+  });
+});
+
+// ============================================================
+// Tests — No-match dispatch (email_nomatch:) — Jalon 4D-2
+// ============================================================
+
+describe('handleTelegramCallback — no-match dispatch', () => {
+  it('email_nomatch:pro crée une fiche dans 07. Contacts/03. Pro/', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    expect(mockCreateVaultFile.mock.calls[0]![0]).toBe('07. Contacts/03. Pro');
+    expect(mockCreateVaultFile.mock.calls[0]![1]).toBe('Francois Lambert.md');
+
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('categorie: pro');
+    expect(content).toContain('email: francois@exemple.com');
+    expect(content).toContain('# François Lambert');
+  });
+
+  it('email_nomatch:famille crée une fiche dans 07. Contacts/01. Famille/', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('famille'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    expect(mockCreateVaultFile.mock.calls[0]![0]).toBe('07. Contacts/01. Famille');
+  });
+
+  it('email_nomatch:amis crée une fiche dans 07. Contacts/02. Amis/', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('amis'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    expect(mockCreateVaultFile.mock.calls[0]![0]).toBe('07. Contacts/02. Amis');
+  });
+
+  it('email_nomatch:autres crée une fiche dans 07. Contacts/04. Autres/', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('autres'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    expect(mockCreateVaultFile.mock.calls[0]![0]).toBe('07. Contacts/04. Autres');
+  });
+
+  it('email_nomatch:skip supprime le noMatch sans créer de fiche', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('skip'));
+
+    expect(mockCreateVaultFile).not.toHaveBeenCalled();
+    expect(mockDeleteNoMatch).toHaveBeenCalledWith('nomatch-abc123');
+  });
+
+  it('no-match skip : édite le message avec "Skippé"', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('skip'));
+
+    const editCall = telegramFetchCalls.find((c) => c.url.includes('editMessageText'));
+    expect(editCall).toBeDefined();
+    expect((editCall!.body['text'] as string)).toContain('Skippé');
+  });
+
+  it('no-match create : supprime le noMatch pending après création', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockDeleteNoMatch).toHaveBeenCalledWith('nomatch-abc123');
+  });
+
+  it('no-match create : édite le message avec "Fiche créée"', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    const editCall = telegramFetchCalls.find((c) => c.url.includes('editMessageText'));
+    expect(editCall).toBeDefined();
+    expect((editCall!.body['text'] as string)).toContain('Fiche créée');
+    expect((editCall!.body['text'] as string)).toContain('07. Contacts/03. Pro');
+  });
+
+  it('no-match create : audit JSONL', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockWriteAuditLog).toHaveBeenCalled();
+    const auditCall = mockWriteAuditLog.mock.calls[0]![0];
+    expect(auditCall.trigger).toContain('nomatch_create');
+    expect(auditCall.status).toBe('success');
+  });
+
+  it('no-match expiré : envoie message "expirée"', async () => {
+    mockGetNoMatch.mockResolvedValue(null);
+
+    await handleTelegramCallback(makeNoMatchCallback('pro', 'expired-id'));
+
+    const sendCalls = telegramFetchCalls.filter((c) => c.url.includes('sendMessage'));
+    expect(sendCalls.length).toBeGreaterThanOrEqual(1);
+    expect((sendCalls[0]!.body['text'] as string)).toContain('expirée ou introuvable');
+
+    expect(mockCreateVaultFile).not.toHaveBeenCalled();
+  });
+
+  it('no-match callback invalide (type inconnu) : pas de crash', async () => {
+    await handleTelegramCallback({
+      callback_query_id: 'cq-nm-bad',
+      data: 'email_nomatch:invalid_type:some-id',
+      message_id: 55,
+      chat_id: 123456,
+    });
+
+    expect(mockCreateVaultFile).not.toHaveBeenCalled();
+    expect(mockAnswerCallbackQuery).toHaveBeenCalledWith('cq-nm-bad');
+  });
+
+  it('no-match sans nameFrom utilise le local-part email comme nom', async () => {
+    mockGetNoMatch.mockResolvedValue(makeNoMatchPending({ nameFrom: null }));
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    // "francois@exemple.com" → local-part "francois" → "Francois"
+    expect(mockCreateVaultFile.mock.calls[0]![1]).toBe('Francois.md');
+
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('# Francois');
+  });
+
+  it('answerCallbackQuery est toujours appelé pour no-match', async () => {
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockAnswerCallbackQuery).toHaveBeenCalledWith('cq-nm-001');
   });
 });

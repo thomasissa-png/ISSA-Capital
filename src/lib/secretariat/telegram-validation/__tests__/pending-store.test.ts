@@ -7,12 +7,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { PendingValidation } from '../telegram-cards';
+import type { NoMatchPending } from '../no-match-card';
 import {
   savePending,
   getPending,
   deletePending,
   purgeExpired,
   listAllPending,
+  saveNoMatch,
+  getNoMatch,
+  deleteNoMatch,
+  purgeExpiredNoMatch,
   _resetLockForTests,
 } from '../pending-store';
 
@@ -35,18 +40,23 @@ vi.mock('../../vault-client/drive-resolver', () => ({
 
 let driveFileContent: string | null = null;
 let driveFileExists = false;
+let driveNoMatchFileContent: string | null = null;
+let driveNoMatchFileExists = false;
 const originalFetch = globalThis.fetch;
 
 function setupFetchMock(): void {
   globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
     const urlStr = String(url);
 
-    // findStoreFileId — search for pending-validations.json
+    // findStoreFileId — search for pending-validations.json or nomatch-pendings.json
     if (urlStr.includes('/drive/v3/files') && urlStr.includes('q=') && !urlStr.includes('uploadType')) {
-      if (driveFileExists) {
+      const isNoMatch = urlStr.includes('nomatch-pendings.json');
+      const exists = isNoMatch ? driveNoMatchFileExists : driveFileExists;
+      const fileId = isNoMatch ? 'mock-nomatch-file-id' : 'mock-store-file-id';
+      if (exists) {
         return {
           ok: true,
-          json: async () => ({ files: [{ id: 'mock-store-file-id' }] }),
+          json: async () => ({ files: [{ id: fileId }] }),
         };
       }
       return {
@@ -55,7 +65,19 @@ function setupFetchMock(): void {
       };
     }
 
-    // readStore — download file content
+    // readStore — download file content (pending or nomatch)
+    if (urlStr.includes('/drive/v3/files/mock-nomatch-file-id') && urlStr.includes('alt=media')) {
+      if (driveNoMatchFileContent) {
+        return {
+          ok: true,
+          json: async () => JSON.parse(driveNoMatchFileContent!),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({ version: '2026-05-13', pendings: {} }),
+      };
+    }
     if (urlStr.includes('/drive/v3/files/mock-store-file-id') && urlStr.includes('alt=media')) {
       if (driveFileContent) {
         return {
@@ -70,6 +92,10 @@ function setupFetchMock(): void {
     }
 
     // writeStore — update file content (PATCH)
+    if (urlStr.includes('/upload/drive/v3/files/mock-nomatch-file-id') && init?.method === 'PATCH') {
+      driveNoMatchFileContent = init.body as string;
+      return { ok: true };
+    }
     if (urlStr.includes('/upload/drive/v3/files/mock-store-file-id') && init?.method === 'PATCH') {
       driveFileContent = init.body as string;
       return { ok: true };
@@ -78,20 +104,30 @@ function setupFetchMock(): void {
     // createStoreFile — create new file (POST multipart)
     if (urlStr.includes('/upload/drive/v3/files') && init?.method === 'POST' && urlStr.includes('uploadType=multipart')) {
       const bodyStr = init.body as string;
-      // Extract the JSON store content (second part of the multipart)
-      const parts = bodyStr.split('===issa_pending_store===');
+      const isNoMatch = bodyStr.includes('nomatch-pendings.json');
+
+      // Extract boundary from body
+      const boundaryMatch = bodyStr.match(/^--([^\r\n]+)/);
+      const boundary = boundaryMatch ? boundaryMatch[1]! : '===issa_pending_store===';
+
+      const parts = bodyStr.split(boundary);
       if (parts.length >= 3) {
-        // The JSON content is in the 3rd part (between 2nd and 3rd boundary)
         const jsonPart = parts[2]!;
         const jsonMatch = jsonPart.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          driveFileContent = jsonMatch[0];
+          if (isNoMatch) {
+            driveNoMatchFileContent = jsonMatch[0];
+            driveNoMatchFileExists = true;
+          } else {
+            driveFileContent = jsonMatch[0];
+            driveFileExists = true;
+          }
         }
       }
-      driveFileExists = true;
+
       return {
         ok: true,
-        json: async () => ({ id: 'mock-store-file-id' }),
+        json: async () => ({ id: isNoMatch ? 'mock-nomatch-file-id' : 'mock-store-file-id' }),
       };
     }
 
@@ -146,6 +182,8 @@ function makePending(overrides: Partial<PendingValidation> = {}): PendingValidat
 beforeEach(() => {
   driveFileContent = null;
   driveFileExists = false;
+  driveNoMatchFileContent = null;
+  driveNoMatchFileExists = false;
   _resetLockForTests();
   setupFetchMock();
 });
@@ -325,5 +363,160 @@ describe('pending-store', () => {
 
     const result = await purgeExpired();
     expect(result).toBe(0);
+  });
+});
+
+// ============================================================
+// Tests — NoMatch store (Jalon 4D-2)
+// ============================================================
+
+function makeNoMatchPending(overrides: Partial<NoMatchPending> = {}): NoMatchPending {
+  return {
+    id: overrides.id ?? 'nomatch-uuid-1',
+    parentPendingId: 'parent-uuid-1',
+    emailFrom: 'francois@exemple.com',
+    nameFrom: 'François Lambert',
+    defaultType: 'pro',
+    emailMessageId: 'msg-nm-001',
+    emailThreadRef: '(cf. thread Gmail msg-nm-001)',
+    createdAt: overrides.createdAt ?? new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+describe('pending-store — NoMatch', () => {
+  it('saveNoMatch + getNoMatch : round-trip', async () => {
+    const noMatch = makeNoMatchPending({ id: 'nm-round-trip-1' });
+    await saveNoMatch(noMatch);
+
+    expect(driveNoMatchFileContent).not.toBeNull();
+    const stored = JSON.parse(driveNoMatchFileContent!);
+    expect(stored.pendings['nm-round-trip-1']).toBeDefined();
+
+    driveNoMatchFileExists = true;
+
+    const retrieved = await getNoMatch('nm-round-trip-1');
+    expect(retrieved).not.toBeNull();
+    expect(retrieved!.id).toBe('nm-round-trip-1');
+    expect(retrieved!.emailFrom).toBe('francois@exemple.com');
+    expect(retrieved!.defaultType).toBe('pro');
+  });
+
+  it('getNoMatch inexistant retourne null', async () => {
+    driveNoMatchFileExists = true;
+    driveNoMatchFileContent = JSON.stringify({
+      version: '2026-05-13',
+      pendings: {},
+    });
+
+    const result = await getNoMatch('inexistant-nm-id');
+    expect(result).toBeNull();
+  });
+
+  it('deleteNoMatch retire l\'entrée du store', async () => {
+    const noMatch = makeNoMatchPending({ id: 'nm-to-delete' });
+    driveNoMatchFileExists = true;
+    driveNoMatchFileContent = JSON.stringify({
+      version: '2026-05-13',
+      pendings: { 'nm-to-delete': noMatch },
+    });
+
+    await deleteNoMatch('nm-to-delete');
+
+    const stored = JSON.parse(driveNoMatchFileContent!);
+    expect(stored.pendings['nm-to-delete']).toBeUndefined();
+  });
+
+  it('purgeExpiredNoMatch retire les entrées > 24h', async () => {
+    const oldNoMatch = makeNoMatchPending({
+      id: 'nm-old',
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+    });
+    const recentNoMatch = makeNoMatchPending({
+      id: 'nm-recent',
+      createdAt: new Date().toISOString(),
+    });
+
+    driveNoMatchFileExists = true;
+    driveNoMatchFileContent = JSON.stringify({
+      version: '2026-05-13',
+      pendings: {
+        'nm-old': oldNoMatch,
+        'nm-recent': recentNoMatch,
+      },
+    });
+
+    const purgedCount = await purgeExpiredNoMatch();
+    expect(purgedCount).toBe(1);
+
+    const stored = JSON.parse(driveNoMatchFileContent!);
+    expect(stored.pendings['nm-old']).toBeUndefined();
+    expect(stored.pendings['nm-recent']).toBeDefined();
+  });
+
+  it('purgeExpiredNoMatch garde les entrées < 24h', async () => {
+    const recentNoMatch = makeNoMatchPending({
+      id: 'nm-fresh',
+      createdAt: new Date().toISOString(),
+    });
+
+    driveNoMatchFileExists = true;
+    driveNoMatchFileContent = JSON.stringify({
+      version: '2026-05-13',
+      pendings: { 'nm-fresh': recentNoMatch },
+    });
+
+    const purgedCount = await purgeExpiredNoMatch();
+    expect(purgedCount).toBe(0);
+
+    const stored = JSON.parse(driveNoMatchFileContent!);
+    expect(stored.pendings['nm-fresh']).toBeDefined();
+  });
+
+  it('saveNoMatch purge automatiquement les expirés', async () => {
+    const oldNoMatch = makeNoMatchPending({
+      id: 'nm-auto-purge-old',
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+    });
+
+    driveNoMatchFileExists = true;
+    driveNoMatchFileContent = JSON.stringify({
+      version: '2026-05-13',
+      pendings: { 'nm-auto-purge-old': oldNoMatch },
+    });
+
+    const fresh = makeNoMatchPending({ id: 'nm-auto-purge-new' });
+    await saveNoMatch(fresh);
+
+    const stored = JSON.parse(driveNoMatchFileContent!);
+    expect(stored.pendings['nm-auto-purge-old']).toBeUndefined();
+    expect(stored.pendings['nm-auto-purge-new']).toBeDefined();
+  });
+
+  it('NoMatch store est séparé du Pending store', async () => {
+    // Sauvegarder un pending ET un noMatch
+    const pending = makePending({ id: 'isolation-pending' });
+    const noMatch = makeNoMatchPending({ id: 'isolation-nomatch' });
+
+    await savePending(pending);
+    await saveNoMatch(noMatch);
+
+    // Vérifier que les deux stores sont indépendants
+    const pendingStored = JSON.parse(driveFileContent!);
+    const noMatchStored = JSON.parse(driveNoMatchFileContent!);
+
+    expect(pendingStored.pendings['isolation-pending']).toBeDefined();
+    expect(pendingStored.pendings['isolation-nomatch']).toBeUndefined();
+
+    expect(noMatchStored.pendings['isolation-nomatch']).toBeDefined();
+    expect(noMatchStored.pendings['isolation-pending']).toBeUndefined();
+  });
+
+  it('retourne null si getAccessToken échoue pour getNoMatch', async () => {
+    const driveUpload = await import('../../drive-upload');
+    (driveUpload.getAccessToken as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+
+    const result = await getNoMatch('any-nm-id');
+    expect(result).toBeNull();
   });
 });

@@ -5,13 +5,15 @@
  * - Fiche trouvée : append_historique + update_frontmatter + mark_processed
  * - Intent quittance → add_todo supplémentaire avec target VAULT_PATHS.todoMd
  * - Intent non-quittance → pas d'add_todo
- * - Locataire inconnu (fiche non trouvée) → warning add_todo + mark_processed
+ * - Locataire inconnu (no-match Jalon 4D-2) : create_file A classifier +
+ *   prompt_create_contact_choice (defaultType=autres) + mark_processed
  * - Cibles et payloads corrects (slugified, em-dash, ref Gmail)
  * - mark_processed toujours en dernière position
  * - Regex quittance case-insensitive
  * - Description humaine correcte dans chaque action
  *
  * Fix Jalon 4D-1 : paths via VAULT_PATHS, slugify, em-dash, ref email.
+ * Fix Jalon 4D-2 : no-match → A classifier + prompt 5 boutons (plus de add_todo seul).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -193,30 +195,44 @@ describe('handleLocataire', () => {
     expect(types).not.toContain('add_todo');
   });
 
-  // --- Locataire inconnu ---
+  // --- Locataire inconnu (no-match Jalon 4D-2) ---
 
-  it('retourne 2 actions si locataire non trouvé (warning)', async () => {
+  it('retourne 3 actions si locataire non trouvé (create_file + prompt + mark_processed)', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
-    expect(actions).toHaveLength(2);
-    expect(actions[0]!.type).toBe('add_todo');
-    expect(actions[1]!.type).toBe('mark_processed');
+    expect(actions).toHaveLength(3);
+    expect(actions[0]!.type).toBe('create_file');
+    expect(actions[1]!.type).toBe('prompt_create_contact_choice');
+    expect(actions[2]!.type).toBe('mark_processed');
   });
 
-  it('action warning contient l\'email du locataire inconnu', async () => {
+  it('locataire inconnu : dépôt dans A classifier', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
-    expect(actions[0]!.payload.task).toContain('alice.martin@gmail.com');
-    expect(actions[0]!.payload.task).toContain('Vérifier locataire inconnu');
+    expect(actions[0]!.target).toContain(VAULT_PATHS.notesAClassifier);
+    expect(actions[0]!.target).toContain('05. Notes/A classifier');
   });
 
-  it('locataire inconnu a priorité P2', async () => {
+  it('locataire inconnu : defaultType est "autres" (pas "locataire")', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
-    expect(actions[0]!.payload.priority).toBe('P2');
+    const prompt = actions[1]!;
+    expect(prompt.payload.defaultType).toBe('autres');
+    expect(prompt.payload.emailFrom).toBe('alice.martin@gmail.com');
+    expect(prompt.payload.nameFrom).toBe('Alice Martin');
+  });
+
+  it('locataire inconnu : contenu A classifier contient triage_category locataire', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleLocataire(makeTriage(), makeEmail());
+    const content = actions[0]!.payload.content as string;
+
+    expect(content).toContain('triage_category: locataire');
+    expect(content).toContain('triage_intent: demande_quittance_mai');
+    expect(content).toContain('Demande de quittance pour le mois de mai 2026.');
   });
 
   // --- mark_processed ---
@@ -227,7 +243,7 @@ describe('handleLocataire', () => {
     const actions = await handleLocataire(makeTriage(), makeEmail());
     expect(actions[actions.length - 1]!.type).toBe('mark_processed');
 
-    // Cas locataire inconnu (2 actions)
+    // Cas locataire inconnu (3 actions)
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions2 = await handleLocataire(makeTriage(), makeEmail());
     expect(actions2[actions2.length - 1]!.type).toBe('mark_processed');

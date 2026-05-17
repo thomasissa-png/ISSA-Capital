@@ -67,10 +67,14 @@ vi.mock('../../handlers', () => ({
 
 const mockSavePending = vi.fn().mockResolvedValue(undefined);
 const mockSendValidationCard = vi.fn().mockResolvedValue({ messageId: 123 });
+const mockSaveNoMatch = vi.fn().mockResolvedValue(undefined);
+const mockSendNoMatchCard = vi.fn().mockResolvedValue({ messageId: 456 });
 
 vi.mock('../../telegram-validation', () => ({
   savePending: (...args: unknown[]) => mockSavePending(...args),
   sendValidationCard: (...args: unknown[]) => mockSendValidationCard(...args),
+  saveNoMatch: (...args: unknown[]) => mockSaveNoMatch(...args),
+  sendNoMatchCard: (...args: unknown[]) => mockSendNoMatchCard(...args),
 }));
 
 const mockWriteAuditLog = vi.fn().mockResolvedValue(true);
@@ -79,9 +83,10 @@ vi.mock('../../vault-client/audit-log', () => ({
   writeAuditLog: (...args: unknown[]) => mockWriteAuditLog(...args),
 }));
 
-// Mock crypto.randomUUID pour des IDs déterministes
+// Mock crypto.randomUUID pour des IDs déterministes (incremental)
+let uuidCounter = 0;
 vi.mock('crypto', () => ({
-  randomUUID: () => 'test-uuid-0001',
+  randomUUID: () => `test-uuid-${String(++uuidCounter).padStart(4, '0')}`,
 }));
 
 // ============================================================
@@ -128,11 +133,14 @@ function makeTriage(overrides: Partial<TriageResult> = {}): TriageResult {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  uuidCounter = 0;
   mockListUnprocessed.mockResolvedValue([]);
   mockFetchDetail.mockResolvedValue(null);
   mockTriageEmail.mockResolvedValue(null);
   mockIsLikelySpamByHeuristic.mockReturnValue(false);
   mockLoadKnownContacts.mockResolvedValue([]);
+  mockSaveNoMatch.mockResolvedValue(undefined);
+  mockSendNoMatchCard.mockResolvedValue({ messageId: 456 });
   mockHandleAClassifier.mockResolvedValue([
     { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Test' },
   ]);
@@ -315,7 +323,7 @@ describe('runEmailIngest', () => {
     expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
 
     const pendingArg = mockSavePending.mock.calls[0]![0];
-    expect(pendingArg.id).toBe('test-uuid-0001');
+    expect(pendingArg.id).toMatch(/^test-uuid-\d{4}$/);
     expect(pendingArg.triage.category).toBe('a-classifier');
     expect(pendingArg.email.id).toBe('msg_valid');
   });
@@ -408,5 +416,142 @@ describe('runEmailIngest', () => {
       expect.any(Object),
       contacts,
     );
+  });
+
+  // --- No-match flow (Jalon 4D-2) ---
+
+  it('envoie 2 cartes Telegram quand le handler retourne prompt_create_contact_choice', async () => {
+    const email = makeEmail({ id: 'msg_nomatch' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_nomatch' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    // Handler retourne 3 actions dont une prompt_create_contact_choice
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Dépôt A classifier' },
+      {
+        type: 'prompt_create_contact_choice',
+        target: null,
+        payload: {
+          emailFrom: 'francois@example.com',
+          nameFrom: 'François',
+          defaultType: 'pro',
+          emailMessageId: 'msg_nomatch',
+          emailThreadRef: '(cf. thread Gmail msg_nomatch)',
+        },
+        description: 'Proposer création fiche',
+      },
+      { type: 'mark_processed', target: null, payload: { messageId: 'msg_nomatch' }, description: 'Mark processed' },
+    ]);
+
+    await runEmailIngest();
+
+    // Carte principale envoyée
+    expect(mockSavePending).toHaveBeenCalledTimes(1);
+    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
+
+    // Le pending principal ne contient PAS l'action prompt_create_contact_choice
+    const pendingArg = mockSavePending.mock.calls[0]![0];
+    const actionTypes = pendingArg.actions.map((a: { type: string }) => a.type);
+    expect(actionTypes).not.toContain('prompt_create_contact_choice');
+    expect(actionTypes).toContain('create_file');
+    expect(actionTypes).toContain('mark_processed');
+
+    // Carte no-match envoyée
+    expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
+    expect(mockSendNoMatchCard).toHaveBeenCalledTimes(1);
+
+    // Le NoMatchPending a les bonnes données
+    const noMatchArg = mockSaveNoMatch.mock.calls[0]![0];
+    expect(noMatchArg.emailFrom).toBe('francois@example.com');
+    expect(noMatchArg.nameFrom).toBe('François');
+    expect(noMatchArg.defaultType).toBe('pro');
+    expect(noMatchArg.parentPendingId).toBe(pendingArg.id);
+  });
+
+  it('ne crée PAS de NoMatchPending si le handler ne retourne pas prompt_create_contact_choice', async () => {
+    const email = makeEmail({ id: 'msg_normal' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_normal' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    // Handler retourne des actions normales (fiche existante)
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Append' },
+      { type: 'mark_processed', target: null, payload: {}, description: 'Mark' },
+    ]);
+
+    await runEmailIngest();
+
+    // Carte principale envoyée
+    expect(mockSavePending).toHaveBeenCalledTimes(1);
+    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
+
+    // PAS de carte no-match
+    expect(mockSaveNoMatch).not.toHaveBeenCalled();
+    expect(mockSendNoMatchCard).not.toHaveBeenCalled();
+  });
+
+  it('ne crashe pas si sendNoMatchCard échoue', async () => {
+    const email = makeEmail({ id: 'msg_nm_fail' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_nm_fail' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: 'test', payload: {}, description: 'Test' },
+      {
+        type: 'prompt_create_contact_choice',
+        target: null,
+        payload: {
+          emailFrom: 'test@test.com',
+          nameFrom: null,
+          defaultType: 'autres',
+          emailMessageId: 'msg_nm_fail',
+          emailThreadRef: '(cf. thread Gmail msg_nm_fail)',
+        },
+        description: 'Prompt',
+      },
+      { type: 'mark_processed', target: null, payload: {}, description: 'Mark' },
+    ]);
+
+    mockSendNoMatchCard.mockRejectedValue(new Error('Telegram 502'));
+
+    const stats = await runEmailIngest();
+
+    // Le pending et le noMatch sont créés même si Telegram échoue
+    expect(stats.pendingCreated).toBe(1);
+    expect(stats.errors).toBe(0);
+    expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('NoMatchPending a un ID différent du PendingValidation', async () => {
+    const email = makeEmail({ id: 'msg_uuid_diff' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_uuid_diff' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: 'test', payload: {}, description: 'Test' },
+      {
+        type: 'prompt_create_contact_choice',
+        target: null,
+        payload: {
+          emailFrom: 'test@test.com',
+          nameFrom: null,
+          defaultType: 'pro',
+          emailMessageId: 'msg_uuid_diff',
+          emailThreadRef: '(cf. thread Gmail msg_uuid_diff)',
+        },
+        description: 'Prompt',
+      },
+      { type: 'mark_processed', target: null, payload: {}, description: 'Mark' },
+    ]);
+
+    await runEmailIngest();
+
+    const pendingId = mockSavePending.mock.calls[0]![0].id;
+    const noMatchId = mockSaveNoMatch.mock.calls[0]![0].id;
+    expect(pendingId).not.toBe(noMatchId);
   });
 });

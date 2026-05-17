@@ -3,17 +3,17 @@
  *
  * Vérifie :
  * - Fiche existante : append_historique + update_frontmatter + mark_processed
- * - Fiche non trouvée : create_file + mark_processed
+ * - Fiche non trouvée (no-match Jalon 4D-2) : create_file A classifier +
+ *   prompt_create_contact_choice + mark_processed
  * - Cible correcte (VAULT_PATHS.contactsPro + slugified name)
  * - Payload append_historique (section, content avec ref Gmail, date, title em-dash)
  * - Payload update_frontmatter (date_derniere_interaction)
- * - Extraction du nom d'affichage depuis From
- * - Fallback local-part si pas de nom
- * - Contenu du nouveau fichier (frontmatter aligné vault réel + historique em-dash + ref Gmail)
+ * - Payload prompt_create_contact_choice (emailFrom, nameFrom, defaultType=pro)
  * - mark_processed toujours en dernière position
  * - Slugify filename (accents, apostrophes, caractères interdits)
  *
  * Fix Jalon 4D-1 : paths vault corrigés + em-dash + ref email + slugify.
+ * Fix Jalon 4D-2 : no-match → A classifier + prompt 5 boutons (plus de fiche stub auto).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -135,89 +135,72 @@ describe('handleContactPro', () => {
     expect(mocks.findContactByEmail).toHaveBeenCalledWith('martin@pnmavocats.law');
   });
 
-  // --- Fiche non trouvée ---
+  // --- Fiche non trouvée (no-match Jalon 4D-2) ---
 
-  it('retourne 2 actions si la fiche contact n\'existe pas', async () => {
+  it('retourne 3 actions si la fiche contact n\'existe pas (create_file + prompt + mark_processed)', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions = await handleContactPro(makeTriage(), makeEmail());
 
-    expect(actions).toHaveLength(2);
+    expect(actions).toHaveLength(3);
     expect(actions[0]!.type).toBe('create_file');
-    expect(actions[1]!.type).toBe('mark_processed');
+    expect(actions[1]!.type).toBe('prompt_create_contact_choice');
+    expect(actions[2]!.type).toBe('mark_processed');
   });
 
-  it('crée le fichier dans 07. Contacts/03. Pro/ (pas 01. Pro)', async () => {
+  it('dépôt dans A classifier (pas dans 03. Pro)', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const actions = await handleContactPro(makeTriage(), makeEmail());
 
-    expect(actions[0]!.target).toBe(`${VAULT_PATHS.contactsPro}/Martin Yhuel.md`);
-    expect(actions[0]!.target).toContain('03. Pro');
-    expect(actions[0]!.target).not.toContain('01. Pro');
+    expect(actions[0]!.target).toContain(VAULT_PATHS.notesAClassifier);
+    expect(actions[0]!.target).toContain('05. Notes/A classifier');
+    expect(actions[0]!.target).not.toContain('03. Pro');
   });
 
-  it('utilise le local-part de l\'email si pas de nom dans From', async () => {
+  it('le fichier A classifier contient la date et le sujet dans le nom', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(makeTriage(), makeEmail());
+
+    expect(actions[0]!.target).toContain('2026-05-13');
+    expect(actions[0]!.target).toContain('Suivi dossier immobilier');
+  });
+
+  it('le contenu du fichier A classifier contient les infos triage', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(makeTriage(), makeEmail());
+    const content = actions[0]!.payload.content as string;
+
+    expect(content).toContain('source: gmail');
+    expect(content).toContain('triage_intent: suivi_dossier');
+    expect(content).toContain('triage_category: contact-pro');
+    expect(content).toContain('Suivi du dossier immobilier en cours.');
+    expect(content).toContain('(cf. thread Gmail msg_pro_001)');
+  });
+
+  it('prompt_create_contact_choice a defaultType "pro"', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(makeTriage(), makeEmail());
+
+    const prompt = actions[1]!;
+    expect(prompt.type).toBe('prompt_create_contact_choice');
+    expect(prompt.target).toBeNull();
+    expect(prompt.payload.emailFrom).toBe('martin@pnmavocats.law');
+    expect(prompt.payload.nameFrom).toBe('Martin Yhuel');
+    expect(prompt.payload.defaultType).toBe('pro');
+    expect(prompt.payload.emailMessageId).toBe('msg_pro_001');
+    expect(prompt.payload.emailThreadRef).toContain('thread Gmail msg_pro_001');
+  });
+
+  it('nameFrom est null si pas de nom dans From', async () => {
     mocks.findContactByEmail.mockResolvedValue(null);
     const email = makeEmail({
       from: { email: 'jean.dupont@example.com' },
     });
     const actions = await handleContactPro(makeTriage(), email);
 
-    expect(actions[0]!.target).toBe(`${VAULT_PATHS.contactsPro}/Jean Dupont.md`);
+    expect(actions[1]!.payload.nameFrom).toBeNull();
   });
 
-  it('le contenu du nouveau fichier contient frontmatter aligné vault réel', async () => {
-    mocks.findContactByEmail.mockResolvedValue(null);
-    const actions = await handleContactPro(makeTriage(), makeEmail());
-    const content = actions[0]!.payload.content as string;
-
-    // Frontmatter aligné Cowork D1
-    expect(content).toContain('---');
-    expect(content).toContain('type: contact');
-    expect(content).toContain('categorie: pro');
-    expect(content).toContain('email: martin@pnmavocats.law');
-    expect(content).toContain('date_premier_contact: 2026-05-13');
-    expect(content).toContain('date_derniere_interaction: 2026-05-13');
-    expect(content).toContain('tags:');
-    expect(content).toContain('  - pro');
-
-    // Historique avec em-dash
-    expect(content).toContain('## Historique');
-    expect(content).toContain('### 2026-05-13 — suivi_dossier');
-    expect(content).toContain('—');
-
-    // Ref email Gmail
-    expect(content).toContain('(cf. thread Gmail msg_pro_001)');
-  });
-
-  it('le contenu du nouveau fichier contient le résumé triage', async () => {
-    mocks.findContactByEmail.mockResolvedValue(null);
-    const actions = await handleContactPro(makeTriage(), makeEmail());
-    const content = actions[0]!.payload.content as string;
-
-    expect(content).toContain('Suivi du dossier immobilier en cours.');
-  });
-
-  // --- Slugify filename ---
-
-  it('slugifie les accents dans le nom de fichier (nouveau contact)', async () => {
-    mocks.findContactByEmail.mockResolvedValue(null);
-    const email = makeEmail({
-      from: { email: 'francois@test.com', name: 'François Étienne' },
-    });
-    const actions = await handleContactPro(makeTriage(), email);
-
-    expect(actions[0]!.target).toBe(`${VAULT_PATHS.contactsPro}/Francois Etienne.md`);
-  });
-
-  it('slugifie les apostrophes dans le nom de fichier (nouveau contact)', async () => {
-    mocks.findContactByEmail.mockResolvedValue(null);
-    const email = makeEmail({
-      from: { email: 'francois@test.com', name: "François D'Aremberg" },
-    });
-    const actions = await handleContactPro(makeTriage(), email);
-
-    expect(actions[0]!.target).toBe(`${VAULT_PATHS.contactsPro}/Francois DAremberg.md`);
-  });
+  // --- Slugify filename (contact existant) ---
 
   it('slugifie le nom dans le target (contact existant avec accents)', async () => {
     mocks.findContactByEmail.mockResolvedValue({
@@ -241,6 +224,16 @@ describe('handleContactPro', () => {
     expect(last.type).toBe('mark_processed');
     expect(last.payload.messageId).toBe('msg_specific_456');
     expect(last.target).toBeNull();
+  });
+
+  it('mark_processed est la dernière action pour no-match aussi', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const email = makeEmail({ id: 'msg_nomatch_789' });
+    const actions = await handleContactPro(makeTriage(), email);
+
+    const last = actions[actions.length - 1]!;
+    expect(last.type).toBe('mark_processed');
+    expect(last.payload.messageId).toBe('msg_nomatch_789');
   });
 
   it('description de l\'action append contient le nom du contact', async () => {
