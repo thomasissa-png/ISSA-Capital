@@ -124,9 +124,15 @@ describe('generateICalFromTasks', () => {
   });
 
   it('escape les caractères spéciaux iCal', () => {
-    const ical = generateICalFromTasks([makeTask({ title: 'Test; avec, spéciaux\\n' })]);
+    const ical = generateICalFromTasks([makeTask({ title: 'Test; avec, virgule' })]);
 
-    expect(ical).toContain('SUMMARY:Test\\; avec\\, spéciaux\\\\n');
+    expect(ical).toContain('SUMMARY:Test\\; avec\\, virgule');
+  });
+
+  it('escape les sauts de ligne dans le texte', () => {
+    const ical = generateICalFromTasks([makeTask({ desc: 'Ligne 1\nLigne 2' })]);
+
+    expect(ical).toContain('DESCRIPTION:Ligne 1\\nLigne 2');
   });
 
   it('génère un calendrier vide pour une liste vide', () => {

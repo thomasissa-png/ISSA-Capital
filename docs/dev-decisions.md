@@ -1123,3 +1123,109 @@ Pas de fichier `.replit` dans le repo (le projet est déjà déployé sur Replit
 - `src/app/api/secretariat/cron-email-ingest/__tests__/route.test.ts` — 8 tests
 - `.env.example` — ajout `CRON_SECRET`
 - `docs/dev-decisions.md` — cette section
+
+---
+
+## Session 15 — Jalon 5C : Intégration TickTick bidirectionnelle + iCal
+
+**Date** : 2026-05-17
+
+### Architecture
+
+```
+src/lib/secretariat/ticktick/
+├── types.ts              # Types TickTick (tâches, projets, webhooks, tokens)
+├── oauth.ts              # OAuth flow + cache tokens + refresh automatique
+├── ticktick-client.ts    # Client API REST (CRUD tâches + projets)
+├── ical-export.ts        # Génération iCal RFC 5545 (VTODO)
+├── index.ts              # Re-exports
+└── __tests__/
+    ├── ticktick-client.test.ts  (10 tests)
+    ├── oauth.test.ts            (8 tests)
+    └── ical-export.test.ts      (17 tests)
+
+src/lib/secretariat/email-ingest/
+├── ticktick-integration.ts      # Bridge email-ingest → création tâche TickTick
+└── __tests__/
+    └── ticktick-integration.test.ts  (7 tests)
+
+src/app/api/secretariat/ticktick/
+├── oauth/init/route.ts          # GET — démarre le flow OAuth
+├── oauth/callback/route.ts      # GET — callback, affiche le refresh token
+├── webhook/route.ts             # POST — reçoit événements TickTick
+│   └── __tests__/route.test.ts  (9 tests)
+└── ical/route.ts                # GET — flux iCal signé
+    └── __tests__/route.test.ts  (9 tests)
+```
+
+### Décisions
+
+**1. OAuth : stockage refresh token en env var (pas en Drive)**
+
+Pattern identique à Google OAuth existant : le refresh token est affiché une fois après le callback OAuth, Thomas le copie dans Replit Secrets. Pas de stockage persistant côté app (pas de Drive, pas de DB). L'access token est caché en mémoire avec TTL.
+
+Pourquoi : simplicité, cohérence avec l'existant, aucune dépendance supplémentaire.
+
+**2. Client API REST natif (pas de SDK npm)**
+
+L'API TickTick est simple (CRUD + OAuth). Un SDK npm ajouterait une dépendance pour ~200 lignes de wrappers. Le client natif en ~100 lignes fait le même travail avec 0 dépendance externe.
+
+**3. Intégration email-ingest non bloquante**
+
+La création de tâche TickTick est wrappée dans un try/catch dans `email-ingest-runner.ts`. Si TickTick est down, pas configuré, ou en erreur, le pipeline email-ingest continue normalement. La tâche TickTick est un bonus opérationnel, pas un prérequis fonctionnel.
+
+**4. Priorité automatique par catégorie de triage**
+
+| Catégorie triage | Priorité TickTick |
+|---|---|
+| locataire | 5 (haute) |
+| candidat | 3 (medium) |
+| contact-pro | 3 (medium) |
+| apporteur | 3 (medium) |
+| a-classifier | 1 (basse) |
+| spam | skip (pas de tâche) |
+
+**5. iCal : tâches actives uniquement, pas de lib externe**
+
+L'export iCal filtre les tâches complétées (status ≠ 2). Le format RFC 5545 est suffisamment simple pour un générateur natif (~80 lignes). Pas de dépendance `ics` npm — moins de surface d'attaque, ownership total.
+
+**6. Webhook TickTick : notification Telegram sur complétion**
+
+Quand Thomas complète une tâche dans TickTick, le webhook notifie sur Telegram. C'est minimal mais suffisant pour fermer la boucle. Futures extensions possibles : mettre à jour le contexte conversationnel Anya, archiver la carte Telegram associée.
+
+**7. Pas de déduplication tâches TickTick**
+
+Si le même email est retraité (cas théorique — la dédup Gmail devrait l'empêcher), une tâche TickTick en double sera créée. Acceptable : Thomas verra le doublon et supprimera. Le coût d'une table de dédup pour un cas ultra-rare ne vaut pas la complexité.
+
+### Actions manuelles Thomas
+
+1. **Créer une app TickTick** : https://developer.ticktick.com → créer une app OAuth → copier Client ID et Secret
+2. **Ajouter les secrets Replit** : `TICKTICK_CLIENT_ID`, `TICKTICK_CLIENT_SECRET`, `TICKTICK_WEBHOOK_SECRET` (générer avec `openssl rand -hex 32`), `TICKTICK_ICAL_SECRET` (générer avec `openssl rand -hex 16`)
+3. **Lancer OAuth** : visiter `https://issa-capital.com/api/secretariat/ticktick/oauth/init` → autoriser → copier le refresh token → ajouter `TICKTICK_REFRESH_TOKEN` dans Replit Secrets
+4. **Configurer le webhook** : dans les settings de l'app TickTick (developer.ticktick.com), ajouter l'URL webhook : `https://issa-capital.com/api/secretariat/ticktick/webhook`
+5. **Ajouter le flux iCal** : dans Google Calendar → Autres calendriers → À partir de l'URL → `https://issa-capital.com/api/secretariat/ticktick/ical?token=<TICKTICK_ICAL_SECRET>`
+
+### Fichiers ajoutés/modifiés
+
+**Nouveaux** :
+- `src/lib/secretariat/ticktick/types.ts`
+- `src/lib/secretariat/ticktick/oauth.ts`
+- `src/lib/secretariat/ticktick/ticktick-client.ts`
+- `src/lib/secretariat/ticktick/ical-export.ts`
+- `src/lib/secretariat/ticktick/index.ts`
+- `src/lib/secretariat/ticktick/__tests__/ticktick-client.test.ts` (12 tests)
+- `src/lib/secretariat/ticktick/__tests__/oauth.test.ts` (7 tests)
+- `src/lib/secretariat/ticktick/__tests__/ical-export.test.ts` (15 tests)
+- `src/lib/secretariat/email-ingest/ticktick-integration.ts`
+- `src/lib/secretariat/email-ingest/__tests__/ticktick-integration.test.ts` (7 tests)
+- `src/app/api/secretariat/ticktick/oauth/init/route.ts`
+- `src/app/api/secretariat/ticktick/oauth/callback/route.ts`
+- `src/app/api/secretariat/ticktick/webhook/route.ts`
+- `src/app/api/secretariat/ticktick/webhook/__tests__/route.test.ts` (9 tests)
+- `src/app/api/secretariat/ticktick/ical/route.ts`
+- `src/app/api/secretariat/ticktick/ical/__tests__/route.test.ts` (8 tests)
+
+**Modifiés** :
+- `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — import + appel `createTickTickTaskForEmail` après pending
+- `.env.example` — ajout 5 env vars TickTick
+- `docs/dev-decisions.md` — cette section

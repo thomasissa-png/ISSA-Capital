@@ -90,6 +90,12 @@ vi.mock('../../vault-client/audit-log', () => ({
   writeAuditLog: (...args: unknown[]) => mockWriteAuditLog(...args),
 }));
 
+const mockCreateTickTickTaskForEmail = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('../ticktick-integration', () => ({
+  createTickTickTaskForEmail: (...args: unknown[]) => mockCreateTickTickTaskForEmail(...args),
+}));
+
 // Mock crypto.randomUUID pour des IDs déterministes (incremental)
 let uuidCounter = 0;
 vi.mock('crypto', () => ({
@@ -149,6 +155,7 @@ beforeEach(() => {
   mockComposeDraft.mockResolvedValue({ success: false, skipReason: 'mock skip' });
   mockSaveNoMatch.mockResolvedValue(undefined);
   mockSendNoMatchCard.mockResolvedValue({ messageId: 456 });
+  mockCreateTickTickTaskForEmail.mockResolvedValue(undefined);
   mockHandleAClassifier.mockResolvedValue([
     { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Test' },
   ]);
@@ -674,5 +681,55 @@ describe('runEmailIngest', () => {
 
     expect(stats.haikuSpam).toBe(1);
     expect(mockComposeDraft).not.toHaveBeenCalled();
+  });
+
+  // --- TickTick integration (Jalon 5C) ---
+
+  it('appelle createTickTickTaskForEmail pour un email catégorisé', async () => {
+    const email = makeEmail({ id: 'msg_tt' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_tt' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
+    mockHandleLocataire.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+    ]);
+
+    await runEmailIngest();
+
+    expect(mockCreateTickTickTaskForEmail).toHaveBeenCalledTimes(1);
+    expect(mockCreateTickTickTaskForEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'msg_tt' }),
+      expect.objectContaining({ category: 'locataire' }),
+    );
+  });
+
+  it('ne crashe pas si createTickTickTaskForEmail throw', async () => {
+    const email = makeEmail({ id: 'msg_tt_fail' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_tt_fail' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: 'test', payload: {}, description: 'Test' },
+    ]);
+    mockCreateTickTickTaskForEmail.mockRejectedValue(new Error('TickTick API down'));
+
+    const stats = await runEmailIngest();
+
+    // Pipeline continue normalement malgré l'erreur TickTick
+    expect(stats.pendingCreated).toBe(1);
+    expect(stats.errors).toBe(0);
+  });
+
+  it('ne crée PAS de tâche TickTick pour les emails spam auto-filtrés', async () => {
+    const email = makeEmail({ id: 'msg_tt_spam' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_tt_spam' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(
+      makeTriage({ category: 'spam', confidence: 0.95 }),
+    );
+
+    await runEmailIngest();
+
+    expect(mockCreateTickTickTaskForEmail).not.toHaveBeenCalled();
   });
 });
