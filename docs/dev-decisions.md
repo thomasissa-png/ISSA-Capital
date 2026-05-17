@@ -1002,3 +1002,27 @@ Les résultats sont dédupliqués via `Set` (un email présent en primaire ET se
 - `src/lib/secretariat/vault-client/__tests__/frontmatter.test.ts` — +5 tests
 - `src/lib/secretariat/email-ingest/__tests__/contacts-cache.test.ts` — +5 tests + fix 2
 - `src/lib/secretariat/vault-client/__tests__/index.test.ts` — +1 test
+
+---
+
+## Session 14 — Fix prod #2 : TTL pending-store 24h → 7 jours (2026-05-17)
+
+### Contexte du bug
+
+Les cartes de validation Telegram (pending-store) avaient un TTL de 24h. Thomas peut partir en week-end ou en vacances sans pouvoir valider — les cartes expiraient avant d'être vues, nécessitant un re-traitement complet de l'email.
+
+### Décision : TTL minimum 7 jours
+
+Tout état interactif que Thomas doit valider manuellement : TTL minimum **7 jours**. Raisons :
+- Usage humain = week-ends (2j), jours fériés, vacances (jusqu'à 7j)
+- Le coût d'un pending expiré (re-ingestion email + nouveau triage + nouvelle carte) >> coût d'un pending qui traîne 7j en mémoire
+- Pas de TTL < 72h sur un état nécessitant une validation humaine
+
+### Commits
+
+- `28a7e12` — modification `PENDING_TTL_MS` de `24 * 60 * 60 * 1000` à `7 * 24 * 60 * 60 * 1000`
+- `f315a59` — tests + vérification pipeline stable
+
+### Fichiers modifiés
+
+- `src/lib/secretariat/telegram-validation/pending-store.ts` — constante TTL

@@ -380,3 +380,122 @@ Session dense couvrant vault Obsidian + extension Anya. Travaux majeurs :
 
 ---
 
+## Filiation fondatrice (archive depuis S15 — audit TTL project-context)
+
+> Archivé le 2026-05-17. Détails biographiques complets Jean-Pierre, Sonia, enfants, 2J Impression.
+> Ces informations sont verrouillées par Thomas depuis S4-S6 et déjà intégrées dans les livrables Phase 0-3 (brand-platform.md, landing-page-copy.md, code TSX déployé).
+
+### Jean-Pierre Issa (père de Thomas)
+
+- **Né le** : 7 janvier 1958 à **Dakar (Sénégal)** — famille **libanaise** (Dakar = lieu de naissance, pas appartenance culturelle)
+- **Parcours** : Banque → **IBM** → co-fondateur **Lexmark** (scission IBM 1991, équipe early) → Directeur de filiales + Directeur Marketing EMEA Lexmark
+- **Patrimoine dans le scope ISSA** : terrains au Liban, immobilier Paris, immobilier Normandie — héritage destiné aux enfants et petits-enfants
+- **Rôle ISSA Capital** : figure fondatrice symbolique (patriarche). La holding est "l'aboutissement" de son parcours — pas sa création juridique (c'est Thomas qui a créé la SAS en mars 2026). Source de légitimité patrimoniale et origine du savoir-faire familial, sans être dirigeant opérationnel.
+- **Usage copy** : page Mission = filiation Jean-Pierre → Thomas (colonne vertébrale narrative). Page Participations = immo Paris/Normandie/Liban (ancrage historique). Page Accompagnement = "issu d'une famille qui a construit et transmis pendant des décennies" (crédibilité pour Karim).
+
+### Sonia Issa (mère de Thomas)
+
+- **Née le** : 23 juillet 1959 au **Caire (Égypte)** — famille **libanaise** (ancrage libanais commun aux deux parents)
+- **Parcours** : **architecte d'intérieur** (carrière complète)
+- **Pertinence brand-story** : double origine libanaise (Dakar + Le Caire) renforce la narration "famille de la diaspora". Métier de Sonia = fil rouge inattendu avec l'écosystème actuel (Versimo home staging, Versi Immobilier, immobilier direct).
+- **Usage copy** : page Mission = deux parents comme sources complémentaires (stratégie internationale côté père + esthétique/immobilier côté mère).
+- **À valider** : Thomas accepte-t-il de citer Sonia par son nom sur le site ?
+
+### Prochaine génération — bénéficiaires de la transmission
+
+- **Antoine Issa** (4 avril 2015), **Noemie Issa** (18 décembre 2018), **Lucas Issa** (mars 2023)
+- Arc générationnel : Jean-Pierre → Thomas → Antoine + Noemie + Lucas
+- **Publication publique** : ne PAS citer les noms des enfants publiquement (RGPD mineurs). Formulation générique "trois enfants" ou "la génération à venir".
+
+**Validations Thomas 2026-04-07** :
+1. Nommer Jean-Pierre Issa publiquement : **VALIDÉ**
+2. Mentionner IBM et Lexmark : **VALIDÉ**
+3. Positionnement exact chez Lexmark : hypothèse "équipe qui a lancé Lexmark en EMEA"
+4. Rôle actuel Jean-Pierre : figure fondatrice symbolique, pas dirigeant opérationnel SAS
+5. Terrains Liban : formulation générique acceptable
+
+### 2J Impression (société de Jean-Pierre)
+
+- **URL** : https://www.2j-impression.fr | **Siège** : Mérignac (33)
+- **Création** : 1994 | **Rachat Jean-Pierre** : **2016** (correction S6 — PAS 1994)
+- **Activité** : distribution multimarque impression numérique industrielle d'étiquettes (jet d'encre UV) + logiciels métiers + SAV
+- **Dirigeants** : Najib Bahous (Président), Willy Peltier (CEO), Jean-Pierre Issa (Co-Managing Director, board), Xavier Briols, Jocelyn Darre
+- **CA 2024** : 4 M EUR | **Clients** : 50+ | **Présence** : 17 pays (Europe + Afrique + Amériques)
+- **Pertinence ISSA** : track record tangible 30 ans, modèle co-actionnariat à 3 (signal pour Leila), internationalisation réelle, fil rouge générationnel.
+
+### Trajectoire internationale famille Issa (détails)
+
+- **Années 1970** : Jean-Pierre et Sonia quittent le Liban (guerre civile 1975-1990) pour finir leurs études en France. Point d'origine de l'implantation française.
+- **Parcours Thomas** : France → Suisse (Florimont Genève) → Afrique du Sud → États-Unis (UC Irvine) → Inde (humanitaire) → retour France
+- **Décision copy** : exode des années 70 = ancrage d'authenticité page Mission (1 phrase sobre). Internationalité = posture page Accompagnement sans détailler.
+
+---
+
+## CV Thomas Issa (archive depuis S15 — audit TTL project-context)
+
+> Archivé le 2026-05-17. Source : CV LinkedIn PDF fourni par Thomas, verrouillé 2026-04-07.
+> Résumé opérationnel (5 lignes) conservé dans project-context.md.
+
+### Parcours complet
+
+- **Sony Professional Solutions Europe** (14 ans 11 mois, 2011 → aujourd'hui)
+  - **Co-Founder TEOS** (sept 2017 →) : workplace management, clients Lego/Siemens/Netflix/Cap Gemini/Suzuki/Hilton/Mango. 6000% ROI 1 an, 7 régions mondiales.
+  - **Corporate & Éducation Solutions Manager Europe** (avril 2018 →) : BRAVIA Pro +500% croissance depuis 2013, leadership FR/UK.
+  - **Product Manager Europe** (oct 2013 – mars 2018) : 2 business lines. HT Projectors B2C +55% growth, 75% PDM haut-de-gamme. Pro Displays B2B +420% growth, 35% PDM. Prix Best Sony Europe 2014 + Exceptional Contribution Award 4K.
+  - **Trade Marketing Manager** (juin 2011 – oct 2013) : 2% → 35% PDM en 2 ans (projectors premium FR). Partenariats Fnac, Darty, RDC, Boulanger, VP.
+- **Strategy & Marketing Executive Adviser** (juin 2018 → aujourd'hui) : conseil startups, sales dev, positioning, launch Europe, branding. Jusqu'à 5 projets/an.
+- **Gartner** (2009-2010) — Marketing Analyst
+- **Altran Technologies** (2008-2009) — Strategic Marketing Analyst
+
+### Formation
+
+- HEC (Intelligence Marketing 2010-2011), UC Irvine (International Marketing 2010), IMT Atlantique (2006-2010), Prépa Sainte-Geneviève (2004-2006), Institut Florimont Genève (2002-2004)
+
+### Distinctions
+
+- Major de promotion x 3, Exceptional Contribution Award x 2 (Sony), Best Sony Europe Performance Award 2014
+
+### Langues
+
+- Français (natif), Anglais (natif/bilingue), Allemand (pro limité), Arabe (élémentaire)
+
+### Domaines d'expertise
+
+1. Stratégie & go-to-market Europe/international (15+ ans, TEOS 7 régions)
+2. Intrapreneuriat & zéro-a-un en corporate (TEOS 10-slide deck → 6000% ROI)
+3. Product management premium B2B/B2C (2 business lines Sony)
+4. Stratégie marketing & trade marketing (2% → 35% PDM en 2 ans)
+5. Positionnement & branding (advisor startups)
+6. Relations corporate internationales (HQ Japon Sony, Fortune 500)
+7. Structuration holding & écosystème patrimonial (Gradient One 2020 + Versi/Immocrew/Versimo + immo IDF)
+
+---
+
+## Décisions Phase 0 — Hypothèses (archive depuis S15)
+
+> Archivé le 2026-05-17. Toutes VALIDÉES par Thomas le 2026-04-07.
+
+| # | Hypothèse | Décision | Statut |
+|---|---|---|---|
+| H1 | Persona principal = fondateur PME | OK | VALIDÉE |
+| H2 | Mission variante A | A retenu | VALIDÉE |
+| H3 | Promesse unique variante A reformulée libanaise | A retenu | VALIDÉE |
+| H4 | Différence clé = familiale + intergénérationnel + filtres + écosystème | OK | VALIDÉE |
+| H5 | KPI North Star = demandes contact qualifiées / mois | OK | VALIDÉE |
+| H6 | KPI qualitatif = perception crédibilité | OK | VALIDÉE |
+| H7 | Objectifs = crédibilité + pipeline | OK | VALIDÉE |
+| H8 | Pages V1 = 6 pages | OK | VALIDÉE |
+| H9 | CTA = "Proposer une opportunité" | OK | VALIDÉE |
+| H10 | Analytics = Plausible | OK | VALIDÉE |
+| H11 | Pas de blog V1 | OK | VALIDÉE |
+| H12 | Monolingue FR V1 | OK | VALIDÉE |
+
+---
+
+## Corrections factuelles S6 (archive depuis S15)
+
+> Archivé le 2026-05-17. Déjà propagées dans tous les livrables et le code.
+
+1. **2J Impression** : rachat par Jean-Pierre en **2016**, PAS 1994.
+2. **Parcours Thomas** : Afrique du Sud (jeunesse) → Florimont Genève → prépa/IMT → UC Irvine → Inde.
+

@@ -106,3 +106,36 @@ Agents dans `.claude/agents/`. Multi-domaine → @orchestrator. Tâche ciblée �
 - Préférences fondateur : `docs/founder-preferences.md`
 - Historique des sessions : `CHANGELOG.md`
 <!-- GRADIENT-AGENTS-END -->
+
+---
+
+## Règles spécifiques ISSA Capital (persistantes — survivent aux updates Gradient)
+
+### R1 — MCP Drive = source de vérité (P0 #95, S14)
+
+Le vault Drive de Thomas est accessible en live via MCP Drive (`mcp__00415231-e65d-436c-84ee-f10eaab8da71__*`).
+
+**Anti-pattern Thomas verbatim** : "tes questions m'ennuient car toutes les réponses sont dans le vault".
+
+**Règle** : avant TOUTE question à Thomas, lire le vault Drive via MCP. Si l'info n'est PAS dans le vault → alors seulement demander. Le vault est la source de vérité unique pour : contacts, fiches, README, structure, documents, conventions de nommage.
+
+Migration cache statique → lecture live planifiée en jalon 5D.
+
+### R2 — Scan MCP en début de session (P0 #98, S14)
+
+En début de chaque session, scanner les MCP disponibles (outils `mcp__*`) et vérifier lesquels donnent accès à des données pertinentes pour le projet. Ne PAS attendre que Thomas signale un MCP — le scanner proactivement. 3 récidives antérieures (Gmail/Calendar S9, Asana/Craft S10, Drive S14).
+
+### R3 — TTL pendings interactifs : minimum 7 jours (P1 #96, S14)
+
+Tout état interactif que Thomas doit valider manuellement (cartes Telegram, pending-store, prompts de validation) : TTL minimum **7 jours**. Pas de TTL < 72h sur un état que Thomas doit valider. Usage humain = week-ends, vacances, imprévus. Le coût d'un pending expiré (re-traitement) >> coût d'un pending qui traîne.
+
+### R4 — Checklist intégration callback Telegram (P1 #97, S14)
+
+Tout nouveau préfixe de callback Telegram DOIT suivre cette checklist **avant commit** :
+1. Handler créé (`handlers/<nom>.ts`)
+2. Dispatch ajouté dans `webhook/route.ts` (matching prefix → handler)
+3. Test E2E callback → handler (simuler le callback, vérifier le dispatch)
+
+Si un des 3 est manquant → le callback tombe en cascade dans un mauvais router (bug prod S14 `email_nomatch:`).
+
+**Gate candidate G33** : "Tout callback Telegram dispatché correctement" — BLOQUANT si code Telegram modifié.

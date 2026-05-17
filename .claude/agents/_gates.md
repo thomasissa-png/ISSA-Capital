@@ -119,3 +119,11 @@ Consommateurs : @reviewer (exécute), @orchestrator (vérifie BLOQUANT après ch
 **Score dérivé** (tracking) : `(gates PASS / applicables) × 10`
 
 **Condition GO finale** : 100% BLOQUANT PASS + 100% REQUIS PASS + persona >= 9/10 + B2B >= 9/10 (si applicable)
+
+---
+
+## Gates projet-spécifiques ISSA Capital
+
+| # | Gate | Classe | Vérification | Contexte |
+|---|---|---|---|---|
+| G33 | Tout callback Telegram dispatché dans webhook/route.ts | BLOQUANT (si code Telegram modifié) | Grep chaque préfixe de callback dans les handlers → vérifier qu'un dispatch correspondant existe dans `webhook/route.ts`. Si handler existe sans dispatch → FAIL. | Bug prod S14 : `email_nomatch:` livré sans dispatch, tombait dans mauvais router. |
