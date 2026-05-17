@@ -3,10 +3,13 @@
  *
  * Gère les emails identifiés comme provenant d'un contact professionnel.
  * Cherche la fiche existante dans le vault — si trouvée, append à
- * l'historique + update frontmatter. Sinon, crée une nouvelle fiche.
+ * l'historique + update frontmatter. Sinon, dépose dans A classifier/
+ * et retourne une action prompt_create_contact_choice (carte Telegram
+ * 5 boutons pour que Thomas choisisse le type de fiche à créer).
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §2.
  * Fix Jalon 4D-1 : paths vault corrigés (07. Contacts/03. Pro, pas 01. Pro).
+ * Fix Jalon 4D-2 : no-match → A classifier + prompt 5 boutons (plus de fiche stub auto).
  */
 
 import type { TriageResult } from '../triage/types';
@@ -18,6 +21,7 @@ import {
   slugifyVaultFilename,
   buildEmailRef,
   buildHistoriqueTitle,
+  EM_DASH,
 } from './vault-paths';
 
 // ============================================================
@@ -28,7 +32,7 @@ import {
  * Génère les actions pour un email classé "contact-pro".
  *
  * Si la fiche contact existe → append historique + update date.
- * Sinon → créer la fiche avec frontmatter stub + historique initial.
+ * Sinon → dépôt dans A classifier + prompt 5 boutons Telegram.
  */
 export async function handleContactPro(
   triage: TriageResult,
@@ -41,7 +45,7 @@ export async function handleContactPro(
     return buildExistingContactActions(triage, email, contact, date);
   }
 
-  return buildNewContactActions(triage, email, date);
+  return buildNoMatchActions(triage, email, date);
 }
 
 // ============================================================
@@ -86,27 +90,77 @@ function buildExistingContactActions(
 }
 
 // ============================================================
-// Nouveau contact
+// No-match contact (Jalon 4D-2)
 // ============================================================
 
-function buildNewContactActions(
+/**
+ * Construit les actions pour un email dont l'expéditeur n'a pas de fiche.
+ *
+ * - Dépôt dans A classifier/ avec résumé triage
+ * - Action prompt_create_contact_choice pour carte Telegram 5 boutons
+ * - mark_processed
+ */
+function buildNoMatchActions(
   triage: TriageResult,
   email: EmailMessage,
   date: string,
 ): ActionProposal[] {
-  const displayName = extractDisplayName(email.from);
-  const slugName = slugifyVaultFilename(displayName);
-  const filename = `${slugName}.md`;
-  const target = `${VAULT_PATHS.contactsPro}/${filename}`;
+  const safeSubject = slugifyVaultFilename(email.subject || 'sans-objet');
+  const filename = `${date} ${EM_DASH} ${safeSubject}.md`;
+  const target = `${VAULT_PATHS.notesAClassifier}/${filename}`;
 
-  const content = buildNewContactContent(email, triage, displayName, date);
+  const fromDisplay = email.from.name
+    ? `${email.from.name} <${email.from.email}>`
+    : email.from.email;
+  const emailRef = buildEmailRef(email.source, email.id);
+  const bodyPreview = email.bodyPlain.slice(0, 1000).trim();
+
+  const content = [
+    '---',
+    `source: ${email.source}`,
+    `from: "${escapeYaml(fromDisplay)}"`,
+    `date: ${date}`,
+    `subject: "${escapeYaml(email.subject)}"`,
+    `triage_intent: ${triage.intent}`,
+    `triage_confidence: ${triage.confidence}`,
+    `triage_category: contact-pro`,
+    '---',
+    '',
+    `## ${email.subject}`,
+    '',
+    `**De** : ${fromDisplay}`,
+    `**Date** : ${email.receivedAt.toLocaleDateString('fr-FR')}`,
+    `**Lien** : ${email.rawRef}`,
+    '',
+    `### Résumé triage`,
+    '',
+    `${triage.summary} ${emailRef}`,
+    '',
+    `### Contenu`,
+    '',
+    bodyPreview,
+    bodyPreview.length < email.bodyPlain.length ? '\n\n[... tronqué]' : '',
+    '',
+  ].join('\n');
 
   return [
     {
       type: 'create_file',
       target,
       payload: { content, filename },
-      description: `Créer la fiche contact pro : ${displayName}`,
+      description: `Déposer dans A classifier (contact inconnu)`,
+    },
+    {
+      type: 'prompt_create_contact_choice',
+      target: null,
+      payload: {
+        emailFrom: email.from.email,
+        nameFrom: email.from.name ?? null,
+        defaultType: 'pro',
+        emailMessageId: email.id,
+        emailThreadRef: buildEmailRef(email.source, email.id),
+      },
+      description: 'Proposer création fiche contact (5 boutons : Pro/Famille/Amis/Autres/Skip)',
     },
     {
       type: 'mark_processed',
@@ -122,58 +176,8 @@ function buildNewContactActions(
 // ============================================================
 
 /**
- * Extrait un nom d'affichage depuis l'adresse email.
- *
- * Priorité : champ `name` du From. Sinon, local-part de l'email
- * transformé en Title Case (martin.dupont@x.com → Martin Dupont).
+ * Échappe les guillemets doubles pour les valeurs YAML.
  */
-function extractDisplayName(from: { email: string; name?: string }): string {
-  if (from.name && from.name.trim().length > 0) {
-    return from.name.trim();
-  }
-
-  const localPart = from.email.split('@')[0] ?? 'inconnu';
-  return localPart
-    .replace(/[._-]+/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim() || 'Inconnu';
-}
-
-/**
- * Construit le contenu Markdown d'une nouvelle fiche contact pro.
- * Frontmatter aligné sur le format réel du vault (cf. Cowork D1).
- */
-function buildNewContactContent(
-  email: EmailMessage,
-  triage: TriageResult,
-  displayName: string,
-  date: string,
-): string {
-  const emailRef = buildEmailRef(email.source, email.id);
-
-  return [
-    '---',
-    'type: contact',
-    'categorie: pro',
-    'societe: ',
-    'role: ',
-    `email: ${email.from.email}`,
-    'telephone: ',
-    'rencontre_via: ',
-    `date_premier_contact: ${date}`,
-    `date_derniere_interaction: ${date}`,
-    'classification: ',
-    'tags:',
-    '  - pro',
-    '---',
-    '',
-    `# ${displayName}`,
-    '',
-    '## Historique',
-    '',
-    buildHistoriqueTitle(date, triage.intent),
-    '',
-    `${triage.summary} ${emailRef}`,
-    '',
-  ].join('\n');
+function escapeYaml(value: string): string {
+  return value.replace(/"/g, '\\"');
 }

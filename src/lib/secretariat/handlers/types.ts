@@ -22,7 +22,8 @@ export type ActionType =
   | 'create_bien_stub'
   | 'add_todo'
   | 'mark_processed'
-  | 'skip';
+  | 'skip'
+  | 'prompt_create_contact_choice';
 
 export interface ActionProposal {
   /** Type d'action à exécuter via vault-client */
