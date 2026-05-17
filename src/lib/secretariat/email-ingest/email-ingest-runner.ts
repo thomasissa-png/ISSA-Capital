@@ -37,7 +37,10 @@ import {
 import {
   savePending,
   sendValidationCard,
+  saveNoMatch,
+  sendNoMatchCard,
 } from '../telegram-validation';
+import type { NoMatchPending } from '../telegram-validation';
 import { writeAuditLog } from '../vault-client/audit-log';
 
 // ============================================================
@@ -252,12 +255,16 @@ async function processOneEmail(
   const handler = getHandler(triage.category);
   const actions = await handler(triage, detail);
 
-  // Créer le pending + envoyer la carte Telegram
+  // Séparer les actions : filtrer prompt_create_contact_choice (traitée séparément)
+  const noMatchAction = actions.find((a) => a.type === 'prompt_create_contact_choice');
+  const cardActions = actions.filter((a) => a.type !== 'prompt_create_contact_choice');
+
+  // Créer le pending + envoyer la carte Telegram principale
   const pendingId = randomUUID();
   const pending: PendingValidation = {
     id: pendingId,
     triage,
-    actions,
+    actions: cardActions,
     email: serializeEmail(detail),
     createdAt: new Date().toISOString(),
   };
@@ -271,6 +278,31 @@ async function processOneEmail(
       `[email-ingest] erreur envoi carte Telegram pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
     );
     // Le pending est sauvegardé, Thomas pourra valider si Telegram revient
+  }
+
+  // Si action no-match → créer un NoMatchPending et envoyer carte secondaire
+  if (noMatchAction) {
+    const noMatchId = randomUUID();
+    const noMatch: NoMatchPending = {
+      id: noMatchId,
+      parentPendingId: pendingId,
+      emailFrom: noMatchAction.payload['emailFrom'] as string,
+      nameFrom: (noMatchAction.payload['nameFrom'] as string | null) ?? null,
+      defaultType: (noMatchAction.payload['defaultType'] as NoMatchPending['defaultType']) ?? 'autres',
+      emailMessageId: noMatchAction.payload['emailMessageId'] as string,
+      emailThreadRef: noMatchAction.payload['emailThreadRef'] as string,
+      createdAt: new Date().toISOString(),
+    };
+
+    await saveNoMatch(noMatch);
+
+    try {
+      await sendNoMatchCard(noMatch);
+    } catch (err) {
+      console.warn(
+        `[email-ingest] erreur envoi carte no-match pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   stats.pendingCreated++;

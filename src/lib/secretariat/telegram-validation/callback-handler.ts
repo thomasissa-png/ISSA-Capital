@@ -2,20 +2,24 @@
  * Callback handler pour la validation email-ingest via Telegram.
  *
  * Traite les callbacks quand Thomas clique un bouton inline :
- *   - valider : exécute toutes les ActionProposal via vault-client + mark_processed
- *   - skip : mark_processed + audit "skip"
- *   - voir : envoie le body de l'email dans un nouveau message
- *   - modifier : envoie un message "non implémenté en V1"
+ *   - email_val:valider : exécute toutes les ActionProposal via vault-client + mark_processed
+ *   - email_val:skip : mark_processed + audit "skip"
+ *   - email_val:voir : envoie le body de l'email dans un nouveau message
+ *   - email_val:modifier : envoie un message "non implémenté en V1"
+ *   - email_nomatch:<type> : crée une fiche contact dans le bon dossier (Jalon 4D-2)
  *
  * Chaque action est auditée en JSONL via vault-client/audit-log.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md section Jalon 4B.
+ * Fix Jalon 4D-2 : dispatch email_nomatch callbacks.
  */
 
 import type { ActionProposal } from '../handlers/types';
 import type { PendingValidation } from './telegram-cards';
+import type { NoMatchPending, ContactType } from './no-match-card';
 import { VALIDATION_CALLBACK_PREFIX, buildValidationCard, editMessageText, sendSimpleMessage, escapeHtml } from './telegram-cards';
-import { getPending, deletePending } from './pending-store';
+import { NOMATCH_CALLBACK_PREFIX, buildNoMatchCard } from './no-match-card';
+import { getPending, deletePending, getNoMatch, deleteNoMatch } from './pending-store';
 import { answerCallbackQuery } from '../telegram';
 import {
   appendToHistorique,
@@ -25,6 +29,11 @@ import {
 import { appendToTodoInbox } from '../drive-todo';
 import { markProcessed } from '../gmail-source/gmail-source';
 import { writeAuditLog } from '../vault-client/audit-log';
+import {
+  VAULT_PATHS,
+  slugifyVaultFilename,
+  buildHistoriqueTitle,
+} from '../handlers/vault-paths';
 
 // ============================================================
 // Types
@@ -317,14 +326,176 @@ async function handleModifier(
 }
 
 // ============================================================
+// No-match callback handlers (Jalon 4D-2)
+// ============================================================
+
+const VALID_CONTACT_TYPES: readonly ContactType[] = ['pro', 'famille', 'amis', 'autres'];
+
+/**
+ * Parse le callback data pour un bouton no-match.
+ * Format attendu : "email_nomatch:<type>:<noMatchId>"
+ */
+function parseNoMatchCallbackData(data: string): {
+  type: ContactType | 'skip';
+  noMatchId: string;
+} | null {
+  if (!data.startsWith(NOMATCH_CALLBACK_PREFIX)) return null;
+
+  const withoutPrefix = data.slice(NOMATCH_CALLBACK_PREFIX.length);
+  const colonIdx = withoutPrefix.indexOf(':');
+  if (colonIdx === -1) return null;
+
+  const type = withoutPrefix.slice(0, colonIdx);
+  const noMatchId = withoutPrefix.slice(colonIdx + 1);
+
+  if (type !== 'skip' && !(VALID_CONTACT_TYPES as readonly string[]).includes(type)) return null;
+  if (!noMatchId) return null;
+
+  return { type: type as ContactType | 'skip', noMatchId };
+}
+
+/**
+ * Mapping type de contact → path vault.
+ */
+function contactTypeToVaultPath(type: ContactType): string {
+  switch (type) {
+    case 'pro':
+      return VAULT_PATHS.contactsPro;
+    case 'famille':
+      return VAULT_PATHS.contactsFamille;
+    case 'amis':
+      return VAULT_PATHS.contactsAmis;
+    case 'autres':
+      return VAULT_PATHS.contactsAutres;
+  }
+}
+
+/**
+ * Extrait le local-part d'un email (avant le @).
+ */
+function extractLocalPart(email: string): string {
+  const local = email.split('@')[0] ?? 'inconnu';
+  return local
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim() || 'Inconnu';
+}
+
+/**
+ * Traite un callback no-match : crée la fiche contact dans le vault.
+ */
+async function handleNoMatchCallback(
+  noMatch: NoMatchPending,
+  type: ContactType,
+  callback: TelegramCallback,
+): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  const targetFolder = contactTypeToVaultPath(type);
+  const displayName = noMatch.nameFrom
+    ? noMatch.nameFrom
+    : extractLocalPart(noMatch.emailFrom);
+  const filename = `${slugifyVaultFilename(displayName)}.md`;
+  const target = `${targetFolder}/${filename}`;
+
+  // Construire le contenu de la fiche
+  const content = [
+    '---',
+    'type: contact',
+    `categorie: ${type}`,
+    'societe: ',
+    'role: ',
+    `email: ${noMatch.emailFrom}`,
+    'telephone: ',
+    'rencontre_via: ',
+    `date_premier_contact: ${today}`,
+    `date_derniere_interaction: ${today}`,
+    'classification: ',
+    'tags:',
+    `  - ${type}`,
+    '---',
+    '',
+    `# ${displayName}`,
+    '',
+    '## Historique',
+    '',
+    buildHistoriqueTitle(today, 'Premier contact email'),
+    '',
+    `Premier email reçu. ${noMatch.emailThreadRef}`,
+    '',
+  ].join('\n');
+
+  const trigger = `email_nomatch:${type}:${noMatch.id}`;
+
+  // Créer le fichier via vault-client
+  const success = await createVaultFile(targetFolder, filename, content, trigger);
+
+  if (!success) {
+    console.warn(`[callback-handler] createVaultFile échoué pour ${target}`);
+    await sendSimpleMessage(
+      callback.chat_id,
+      `\u{274C} Erreur création fiche : ${target}`,
+    );
+    return;
+  }
+
+  // Audit JSONL
+  await auditAction(
+    'nomatch_create',
+    type,
+    noMatch.id,
+    target,
+    'ok',
+  );
+
+  // Supprimer le no-match pending
+  await deleteNoMatch(noMatch.id);
+
+  // Edit le message Telegram
+  const { text: originalText } = buildNoMatchCard(noMatch);
+  const time = currentTimeHHMM();
+  await editMessageText(
+    callback.chat_id,
+    callback.message_id,
+    originalText + `\n\n\u{2705} Fiche créée : ${target} à ${time}`,
+  );
+}
+
+/**
+ * Traite un skip no-match : supprime le pending, edit le message.
+ */
+async function handleNoMatchSkip(
+  noMatch: NoMatchPending,
+  callback: TelegramCallback,
+): Promise<void> {
+  await deleteNoMatch(noMatch.id);
+
+  await auditAction(
+    'nomatch_skip',
+    'skip',
+    noMatch.id,
+    null,
+    'ok',
+  );
+
+  const { text: originalText } = buildNoMatchCard(noMatch);
+  const time = currentTimeHHMM();
+  await editMessageText(
+    callback.chat_id,
+    callback.message_id,
+    originalText + `\n\n\u{23ED}\u{FE0F} Skippé à ${time}`,
+  );
+}
+
+// ============================================================
 // API publique
 // ============================================================
 
 /**
  * Traite un callback Telegram de validation email-ingest.
  *
- * Appelé depuis le webhook Telegram quand Thomas clique un bouton inline
- * sur une carte de validation email.
+ * Dispatche vers le handler approprié selon le préfixe du callback_data :
+ * - email_val: → validation carte principale (valider/skip/voir/modifier)
+ * - email_nomatch: → création fiche contact (pro/famille/amis/autres/skip)
  *
  * @param callback Les données du callback Telegram
  */
@@ -332,7 +503,14 @@ export async function handleTelegramCallback(callback: TelegramCallback): Promis
   // Toujours acquitter le callback pour retirer le spinner
   const answerPromise = answerCallbackQuery(callback.callback_query_id);
 
-  // Parser le callback data
+  // Dispatch selon le préfixe
+  if (callback.data.startsWith(NOMATCH_CALLBACK_PREFIX)) {
+    await handleNoMatchDispatch(callback);
+    await answerPromise;
+    return;
+  }
+
+  // Parser le callback data (validation principale)
   const parsed = parseCallbackData(callback.data);
   if (!parsed) {
     console.warn(`[callback-handler] callback data invalide : ${callback.data}`);
@@ -381,4 +559,46 @@ export async function handleTelegramCallback(callback: TelegramCallback): Promis
   }
 
   await answerPromise;
+}
+
+// ============================================================
+// No-match dispatch (Jalon 4D-2)
+// ============================================================
+
+/**
+ * Dispatch interne pour les callbacks no-match.
+ */
+async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> {
+  const parsed = parseNoMatchCallbackData(callback.data);
+  if (!parsed) {
+    console.warn(`[callback-handler] no-match callback data invalide : ${callback.data}`);
+    return;
+  }
+
+  const { type, noMatchId } = parsed;
+
+  try {
+    const noMatch = await getNoMatch(noMatchId);
+    if (!noMatch) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        '\u{26A0}\u{FE0F} Demande expirée ou introuvable. Crée la fiche manuellement si nécessaire.',
+      );
+      return;
+    }
+
+    if (type === 'skip') {
+      await handleNoMatchSkip(noMatch, callback);
+    } else {
+      await handleNoMatchCallback(noMatch, type, callback);
+    }
+  } catch (err) {
+    console.warn(
+      `[callback-handler] erreur traitement no-match ${type} pour ${noMatchId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    await sendSimpleMessage(
+      callback.chat_id,
+      `\u{274C} Erreur lors de la création de fiche : ${err instanceof Error ? err.message : 'inconnue'}`,
+    );
+  }
 }
