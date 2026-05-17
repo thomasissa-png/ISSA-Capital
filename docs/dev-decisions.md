@@ -1026,3 +1026,45 @@ Tout état interactif que Thomas doit valider manuellement : TTL minimum **7 jou
 ### Fichiers modifiés
 
 - `src/lib/secretariat/telegram-validation/pending-store.ts` — constante TTL
+
+---
+
+## Décisions cadrage S15 — 2026-05-17 (Thomas valide)
+
+### Q1 — Intégration TickTick : API native bidirectionnelle + iCal en complément
+
+**Décision** : option **A + C**.
+- **A (API TickTick native)** : intégration REST officielle (developer.ticktick.com) + OAuth + webhooks pour la bidirectionnalité Anya ↔ TickTick (création tâches par Anya, lecture des modifications/complétions par Thomas).
+- **C (iCal en complément)** : flux iCal exposé pour visualisation des tâches Anya dans Google Calendar ou autre client de Thomas (lecture seule, complémentaire au A).
+
+**Pourquoi** : Thomas veut une vraie bidirectionnalité — Zapier rejeté (dépendance externe + latence). iCal seul écarté car lecture seule (non bidirectionnel). L'API native est le standard, full CRUD, contrôle total.
+
+**Impact jalon** : 5C (Tâche TickTick) — implémenter `ticktick-client.ts` avec OAuth + endpoints + écoute webhook + export iCal.
+
+### Q2 — Cron polling Gmail toutes les 1h (pas de Pub/Sub)
+
+**Décision** : option **B (cron 1h)** sur Replit scheduled task.
+
+**Pourquoi écarter Pub/Sub** : Google Pub/Sub Gmail est gratuit en usage modéré mais exige un **compte de facturation GCP** (carte bancaire active, même sans débit). Préférence Thomas #94 (lessons-learned S13) refuse les services qui imposent un billing account.
+
+**Pourquoi 1h plutôt que 15 min** : Thomas a explicitement validé "1h suffit". Latence acceptable pour un secrétariat email (Thomas ne répond pas à la seconde). Réduit la fréquence d'appels API Gmail × 4 vs reco initiale 15 min.
+
+**Impact jalon** : 5A (Webhook Gmail temps réel) — remplacer par un cron Replit toutes les 1h appelant `runEmailIngest()` avec déduplication messageId.
+
+### Q3 — Priorité jalons S15 : 5B > 5A > 5D > 5C
+
+**Décision** : ordre validé.
+
+**Pourquoi** :
+- 5B en premier : valeur opérationnelle quotidienne maximale (drafts Gmail prêts à valider)
+- 5A : élimine le déclenchement manuel (cron 1h)
+- 5D : refactor cache → vault live, débloque qualité long terme tous jalons
+- 5C : dernier (Thomas peut créer une tâche TickTick à la main en attendant)
+
+**Parallélisation possible** : 5B et 5D sont indépendants (zéro dépendance fichier), peuvent être lancés en parallèle par l'orchestrator.
+
+### Statut TODOs Thomas en attente
+
+- TODO #1 (section Tonalité dans `Thomas Issa.md` vault) : **toujours bloquant 5B**. Fallback tonalité générique acceptable si Thomas tarde.
+- TODO #2 (re-test E2E TTL 7j) : indépendant de S15.
+- TODO #3/#4 (encadrement loyers, IRL INSEE) : hors scope S15.
