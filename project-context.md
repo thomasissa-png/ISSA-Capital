@@ -472,6 +472,8 @@ CTA principal sur tout le site : **"Proposer une opportunité d'investissement"*
 | fullstack (S14) | 2026-05-17 | handlers/vault-paths.ts, handlers/candidat.ts, fix 4 handlers + tests, email-ingest-runner dispatch, 906 tests total | Jalon 4D-1 : fix paths vault inventés. Centralisation VAULT_PATHS (source : scan Drive 2026-05-17). Handler candidat dédié (_Candidats/). Slugify filenames, em-dash, ref Gmail. Frontmatter contact-pro aligné vault réel. Dispatch candidat→handleCandidat. +50 tests (856→906). | Paths inventés = bug bloquant en prod. Workflow Bail → Baux/ documenté, hors scope ce lot. |
 | fullstack (S14) | 2026-05-17 | no-match-card.ts, pending-store.ts (+NoMatch), callback-handler.ts (+dispatch), contact-pro.ts, locataire.ts, email-ingest-runner.ts, index.ts, 6 test files, 946 tests total | Jalon 4D-2 : no-match UX 5 boutons (Pro/Famille/Amis/Autres/Skip). Fin du stub auto pour contacts inconnus. Store séparé nomatch-pendings.json (mutex indépendant). Callback prefix email_nomatch:. 2 cartes Telegram (principale + secondaire). Candidat exclu (création auto légitime). +40 tests (906→946). | Stub auto = fiches incorrectes à corriger. Validation humaine Thomas obligatoire pour classement contact. |
 | fullstack (S14) | 2026-05-17 | triage-v1.md, contacts-cache.ts, frontmatter.ts, 3 test files, 956 tests total | Jalon 4D-3 (lot final) : prompt triage enrichi avec 11 locataires + 12 contacts pro réels. Cache contacts étendu Amis (Carl/Maxime cofondateurs). extractEmails parse "Emails secondaires" dans ## Notes (spec D2). Anti-pattern n5 "liste injection prioritaire". +11 tests (946→956). Jalon 4D COMPLET (lots 1+1.5+2+3 = 9 commits). | Listes réelles > placeholders. Amis = pro fonctionnellement. Emails secondaires en Notes (Kenan, Timilas garant). |
+| fullstack (S14) | 2026-05-17 | vault-client/vault-paths.ts (fix paths findContactByEmail), webhook/route.ts (dispatch email_nomatch:), pending-store.ts (TTL 24h→7j), 956→956 tests | Fix prod #1 : dispatch webhook `email_nomatch:` oublié par Lot 2 (callbacks tombaient dans router CR S13). Fix prod #2 : TTL pending interactifs 24h→7j (usage humain week-end/vacances). Fix critique paths vault-client (findContactByEmail jamais matché sans paths centralisés). | Tout nouveau callback Telegram = vérifier dispatch webhook. TTL pendings 7j minimum. |
+| orchestrator (S14 clôture) | 2026-05-17 | docs/lessons-learned.md (+4 entrées), docs/founder-preferences.md (+5 prefs), docs/session-memo-s15.md (créé), _gates.md (proposition G33) | Clôture procédurale S14 : 15 commits, jalons 4A→4D-3 + 2 fixes prod, 856→956 tests (+100). Découverte MCP Drive accessible. Roadmap S15 formalisée. 4 learnings + 5 préférences Thomas documentés. | Vault Drive = source vérité absolue. Fiche prime > miroir. TTL 7j. Emails restent INBOX. |
 
 ---
 
@@ -542,20 +544,21 @@ Les mémos de reprise des sessions 5, 6, 7, 9, 10 et 11 ont été archivés dans
 
 ---
 
-## Mémo de reprise — Session 15 (clôture session 14 le 2026-05-13)
+## Mémo de reprise — Session 15 (clôture session 14 le 2026-05-17)
 
 ### Numéro de session : 15
 
-### Date de clôture : 2026-05-13
+### Date de clôture : 2026-05-17
 
 ### Branche active S14 : `claude/issa-capital-s14-ttl-audit-ZQcQS`
 
 ### Résumé de la session 14 (en 5 lignes)
 
-Session 14 = audit TTL framework complet + propagation P1. (1) CLAUDE.md dégraissé 482→134 lignes : 32 gates extraites vers `_gates.md`, règles 25 (données perdues à la source) + 26 (zéro commit essai-erreur) ajoutées. (2) project-context.md dégraissé ~705→616 lignes : historique S1-9 archivé vers `docs/project-context-archive.md`, Performance condensée. (3) lessons-learned.md dégraissé 99→25 lignes : entrées terminées S-Cadrage à S11 archivées vers `docs/lessons-learned-archive.md`. (4) 4 P1 (#91-#94) propagés vers ia.md, fullstack.md, qa.md, _base-agent-protocol.md, infrastructure.md — tous marqués `propag`. (5) 0 code touché, 0 test modifié. Framework uniquement.
+Session 14 = audit TTL framework + email-ingest V1 complète + 2 fixes prod. (1) Début : audit TTL framework (CLAUDE.md 482→134, _gates.md créé, archivages, propagation 4 P1). (2) Email-ingest jalons 0→4D-3 complets : vault-client, gmail-source, triage Haiku, handlers 4 catégories, pending-store Drive, no-match UX 5 boutons, prompt enrichi contacts réels. 856→956 tests (+100). (3) Fix prod #1 : dispatch webhook `email_nomatch:` oublié. (4) Fix prod #2 : TTL pendings 24h→7j. (5) Découverte MCP Drive accessible en live — game-changer architectural pour S15.
 
 ### Travaux en cours (à reprendre S15)
 
+- **Roadmap S15 : Anya temps réel + drafts + vault live** — voir `docs/session-memo-s15.md` pour détails jalons 5A/5B/5C/5D.
 - **P0 #2 bail — encadrement loyers (zone tendue Nanterre + Paris 18)** : INCHANGÉ depuis S12. Bloqué par décision Thomas. **Action Thomas** : aller sur encadrementdesloyers.gouv.fr, récupérer pour chaque bien loyer de référence + loyer de référence majoré (EUR/m2). À intégrer dans `BailVariables` (`loyerReferenceEncadrement` + `loyerReferenceMajore`). Art. 140 loi ELAN.
 - **P0 #3 bail — IRL valeur numérique** : INCHANGÉ depuis S12. **Option A (recommandée)** : appel API INSEE auto. **Option B** : saisie manuelle trimestrielle. Art. 17-1 loi 89-462.
 - **P1 audit @legal hors scope** : INCHANGÉS depuis S12. (a) quittance "Cette quittance est délivrée gratuitement" art. 21 al. 5, (b) fin-de-bail référence état des lieux + art. 22.
@@ -563,9 +566,8 @@ Session 14 = audit TTL framework complet + propagation P1. (1) CLAUDE.md dégrai
 - **Contradiction brief vs code — meublé vs nu** : confirmer biens tous meublés OU template nu nécessaire.
 - **Promotion candidat → locataire (Phase 6)** : INCHANGÉ depuis S12. `/promouvoir <nom>` → migration `.md` `_Candidats/` → `05. Locataires/01. Actuels/<nom>/` + dossiers Baux/Quittances/EDL/. ~30 min.
 - **Helper `extractPdfText` partagé** : INCHANGÉ depuis S12. À extraire dans `src/lib/test-utils/pdf-text.ts`.
-- **Audit TTL TERMINÉ S14** : CLAUDE.md (482→134), project-context.md (~705→616), lessons-learned.md (99→25). 4 P1 propagés. 3 fichiers d'archivés créés.
-- **Email-ingest** : plan révisé S13 (mindset IA + mutualisation router + Phase 1B Outlook préparée). Prêt à coller dans nouvelle session @fullstack après stabilisation. Estimation Phase 1A Gmail = ~6-7h Claude Code.
-- **Activer `inbox-message-router` en prod** : nécessité que Thomas re-OAuth Google (scope `calendar.events` ajoute S13) + ajoute `OPENAI_API_KEY` dans Replit Secrets pour voice.
+- **Activer `inbox-message-router` en prod** : nécessité que Thomas re-OAuth Google (scope `calendar.events` ajouté S13) + ajoute `OPENAI_API_KEY` dans Replit Secrets pour voice.
+- **MCP Drive accessible** (découverte S14) : Claude Code peut lire le vault Drive en direct via MCP. Implication : migration cache statique → lecture live planifiée en 5D.
 
 ### Actions Thomas à valider en début S14
 

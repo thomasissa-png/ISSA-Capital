@@ -125,6 +125,21 @@
 - **NO-GO** : >= 1 gate BLOQUANT FAIL -> relance immédiate
 - **Gates CONDITIONNEL** : s'appliquent uniquement si le livrable amont existe. Si applicable et FAIL -> traité comme REQUIS FAIL. Si non applicable -> N/A.
 
+## Gates promues (issues de bugs récurrents)
+
+> Gates ajoutées quand un pattern d'erreur est détecté sur 2+ sessions ou 3+ audits. Promu = même autorité que les 32 gates natives.
+
+| # | Gate | Classe | Vérification | Source |
+|---|---|---|---|---|
+| G33 | Dispatch webhook exhaustif pour tout nouveau callback Telegram | BLOQUANT | Pour chaque préfixe de callback déclaré dans un handler (`email_nomatch:`, `email_val:`, `cr:`, etc.) : (1) le dispatch existe dans `webhook/route.ts`, (2) un test E2E callback→handler est présent, (3) le callback ne tombe PAS en cascade dans un autre router | Learning #97 S14 — `email_nomatch:` oublié, callbacks tombaient dans router CR S13. Détecté en revue prod. |
+
+**Checklist G33 (pour @fullstack et @qa)** :
+1. Nouveau handler avec préfixe callback créé ? → Ouvrir `webhook/route.ts`
+2. Ajouter le `case` ou `startsWith` pour le nouveau préfixe
+3. Écrire un test E2E : `POST /api/telegram/webhook` avec `callback_query.data` = `[prefix]:[payload]` → vérifier que le bon handler est appelé
+4. Vérifier qu'aucun autre `startsWith` en amont ne capture le préfixe par erreur (test négatif)
+5. Si le handler est livré sans les étapes 2-4 → gate G33 FAIL = NO-GO
+
 ## Score numérique dérivé
 
 Pour le tableau "Performance des agents" : `(gates PASS / gates applicables) x 10`. Indicateur de suivi, pas critère de décision.
