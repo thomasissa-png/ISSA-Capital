@@ -1,7 +1,7 @@
 # Anya — Bot Telegram secrétariat ISSA Capital
 
 > Fiche technique partageable. Source de vérité pour tout autre Claude (Cowork, Desktop, autre repo) qui doit comprendre ou faire évoluer Anya.
-> Dernière mise à jour : 2026-05-14 (session 14 — V1 email-ingest complète, Jalons 0-4).
+> Dernière mise à jour : 2026-05-17 (session 14 — V1 email-ingest complète, Jalons 0-4D FAIT).
 
 ---
 
@@ -23,7 +23,7 @@
 | Stockage | Google Drive (OAuth2 refresh token, scope `drive + calendar.events`) + JSON files persistés (conversation, drafts, contacts, compteur référence) |
 | PDF / DOCX | PDFKit (CR, quittance, fin de bail) + docx (bail meublé) |
 | EXIF photos | exifr (JPEG) + ExifReader (HEIC) — détection par signature bytes, pas par MIME |
-| Tests | Vitest — **856/856 passent** |
+| Tests | Vitest — **956/956 passent** |
 | Hébergement | Replit |
 
 ## Architecture globale
@@ -336,10 +336,11 @@ Couverture :
 - **Jalon 1 — Vault client** : FAIT (Session 14) — `src/lib/secretariat/vault-client/` (7 modules, 81 tests, frontmatter bit-perfect, cache TTL 1h, write-lock, audit trail)
 - **Jalon 2 — Gmail source** : FAIT (Session 14) — `src/lib/secretariat/gmail-source/` (4 modules, 49 tests). Client Gmail API mutualisé, label-resolver cache TTL 1h, listing+filtre local. OAuth étendu (3 scopes Gmail). CLI `npm run ingest:gmail -- --dry-run`.
 - **Jalon 3 — Triage Haiku** : FAIT (Session 14) — `src/lib/secretariat/triage/` (3 modules, 52 tests). Prompt versionné triage-v1.md. Haiku 4.5 (`claude-haiku-4-5-20251001`), validation Zod, retry x1, override confidence < 0.7. Matrice confusion 20 fixtures : 100% catégorie, 100% intent.
-- **Jalon 4 — V1 complète** : FAIT (Session 14) — 3 sous-phases :
+- **Jalon 4 — V1 complète** : FAIT (Session 14) — 4 sous-phases + 1 fix :
   - **4A** : 4 handlers (locataire, contact-pro, apporteur, a-classifier) + types ActionProposal
   - **4B** : module telegram-validation (cards HTML, pending-store Drive, callback-handler)
   - **4C** : pipeline runner `runEmailIngest()`, pré-filtre heuristique (~70% économie Haiku), contacts cache TTL 1h, endpoint POST `/api/secretariat/email-ingest?secret=<token>`, dispatch webhook `email_val:`. 57 tests ajoutés (856 total).
+  - **4D** : fix paths vault (VAULT_PATHS centralisé), handler candidat dédié, no-match UX 5 boutons Telegram, prompt triage enrichi (11 locataires + 12 contacts pro réels), cache contacts étendu Amis, extractEmails parse Notes secondaires. +100 tests (856→956 total). 9 commits (lots 1+1.5+2+3).
 
 **À venir** :
 

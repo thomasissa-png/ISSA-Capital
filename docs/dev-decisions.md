@@ -946,3 +946,59 @@ Le handler `candidat.ts` conserve son comportement d'origine (création automati
 - `src/lib/secretariat/email-ingest/__tests__/email-ingest-runner.test.ts` — +4 tests
 - `docs/dev-decisions.md` — cette section
 - `project-context.md` — historique mis à jour
+
+---
+
+## Jalon 4D-3 — Prompt triage enrichi, cache contacts amis, extractEmails Notes (session 14, 2026-05-17)
+
+> Sources amont : docs/ia/Anya - Reponse questionnaire vault-paths.md §D2, §H1, §H2
+
+### Enrichissement du prompt triage (triage-v1.md)
+
+Le prompt Haiku est enrichi avec les **listes réelles** extraites du questionnaire vault-paths :
+
+1. **11 locataires actuels** avec email primaire + email secondaire (quand disponible). 3 locataires sans email confirmé (Lucas Geoffroy, Nzioka Mutheu, Pauline Farssi) sont mentionnés avec confidence réduite (0.85 max).
+2. **12 contacts pro** incluant Carl et Maxime (cofondateurs, rangés en `02. Amis/` dans le vault mais fonctionnellement pro).
+3. **Anti-pattern n5 "Liste injection prioritaire"** : si l'email matche un contact dans les listes injectées, la catégorie est forcée (locataire ou contact-pro) avec confidence >= 0.95. Empêche Haiku de "deviner" une autre catégorie quand le match est certain.
+
+### Cache contacts étendu aux Amis (contacts-cache.ts)
+
+`loadKnownContacts()` scanne désormais 3 sources au lieu de 2 :
+1. `07. Contacts/05. Locataires/01. Actuels/` → type `locataire`
+2. `07. Contacts/03. Pro/` → type `pro` (limite 20)
+3. `07. Contacts/02. Amis/` → type `pro` (limite 15)
+
+Les amis sont classés `pro` dans le cache car les contacts les plus importants dans ce dossier (Carl Standertskjold-Nordenstam, Maxime Lemoine) sont les cofondateurs de Versi/Gradient One. Un email pro venant d'eux doit être traité comme contact-pro.
+
+**Décision : pas d'extension `Autres` et `Anciens`** — le volume potentiel est trop important et risquerait de saturer le contexte Haiku. Un paramètre optionnel peut être ajouté plus tard si besoin.
+
+### extractEmails enrichi (frontmatter.ts)
+
+La fonction `extractEmails()` parse désormais 3 sources d'emails au lieu de 2 :
+1. Champ `email:` du frontmatter (primaire)
+2. Liste `alias_email:` du frontmatter
+3. Ligne "Emails secondaires: a@x, b@y" dans la section `## Notes` du body (spec D2)
+
+Les annotations entre parenthèses sont ignorées : `amrouchemehmel971@gmail.com (garant père)` → extrait `amrouchemehmel971@gmail.com`.
+
+Les résultats sont dédupliqués via `Set` (un email présent en primaire ET secondaire n'apparaît qu'une fois).
+
+### Impact sur findContactByEmail (vault-client/index.ts)
+
+`findContactByEmail()` utilise `extractEmails()` qui est la même fonction enrichie. Donc un match sur un email secondaire dans `## Notes` retrouvera automatiquement la bonne fiche contact. Pas de modification du code de `findContactByEmail` nécessaire, seulement sa dépendance `extractEmails` est enrichie.
+
+### Tests
+
++11 nouveaux tests (946 → 956 total) :
+- `vault-client/__tests__/frontmatter.test.ts` : +5 tests extractEmails Notes (secondaire simple, multiples virgule, sans primaire, annotations parenthèses, dedup)
+- `email-ingest/__tests__/contacts-cache.test.ts` : +5 tests (charge amis comme pro, limite 15, fusion 3 sources, log warn comptage, fix 2 tests existants 2→3 appels)
+- `vault-client/__tests__/index.test.ts` : +1 test findContactByEmail via email secondaire Notes
+
+### Fichiers modifiés
+
+- `src/lib/secretariat/triage/prompts/triage-v1.md` — listes locataires + pro + anti-pattern n5
+- `src/lib/secretariat/email-ingest/contacts-cache.ts` — scan Amis + AMIS_CONTACTS_LIMIT
+- `src/lib/secretariat/vault-client/frontmatter.ts` — extractEmails parse Notes secondaires
+- `src/lib/secretariat/vault-client/__tests__/frontmatter.test.ts` — +5 tests
+- `src/lib/secretariat/email-ingest/__tests__/contacts-cache.test.ts` — +5 tests + fix 2
+- `src/lib/secretariat/vault-client/__tests__/index.test.ts` — +1 test
