@@ -92,7 +92,8 @@ describe('buildNoMatchCard', () => {
 
     const allButtons = inlineKeyboard.flat();
     for (const button of allButtons) {
-      expect(button.callback_data.startsWith(NOMATCH_CALLBACK_PREFIX)).toBe(true);
+      const cbData = 'callback_data' in button ? button.callback_data : '';
+      expect(cbData.startsWith(NOMATCH_CALLBACK_PREFIX)).toBe(true);
     }
   });
 
@@ -100,11 +101,16 @@ describe('buildNoMatchCard', () => {
     const { inlineKeyboard } = buildNoMatchCard(makeNoMatch({ id: 'test-id-42' }));
 
     const allButtons = inlineKeyboard.flat();
-    expect(allButtons[0]!.callback_data).toBe('email_nomatch:pro:test-id-42');
-    expect(allButtons[1]!.callback_data).toBe('email_nomatch:famille:test-id-42');
-    expect(allButtons[2]!.callback_data).toBe('email_nomatch:amis:test-id-42');
-    expect(allButtons[3]!.callback_data).toBe('email_nomatch:autres:test-id-42');
-    expect(allButtons[4]!.callback_data).toBe('email_nomatch:skip:test-id-42');
+    const cb = (i: number) => {
+      const btn = allButtons[i]!;
+      return 'callback_data' in btn ? btn.callback_data : '';
+    };
+
+    expect(cb(0)).toBe('email_nomatch:pro:test-id-42');
+    expect(cb(1)).toBe('email_nomatch:famille:test-id-42');
+    expect(cb(2)).toBe('email_nomatch:amis:test-id-42');
+    expect(cb(3)).toBe('email_nomatch:autres:test-id-42');
+    expect(cb(4)).toBe('email_nomatch:skip:test-id-42');
   });
 
   it('les boutons ont les bons labels avec emojis', () => {

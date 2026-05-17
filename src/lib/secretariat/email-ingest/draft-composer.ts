@@ -22,9 +22,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { EmailMessage } from '../gmail-source/types';
 import type { TriageResult } from '../triage/types';
 import { createDraft } from '../gmail-source/gmail-client';
-import type { CreateDraftResult } from '../gmail-source/gmail-client';
-import { findContactCached } from '../vault-reader';
-import { readVaultFile } from '../vault-reader';
+import { findContactCached, readVaultFile } from '../vault-reader';
 import { parseObsidianFile } from '../vault-client/frontmatter';
 
 // ============================================================

@@ -19,25 +19,53 @@
 
 | Tâche | Description | Fichiers cibles | Statut |
 |---|---|---|---|
-| T1 Cache Haiku | Activer cache_control sur appels Haiku | `triage.ts` | EN COURS |
-| T3 5D Vault reader | Module vault-reader.ts + migration contacts-cache | `vault-reader.ts` (NEW), `contacts-cache.ts`, tests | EN COURS |
-| T2 5B Draft Gmail | Module draft-composer.ts + intégration pipeline | `draft-composer.ts` (NEW), `gmail-client.ts`, `email-ingest-runner.ts`, `telegram-cards.ts`, `webhook/route.ts` | EN ATTENTE (dépend T3) |
+| T1 Cache Haiku | Activer cache_control sur 2 appels Haiku | `triage.ts`, `inbox-message-router.ts` | COMPLETE |
+| T3 5D Vault reader | Module vault-reader.ts + migration contacts-cache + nettoyage prompt | `vault-reader.ts` (NEW), `contacts-cache.ts`, `triage-v1.md`, tests | COMPLETE |
+| T2 5B Draft Gmail | Module draft-composer.ts + intégration pipeline + bouton Telegram | `draft-composer.ts` (NEW), `gmail-client.ts`, `email-ingest-runner.ts`, `telegram-cards.ts`, tests | COMPLETE |
+
+### Fichiers créés
+- `src/lib/secretariat/vault-reader.ts` — Cache TTL 1h sur vault-client (file + folder + contact)
+- `src/lib/secretariat/__tests__/vault-reader.test.ts` — 15 tests
+- `src/lib/secretariat/email-ingest/draft-composer.ts` — Composition brouillon Gmail via Sonnet 4
+- `src/lib/secretariat/email-ingest/__tests__/draft-composer.test.ts` — 18 tests
+- `src/lib/secretariat/gmail-source/gmail-client.ts` — Ajout `createDraft()` + `CreateDraftResult`
+
+### Fichiers modifiés
+- `src/lib/secretariat/triage/triage.ts` — cache_control ephemeral sur Haiku
+- `src/lib/secretariat/workflows/inbox-message-router.ts` — cache_control ephemeral sur Haiku
+- `src/lib/secretariat/email-ingest/contacts-cache.ts` — Migré vers vault-reader
+- `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — Intégration draft-composer + stats
+- `src/lib/secretariat/telegram-validation/telegram-cards.ts` — TelegramButton union, draftGmailUrl, bouton "Voir dans Gmail"
+- `src/lib/secretariat/telegram-validation/index.ts` — Export TelegramButton
+- `src/lib/secretariat/triage/prompts/triage-v1.md` — Suppression contacts hardcodés
+
+### Tests modifiés
+- `contacts-cache.test.ts` — Mock vault-reader au lieu de drive-resolver
+- `telegram-cards.test.ts` — Union type + tests bouton draft
+- `no-match-card.test.ts` — Union type TelegramButton
+- `email-ingest-runner.test.ts` — Mock draft-composer + 6 tests draft
+- `route.test.ts` (email-ingest API) — Ajout champs stats draft
 
 ### Analyse conflits fichiers
 
 T1 (triage.ts) et T3 (vault-reader, contacts-cache) = 0 conflit -> parallèle.
-T2 (runner, webhook) dépend de T3 (runner modifié) -> séquentiel après T3.
+T2 (runner, telegram-cards) dépend de T3 (runner modifié) -> séquentiel après T3.
 
-### Séquencement
+### Séquencement exécuté
 
-**Batch A** (parallèle) : T1 + T3
-**Batch B** (séquentiel) : T2
+**Batch A** (parallèle) : T1 + T3 -> COMPLETE
+**Batch B** (séquentiel) : T2 -> COMPLETE
 
 ### Métriques live
 | Phase | Tasks | Parallèles | Relances | P0 | Coût estimé | Statut |
 |---|---|---|---|---|---|---|
-| Batch A | 2 | 2 | 0 | 0 | ~$8 | EN COURS |
-| Batch B | 1 | 0 | 0 | 0 | ~$4 | EN ATTENTE |
+| Batch A | 2 | 2 | 0 | 0 | ~$8 | COMPLETE |
+| Batch B | 1 | 0 | 0 | 0 | ~$4 | COMPLETE |
+
+### Prochaines étapes
+- Vérification : `tsc --noEmit` + `vitest run` (956 tests + ~39 nouveaux)
+- Si OK : commit + push
+- Batch 2 S15 : 5A (Gmail Pub/Sub webhook) + 5C (TickTick tâches)
 
 ---
 
