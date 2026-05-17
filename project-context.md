@@ -251,6 +251,7 @@ Les informations suivantes sont archivées dans `docs/project-context-archive.md
 | fullstack (S14) | 2026-05-17 | vault-paths fix, webhook dispatch, pending-store TTL 7j, 956 tests | Fix prod #1 : dispatch `email_nomatch:` oublié. Fix prod #2 : TTL 24h→7j. | Tout callback = vérifier dispatch. TTL 7j minimum. |
 | orchestrator (S14 clôture) | 2026-05-17 | lessons-learned.md, founder-preferences.md, session-memo-s15.md, _gates.md | Clôture S14. Découverte MCP Drive. Roadmap S15 formalisée. 4 learnings + 5 prefs. | Vault Drive = source vérité absolue. |
 | orchestrator (S15) | 2026-05-17 | project-context.md (refonte TTL), project-context-archive.md (+bio/CV/hypothèses), CLAUDE.md (+règles ISSA), lessons-learned.md (propagation 4 P0/P1 S14) | Audit TTL exécuté : 622L→~310L. Archivage bio/CV/H1-H12. Condensation principe directeur/participations/accompagnement/decisions. Propagation 4 learnings S14 dans CLAUDE.md (section ISSA custom). | Cap 250L hors memo respecté. Règles survit aux updates Gradient car dans CLAUDE.md custom. |
+| orchestrator (S15) | 2026-05-17 | docs/orchestration-plan-s15.md | Cadrage S15 : tableau 4 jalons 5A-5D, graphe dependances, 3 questions Thomas (Q1 TickTick, Q2 Pub/Sub, Q3 priorite), risques, criteres de done, plan execution post-reponses. | Sequencement 5B>5A>5D>5C confirme (valeur operationnelle). Cron polling recommande sur Pub/Sub (pref #94 billing). 5D parallelisable immediatement. |
 
 ---
 
