@@ -468,6 +468,101 @@ email: Thomas.ISSA@Gmail.com
     const emails = extractEmails(parsed);
     expect(emails).toHaveLength(0);
   });
+
+  // -----------------------------------------------------------
+  // Tests : emails secondaires dans ## Notes (spec D2 vault-paths)
+  // -----------------------------------------------------------
+
+  it('extrait un email secondaire depuis ## Notes', () => {
+    const content = `---
+email: primary@example.com
+---
+
+# Test Contact
+
+## Notes
+
+Emails secondaires: secondary@example.com
+`;
+    const parsed = parseObsidianFile(content);
+    const emails = extractEmails(parsed);
+    expect(emails).toContain('primary@example.com');
+    expect(emails).toContain('secondary@example.com');
+    expect(emails).toHaveLength(2);
+  });
+
+  it('extrait plusieurs emails secondaires (virgule) depuis ## Notes', () => {
+    const content = `---
+email: primary@example.com
+---
+
+# Test Contact
+
+## Notes
+
+Emails secondaires: a@example.com, b@example.com, c@example.com
+`;
+    const parsed = parseObsidianFile(content);
+    const emails = extractEmails(parsed);
+    expect(emails).toHaveLength(4);
+    expect(emails).toContain('primary@example.com');
+    expect(emails).toContain('a@example.com');
+    expect(emails).toContain('b@example.com');
+    expect(emails).toContain('c@example.com');
+  });
+
+  it('extrait un email secondaire meme sans email primaire dans le frontmatter', () => {
+    const content = `---
+type: contact
+---
+
+# Contact sans email primaire
+
+## Notes
+
+Email secondaire: backup@example.com
+`;
+    const parsed = parseObsidianFile(content);
+    const emails = extractEmails(parsed);
+    expect(emails).toHaveLength(1);
+    expect(emails).toContain('backup@example.com');
+  });
+
+  it('ignore les annotations entre parentheses dans les emails secondaires', () => {
+    const content = `---
+email: timimehmel@gmail.com
+---
+
+# Timilas Mehmel
+
+## Notes
+
+Emails secondaires: amrouchemehmel971@gmail.com (garant père)
+`;
+    const parsed = parseObsidianFile(content);
+    const emails = extractEmails(parsed);
+    expect(emails).toHaveLength(2);
+    expect(emails).toContain('timimehmel@gmail.com');
+    expect(emails).toContain('amrouchemehmel971@gmail.com');
+  });
+
+  it('deduplique les emails (primaire == secondaire)', () => {
+    const content = `---
+email: same@example.com
+---
+
+# Test
+
+## Notes
+
+Emails secondaires: same@example.com, other@example.com
+`;
+    const parsed = parseObsidianFile(content);
+    const emails = extractEmails(parsed);
+    expect(emails).toHaveLength(2);
+    expect(emails).toContain('same@example.com');
+    expect(emails).toContain('other@example.com');
+  });
 });
 
 // ============================================================

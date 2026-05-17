@@ -93,7 +93,8 @@ describe('loadKnownContacts', () => {
     // Locataires actuels : 1 fichier
     mockListMarkdownFiles
       .mockResolvedValueOnce([{ id: 'file1', name: 'Martin Dupont.md' }])
-      .mockResolvedValueOnce([]); // Pro vide
+      .mockResolvedValueOnce([])  // Pro vide
+      .mockResolvedValueOnce([]); // Amis vide
 
     mockReadFileById.mockResolvedValueOnce({
       success: true,
@@ -127,7 +128,8 @@ describe('loadKnownContacts', () => {
   it('utilise le nom de fichier si pas de frontmatter nom/prenom', async () => {
     mockListMarkdownFiles
       .mockResolvedValueOnce([{ id: 'file1', name: 'Sophie Bernard.md' }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])  // Pro vide
+      .mockResolvedValueOnce([]); // Amis vide
 
     mockReadFileById.mockResolvedValueOnce({
       success: true,
@@ -161,9 +163,9 @@ describe('loadKnownContacts', () => {
     await loadKnownContacts();
     await loadKnownContacts();
 
-    // listMarkdownFiles appelé 2 fois au premier appel (locataires + pro),
+    // listMarkdownFiles appelé 3 fois au premier appel (locataires + pro + amis),
     // 0 fois au second (cache hit)
-    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(2);
+    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(3);
   });
 
   it('recharge après invalidation du cache', async () => {
@@ -173,8 +175,8 @@ describe('loadKnownContacts', () => {
     invalidateContactsCache();
     await loadKnownContacts();
 
-    // 2 appels par loadKnownContacts × 2 = 4
-    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(4);
+    // 3 appels par loadKnownContacts × 2 = 6
+    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(6);
   });
 
   it('skip les fichiers sans email dans le frontmatter', async () => {
@@ -183,7 +185,8 @@ describe('loadKnownContacts', () => {
         { id: 'f1', name: 'Avec Email.md' },
         { id: 'f2', name: 'Sans Email.md' },
       ])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])  // Pro vide
+      .mockResolvedValueOnce([]); // Amis vide
 
     // Fichier 1 : avec email
     mockReadFileById
@@ -223,7 +226,10 @@ describe('loadKnownContacts', () => {
     }));
     mockListMarkdownFiles.mockResolvedValueOnce(proFiles);
 
-    // Tous les fichiers ont un email
+    // Amis : vide
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+
+    // Tous les fichiers ont un email (top 20 pro)
     for (let i = 0; i < 20; i++) {
       mockReadFileById.mockResolvedValueOnce({ success: true, content: `content_${i}` });
       mockParseObsidianFile.mockReturnValueOnce({
@@ -240,5 +246,152 @@ describe('loadKnownContacts', () => {
     expect(result).toHaveLength(20);
     // readFileById ne doit pas avoir été appelé pour les fichiers 20-24
     expect(mockReadFileById).toHaveBeenCalledTimes(20);
+  });
+
+  it('charge les contacts amis comme type pro (Carl, Maxime cofondateurs)', async () => {
+    // Locataires : vide
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    // Pro : vide
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    // Amis : 2 fichiers (Carl, Maxime)
+    mockListMarkdownFiles.mockResolvedValueOnce([
+      { id: 'carl-id', name: 'Carl Standertskjold-Nordenstam.md' },
+      { id: 'maxime-id', name: 'Maxime Lemoine.md' },
+    ]);
+
+    // Carl
+    mockReadFileById.mockResolvedValueOnce({ success: true, content: 'carl-content' });
+    mockParseObsidianFile.mockReturnValueOnce({
+      frontmatter: { fields: { nom: 'Standertskjold-Nordenstam', prenom: 'Carl', email: 'c.standertskjold@gmail.com' }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+      body: '',
+      fullContent: '',
+    });
+    mockExtractEmails.mockReturnValueOnce(['c.standertskjold@gmail.com']);
+
+    // Maxime
+    mockReadFileById.mockResolvedValueOnce({ success: true, content: 'maxime-content' });
+    mockParseObsidianFile.mockReturnValueOnce({
+      frontmatter: { fields: { nom: 'Lemoine', prenom: 'Maxime', email: 'maxime.lemoine@edhec.com' }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+      body: '',
+      fullContent: '',
+    });
+    mockExtractEmails.mockReturnValueOnce(['maxime.lemoine@edhec.com']);
+
+    const result = await loadKnownContacts();
+
+    expect(result).toHaveLength(2);
+    // Amis sont chargés comme type 'pro'
+    expect(result[0]!.type).toBe('pro');
+    expect(result[0]!.name).toBe('Carl Standertskjold-Nordenstam');
+    expect(result[0]!.email).toBe('c.standertskjold@gmail.com');
+    expect(result[1]!.type).toBe('pro');
+    expect(result[1]!.name).toBe('Maxime Lemoine');
+    expect(result[1]!.email).toBe('maxime.lemoine@edhec.com');
+  });
+
+  it('limite les contacts amis à 15 fichiers', async () => {
+    // Locataires : vide
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    // Pro : vide
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    // Amis : 20 fichiers
+    const amisFiles = Array.from({ length: 20 }, (_, i) => ({
+      id: `ami_${i}`,
+      name: `Ami ${i}.md`,
+    }));
+    mockListMarkdownFiles.mockResolvedValueOnce(amisFiles);
+
+    // Top 15 amis ont un email
+    for (let i = 0; i < 15; i++) {
+      mockReadFileById.mockResolvedValueOnce({ success: true, content: `ami-content-${i}` });
+      mockParseObsidianFile.mockReturnValueOnce({
+        frontmatter: { fields: { nom: `Ami ${i}`, email: `ami${i}@test.fr` }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+        body: '',
+        fullContent: '',
+      });
+      mockExtractEmails.mockReturnValueOnce([`ami${i}@test.fr`]);
+    }
+
+    const result = await loadKnownContacts();
+
+    // Seuls les 15 premiers amis sont chargés
+    expect(result).toHaveLength(15);
+    expect(mockReadFileById).toHaveBeenCalledTimes(15);
+  });
+
+  it('fusionne locataires + pro + amis dans un seul tableau', async () => {
+    // 1 locataire
+    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'loc1', name: 'Locataire 1.md' }]);
+    // 1 pro
+    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'pro1', name: 'Pro 1.md' }]);
+    // 1 ami
+    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'ami1', name: 'Ami 1.md' }]);
+
+    // Locataire
+    mockReadFileById.mockResolvedValueOnce({ success: true, content: 'loc' });
+    mockParseObsidianFile.mockReturnValueOnce({
+      frontmatter: { fields: { email: 'loc@test.fr' }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+      body: '',
+      fullContent: '',
+    });
+    mockExtractEmails.mockReturnValueOnce(['loc@test.fr']);
+
+    // Pro
+    mockReadFileById.mockResolvedValueOnce({ success: true, content: 'pro' });
+    mockParseObsidianFile.mockReturnValueOnce({
+      frontmatter: { fields: { email: 'pro@test.fr' }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+      body: '',
+      fullContent: '',
+    });
+    mockExtractEmails.mockReturnValueOnce(['pro@test.fr']);
+
+    // Ami
+    mockReadFileById.mockResolvedValueOnce({ success: true, content: 'ami' });
+    mockParseObsidianFile.mockReturnValueOnce({
+      frontmatter: { fields: { email: 'ami@test.fr' }, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+      body: '',
+      fullContent: '',
+    });
+    mockExtractEmails.mockReturnValueOnce(['ami@test.fr']);
+
+    const result = await loadKnownContacts();
+
+    expect(result).toHaveLength(3);
+    expect(result.find(c => c.type === 'locataire')).toBeDefined();
+    expect(result.filter(c => c.type === 'pro')).toHaveLength(2); // pro + ami (traité comme pro)
+  });
+
+  it('log warn avec le bon comptage locataires/pros/amis scannés', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    mockListMarkdownFiles
+      .mockResolvedValueOnce([{ id: 'loc1', name: 'Loc.md' }])   // 1 locataire
+      .mockResolvedValueOnce([{ id: 'pro1', name: 'Pro.md' }])   // 1 pro
+      .mockResolvedValueOnce([{ id: 'ami1', name: 'Ami.md' }]);  // 1 ami
+
+    // Tous sans email (skip)
+    for (let i = 0; i < 3; i++) {
+      mockReadFileById.mockResolvedValueOnce({ success: true, content: 'x' });
+      mockParseObsidianFile.mockReturnValueOnce({
+        frontmatter: { fields: {}, lists: {}, raw: '', startIndex: 0, endIndex: 0 },
+        body: '',
+        fullContent: '',
+      });
+      mockExtractEmails.mockReturnValueOnce([]);
+    }
+
+    await loadKnownContacts();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1 locataires'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1 pros'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1 amis'),
+    );
+
+    warnSpy.mockRestore();
   });
 });

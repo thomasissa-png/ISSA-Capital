@@ -143,6 +143,20 @@ Avocat de la famille Issa.
 Accès toutes entités.
 `;
 
+const FIXTURE_LOCATAIRE_TIMILAS = `---
+civilite: Monsieur
+nom_officiel: Timilas Mehmel
+email: timimehmel@gmail.com
+date_dernière_interaction: 2026-05-10
+---
+
+# Timilas Mehmel
+
+## Notes
+
+Emails secondaires: amrouchemehmel971@gmail.com (garant père)
+`;
+
 // ============================================================
 // Tests : findContactByEmail
 // ============================================================
@@ -234,6 +248,23 @@ describe('findContactByEmail', () => {
   it('retourne null pour un email invalide (pas de @)', async () => {
     const result = await findContactByEmail('pas-un-email');
     expect(result).toBeNull();
+  });
+
+  it('trouve un contact par email secondaire dans ## Notes', async () => {
+    vi.mocked(listMarkdownFiles).mockResolvedValueOnce([
+      { id: 'timilas-id', name: 'Timilas Mehmel.md' },
+    ]);
+    vi.mocked(readFileById).mockResolvedValueOnce({
+      success: true,
+      content: FIXTURE_LOCATAIRE_TIMILAS,
+      fileId: 'timilas-id',
+    });
+
+    const result = await findContactByEmail('amrouchemehmel971@gmail.com');
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe('Timilas Mehmel');
+    expect(result!.emails).toContain('timimehmel@gmail.com');
+    expect(result!.emails).toContain('amrouchemehmel971@gmail.com');
   });
 });
 

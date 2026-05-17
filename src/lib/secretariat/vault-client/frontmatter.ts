@@ -255,32 +255,57 @@ function formatYamlValue(value: string | number | boolean | null): string {
 // ============================================================
 
 /**
- * Extrait un champ email du frontmatter (champ `email` ou `alias_email` liste).
+ * Regex pour détecter "Emails secondaires: a@x, b@y" dans ## Notes.
+ * Spec: docs/ia/Anya - Reponse questionnaire vault-paths.md §D2.
+ */
+const SECONDARY_EMAILS_RE = /[Ee]mails?\s+secondaires?\s*:\s*(.+)/;
+
+/**
+ * Extrait tous les emails d'une fiche Obsidian :
+ * 1. Champ `email` du frontmatter (primaire)
+ * 2. Liste `alias_email` du frontmatter
+ * 3. Ligne "Emails secondaires: a@x, b@y" dans la section ## Notes du body
  *
- * @returns Tableau de tous les emails trouvés (principal + alias)
+ * Tous normalisés en lowercase, dédupliqués.
+ *
+ * @returns Tableau de tous les emails trouvés (principal + alias + secondaires Notes)
  */
 export function extractEmails(parsed: ObsidianFile): string[] {
-  if (!parsed.frontmatter) return [];
+  const emailSet = new Set<string>();
 
-  const emails: string[] = [];
+  if (parsed.frontmatter) {
+    // Champ email principal
+    const email = parsed.frontmatter.fields['email'];
+    if (typeof email === 'string' && email.includes('@')) {
+      emailSet.add(email.toLowerCase().trim());
+    }
 
-  // Champ email principal
-  const email = parsed.frontmatter.fields['email'];
-  if (typeof email === 'string' && email.includes('@')) {
-    emails.push(email.toLowerCase().trim());
-  }
-
-  // Liste alias_email
-  const aliases = parsed.frontmatter.lists['alias_email'];
-  if (aliases) {
-    for (const alias of aliases) {
-      if (alias.includes('@')) {
-        emails.push(alias.toLowerCase().trim());
+    // Liste alias_email
+    const aliases = parsed.frontmatter.lists['alias_email'];
+    if (aliases) {
+      for (const alias of aliases) {
+        if (alias.includes('@')) {
+          emailSet.add(alias.toLowerCase().trim());
+        }
       }
     }
   }
 
-  return emails;
+  // Emails secondaires dans le body (section ## Notes)
+  // Format texte libre : "Emails secondaires: a@x, b@y"
+  const secondaryMatch = SECONDARY_EMAILS_RE.exec(parsed.body);
+  if (secondaryMatch && secondaryMatch[1]) {
+    const rawEmails = secondaryMatch[1].split(',');
+    for (const raw of rawEmails) {
+      // Extraire l'adresse email brute (ignorer les annotations entre parenthèses)
+      const emailOnly = raw.replace(/\([^)]*\)/g, '').trim().toLowerCase();
+      if (emailOnly.includes('@')) {
+        emailSet.add(emailOnly);
+      }
+    }
+  }
+
+  return [...emailSet];
 }
 
 /**

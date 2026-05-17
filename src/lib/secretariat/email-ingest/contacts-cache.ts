@@ -28,6 +28,9 @@ const CACHE_TTL_MS = 60 * 60 * 1_000;
 /** Limite de contacts pro chargés (par ordre alpha, pas de date de modif dispo) */
 const PRO_CONTACTS_LIMIT = 20;
 
+/** Limite de contacts amis chargés */
+const AMIS_CONTACTS_LIMIT = 15;
+
 // ============================================================
 // Cache mémoire
 // ============================================================
@@ -90,8 +93,18 @@ export async function loadKnownContacts(): Promise<KnownContact[]> {
       }
     }
 
+    // 3. Contacts amis (Carl, Maxime cofondateurs rangés en Amis — traités comme pro)
+    const amisFiles = await listMarkdownFiles(paths.CONTACTS_AMIS);
+    const amisFilesLimited = amisFiles.slice(0, AMIS_CONTACTS_LIMIT);
+    for (const file of amisFilesLimited) {
+      const contact = await extractContactFromFile(accessToken, file, 'pro');
+      if (contact) {
+        contacts.push(contact);
+      }
+    }
+
     console.warn(
-      `[contacts-cache] chargé ${contacts.length} contact(s) (${locataireFiles.length} locataires, ${proFilesLimited.length} pros scannés)`,
+      `[contacts-cache] chargé ${contacts.length} contact(s) (${locataireFiles.length} locataires, ${proFilesLimited.length} pros, ${amisFilesLimited.length} amis scannés)`,
     );
 
     // Mettre en cache
