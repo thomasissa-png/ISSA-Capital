@@ -242,10 +242,10 @@ describe('pending-store', () => {
     expect(stored.pendings['to-delete']).toBeUndefined();
   });
 
-  it('purgeExpired retire les entrées > 24h', async () => {
+  it('purgeExpired retire les entrées > 7j', async () => {
     const oldPending = makePending({
       id: 'old-pending',
-      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     });
     const recentPending = makePending({
       id: 'recent-pending',
@@ -269,7 +269,7 @@ describe('pending-store', () => {
     expect(stored.pendings['recent-pending']).toBeDefined();
   });
 
-  it('purgeExpired garde les entrées < 24h', async () => {
+  it('purgeExpired garde les entrées < 7j', async () => {
     const recentPending = makePending({
       id: 'fresh-pending',
       createdAt: new Date().toISOString(),
@@ -307,7 +307,7 @@ describe('pending-store', () => {
   it('savePending purge automatiquement les expirés', async () => {
     const oldPending = makePending({
       id: 'auto-purge-old',
-      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
     driveFileExists = true;
@@ -427,10 +427,10 @@ describe('pending-store — NoMatch', () => {
     expect(stored.pendings['nm-to-delete']).toBeUndefined();
   });
 
-  it('purgeExpiredNoMatch retire les entrées > 24h', async () => {
+  it('purgeExpiredNoMatch retire les entrées > 7j', async () => {
     const oldNoMatch = makeNoMatchPending({
       id: 'nm-old',
-      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     });
     const recentNoMatch = makeNoMatchPending({
       id: 'nm-recent',
@@ -454,7 +454,7 @@ describe('pending-store — NoMatch', () => {
     expect(stored.pendings['nm-recent']).toBeDefined();
   });
 
-  it('purgeExpiredNoMatch garde les entrées < 24h', async () => {
+  it('purgeExpiredNoMatch garde les entrées < 7j', async () => {
     const recentNoMatch = makeNoMatchPending({
       id: 'nm-fresh',
       createdAt: new Date().toISOString(),
@@ -476,7 +476,7 @@ describe('pending-store — NoMatch', () => {
   it('saveNoMatch purge automatiquement les expirés', async () => {
     const oldNoMatch = makeNoMatchPending({
       id: 'nm-auto-purge-old',
-      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
     driveNoMatchFileExists = true;
