@@ -11,6 +11,7 @@
  */
 
 import type { PendingValidation } from './telegram-cards';
+import type { NoMatchPending } from './no-match-card';
 import { getAccessToken } from '../drive-upload';
 import { resolvePath } from '../vault-client/drive-resolver';
 import { getOrCreateSubfolder } from '../drive-upload';
@@ -378,13 +379,306 @@ export async function listAllPending(): Promise<PendingValidation[]> {
 }
 
 // ============================================================
+// NoMatch store — Jalon 4D-2
+// ============================================================
+
+/** Nom du fichier JSON de stockage no-match */
+const NOMATCH_STORE_FILENAME = 'nomatch-pendings.json';
+
+interface NoMatchStore {
+  version: string;
+  pendings: Record<string, NoMatchPending>;
+}
+
+/** Mutex séparé pour le store no-match */
+let currentNoMatchLock: Promise<void> = Promise.resolve();
+
+async function withNoMatchStoreLock<T>(operation: () => Promise<T>): Promise<T> {
+  let releaseLock: () => void;
+  const newLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+
+  const previousLock = currentNoMatchLock;
+  currentNoMatchLock = newLock;
+
+  await previousLock;
+
+  try {
+    return await operation();
+  } finally {
+    releaseLock!();
+  }
+}
+
+/**
+ * Cherche le fichier nomatch-pendings.json dans AnyaState.
+ */
+async function findNoMatchStoreFileId(
+  accessToken: string,
+  folderId: string,
+): Promise<string | null> {
+  const q = `name='${NOMATCH_STORE_FILENAME}' and '${folderId}' in parents and trashed=false`;
+  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as {
+    files?: Array<{ id: string }>;
+  };
+
+  return data.files?.[0]?.id ?? null;
+}
+
+/**
+ * Lit le contenu du store no-match depuis Drive.
+ */
+async function readNoMatchStore(
+  accessToken: string,
+  fileId: string,
+): Promise<NoMatchStore> {
+  const url = `${DRIVE_FILES_API}/${fileId}?alt=media&supportsAllDrives=true`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    console.warn(`[pending-store] lecture no-match échouée HTTP ${response.status}`);
+    return { version: STORE_VERSION, pendings: {} };
+  }
+
+  try {
+    const data = (await response.json()) as NoMatchStore;
+    return data;
+  } catch {
+    console.warn('[pending-store] JSON no-match invalide dans le store — reset');
+    return { version: STORE_VERSION, pendings: {} };
+  }
+}
+
+/**
+ * Écrit le store no-match complet sur Drive.
+ */
+async function writeNoMatchStore(
+  accessToken: string,
+  fileId: string,
+  store: NoMatchStore,
+): Promise<boolean> {
+  const url = `${DRIVE_UPLOAD_API}/${fileId}?uploadType=media&supportsAllDrives=true`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(store, null, 2),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+
+  return response.ok;
+}
+
+/**
+ * Crée le fichier store no-match sur Drive.
+ */
+async function createNoMatchStoreFile(
+  accessToken: string,
+  folderId: string,
+  store: NoMatchStore,
+): Promise<string | null> {
+  const metadata = JSON.stringify({
+    name: NOMATCH_STORE_FILENAME,
+    parents: [folderId],
+    mimeType: 'application/json',
+  });
+
+  const boundary = '===issa_nomatch_store===';
+  const body =
+    `--${boundary}\r\n` +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    metadata +
+    '\r\n' +
+    `--${boundary}\r\n` +
+    'Content-Type: application/json\r\n\r\n' +
+    JSON.stringify(store, null, 2) +
+    `\r\n--${boundary}--`;
+
+  const response = await fetch(
+    `${DRIVE_UPLOAD_API}?uploadType=multipart&fields=id&supportsAllDrives=true`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    },
+  );
+
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as { id?: string };
+  return data.id ?? null;
+}
+
+/**
+ * Charge le store no-match depuis Drive, ou crée le fichier si inexistant.
+ */
+async function loadOrCreateNoMatchStore(
+  accessToken: string,
+): Promise<{ store: NoMatchStore; fileId: string } | null> {
+  const folderId = await resolveStateFolderId(accessToken);
+  if (!folderId) {
+    console.warn('[pending-store] impossible de résoudre le dossier AnyaState pour no-match');
+    return null;
+  }
+
+  const existingFileId = await findNoMatchStoreFileId(accessToken, folderId);
+
+  if (existingFileId) {
+    const store = await readNoMatchStore(accessToken, existingFileId);
+    return { store, fileId: existingFileId };
+  }
+
+  // Créer le fichier
+  const emptyStore: NoMatchStore = { version: STORE_VERSION, pendings: {} };
+  const newFileId = await createNoMatchStoreFile(accessToken, folderId, emptyStore);
+  if (!newFileId) {
+    console.warn('[pending-store] impossible de créer le fichier no-match store');
+    return null;
+  }
+
+  return { store: emptyStore, fileId: newFileId };
+}
+
+// ============================================================
+// API publique — NoMatch
+// ============================================================
+
+/**
+ * Sauvegarde un NoMatchPending dans le store Drive.
+ * Purge automatiquement les entrées expirées avant l'ajout.
+ */
+export async function saveNoMatch(noMatch: NoMatchPending): Promise<void> {
+  await withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      console.warn('[pending-store] saveNoMatch : pas de token OAuth2');
+      return;
+    }
+
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return;
+
+    const { store, fileId } = result;
+
+    // Purge des expirés avant ajout
+    const now = Date.now();
+    let purgedCount = 0;
+    for (const [id, p] of Object.entries(store.pendings)) {
+      if (now - new Date(p.createdAt).getTime() > PENDING_TTL_MS) {
+        delete store.pendings[id];
+        purgedCount++;
+      }
+    }
+    if (purgedCount > 0) {
+      console.warn(`[pending-store] purgé ${purgedCount} no-match entrée(s) expirée(s)`);
+    }
+
+    // Ajouter le nouveau no-match
+    store.pendings[noMatch.id] = noMatch;
+
+    const success = await writeNoMatchStore(accessToken, fileId, store);
+    if (!success) {
+      console.warn(`[pending-store] écriture échouée pour no-match ${noMatch.id}`);
+    }
+  });
+}
+
+/**
+ * Récupère un NoMatchPending par son ID.
+ * @returns Le no-match ou null si inexistant/expiré.
+ */
+export async function getNoMatch(id: string): Promise<NoMatchPending | null> {
+  return withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return null;
+
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return null;
+
+    return result.store.pendings[id] ?? null;
+  });
+}
+
+/**
+ * Supprime un NoMatchPending du store.
+ */
+export async function deleteNoMatch(id: string): Promise<void> {
+  await withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return;
+
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return;
+
+    const { store, fileId } = result;
+
+    if (!(id in store.pendings)) return;
+
+    delete store.pendings[id];
+    await writeNoMatchStore(accessToken, fileId, store);
+  });
+}
+
+/**
+ * Purge les entrées no-match expirées (> 24h).
+ * @returns Nombre d'entrées purgées.
+ */
+export async function purgeExpiredNoMatch(): Promise<number> {
+  return withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return 0;
+
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return 0;
+
+    const { store, fileId } = result;
+    const now = Date.now();
+    let purgedCount = 0;
+
+    for (const [id, p] of Object.entries(store.pendings)) {
+      if (now - new Date(p.createdAt).getTime() > PENDING_TTL_MS) {
+        delete store.pendings[id];
+        purgedCount++;
+      }
+    }
+
+    if (purgedCount > 0) {
+      await writeNoMatchStore(accessToken, fileId, store);
+      console.warn(`[pending-store] purgeExpiredNoMatch : ${purgedCount} entrée(s) supprimée(s)`);
+    }
+
+    return purgedCount;
+  });
+}
+
+// ============================================================
 // Test helpers
 // ============================================================
 
 /**
- * Remet le mutex à zéro. Uniquement pour les tests.
+ * Remet les mutex à zéro. Uniquement pour les tests.
  * En production, les opérations en cours seraient perdues.
  */
 export function _resetLockForTests(): void {
   currentLock = Promise.resolve();
+  currentNoMatchLock = Promise.resolve();
 }

@@ -22,7 +22,19 @@ export {
   deletePending,
   purgeExpired,
   listAllPending,
+  saveNoMatch,
+  getNoMatch,
+  deleteNoMatch,
+  purgeExpiredNoMatch,
 } from './pending-store';
+
+export {
+  buildNoMatchCard,
+  sendNoMatchCard,
+  NOMATCH_CALLBACK_PREFIX,
+} from './no-match-card';
+
+export type { NoMatchPending, ContactType } from './no-match-card';
 
 export { handleTelegramCallback } from './callback-handler';
 export type { TelegramCallback } from './callback-handler';
