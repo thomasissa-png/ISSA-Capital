@@ -2,10 +2,42 @@
 
 > Plan d'exécution maître + mémo de reprise entre sessions.
 > Maintenu par @orchestrator.
-> Dernière mise à jour : **2026-05-12 — Clôture Session 13 (13 commits, inbox workflows + voice STT)**
+> Dernière mise à jour : **2026-05-17 — Session 15 Batch 1 (Cache Haiku + 5B Drafts + 5D Vault reader)**
 
 <!-- SESSION: phases=0 tasks_prod=0 tasks_consult=0 -->
-<!-- BRANCH ACTIVE: claude/issa-capital-s13-hotfix-build-quittance-m7Lkc -->
+<!-- BRANCH ACTIVE: claude/issa-capital-s14-ttl-audit-ZQcQS -->
+
+---
+
+## Session 15 — Batch 1 (2026-05-17)
+
+**Branche** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `c6f7206`)
+**Tests pré-session** : 956 PASS
+**Mode** : autopilot (Thomas a validé les décisions, pas de blocage)
+
+### 3 Tâches Batch 1
+
+| Tâche | Description | Fichiers cibles | Statut |
+|---|---|---|---|
+| T1 Cache Haiku | Activer cache_control sur appels Haiku | `triage.ts` | EN COURS |
+| T3 5D Vault reader | Module vault-reader.ts + migration contacts-cache | `vault-reader.ts` (NEW), `contacts-cache.ts`, tests | EN COURS |
+| T2 5B Draft Gmail | Module draft-composer.ts + intégration pipeline | `draft-composer.ts` (NEW), `gmail-client.ts`, `email-ingest-runner.ts`, `telegram-cards.ts`, `webhook/route.ts` | EN ATTENTE (dépend T3) |
+
+### Analyse conflits fichiers
+
+T1 (triage.ts) et T3 (vault-reader, contacts-cache) = 0 conflit -> parallèle.
+T2 (runner, webhook) dépend de T3 (runner modifié) -> séquentiel après T3.
+
+### Séquencement
+
+**Batch A** (parallèle) : T1 + T3
+**Batch B** (séquentiel) : T2
+
+### Métriques live
+| Phase | Tasks | Parallèles | Relances | P0 | Coût estimé | Statut |
+|---|---|---|---|---|---|---|
+| Batch A | 2 | 2 | 0 | 0 | ~$8 | EN COURS |
+| Batch B | 1 | 0 | 0 | 0 | ~$4 | EN ATTENTE |
 
 ---
 

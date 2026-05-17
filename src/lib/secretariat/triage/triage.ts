@@ -200,7 +200,13 @@ async function callHaiku(
         {
           model: HAIKU_MODEL,
           max_tokens: 1024,
-          system: systemPrompt,
+          system: [
+            {
+              type: 'text' as const,
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' as const },
+            },
+          ],
           messages: [{ role: 'user', content: userMessage }],
         },
         { signal: controller.signal },

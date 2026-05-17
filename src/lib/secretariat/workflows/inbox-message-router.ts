@@ -155,7 +155,13 @@ async function extractFromText(text: string): Promise<{
         {
           model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
           max_tokens: 512,
-          system: systemPrompt,
+          system: [
+            {
+              type: 'text' as const,
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' as const },
+            },
+          ],
           messages: [{ role: 'user', content: text }],
         },
         { signal: controller.signal },
