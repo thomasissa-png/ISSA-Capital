@@ -763,3 +763,91 @@ L'endpoint POST `/api/secretariat/email-ingest?secret=<token>` est protégé par
 - `docs/ia/anya-spec.md` — Jalon 4 FAIT, compteurs tests
 - `project-context.md` — historique S14
 - `.env.example` — EMAIL_INGEST_TRIGGER_SECRET
+
+---
+
+## Session 14 — Jalon 4D-1 : fix paths vault inventés + handler candidat
+
+**Date** : 2026-05-17
+
+### Contexte du bug
+
+Les 4 handlers email-ingest livrés au Jalon 4 utilisaient des paths vault **inventés** qui ne correspondent pas à la structure réelle du vault Drive de Thomas. Tous les `createVaultFile` échouaient en prod avec "Segment X non trouvé". L'audit JSONL (`_Inbox/AnyaLogs/2026-05-16.jsonl`) confirmait 0 handler exécuté avec succès.
+
+Paths erronés identifiés :
+- `07. Contacts/01. Pro/` → le vrai path est `07. Contacts/03. Pro/` (22 fiches)
+- `02. Projets/Immobilier/Pipeline/` → n'existe pas, remplacé par `02. Projets/01. Perso/Immobilier Direct/Opportunités/`
+- `Todo.md` en racine → le vrai path est `03. Tâches/Todo.md`
+
+### Source de vérité
+
+Paths vérifiés par scan Drive direct le 2026-05-17, documenté dans `docs/ia/Anya - Reponse questionnaire vault-paths.md` (réponses Cowork validées par Thomas).
+
+### Décisions
+
+**1. Centralisation dans `vault-paths.ts` (handlers/)**
+
+Nouveau fichier `src/lib/secretariat/handlers/vault-paths.ts` — source de vérité unique pour tous les paths vault utilisés par les handlers. Différent de `vault-client/vault-paths.ts` (qui contient les paths pour le vault-client findContactByEmail). Les handlers importent depuis leur propre `vault-paths.ts` pour éviter les imports croisés.
+
+Contenu : 13 paths statiques (`VAULT_PATHS` as const) + `reunionsPath()` dynamique + `slugifyVaultFilename()` + `buildEmailRef()` + `buildHistoriqueTitle()` + constante `EM_DASH`.
+
+**2. Slugify obligatoire pour les noms de fichiers**
+
+Convention vault (Cowork C1-C2) : noms de fichiers en ASCII sans accent. `slugifyVaultFilename()` applique NFD + strip diacritiques, retire `/ \ : * ? " < > | '`, compresse espaces, tronque à 80 chars. Exemple : `François D'Aremberg` → `Francois DAremberg`.
+
+**3. Em-dash U+2014 dans les titres Historique**
+
+Convention vault (Cowork D3) : `### YYYY-MM-DD — Sujet` (em-dash, pas tiret simple). Appliqué dans les 5 handlers via `buildHistoriqueTitle()`.
+
+**4. Référence email dans le contenu Historique**
+
+Convention vault (Cowork D3) : `(cf. thread Gmail <thread_id>)` en fin de description. Appliqué dans les 5 handlers via `buildEmailRef()`.
+
+**5. Handler candidat dédié**
+
+Nouveau handler `handleCandidat` pour les emails classés "candidat" par le triage. Auparavant routé vers `handleAClassifier` (fallback). Le handler crée/met à jour les fiches dans `07. Contacts/05. Locataires/_Candidats/` avec un frontmatter aligné sur les conventions vault (type: contact, categorie: locataire, statut: candidat).
+
+Le dispatcher `email-ingest-runner.ts` route désormais `case 'candidat'` vers `handleCandidat` au lieu de `handleAClassifier`.
+
+**6. Frontmatter contact-pro aligné sur le format réel du vault**
+
+L'ancien frontmatter des nouvelles fiches contact-pro utilisait un format simplifié (`nom`, `email`, `type`). Le nouveau frontmatter est aligné sur le format réel observé dans le vault (Cowork D1) : `type: contact`, `categorie: pro`, `societe`, `role`, `email`, `telephone`, `rencontre_via`, `date_premier_contact`, `date_derniere_interaction`, `classification`, `tags`.
+
+**7. Workflow Bail — destination unique documentée (hors scope)**
+
+Décision Thomas : la destination unique du workflow Bail est `02. Projets/01. Perso/Immobilier Direct/Baux/`. Ce sera implémenté dans une session ultérieure, hors scope Jalon 4D.
+
+### Tests
+
+- **Avant** : 856 tests verts
+- **Après** : 906 tests verts (+50)
+  - vault-paths.test.ts : 25 tests (paths, slugify, ref, em-dash, reunions)
+  - contact-pro.test.ts : 15 tests (+4 slugify/em-dash/ref/path)
+  - locataire.test.ts : 15 tests (+2 slugify/todo-path)
+  - apporteur.test.ts : 25 tests (+1 historique em-dash)
+  - a-classifier.test.ts : 13 tests (+1 ref Gmail)
+  - candidat.test.ts : 17 tests (nouveau)
+  - email-ingest-runner.test.ts : 1 test mis à jour (dispatch candidat)
+
+### Fichiers
+
+**Nouveaux** :
+- `src/lib/secretariat/handlers/vault-paths.ts` — paths centralisés
+- `src/lib/secretariat/handlers/__tests__/vault-paths.test.ts` — 25 tests
+- `src/lib/secretariat/handlers/candidat.ts` — handler candidat
+- `src/lib/secretariat/handlers/__tests__/candidat.test.ts` — 17 tests
+
+**Modifiés** :
+- `src/lib/secretariat/handlers/contact-pro.ts` — path 03. Pro + slugify + em-dash + ref + frontmatter aligné
+- `src/lib/secretariat/handlers/locataire.ts` — slugify + em-dash + ref + todo path
+- `src/lib/secretariat/handlers/apporteur.ts` — path Opportunités + slugify + em-dash + ref + section Historique
+- `src/lib/secretariat/handlers/a-classifier.ts` — path via VAULT_PATHS + slugify + em-dash + ref
+- `src/lib/secretariat/handlers/index.ts` — export handleCandidat
+- `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — dispatch candidat → handleCandidat
+- `src/lib/secretariat/handlers/__tests__/contact-pro.test.ts` — assertions paths corrigées + nouveaux tests
+- `src/lib/secretariat/handlers/__tests__/locataire.test.ts` — assertions + tests slugify/todo
+- `src/lib/secretariat/handlers/__tests__/apporteur.test.ts` — assertions path + test historique
+- `src/lib/secretariat/handlers/__tests__/a-classifier.test.ts` — assertions path + test ref
+- `src/lib/secretariat/email-ingest/__tests__/email-ingest-runner.test.ts` — test dispatch candidat mis à jour
+- `docs/dev-decisions.md` — cette section
+- `project-context.md` — historique mis à jour
