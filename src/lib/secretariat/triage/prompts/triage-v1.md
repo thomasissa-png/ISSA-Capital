@@ -28,42 +28,13 @@ Tu recevras en contexte :
 - **Liste des contacts pro principaux** avec leurs emails : utilise-la pour matcher. Un match email = catégorie `contact-pro` avec haute confiance.
 - **Aucun match** = tu dois classifier sur le contenu seul (confiance naturellement plus basse).
 
-## Liste de référence — Locataires actuels (11 fiches au 2026-05-17)
+## Listes de contacts — INJECTÉES DYNAMIQUEMENT
 
-Pour ces emails, catégorie = `locataire` avec confidence >= 0.95 et `matchedContact` = nom complet :
+Les listes de locataires actuels et contacts pro sont injectées en temps réel dans le message utilisateur (section "## Locataires actuels" et "## Contacts pro connus"). Elles proviennent du vault Drive via lecture live avec cache TTL 1h.
 
-| Nom | Email primaire | Email secondaire |
-|---|---|---|
-| Hella Taoutaou | hallataoutaou08@gmail.com | — |
-| Jhon Michael Completo | jhayanglo25@gmail.com | — |
-| Kenan Beguigneau | kbeguigneau@gmail.com | kenanbe@gmail.com |
-| Laurene Leguay | laurene.lgy@gmail.com | — |
-| Leo Fanorenantsoa | oel.nafo@gmail.com | — |
-| Lia Taisnime | liataisnime2004@gmail.com | — |
-| Milo Rouille | milorouille@orange.fr | — |
-| Sacha Tanguy | sacha.tanguy14@gmail.com | — |
-| Timilas Mehmel | timimehmel@gmail.com | amrouchemehmel971@gmail.com (garant père) |
+**Règle d'utilisation** : si l'email de l'expéditeur apparaît dans une des listes injectées, la catégorie DOIT correspondre au type indiqué (locataire ou contact-pro) avec confidence >= 0.95 et `matchedContact` = nom complet. Aucune autre catégorie possible dans ce cas.
 
-Locataires sans email confirmé (à vérifier en fiche) : Lucas Geoffroy, Nzioka Mutheu, Pauline Farssi. Si email matche un de ces noms, `matchedContact` = nom, mais `confidence` <= 0.85.
-
-## Liste de référence — Contacts pro principaux (top 12)
-
-| Nom | Email | Rôle |
-|---|---|---|
-| Martin Yhuel | myhuel@pnmavocats.law | Avocat PNM (toutes entités) |
-| Anna Lasseri | annalasseri@marvellavocats.com | Avocate Marvell |
-| Clarisse Chevalier | c.chevalier@chevalierconseil.fr | Comptable |
-| Lucie Aubry | l.aubry@chevalierconseil.fr | Comptable |
-| Julien Ren | j.ren@chevalierconseil.fr | Comptable |
-| Mathias Dubot | mathias.dubot@ubp.com | UBP |
-| Paul Guadagnin | paul@lusignan.eu | UBP / Lusignan |
-| Jerome Rubin | jerome.rubin@prmexpert.com | PRM Expert |
-| Philippe Heuberger | philippe.heuberger@notaires.fr | Notaire |
-| Arthur Etienne | arthur.etienne@bnpparibas.com | BNP Paribas |
-| Carl Standertskjold-Nordenstam | c.standertskjold@gmail.com | Cofondateur Versi/Gradient One (rangé en `02. Amis/`) |
-| Maxime Lemoine | maxime.lemoine@edhec.com | Cofondateur Versi/Gradient One (rangé en `02. Amis/`) |
-
-Pour ces emails, catégorie = `contact-pro` avec confidence >= 0.95 et `matchedContact` = nom complet.
+**Si les listes sont vides** (aucun contact injecté) : classifier uniquement sur le contenu de l'email avec une confiance naturellement plus basse. Ne jamais forcer une catégorie sans match explicite.
 
 ## Structure JSON de sortie
 

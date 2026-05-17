@@ -26,12 +26,19 @@ export interface PendingValidation {
   email: EmailMessage;
   /** Timestamp ISO de création */
   createdAt: string;
+  /** URL vers le brouillon Gmail (Jalon 5B) — undefined si pas de draft */
+  draftGmailUrl?: string;
+  /** Première ligne du brouillon (preview pour Telegram) */
+  draftPreview?: string;
 }
 
+/** Bouton inline Telegram : soit callback_data (action bot), soit url (lien externe) */
+export type TelegramButton =
+  | { text: string; callback_data: string }
+  | { text: string; url: string };
+
 /** Structure inline keyboard Telegram (tableau de rangées de boutons) */
-export type TelegramKeyboard = Array<
-  Array<{ text: string; callback_data: string }>
->;
+export type TelegramKeyboard = Array<Array<TelegramButton>>;
 
 // ============================================================
 // Constantes
@@ -130,9 +137,18 @@ export function buildValidationCard(pending: PendingValidation): {
     }
   }
 
+  // Draft Gmail (Jalon 5B)
+  if (pending.draftGmailUrl) {
+    lines.push('');
+    lines.push('\u{270D}\u{FE0F} <b>Brouillon de réponse prêt</b>');
+    if (pending.draftPreview) {
+      lines.push(`<i>${escapeHtml(pending.draftPreview)}</i>`);
+    }
+  }
+
   const text = lines.join('\n');
 
-  // Inline keyboard 2x2
+  // Inline keyboard 2x2 + optional draft button
   const inlineKeyboard: TelegramKeyboard = [
     [
       { text: '\u{2705} Valider', callback_data: `${VALIDATION_CALLBACK_PREFIX}valider:${pending.id}` },
@@ -143,6 +159,13 @@ export function buildValidationCard(pending: PendingValidation): {
       { text: '\u{270F}\u{FE0F} Modifier', callback_data: `${VALIDATION_CALLBACK_PREFIX}modifier:${pending.id}` },
     ],
   ];
+
+  // Ajouter le bouton "Voir dans Gmail" si un brouillon existe
+  if (pending.draftGmailUrl) {
+    inlineKeyboard.push([
+      { text: '\u{1F4E8} Voir dans Gmail', url: pending.draftGmailUrl },
+    ]);
+  }
 
   return { text, inlineKeyboard };
 }

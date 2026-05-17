@@ -27,6 +27,8 @@ import {
 import { triageEmail } from '../triage/triage';
 import { isLikelySpamByHeuristic } from './pre-filter';
 import { loadKnownContacts } from './contacts-cache';
+import { composeDraft } from './draft-composer';
+import type { DraftResult } from './draft-composer';
 import {
   handleLocataire,
   handleAClassifier,
@@ -52,6 +54,9 @@ export interface IngestStats {
   preFilteredSpam: number;
   haikuSpam: number;
   pendingCreated: number;
+  draftsCreated: number;
+  draftsSkipped: number;
+  draftsFailed: number;
   errors: number;
   durationMs: number;
 }
@@ -109,6 +114,9 @@ export async function runEmailIngest(): Promise<IngestStats> {
     preFilteredSpam: 0,
     haikuSpam: 0,
     pendingCreated: 0,
+    draftsCreated: 0,
+    draftsSkipped: 0,
+    draftsFailed: 0,
     errors: 0,
     durationMs: 0,
   };
@@ -170,7 +178,9 @@ export async function runEmailIngest(): Promise<IngestStats> {
   console.warn(
     `[email-ingest] terminé en ${stats.durationMs}ms — ` +
     `total=${stats.totalListed}, pré-filtrés=${stats.preFilteredSpam}, ` +
-    `haiku-spam=${stats.haikuSpam}, pendings=${stats.pendingCreated}, erreurs=${stats.errors}`,
+    `haiku-spam=${stats.haikuSpam}, pendings=${stats.pendingCreated}, ` +
+    `drafts=${stats.draftsCreated}/${stats.draftsSkipped}skip/${stats.draftsFailed}err, ` +
+    `erreurs=${stats.errors}`,
   );
 
   return stats;
@@ -255,6 +265,27 @@ async function processOneEmail(
   const handler = getHandler(triage.category);
   const actions = await handler(triage, detail);
 
+  // Composer un brouillon de réponse Gmail (Jalon 5B)
+  let draftResult: DraftResult | null = null;
+  try {
+    draftResult = await composeDraft(detail, triage);
+    if (draftResult.success) {
+      stats.draftsCreated++;
+    } else if (draftResult.skipReason) {
+      stats.draftsSkipped++;
+    } else {
+      stats.draftsFailed++;
+      console.warn(
+        `[email-ingest] draft échoué pour ${messageId} : ${draftResult.error ?? 'erreur inconnue'}`,
+      );
+    }
+  } catch (err) {
+    stats.draftsFailed++;
+    console.warn(
+      `[email-ingest] erreur inattendue draft pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   // Séparer les actions : filtrer prompt_create_contact_choice (traitée séparément)
   const noMatchAction = actions.find((a) => a.type === 'prompt_create_contact_choice');
   const cardActions = actions.filter((a) => a.type !== 'prompt_create_contact_choice');
@@ -267,6 +298,8 @@ async function processOneEmail(
     actions: cardActions,
     email: serializeEmail(detail),
     createdAt: new Date().toISOString(),
+    draftGmailUrl: draftResult?.gmailUrl ?? undefined,
+    draftPreview: draftResult?.preview ?? undefined,
   };
 
   await savePending(pending);

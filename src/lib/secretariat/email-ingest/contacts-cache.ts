@@ -5,6 +5,10 @@
  * met en cache mémoire TTL 1h, utilisé par le pipeline email-ingest
  * pour enrichir le contexte du triage Haiku.
  *
+ * Jalon 5D : utilise vault-reader.ts pour les lectures Drive avec cache TTL.
+ * Conservé comme module dédié contacts (API stable pour email-ingest-runner).
+ * Fallback : si vault-reader échoue, retourne le dernier cache connu ou [].
+ *
  * Règle CLAUDE.md n°23 : listing complet + filtre local.
  * Le pipeline tourne même sans contacts (retourne tableau vide sur erreur).
  *
@@ -12,7 +16,7 @@
  */
 
 import type { KnownContact } from '../triage/types';
-import { listMarkdownFiles } from '../vault-client/drive-resolver';
+import { listVaultFolder } from '../vault-reader';
 import { readFileById } from '../vault-client/obsidian-file';
 import { parseObsidianFile, extractEmails } from '../vault-client/frontmatter';
 import { getAccessToken } from '../drive-upload';
@@ -74,8 +78,8 @@ export async function loadKnownContacts(): Promise<KnownContact[]> {
 
     const contacts: KnownContact[] = [];
 
-    // 1. Locataires actuels
-    const locataireFiles = await listMarkdownFiles(paths.LOCATAIRES_ACTUELS);
+    // 1. Locataires actuels (via vault-reader — cache TTL 1h sur listing)
+    const locataireFiles = await listVaultFolder(paths.LOCATAIRES_ACTUELS);
     for (const file of locataireFiles) {
       const contact = await extractContactFromFile(accessToken, file, 'locataire');
       if (contact) {
@@ -83,8 +87,8 @@ export async function loadKnownContacts(): Promise<KnownContact[]> {
       }
     }
 
-    // 2. Contacts pro (top 20 par ordre alpha)
-    const proFiles = await listMarkdownFiles(paths.CONTACTS_PRO);
+    // 2. Contacts pro (top 20 par ordre alpha, via vault-reader)
+    const proFiles = await listVaultFolder(paths.CONTACTS_PRO);
     const proFilesLimited = proFiles.slice(0, PRO_CONTACTS_LIMIT);
     for (const file of proFilesLimited) {
       const contact = await extractContactFromFile(accessToken, file, 'pro');
@@ -94,7 +98,7 @@ export async function loadKnownContacts(): Promise<KnownContact[]> {
     }
 
     // 3. Contacts amis (Carl, Maxime cofondateurs rangés en Amis — traités comme pro)
-    const amisFiles = await listMarkdownFiles(paths.CONTACTS_AMIS);
+    const amisFiles = await listVaultFolder(paths.CONTACTS_AMIS);
     const amisFilesLimited = amisFiles.slice(0, AMIS_CONTACTS_LIMIT);
     for (const file of amisFilesLimited) {
       const contact = await extractContactFromFile(accessToken, file, 'pro');

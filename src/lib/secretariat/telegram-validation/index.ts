@@ -14,7 +14,7 @@ export {
   VALIDATION_CALLBACK_PREFIX,
 } from './telegram-cards';
 
-export type { PendingValidation, TelegramKeyboard } from './telegram-cards';
+export type { PendingValidation, TelegramKeyboard, TelegramButton } from './telegram-cards';
 
 export {
   savePending,

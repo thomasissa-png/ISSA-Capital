@@ -196,6 +196,128 @@ export async function listLabels(): Promise<Array<{ id: string; name: string }>>
 }
 
 // ============================================================
+// Création de brouillon Gmail
+// ============================================================
+
+/**
+ * Résultat de la création d'un brouillon Gmail.
+ */
+export interface CreateDraftResult {
+  success: boolean;
+  /** ID du brouillon Gmail */
+  draftId?: string;
+  /** URL directe vers le brouillon dans Gmail web */
+  gmailUrl?: string;
+  error?: string;
+}
+
+/**
+ * Crée un brouillon Gmail (drafts.create).
+ *
+ * Le brouillon est pré-rempli avec le corps et les headers fournis.
+ * Thomas peut ensuite le modifier et l'envoyer manuellement depuis Gmail.
+ *
+ * Scope requis : gmail.compose (déjà inclus dans le flow OAuth).
+ * Jalon 5B — Session 15.
+ *
+ * @param options Paramètres du brouillon
+ * @returns Résultat avec draftId et URL Gmail
+ */
+export async function createDraft(options: {
+  to: string;
+  subject: string;
+  body: string;
+  /** Thread ID Gmail pour rattacher le brouillon au fil existant */
+  threadId?: string;
+  /** Message-ID du mail auquel on répond (header In-Reply-To) */
+  inReplyTo?: string;
+}): Promise<CreateDraftResult> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return { success: false, error: 'Pas de token OAuth2 — Gmail désactivé' };
+  }
+
+  const userEmail = process.env.GMAIL_USER_EMAIL ?? 'me';
+  const fromEmail = userEmail === 'me' ? '' : userEmail;
+
+  // Construire le message RFC 2822
+  const headers: string[] = [];
+  if (fromEmail) {
+    headers.push(`From: ${fromEmail}`);
+  }
+  headers.push(`To: ${options.to}`);
+  headers.push(`Subject: ${options.subject}`);
+  if (options.inReplyTo) {
+    headers.push(`In-Reply-To: ${options.inReplyTo}`);
+    headers.push(`References: ${options.inReplyTo}`);
+  }
+  headers.push('Content-Type: text/plain; charset=UTF-8');
+  headers.push('');
+  headers.push(options.body);
+
+  const rawMessage = headers.join('\r\n');
+  // Encoder en base64url (format Gmail API)
+  const encoded = Buffer.from(rawMessage, 'utf-8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  const userId = encodeURIComponent(userEmail);
+  const url = `${GMAIL_API}/users/${userId}/drafts`;
+
+  const requestBody: Record<string, unknown> = {
+    message: { raw: encoded },
+  };
+  if (options.threadId) {
+    (requestBody['message'] as Record<string, unknown>)['threadId'] = options.threadId;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(`[gmail-client] createDraft HTTP ${response.status} — ${errText.slice(0, 300)}`);
+      return { success: false, error: `HTTP ${response.status}: ${errText.slice(0, 200)}` };
+    }
+
+    const data = (await response.json()) as {
+      id?: string;
+      message?: { id?: string; threadId?: string };
+    };
+
+    const draftId = data.id;
+    if (!draftId) {
+      return { success: false, error: 'Réponse Gmail API sans draftId' };
+    }
+
+    // Construire l'URL Gmail web vers le brouillon
+    // Format : https://mail.google.com/mail/u/0/#drafts?compose=<messageId>
+    const messageId = data.message?.id;
+    const gmailUrl = messageId
+      ? `https://mail.google.com/mail/u/0/#drafts?compose=${messageId}`
+      : `https://mail.google.com/mail/u/0/#drafts`;
+
+    console.warn(`[gmail-client] brouillon créé : draftId=${draftId}`);
+
+    return { success: true, draftId, gmailUrl };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.warn(`[gmail-client] createDraft erreur : ${errMsg}`);
+    return { success: false, error: errMsg };
+  }
+}
+
+// ============================================================
 // Helpers d'extraction — parser les headers et body d'un message
 // ============================================================
 

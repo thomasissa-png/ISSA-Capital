@@ -1,7 +1,7 @@
 /**
  * Tests unitaires — cache contacts email-ingest.
  *
- * Mocks : drive-resolver (listMarkdownFiles), obsidian-file (readFileById),
+ * Mocks : vault-reader (listVaultFolder), obsidian-file (readFileById),
  * frontmatter (parseObsidianFile, extractEmails), drive-upload (getAccessToken).
  *
  * Vérifie : cache hit/miss, TTL, échec listing → tableau vide,
@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ============================================================
 
 const mockGetAccessToken = vi.fn().mockResolvedValue('mock-token');
-const mockListMarkdownFiles = vi.fn().mockResolvedValue([]);
+const mockListVaultFolder = vi.fn().mockResolvedValue([]);
 const mockReadFileById = vi.fn().mockResolvedValue({ success: false });
 const mockParseObsidianFile = vi.fn().mockReturnValue({
   frontmatter: null,
@@ -28,8 +28,8 @@ vi.mock('../../drive-upload', () => ({
   getAccessToken: (...args: unknown[]) => mockGetAccessToken(...args),
 }));
 
-vi.mock('../../vault-client/drive-resolver', () => ({
-  listMarkdownFiles: (...args: unknown[]) => mockListMarkdownFiles(...args),
+vi.mock('../../vault-reader', () => ({
+  listVaultFolder: (...args: unknown[]) => mockListVaultFolder(...args),
 }));
 
 vi.mock('../../vault-client/obsidian-file', () => ({
@@ -74,7 +74,7 @@ describe('loadKnownContacts', () => {
   });
 
   it('retourne un tableau vide si le listing Drive échoue (erreur)', async () => {
-    mockListMarkdownFiles.mockRejectedValueOnce(new Error('Drive API error'));
+    mockListVaultFolder.mockRejectedValueOnce(new Error('Drive API error'));
 
     const result = await loadKnownContacts();
 
@@ -82,7 +82,7 @@ describe('loadKnownContacts', () => {
   });
 
   it('retourne un tableau vide si aucun fichier .md trouvé', async () => {
-    mockListMarkdownFiles.mockResolvedValue([]);
+    mockListVaultFolder.mockResolvedValue([]);
 
     const result = await loadKnownContacts();
 
@@ -91,7 +91,7 @@ describe('loadKnownContacts', () => {
 
   it('extrait un locataire avec nom depuis le frontmatter', async () => {
     // Locataires actuels : 1 fichier
-    mockListMarkdownFiles
+    mockListVaultFolder
       .mockResolvedValueOnce([{ id: 'file1', name: 'Martin Dupont.md' }])
       .mockResolvedValueOnce([])  // Pro vide
       .mockResolvedValueOnce([]); // Amis vide
@@ -126,7 +126,7 @@ describe('loadKnownContacts', () => {
   });
 
   it('utilise le nom de fichier si pas de frontmatter nom/prenom', async () => {
-    mockListMarkdownFiles
+    mockListVaultFolder
       .mockResolvedValueOnce([{ id: 'file1', name: 'Sophie Bernard.md' }])
       .mockResolvedValueOnce([])  // Pro vide
       .mockResolvedValueOnce([]); // Amis vide
@@ -158,29 +158,29 @@ describe('loadKnownContacts', () => {
   });
 
   it('utilise le cache au second appel (pas de re-listing Drive)', async () => {
-    mockListMarkdownFiles.mockResolvedValue([]);
+    mockListVaultFolder.mockResolvedValue([]);
 
     await loadKnownContacts();
     await loadKnownContacts();
 
-    // listMarkdownFiles appelé 3 fois au premier appel (locataires + pro + amis),
+    // listVaultFolder appelé 3 fois au premier appel (locataires + pro + amis),
     // 0 fois au second (cache hit)
-    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(3);
+    expect(mockListVaultFolder).toHaveBeenCalledTimes(3);
   });
 
   it('recharge après invalidation du cache', async () => {
-    mockListMarkdownFiles.mockResolvedValue([]);
+    mockListVaultFolder.mockResolvedValue([]);
 
     await loadKnownContacts();
     invalidateContactsCache();
     await loadKnownContacts();
 
     // 3 appels par loadKnownContacts × 2 = 6
-    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(6);
+    expect(mockListVaultFolder).toHaveBeenCalledTimes(6);
   });
 
   it('skip les fichiers sans email dans le frontmatter', async () => {
-    mockListMarkdownFiles
+    mockListVaultFolder
       .mockResolvedValueOnce([
         { id: 'f1', name: 'Avec Email.md' },
         { id: 'f2', name: 'Sans Email.md' },
@@ -217,17 +217,17 @@ describe('loadKnownContacts', () => {
 
   it('limite les contacts pro à 20 fichiers', async () => {
     // Locataires : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
 
     // Pro : 25 fichiers
     const proFiles = Array.from({ length: 25 }, (_, i) => ({
       id: `pro_${i}`,
       name: `Pro ${i}.md`,
     }));
-    mockListMarkdownFiles.mockResolvedValueOnce(proFiles);
+    mockListVaultFolder.mockResolvedValueOnce(proFiles);
 
     // Amis : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
 
     // Tous les fichiers ont un email (top 20 pro)
     for (let i = 0; i < 20; i++) {
@@ -250,11 +250,11 @@ describe('loadKnownContacts', () => {
 
   it('charge les contacts amis comme type pro (Carl, Maxime cofondateurs)', async () => {
     // Locataires : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
     // Pro : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
     // Amis : 2 fichiers (Carl, Maxime)
-    mockListMarkdownFiles.mockResolvedValueOnce([
+    mockListVaultFolder.mockResolvedValueOnce([
       { id: 'carl-id', name: 'Carl Standertskjold-Nordenstam.md' },
       { id: 'maxime-id', name: 'Maxime Lemoine.md' },
     ]);
@@ -291,15 +291,15 @@ describe('loadKnownContacts', () => {
 
   it('limite les contacts amis à 15 fichiers', async () => {
     // Locataires : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
     // Pro : vide
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    mockListVaultFolder.mockResolvedValueOnce([]);
     // Amis : 20 fichiers
     const amisFiles = Array.from({ length: 20 }, (_, i) => ({
       id: `ami_${i}`,
       name: `Ami ${i}.md`,
     }));
-    mockListMarkdownFiles.mockResolvedValueOnce(amisFiles);
+    mockListVaultFolder.mockResolvedValueOnce(amisFiles);
 
     // Top 15 amis ont un email
     for (let i = 0; i < 15; i++) {
@@ -321,11 +321,11 @@ describe('loadKnownContacts', () => {
 
   it('fusionne locataires + pro + amis dans un seul tableau', async () => {
     // 1 locataire
-    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'loc1', name: 'Locataire 1.md' }]);
+    mockListVaultFolder.mockResolvedValueOnce([{ id: 'loc1', name: 'Locataire 1.md' }]);
     // 1 pro
-    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'pro1', name: 'Pro 1.md' }]);
+    mockListVaultFolder.mockResolvedValueOnce([{ id: 'pro1', name: 'Pro 1.md' }]);
     // 1 ami
-    mockListMarkdownFiles.mockResolvedValueOnce([{ id: 'ami1', name: 'Ami 1.md' }]);
+    mockListVaultFolder.mockResolvedValueOnce([{ id: 'ami1', name: 'Ami 1.md' }]);
 
     // Locataire
     mockReadFileById.mockResolvedValueOnce({ success: true, content: 'loc' });
@@ -364,7 +364,7 @@ describe('loadKnownContacts', () => {
   it('log warn avec le bon comptage locataires/pros/amis scannés', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    mockListMarkdownFiles
+    mockListVaultFolder
       .mockResolvedValueOnce([{ id: 'loc1', name: 'Loc.md' }])   // 1 locataire
       .mockResolvedValueOnce([{ id: 'pro1', name: 'Pro.md' }])   // 1 pro
       .mockResolvedValueOnce([{ id: 'ami1', name: 'Ami.md' }]);  // 1 ami

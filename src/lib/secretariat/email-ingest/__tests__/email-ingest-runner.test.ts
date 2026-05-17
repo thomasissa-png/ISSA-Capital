@@ -7,6 +7,7 @@
  * - pre-filter (isLikelySpamByHeuristic)
  * - contacts-cache (loadKnownContacts)
  * - handlers (handleLocataire, handleAClassifier, handleContactPro, handleApporteur)
+ * - draft-composer (composeDraft) — Jalon 5B
  * - telegram-validation (savePending, sendValidationCard)
  * - vault-client/audit-log (writeAuditLog)
  *
@@ -49,6 +50,12 @@ const mockLoadKnownContacts = vi.fn().mockResolvedValue([]);
 
 vi.mock('../contacts-cache', () => ({
   loadKnownContacts: (...args: unknown[]) => mockLoadKnownContacts(...args),
+}));
+
+const mockComposeDraft = vi.fn().mockResolvedValue({ success: false, skipReason: 'mock skip' });
+
+vi.mock('../draft-composer', () => ({
+  composeDraft: (...args: unknown[]) => mockComposeDraft(...args),
 }));
 
 const mockHandleLocataire = vi.fn().mockResolvedValue([]);
@@ -139,6 +146,7 @@ beforeEach(() => {
   mockTriageEmail.mockResolvedValue(null);
   mockIsLikelySpamByHeuristic.mockReturnValue(false);
   mockLoadKnownContacts.mockResolvedValue([]);
+  mockComposeDraft.mockResolvedValue({ success: false, skipReason: 'mock skip' });
   mockSaveNoMatch.mockResolvedValue(undefined);
   mockSendNoMatchCard.mockResolvedValue({ messageId: 456 });
   mockHandleAClassifier.mockResolvedValue([
@@ -553,5 +561,118 @@ describe('runEmailIngest', () => {
     const pendingId = mockSavePending.mock.calls[0]![0].id;
     const noMatchId = mockSaveNoMatch.mock.calls[0]![0].id;
     expect(pendingId).not.toBe(noMatchId);
+  });
+
+  // --- Draft composer integration (Jalon 5B) ---
+
+  it('appelle composeDraft après le handler et incrémente draftsCreated', async () => {
+    const email = makeEmail({ id: 'msg_draft' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
+    mockHandleLocataire.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+    ]);
+    mockComposeDraft.mockResolvedValue({
+      success: true,
+      draftId: 'draft-123',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#drafts?compose=abc',
+      preview: 'Bonjour, merci pour votre message.',
+    });
+
+    const stats = await runEmailIngest();
+
+    expect(stats.draftsCreated).toBe(1);
+    expect(stats.draftsSkipped).toBe(0);
+    expect(stats.draftsFailed).toBe(0);
+    expect(mockComposeDraft).toHaveBeenCalledWith(email, expect.objectContaining({ category: 'locataire' }));
+  });
+
+  it('incrémente draftsSkipped quand composeDraft retourne skipReason', async () => {
+    const email = makeEmail({ id: 'msg_draft_skip' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft_skip' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'a-classifier' }));
+    mockComposeDraft.mockResolvedValue({
+      success: false,
+      skipReason: 'Catégorie a-classifier — pas éligible',
+    });
+
+    const stats = await runEmailIngest();
+
+    expect(stats.draftsSkipped).toBe(1);
+    expect(stats.draftsCreated).toBe(0);
+  });
+
+  it('incrémente draftsFailed quand composeDraft échoue (erreur)', async () => {
+    const email = makeEmail({ id: 'msg_draft_fail' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft_fail' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
+    mockHandleLocataire.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+    ]);
+    mockComposeDraft.mockResolvedValue({
+      success: false,
+      error: 'Sonnet timeout',
+    });
+
+    const stats = await runEmailIngest();
+
+    expect(stats.draftsFailed).toBe(1);
+    expect(stats.pendingCreated).toBe(1); // le pending est quand même créé
+  });
+
+  it('inclut draftGmailUrl dans le pending quand le draft réussit', async () => {
+    const email = makeEmail({ id: 'msg_draft_url' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft_url' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
+    mockHandleLocataire.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+    ]);
+    mockComposeDraft.mockResolvedValue({
+      success: true,
+      draftId: 'draft-456',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#drafts?compose=xyz',
+      preview: 'Bonjour Martin,',
+    });
+
+    await runEmailIngest();
+
+    const pendingArg = mockSavePending.mock.calls[0]![0];
+    expect(pendingArg.draftGmailUrl).toBe('https://mail.google.com/mail/u/0/#drafts?compose=xyz');
+    expect(pendingArg.draftPreview).toBe('Bonjour Martin,');
+  });
+
+  it('ne crashe pas si composeDraft throw une exception', async () => {
+    const email = makeEmail({ id: 'msg_draft_throw' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft_throw' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
+    mockHandleLocataire.mockResolvedValue([
+      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+    ]);
+    mockComposeDraft.mockRejectedValue(new Error('ANTHROPIC_API_KEY manquant'));
+
+    const stats = await runEmailIngest();
+
+    expect(stats.draftsFailed).toBe(1);
+    expect(stats.pendingCreated).toBe(1); // pipeline continue malgré l'erreur draft
+    expect(stats.errors).toBe(0); // pas une erreur pipeline, juste un draft échoué
+  });
+
+  it('ne compose PAS de draft pour les emails spam auto-filtrés', async () => {
+    const email = makeEmail({ id: 'msg_no_draft_spam' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_no_draft_spam' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(
+      makeTriage({ category: 'spam', confidence: 0.95 }),
+    );
+
+    const stats = await runEmailIngest();
+
+    expect(stats.haikuSpam).toBe(1);
+    expect(mockComposeDraft).not.toHaveBeenCalled();
   });
 });
