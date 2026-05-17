@@ -5,7 +5,7 @@
  * Format : { version, pendings: { [uuid]: PendingValidation } }
  *
  * Mutex en mémoire pour sérialiser les accès au même fichier Drive.
- * purgeExpired retire les entrées > 24h (appelée automatiquement dans savePending).
+ * purgeExpired retire les entrées > 7j (appelée automatiquement dans savePending).
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md section Jalon 4B.
  */
@@ -30,8 +30,8 @@ const STATE_FOLDER = '_Inbox/AnyaState';
 /** Nom du fichier JSON de stockage */
 const STORE_FILENAME = 'pending-validations.json';
 
-/** Durée de vie max d'un pending (24h en ms) */
-const PENDING_TTL_MS = 24 * 60 * 60 * 1_000;
+/** Durée de vie max d'un pending (7 jours — usage humain : week-end, vacances) */
+const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 
 /** Version du format de stockage */
 const STORE_VERSION = '2026-05-13';
@@ -332,7 +332,7 @@ export async function deletePending(id: string): Promise<void> {
 }
 
 /**
- * Purge les entrées expirées (> 24h) du store.
+ * Purge les entrées expirées (> 7j) du store.
  * @returns Nombre d'entrées purgées.
  */
 export async function purgeExpired(): Promise<number> {
@@ -639,7 +639,7 @@ export async function deleteNoMatch(id: string): Promise<void> {
 }
 
 /**
- * Purge les entrées no-match expirées (> 24h).
+ * Purge les entrées no-match expirées (> 7j).
  * @returns Nombre d'entrées purgées.
  */
 export async function purgeExpiredNoMatch(): Promise<number> {
