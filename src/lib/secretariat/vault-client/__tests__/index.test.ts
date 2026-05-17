@@ -213,11 +213,15 @@ describe('findContactByEmail', () => {
     const result = await findContactByEmail('martin.yhuel@pnmavocats.law');
     expect(result).not.toBeNull();
     expect(result!.name).toBe('Martin Yhuel');
-    expect(result!.folderPath).toBe('07. Contacts/01. Pro');
+    expect(result!.folderPath).toBe('07. Contacts/03. Pro');
   });
 
   it('retourne null si aucun contact ne match', async () => {
+    // CONTACT_SEARCH_PATHS scan 7 dossiers : actuels, candidats, pro, amis, famille, anciens, autres
     vi.mocked(listMarkdownFiles)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -310,7 +314,7 @@ Quelques notes.
     });
 
     const result = await appendToHistorique(
-      '07. Contacts/01. Pro',
+      '07. Contacts/03. Pro',
       'Test Contact.md',
       {
         title: '2026-05-13 — Premier contact',
@@ -331,7 +335,7 @@ Quelques notes.
     });
 
     const result = await appendToHistorique(
-      '07. Contacts/01. Pro',
+      '07. Contacts/03. Pro',
       'Inexistant.md',
       {
         title: '2026-05-13 — Test',
@@ -363,7 +367,7 @@ describe('updateFrontmatter', () => {
     });
 
     const result = await updateFrontmatter({
-      folderPath: '07. Contacts/01. Pro',
+      folderPath: '07. Contacts/03. Pro',
       filename: 'Martin Yhuel.md',
       fields: { 'date_dernière_interaction': '2026-05-13' },
       trigger: 'email_456',
@@ -391,7 +395,7 @@ describe('updateFrontmatter', () => {
     });
 
     const result = await updateFrontmatter({
-      folderPath: '07. Contacts/01. Pro',
+      folderPath: '07. Contacts/03. Pro',
       filename: 'Martin Yhuel.md',
       fields: {
         'date_dernière_interaction': '2026-05-13',
