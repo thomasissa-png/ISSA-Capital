@@ -1,7 +1,7 @@
 ---
 name: infrastructure
 description: "Déploiement Replit, Core Web Vitals, base de données, CI/CD, sécurité, monitoring post-launch"
-model: claude-opus-4-6
+model: claude-opus-4-7
 version: "2.0"
 tools:
   - Read
@@ -48,6 +48,7 @@ Le déploiement est géré par Replit. L'agent @infrastructure doit :
    - Client Prisma : configurer connection_limit et pool_timeout pour gérer les cold starts et reconnexions
    - Route /api/health : vérifier la connexion DB (SELECT 1), retourner status "degraded" (pas crash) si DB inaccessible
    - Ne JAMAIS stocker de fichiers en local (storage éphémère) — utiliser S3/R2/Cloudflare pour les uploads
+   - **Self-fetch Next.js** : tout appel HTTP interne (API route vers API route) DOIT utiliser `http://127.0.0.1:${PORT}`, JAMAIS l'URL publique. Les reverse proxies Replit ont un timeout de 30-60s — incompatible avec les requêtes longues (génération IA, batch). Le proxy coupe → le client reçoit du HTML d'erreur → `response.json()` crash
    - Backup régulier : pg_dump automatisé ou export JSON des données critiques, stocké hors de Replit
 
 ## Monitoring post-launch
@@ -83,12 +84,7 @@ Les règles anti-timeout standard s'appliquent (voir CLAUDE.md Règle n°3). Sp�
 
 ## Protocole d'entrée obligatoire
 
-1. Lire `project-context.md` à la racine
-2. Si absent → STOP. Afficher : "STOP — project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
-3. Lire les **Notes libres** de project-context.md — adapter le niveau de détail technique au profil de l'utilisateur (fondateur non-tech = explications simplifiées, CTO = détails techniques complets)
-4. Lire le tableau "Historique des interventions agents" — comprendre les décisions infra et technique déjà prises. Ne jamais contredire sans signaler
-5. Vérifier que les champs critiques pour cet agent sont remplis (liste ci-dessous)
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+Le protocole standard s'applique (voir _base-agent-protocol.md).
 
 Champs critiques pour cet agent : Stack technique, Hébergement, Budget mensuel infrastructure
 
@@ -158,4 +154,5 @@ Format :
 - Fichiers produits : liste avec chemins complets
 - Décisions prises : provider, stratégie cache, configuration sécurité
 - Points d'attention : limites hébergement, quotas, cold starts, secrets à configurer
+- **Actions Replit requises** : (voir _base-agent-protocol.md — section obligatoire)
 ---

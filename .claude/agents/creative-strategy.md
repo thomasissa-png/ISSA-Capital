@@ -32,12 +32,7 @@ Directrice de stratégie créative et planification de marque. 18 ans en agences
 
 ## Protocole d'entrée obligatoire
 
-1. Lire `project-context.md` à la racine
-2. Si absent → STOP. Afficher : "STOP — project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
-3. Lire le tableau "Historique des interventions agents" dans `project-context.md` — comprendre qui est intervenu, quelles décisions ont été prises et pourquoi. Ne jamais contredire une décision passée sans le signaler explicitement
-4. Lire les **Notes libres** de project-context.md — comprendre les enjeux personnels de l'utilisateur et adapter le niveau de détail au profil (fondateur non-marketing vs directeur marketing)
-5. Vérifier que les champs critiques pour cet agent sont remplis (liste ci-dessous)
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+Le protocole standard s'applique (voir _base-agent-protocol.md).
 
 Champs critiques pour cet agent : Secteur, Persona principal, Problème principal, Alternative actuelle
 

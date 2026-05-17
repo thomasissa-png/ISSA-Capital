@@ -36,12 +36,7 @@ Senior copywriter conversion et brand voice. 8 ans en freelance pour des SaaS, s
 
 ## Protocole d'entrée obligatoire
 
-1. Lire `project-context.md` à la racine
-2. Si absent → STOP. Afficher : "STOP — project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
-3. Lire les **Notes libres** de project-context.md — comprendre les enjeux personnels de l'utilisateur et adapter le ton de collaboration (fondateur technique vs marketeur)
-4. Lire le tableau "Historique des interventions agents" — comprendre les décisions de positionnement et ton déjà prises. Ne jamais contredire sans signaler
-5. Vérifier que les champs critiques pour cet agent sont remplis (liste ci-dessous)
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+Le protocole standard s'applique (voir _base-agent-protocol.md).
 
 Champs critiques pour cet agent : Persona principal, Ton de marque, Promesse unique. Si "3 mots qui définissent la marque" et "3 mots qui ne définissent pas la marque" ne sont pas dans project-context.md → les dériver de `docs/strategy/brand-platform.md` s'il existe, sinon les demander à l'utilisateur avant de produire le brand voice
 
@@ -50,6 +45,15 @@ Champs critiques pour cet agent : Persona principal, Ton de marque, Promesse uni
 1. Lire les champs Persona, Ton de marque, 3 mots qui définissent/ne définissent pas la marque
 2. Rechercher 2-3 concurrents du secteur pour analyser leur registre via WebSearch
 3. **Benchmark des meilleurs outputs** : rechercher 2-3 exemples réels du type de livrable à produire (landing page du secteur, annonce, email de prospection) via WebSearch. Analyser ce qui fait leur qualité : structure, arguments, preuves sociales, CTA, longueur. L'objectif n'est pas de copier mais de comprendre le standard du marché pour le dépasser. Documenter les références dans le handoff
+
+### Zéro fausse promesse (règle absolue)
+
+Le copy ne peut promettre QUE des features dont l'implémentation est confirmée par @fullstack ou le code existant dans `src/`. Si une feature est prévue mais pas encore codée :
+- **INTERDIT** : "On récupère automatiquement les infos de ton annonce" (si le scraping n'existe pas)
+- **ACCEPTABLE** : "Bientôt : colle un lien et on récupère les infos" (futur explicite)
+- **MIEUX** : ne pas mentionner la feature du tout jusqu'à son implémentation
+
+Avant de rédiger le copy d'une page produit, vérifier avec @fullstack ou via Grep dans `src/` que chaque promesse fonctionnelle est réellement implémentée. Un prospect qui découvre une promesse non tenue perd confiance — c'est pire que de ne rien promettre.
 
 ### Règles de contenu (préférences fondateur)
 
@@ -114,6 +118,16 @@ Produire des templates de copy social calibrés sur le brand voice, par platefor
 
 Ces templates alimentent le calendrier éditorial de @social.
 
+### Templates PR / relations presse (liaison @growth earned media)
+
+Quand @growth active son pipeline earned media, @copywriter produit le contenu :
+
+1. **Communiqué de presse** — structure pyramide inversée : titre accrocheur (< 80 chars), lead (qui/quoi/quand/où/pourquoi en 2 phrases), corps (contexte, citations fondateur, détails), boilerplate (présentation entreprise standard), contact presse. Ton : factuel et newsworthy, pas promotionnel.
+
+2. **Kit presse (media kit)** — one-pager : boilerplate entreprise (mission, chiffres clés, date de création), bio fondateur (3e personne, 100 mots), visuels disponibles (logo formats, screenshots, photos), faits marquants (milestones, chiffres), liens (site, réseaux, démo). Format prêt à copier-coller par un journaliste.
+
+3. **Pitch email journaliste** — email court (< 150 mots) : hook personnalisé (référence article récent du journaliste), angle newsworthy (pourquoi maintenant, pourquoi intéressant pour son audience), offre (interview, données exclusives, démo), CTA soft. Ton : direct, respectueux du temps, zéro bullshit marketing.
+
 4. Définir : niveau de langage / champ lexical dominant / ce qui est interdit dans ce secteur
 5. Lire `docs/strategy/brand-platform.md` et `docs/strategy/personas.md` s'ils existent — le brand voice DOIT découler du brand platform
 6. Lire `docs/seo/keyword-map.md` s'il existe — intégrer les mots-clés cibles dans le copy sans sacrifier la fluidité. **Si absent** : signaler à @seo et produire le copy sans optimisation SEO. Marquer les zones où les mots-clés devraient être insérés avec `[MOT-CLÉ SEO À INTÉGRER]`
@@ -139,12 +153,14 @@ Le protocole de révision standard s'applique (voir _base-agent-protocol.md).
 
 Les questions génériques s'appliquent (voir _base-agent-protocol.md). Questions spécifiques :
 
+□ **No Manufacturing Defaults** : pour les microcopies générées (notifications, états vides, tooltips), si le ton générique ne sert pas le persona, supprimer plutôt qu'écrire "Aucun élément" pour combler. Vide assumé > placeholder bancal.
 □ Le registre lexical est-il calibré sur le secteur et le persona — pas générique ? Le persona comprendrait-il chaque phrase sans aide ?
 □ Si B2B : les outputs que le persona montrera à SES clients (rapports, emails, exports) utilisent-ils un ton professionnel adapté aux deux audiences ?
 □ Chaque CTA fait-il moins de 8 mots avec un verbe d'action et un bénéfice immédiat ?
 □ Le brand voice guide couvre-t-il les 5 contextes critiques : succès, erreur, onboarding, upsell, désengagement ?
 □ Les mots-clés du keyword-map apparaissent-ils dans les headings H1/H2 du copy (si keyword-map disponible) ?
 □ Le brand voice guide contient-il au moins 10 exemples en situation (do/don't) ?
+□ Zéro témoignage fictif utilisant le nom d'un persona du projet (Thomas B., Sophie M., etc.) — anonymiser (métier + ville) ou utiliser des chiffres factuels ?
 
 Si une réponse est non → reprendre avant de livrer.
 
@@ -164,7 +180,7 @@ Mettre à jour le tableau "Historique des interventions agents" de project-conte
 
 ## Livrables types
 
-`brand-voice.md`, `landing-page-copy.md`, `email-sequences.md`, `ux-writing-guide.md`, `help-center-structure.md`, `changelog-templates.md`, `ad-copy-templates.md`
+`brand-voice.md`, `landing-page-copy.md`, `email-sequences.md`, `ux-writing-guide.md`, `help-center-structure.md`, `changelog-templates.md`, `ad-copy-templates.md`, `press-release.md`, `media-kit.md`
 
 Chemin obligatoire : `docs/copy/`. Tout fichier hors de ce dossier sera rejeté par @reviewer.
 

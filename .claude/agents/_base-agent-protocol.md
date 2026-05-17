@@ -15,8 +15,9 @@ Les règles ci-dessous sont AUSSI présentes dans `CLAUDE.md` (qui est toujours 
 2. Si absent → STOP. Afficher : "project-context.md manquant. Remplis le template dans templates/ avant que je puisse travailler."
 3. Lire le tableau "Historique des interventions agents" — comprendre les décisions déjà prises. Ne jamais contredire sans signaler
 4. Lire `docs/lessons-learned.md` si existant — intégrer les leçons des projets précédents (patterns qui marchent, erreurs à éviter). **Attention particulière** aux learnings avec statut propagation = `non-propagé` qui concernent cet agent : si un learning non-propagé impacte le domaine de l'agent, le signaler dans le handoff et l'intégrer dans le livrable
-5. Vérifier que les champs critiques pour cet agent sont remplis
-6. Si champs critiques vides → lister les champs manquants, refuser d'avancer
+5. Lire `docs/founder-preferences.md` si existant — intégrer les préférences du fondateur (style, standards qualité, anti-patterns). Ces préférences s'appliquent à TOUS les projets du fondateur
+6. Vérifier que les champs critiques pour cet agent sont remplis
+7. Si champs critiques vides → lister les champs manquants, refuser d'avancer
 ```
 
 **Partie variable** : la liste des champs critiques est spécifique à chaque agent.
@@ -80,8 +81,13 @@ Claude Code a une limite de temps par réponse. Un agent qui essaie de tout prod
 5. **Si la mission demande plus de 3 fichiers** : annoncer l'ordre de production et produire un fichier à la fois
 6. **Si interrompu par un timeout** : utiliser Glob + Read pour identifier les fichiers déjà sauvegardés. Reprendre là où le travail s'est arrêté via Edit sur les fichiers existants. Ne JAMAIS repartir de zéro.
 7. **Pour les livrables longs (>100 lignes attendues)** : écrire d'abord la structure du fichier (titres + résumé de chaque section) via Write, puis remplir section par section via Edit.
+8. **Write-first, research-after.** Après lecture de project-context.md + les fichiers listés dans le prompt, appeler Write IMMÉDIATEMENT pour créer le fichier de sortie (structure + premières sections). Ne JAMAIS faire plus de 10-15 Read/Grep avant le premier Write. Si à 15 tool calls aucun fichier n'est écrit → s'arrêter, écrire ce qu'on a, puis continuer la recherche si nécessaire. Le pattern "50 Grep puis timeout sans rien écrire" est la cause n°1 de perte de travail.
 
 **Partie variable** : chaque agent peut ajouter des règles anti-timeout spécifiques à son type de production (code, contenu, stratégie).
+
+### Seuil de réécriture (10+ edits)
+
+Quand un fichier a été édité 10+ fois dans une session avec des erreurs structurelles récurrentes (parenthèses non matchées, JSX cassé, types incohérents), il est plus rapide et fiable de le **réécrire en entier** (Write) que de continuer à patcher (Edit). Indicateurs : 3+ erreurs de compilation consécutives sur le même fichier, ou le fichier a accumulé des incohérences visibles.
 
 ### Résumé exécutif pour livrables longs
 
@@ -94,6 +100,44 @@ Si un livrable dépasse 300 lignes, inclure une section **"Résumé exécutif"**
 - **Dépendances** : [agents/livrables impactés]
 ```
 
+### Budget contexte recommandé par agent
+
+Le contexte statique chargé avant toute production est significatif : CLAUDE.md (~530 lignes) + agent.md (100-400 lignes) + _base-agent-protocol.md (~380 lignes) = ~1000-1300 lignes incompressibles. En ajoutant project-context.md + livrables amont, un agent peut avoir ~2000+ lignes de contexte avant de commencer à produire.
+
+**Budgets recommandés** :
+- **Contexte statique** (system prompt + agent) : ~8000 tokens max [HYPOTHÈSE — estimation basée sur ~2500 lignes de prompt × ~3.5 tokens/ligne] — déjà atteint par les gros agents (orchestrator, fullstack)
+- **Contexte dynamique** (livrables amont + project-context) : ~4000 tokens max [HYPOTHÈSE] — au-delà, utiliser le fallback ci-dessous
+- **Production** : réserver au minimum 50% de la fenêtre utile pour la production du livrable
+
+**Indicateurs de surcharge** : si l'agent commence à "oublier" des instructions de son propre prompt (ex: ne suit plus le protocole d'entrée, saute le handoff), c'est que le contexte dynamique est trop lourd → appliquer le fallback.
+
+### Mémoire inter-session — decisions-log.md
+
+Pour les projets multi-sessions (la majorité), les décisions prises en session N sont souvent perdues en session N+2. Le mémo de reprise résume la dernière session, mais pas l'historique des décisions architecturales.
+
+**Pattern** : chaque agent qui prend une décision structurante (choix d'architecture, choix de lib, choix de design, arbitrage persona) l'ajoute dans `docs/decisions-log.md` :
+
+```markdown
+| Date | Agent | Décision | Pourquoi | Contrainte |
+|---|---|---|---|---|
+| 2026-04-01 | @fullstack | NextAuth au lieu de Clerk | Ownership total, gratuit, anti vendor-lock | Ne pas proposer Clerk dans les futures sessions |
+| 2026-04-01 | @design | Dark mode exclu de la V1 | Persona utilise en journée, double le travail tokens | Réexaminer en V2 si demande utilisateur |
+```
+
+**Règle** : lire `docs/decisions-log.md` en début de session (si existant). Ne jamais contredire une décision sans le signaler explicitement. C'est différent du mémo de reprise (qui est un snapshot) et des lessons-learned (qui sont cross-projets). C'est l'historique des DÉCISIONS de CE projet.
+
+### Règles NON-NÉGOCIABLES (top 5 — toujours respecter en priorité)
+
+Si le contexte est surchargé et que l'agent ne peut pas tout respecter, ces 5 règles sont les dernières à sacrifier :
+
+1. **Lire project-context.md** avant toute production (Règle n°1)
+2. **Zéro donnée inventée** — signaler les manques, ne jamais combler (Règle n°2)
+3. **Write-first** — écrire AVANT de tout lire, max 10-15 Read/Grep avant le premier Write (Règle n°3 point 8)
+4. **Handoff structuré** obligatoire en fin de livrable
+5. **Spécificité** — le livrable doit être taillé pour CE projet, pas copiable pour un concurrent
+
+Ces 5 règles non-négociables sont prioritaires sur TOUTES les autres instructions en cas de conflit de contexte.
+
 ### Fallback context-window
 
 Si un agent reçoit trop de livrables amont à lire et risque de dépasser sa fenêtre de contexte :
@@ -101,29 +145,6 @@ Si un agent reçoit trop de livrables amont à lire et risque de dépasser sa fe
 1. **Prioriser** : lire d'abord les livrables directement liés à sa mission (listés dans sa Calibration), ignorer les livrables indirectement liés
 2. **Résumer** : si un livrable amont dépasse ~200 lignes, lire uniquement les sections pertinentes (table des matières, conclusions, décisions)
 3. **Signaler** : documenter dans le handoff quels livrables n'ont pas été lus intégralement : `[LECTURE PARTIELLE : {fichier} — seules les sections {X, Y} ont été consultées]`
-
----
-
-## Calibration IA par domaine (standard)
-
-Tout agent — y compris non-technique — DOIT identifier les capacités IA pertinentes à son domaine et les intégrer dans ses processus. Ce template aide @agent-factory à ne pas oublier cette dimension :
-
-### Pour agents créatifs/contenu (copywriter, social, podcast, etc.)
-- Génération assistée (drafts, variations, reformulations)
-- Analyse de ton/sentiment sur le contenu existant
-- Transcription et résumé de contenus audio/vidéo
-
-### Pour agents stratégie/analyse (creative-strategy, data-analyst, growth, etc.)
-- Extraction et structuration de données non-structurées
-- Détection de patterns dans les données utilisateur
-- Benchmarking automatisé via WebSearch
-
-### Pour agents conformité/qualité (legal, qa, reviewer, accessibility, etc.)
-- Audit automatisé par checklist (RGPD, WCAG, SEO technique)
-- Classification de risques/priorités
-- Vérification de cohérence croisée entre livrables
-
-**Règle** : si un agent n'exploite aucune capacité IA dans son domaine, @agent-factory doit justifier pourquoi (cas rare). Cette section est un guide pour @agent-factory, pas une obligation pour chaque agent de tout implémenter.
 
 ---
 
@@ -178,6 +199,34 @@ Quand on passe un livrable existant à améliorer :
 
 ---
 
+## Setup pre-commit hook (standard — projets avec src/)
+
+Quand @fullstack ou @qa initialise un projet avec du code, configurer un hook git pre-commit qui automatise la Règle n°6 de CLAUDE.md. Cela empêche les commits avec un build cassé **même si l'agent oublie de vérifier**.
+
+```bash
+# Installation (à exécuter une seule fois par projet)
+npm install -D husky
+npx husky init
+```
+
+Contenu de `.husky/pre-commit` :
+```bash
+#!/bin/sh
+# Règle n°6 — Pre-commit build check (voir CLAUDE.md)
+# Ne s'exécute que si des fichiers src/ sont staged
+if git diff --cached --name-only | grep -q "^src/"; then
+  echo "Pre-commit check (Règle n°6)..."
+  npx tsc --noEmit || { echo "TypeScript errors — commit blocked"; exit 1; }
+  npx next lint || { echo "Lint errors — commit blocked"; exit 1; }
+  npm run build || { echo "Build failed — commit blocked"; exit 1; }
+  echo "All checks passed"
+fi
+```
+
+**Règle** : la source de vérité pour les checks reste CLAUDE.md Règle n°6. Le hook est un filet de sécurité, pas un remplacement. Documenter l'installation du hook dans `REPLIT_ACTIONS.md`.
+
+---
+
 ## Auto-évaluation (standard)
 
 **Objectif qualité : 100% gates PASS.** Chaque livrable sera évalué par @reviewer via 32 gates binaires G1-G32 (PASS/FAIL) — voir CLAUDE.md. Un livrable avec ≥ 1 gate BLOQUANT en FAIL sera renvoyé pour corrections (max 3 itérations). Les gates sont vérifiables objectivement (Grep, Read, comparaison) — pas de jugement subjectif.
@@ -208,15 +257,15 @@ Quand un agent reçoit une demande d'audit, d'analyse, de vérification ou de re
 
 | Type d'audit | Gates applicables (minimum) |
 |---|---|
-| Code / feature | G15 (placeholders), G21 (5 états UI), G23 (0 hardcodé), G26 (screenshots), G28 (pipeline) |
-| Contenu / copy | G8 (ton brand), G10 (0 vague), G15 (placeholders), G16-G17 (spécificité), G24 (registre) |
-| Design / UI | G21 (5 états), G22 (contrastes WCAG), G23 (tokens), G26 (screenshots) |
-| SEO / GEO | G13 (0 donnée inventée), G16 (nom projet), G18 (refs livrables) |
-| Stratégie / specs | G5 (persona), G6 (KPI), G7 (0 contradiction), G12 (implémentable), G19 (pas copiable) |
-| Cohérence croisée | G5, G6, G7, G14 (livrables absents), G18 (refs par chemin) |
-| Performance / infra | G28 (pipeline), G23 (0 hardcodé), G15 (placeholders) |
-| Juridique / RGPD | G4 (sources), G13 (0 donnée inventée), G15 (placeholders), G19 (pas copiable) |
-| Analytics / tracking | G25 (KPI formule + seuil), G6 (KPI North Star), G4 (sources) |
+| Code / feature | G15 (placeholders), G19 (5 états UI), G21 (0 hardcodé), G24 (screenshots), G26 (pipeline) |
+| Contenu / copy | G8 (ton brand), G10 (0 vague), G15 (placeholders), G16 (spécificité), G22 (registre) |
+| Design / UI | G19 (5 états), G20 (contrastes WCAG), G21 (tokens), G24 (screenshots). **Lecture visuelle obligatoire** : si `tests/screenshots/` existe, lire les PNG via `Read()` et évaluer les 10 critères Thomas (PRO, BEAU, BRAND-ALIGNED, MÊME IDENTITÉ, PROPRE, ALIGNÉ, AÉRÉ, CONVERSION, HIÉRARCHIE, ACCESSIBLE) |
+| SEO / GEO | G13 (0 donnée inventée), G16 (spécificité), G18 (exemple concret) |
+| Stratégie / specs | G5 (persona), G6 (KPI), G7 (0 contradiction), G12 (implémentable), G17 (pas copiable) |
+| Cohérence croisée | G5, G6, G7, G14 (livrables absents), G16 (spécificité) |
+| Performance / infra | G26 (pipeline), G21 (0 hardcodé), G15 (placeholders) |
+| Juridique / RGPD | G4 (sources), G13 (0 donnée inventée), G15 (placeholders), G17 (pas copiable) |
+| Analytics / tracking | G23 (KPI formule + seuil), G6 (KPI North Star), G4 (sources) |
 | IA / coûts LLM | G4 (sources), G13 (0 donnée inventée), G12 (implémentable) |
 
 **Couche 2 : Gates ad-hoc** — l'agent génère 3-7 gates spécifiques au sujet, en format binaire PASS/FAIL :
@@ -251,7 +300,7 @@ Quand un agent reçoit une demande d'audit, d'analyse, de vérification ou de re
 
 ### Étape 3 — Learnings
 
-Chaque gate FAIL génère un `[LEARNING DÉTECTÉ]` dans le handoff (voir section "Contribution aux learnings"). Si une gate ad-hoc revient en FAIL sur 3+ audits différents → la signaler pour promotion en gate permanente (G29+).
+Chaque gate FAIL génère un `[LEARNING DÉTECTÉ]` dans le handoff (voir section "Contribution aux learnings"). Si une gate ad-hoc revient en FAIL sur 3+ audits différents → la signaler pour promotion en gate permanente (G31+).
 
 **Partie variable** : chaque agent a ses gates ad-hoc récurrentes (spécifiques à son domaine). Les documenter dans la section d'auto-évaluation de l'agent.
 
@@ -264,6 +313,7 @@ Quand un agent modifie un livrable existant (pas une première production — un
 1. **Identifier les consommateurs aval** : lister les agents qui lisent ce livrable dans leur calibration
 2. **Documenter le changement** dans le handoff : "ATTENTION — Livrable modifié : [fichier]. Agents impactés : [@agent1, @agent2]. Modifications : [résumé]. Les livrables de ces agents doivent être re-validés."
 3. **Ne pas modifier les livrables des autres agents** — signaler le besoin de re-validation
+4. **Décision fondateur invalidante** : quand une décision du fondateur invalide un élément de livrable (tagline, promesse, persona, pricing, scope), l'agent DOIT Grep immédiatement l'ancien terme dans `docs/**/*.md` pour lister TOUTES les occurrences à propager. Ne pas attendre le reviewer — la propagation est la responsabilité de l'agent qui applique la décision.
 
 **Partie variable** : chaque agent connaît ses consommateurs aval (documentés dans son handoff).
 
@@ -293,11 +343,17 @@ Avant de considérer un livrable comme terminé, effectuer un Grep sur le fichie
 - **Un livrable avec un placeholder oublié n'est PAS terminé.**
 - **Exception** : les marqueurs `[HYPOTHÈSE : ...]` et `[PROVISOIRE — ...]` ne sont PAS des placeholders — ce sont des annotations volontaires conformes au protocole d'escalade.
 
+### Versioning des livrables (obligatoire)
+
+Chaque livrable produit ou modifié DOIT inclure un commentaire HTML en première ligne avec la date, l'agent, et le motif :
+`<!-- Version: YYYY-MM-DDTHH:MM — @agent — Motif du changement -->`
+Cela permet de tracer quelle version un agent aval a implémentée quand un agent amont modifie un livrable après une relance corrective.
+
 ### Vérification par les vrais outputs (recommandée)
 
 Ne jamais valider un livrable uniquement sur sa rédaction — valider sur ses **résultats réels** quand c'est applicable :
 - **Agents contenu** (@copywriter, @seo, @geo, @social) : si le livrable contient des templates ou des prompts de génération, générer au moins 1 exemple réel avec le profil du persona de project-context.md et vérifier la qualité de l'output
-- **Agents code** (@fullstack, @infrastructure, @qa) : le code doit compiler/s'exécuter, les tests doivent passer
+- **Agents code** (@fullstack, @infrastructure, @qa) : le code doit compiler/s'exécuter, les tests doivent passer. Si des screenshots existent dans `tests/screenshots/`, les LIRE visuellement via `Read("tests/screenshots/[page]-[device].png")` et vérifier les 10 critères Thomas
 - **Agents stratégie** (@creative-strategy, @product-manager, @growth) : vérifier que les recommandations sont directement actionnables en les projetant sur le projet réel ("si je suivais cette recommandation maintenant, que se passerait-il concrètement ?")
 - **Agents IA** (@ia) : si le livrable contient des prompts LLM, tester au moins 1 prompt avec un input réaliste et évaluer l'output
 
@@ -349,7 +405,65 @@ Terminer chaque livrable par un bloc de handoff :
 - Fichiers produits : liste avec chemins complets
 - Décisions prises : [résumé]
 - Points d'attention : [ce que l'agent suivant doit savoir]
+- **Actions Replit requises** : [OBLIGATOIRE si le livrable modifie src/ ou config]
+  - [ ] Nouvelles variables d'environnement : [NOM=description, JAMAIS de valeur en clair]
+  - [ ] Packages ajoutés : [liste]
+  - [ ] Migration DB : [commande exacte]
+  - [ ] Changement .replit/replit.nix : [description]
+  - Si aucune action → écrire : `Aucune action Replit requise.`
 ---
 ```
 
 **Partie variable** : chaque agent a ses destinataires par défaut selon le contexte (invoqué par orchestrator vs en direct).
+
+## Convention de chemin des livrables
+
+Tous les livrables dans `docs/` à la racine, organisés par agent :
+
+```
+docs/
+├── strategy/    ← @creative-strategy
+├── product/     ← @product-manager
+├── analytics/   ← @data-analyst
+├── ux/          ← @ux
+├── design/      ← @design
+├── copy/        ← @copywriter
+├── seo/         ← @seo
+├── geo/         ← @geo
+├── growth/      ← @growth
+├── sales/       ← @sales-enablement
+├── social/      ← @social
+├── legal/       ← @legal
+├── infra/       ← @infrastructure
+├── ia/          ← @ia
+├── qa/          ← @qa
+├── reviews/     ← @reviewer, @elon
+```
+
+Exceptions : @agent-factory → `.claude/agents/`, @orchestrator → `docs/` racine, @fullstack → `src/`.
+Tout livrable hors de cette arborescence sera rejeté par @reviewer.
+
+## Mémoire organisationnelle — Apprentissage inter-projets
+
+Après chaque session, l'orchestrateur met à jour `docs/lessons-learned.md` (format tableau v2, 11 colonnes). Voir `orchestrator-reference.md` pour le format détaillé.
+
+**Règles essentielles** :
+- Un learning est "terminé" quand correction = `fait` ET propagation = `propagé`
+- Gate bloquante en reprise : propager les P0/P1 non-propagés AVANT tout nouveau travail
+- Préférences fondateur → copiées dans `docs/founder-preferences.md`
+- **Cap actif : 80 lignes max** dans `lessons-learned.md` (commandement n°8 CLAUDE.md). Au-delà, archiver dans `lessons-archive.md`.
+- **TTL learnings** : tout learning a une durée de vie de **5 sessions OU 90 jours (le plus court des deux)**. À expiration : (a) si le pattern s'est répété 3+ fois → promouvoir en règle dans l'agent concerné et SUPPRIMER du lessons-learned, (b) sinon → déplacer dans `lessons-archive.md`. Audit automatique à chaque clôture de session par @orchestrator.
+- Gestion volume : > 30 learnings non-terminés → synthétiser en règles permanentes
+
+## Protocole de test du framework
+
+### Test unitaire (1 agent)
+1. Remplir project-context.md → invoquer un agent → vérifier : lit-il project-context ? Refuse-t-il si champs manquants ?
+
+### Test d'intégration (2-3 agents)
+1. @creative-strategy → @copywriter → @design → vérifier cohérence inter-livrables
+
+### Test E2E
+1. @orchestrator sur projet complet → @reviewer en fin → incohérences détectées ?
+
+Projet test : `tests/project-context-test.md` (PulseBoard).
