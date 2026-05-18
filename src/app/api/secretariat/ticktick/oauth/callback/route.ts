@@ -39,22 +39,25 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const tokens = await exchangeCode(code, redirectUri);
 
-    // Afficher le refresh token pour copie dans Replit Secrets
+    // TickTick ne retourne PAS de refresh_token (stratégie 180j sur access_token).
+    // On affiche l'access_token : c'est ce que Thomas stocke dans Replit Secrets.
+    const expiresInDays = Math.round((tokens.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
     return new Response(
       `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="utf-8"><title>TickTick OAuth — Succès</title></head>
 <body style="font-family:system-ui;max-width:600px;margin:40px auto;padding:20px">
   <h1 style="color:green">TickTick autorisé avec succès</h1>
-  <p>Copie le refresh token ci-dessous dans Replit Secrets :</p>
-  <h3>TICKTICK_REFRESH_TOKEN</h3>
-  <textarea readonly rows="4" cols="60" style="font-family:monospace">${tokens.refreshToken}</textarea>
+  <p><strong>Note importante</strong> : TickTick ne retourne pas de refresh_token. L'access_token ci-dessous est valide ~${expiresInDays} jours (~180j en général). À ré-autoriser tous les ~5 mois.</p>
+  <h3>TICKTICK_ACCESS_TOKEN</h3>
+  <textarea readonly rows="4" cols="60" style="font-family:monospace" onclick="this.select()">${tokens.accessToken}</textarea>
   <h3>Vérification</h3>
   <ul>
-    <li>Access token obtenu : oui (expire dans ~${Math.round((tokens.expiresAt - Date.now()) / 60_000)} min)</li>
-    <li>Refresh token obtenu : ${tokens.refreshToken ? 'oui' : 'NON — problème'}</li>
+    <li>Access token obtenu : ${tokens.accessToken ? 'oui' : 'NON — problème'}</li>
+    <li>Expiration : ~${expiresInDays} jours (${new Date(tokens.expiresAt).toISOString()})</li>
+    <li>Refresh token : ${tokens.refreshToken ? 'oui (rare, à stocker aussi)' : 'non (normal, TickTick n\'en émet pas)'}</li>
   </ul>
-  <p><strong>Action Thomas :</strong> dans Replit → Secrets → ajouter <code>TICKTICK_REFRESH_TOKEN</code> avec la valeur ci-dessus.</p>
+  <p><strong>Action Thomas :</strong> Replit → Tools → Secrets → ajouter <code>TICKTICK_ACCESS_TOKEN</code> avec la valeur ci-dessus. Puis redeploy.</p>
   <p>Cette page n'est plus nécessaire après la configuration. Tu peux la fermer.</p>
 </body>
 </html>`,

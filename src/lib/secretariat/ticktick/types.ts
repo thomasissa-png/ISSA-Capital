@@ -11,7 +11,8 @@
 
 export interface TickTickTokens {
   accessToken: string;
-  refreshToken: string;
+  // TickTick n'émet PAS toujours de refresh_token (stratégie 180j sur access_token).
+  refreshToken: string | undefined;
   expiresAt: number; // Unix ms
 }
 

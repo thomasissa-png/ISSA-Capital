@@ -149,16 +149,22 @@ async function refreshAccessToken(refreshToken: string): Promise<TickTickTokens>
  * @returns access token string, ou null si non configuré.
  */
 export async function getTickTickAccessToken(): Promise<string | null> {
-  // Vérifier si le cache est encore valide
+  // Priorité 1 : cache encore valide
   if (cachedTokens && cachedTokens.expiresAt > Date.now() + TOKEN_EXPIRY_MARGIN_MS) {
     return cachedTokens.accessToken;
   }
 
-  // Tenter un refresh depuis le token stocké
+  // Priorité 2 : access_token direct depuis Replit Secret (stratégie TickTick — pas de refresh émis)
+  const directAccessToken = process.env.TICKTICK_ACCESS_TOKEN;
+  if (directAccessToken) {
+    return directAccessToken;
+  }
+
+  // Priorité 3 : refresh (legacy, rarement utilisable car TickTick n'émet pas de refresh_token)
   const storedRefreshToken = cachedTokens?.refreshToken ?? process.env.TICKTICK_REFRESH_TOKEN;
 
   if (!storedRefreshToken) {
-    console.warn('[ticktick-oauth] Aucun refresh token disponible — OAuth initial requis');
+    console.warn('[ticktick-oauth] Aucun TICKTICK_ACCESS_TOKEN ni TICKTICK_REFRESH_TOKEN — OAuth initial requis');
     return null;
   }
 
