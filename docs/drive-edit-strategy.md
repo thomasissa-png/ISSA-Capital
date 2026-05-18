@@ -47,6 +47,28 @@ Le param `file` demande "actual file or public URL" (upload binaire),
 `old_file` est en format SELECT (dropdown UI). Inadapte aux appels API
 directs. Preferer `_zap_raw_request PATCH`.
 
+## Workaround mimeType `newtxtfile` Zapier
+
+L'action Zapier `newtxtfile` (Google Drive — New Text File) cree systematiquement
+un fichier avec mimeType `text/plain`, meme si l'extension est `.md`. Resultat :
+Obsidian ne reconnait pas le fichier comme markdown (icone generique, pas de rendu).
+
+**Patterns acceptables** (par ordre de preference) :
+
+1. **Creation directe via raw API** (recommande pour code prod) :
+   - `_zap_raw_request POST` vers `/upload/drive/v3/files?uploadType=multipart`
+   - Header `Content-Type: text/markdown` dans la partie body
+   - Preserve le mimeType correct des le depart, pas de doublon
+
+2. **`newtxtfile` + PATCH de correction immediat** (acceptable pour scripts ponctuels) :
+   - `newtxtfile` cree le fichier (mimeType `text/plain`)
+   - Recuperer le fileId
+   - `_zap_raw_request PATCH` vers `/files/{fileId}` avec body `{"mimeType":"text/markdown"}`
+   - **JAMAIS** suivi d'un delete+recreate (anti-pattern R5)
+
+**Anti-pattern** : laisser le fichier en `text/plain` "ca marche dans Obsidian quand
+meme" — non, Obsidian Sync ne le voit pas comme markdown editable.
+
 ## Pour le code Anya (jalon S16 ou apres)
 
 Le module `src/lib/secretariat/drive-upload.ts` doit etre etendu avec

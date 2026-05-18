@@ -273,53 +273,15 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 15 (clôture session 14 le 2026-05-17)
+## Mémo de reprise — Session 16
 
-### Numéro de session : 15
+- **Numéro de session** : 16 (clôture S15 le 2026-05-18)
+- **Mémo détaillé** : `docs/session-memo-s16.md` (état complet S15, actions A1-A5, sujets Q1-Q3, métriques)
+- **Branche S15 (non-mergée)** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `1f1992b`, 1220 tests verts)
+- **Branche S16 active** : `claude/issa-capital-s16-resume-sanity-iQzJl`
 
-### Date de clôture : 2026-05-17
-
-### Branche active S14 : `claude/issa-capital-s14-ttl-audit-ZQcQS`
-
-### Résumé de la session 14 (en 5 lignes)
-
-Session 14 = audit TTL framework + email-ingest V1 complète + 2 fixes prod. (1) Début : audit TTL framework (CLAUDE.md 482→134, _gates.md créé, archivages, propagation 4 P1). (2) Email-ingest jalons 0→4D-3 complets : vault-client, gmail-source, triage Haiku, handlers 4 catégories, pending-store Drive, no-match UX 5 boutons, prompt enrichi contacts réels. 856→956 tests (+100). (3) Fix prod #1 : dispatch webhook `email_nomatch:` oublié. (4) Fix prod #2 : TTL pendings 24h→7j. (5) Découverte MCP Drive accessible en live — game-changer architectural pour S15.
-
-### Travaux en cours (à reprendre S15)
-
-- **Roadmap S15 : Anya temps réel + drafts + vault live** — voir `docs/session-memo-s15.md` pour détails jalons 5A/5B/5C/5D.
-- **P0 #2 bail — encadrement loyers (zone tendue Nanterre + Paris 18)** : INCHANGÉ depuis S12. Bloqué par décision Thomas.
-- **P0 #3 bail — IRL valeur numérique** : INCHANGÉ depuis S12. Option A (API INSEE auto) recommandée.
-- **P1 audit @legal hors scope** : INCHANGÉS depuis S12.
-- **Clause pénale 3x loyer journalier** : arbitrage Thomas attendu.
-- **Contradiction brief vs code — meublé vs nu** : à confirmer.
-- **Promotion candidat → locataire (Phase 6)** : INCHANGÉ depuis S12.
-- **Helper `extractPdfText` partagé** : à extraire dans `src/lib/test-utils/pdf-text.ts`.
-- **MCP Drive accessible** (découverte S14) : migration cache → live planifiée en 5D.
-
-### Actions Thomas à valider
-
-1. Section Tonalité copiée dans `Thomas Issa.md` (bloquant 5B drafts)
-2. Re-test E2E pipeline email-ingest avec fix TTL `f315a59`
-3. Encadrement loyers EUR/m2 Nanterre + Paris 18 (depuis S12)
-4. Arbitrage IRL : API INSEE auto OU saisie trimestrielle (depuis S12)
-
-### Décisions Thomas verrouillées session 13-14
-
-- Photos HEIC : abandon EXIF. Workflow batch demande date via boutons (fenêtre 5s).
-- Texte court inbox : carte preview Calendar/Tâches/Annuler. Seuil 100 chars.
-- Voice : Whisper retenu (Google STT = billing). ~0,03 EUR/mois.
-- Modèles Anya : Sonnet 4.6 (CR), Haiku 4.5 (router/triage).
-- TTL pendings : 7 jours minimum.
-
-### Blockers
-
-- Aucun blocker technique (956 tests, build OK).
-- 4 décisions Thomas sur bail (INCHANGÉ depuis S12).
-- 2 Replit Secrets à configurer : `DRIVE_VAULT_ROOT_ID` + `OPENAI_API_KEY`.
-
-### Commande de reprise S15
+### Commande de reprise S16
 
 ```
-@orchestrator — Session S15. Branche `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `448f5ac`). Lis session-memo-s15.md + lessons-learned.md. Priorité : jalons 5A-5D Anya temps réel + drafts.
+@orchestrator — Session S16. Lis docs/session-memo-s16.md + lessons-learned.md. Actions Thomas A1-A3 faites, A4-A5 en cours, B1 cartographie OK, B2 = merge S15 (autopilote).
 ```
