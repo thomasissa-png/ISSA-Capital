@@ -57,6 +57,7 @@ import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
+import { writeBackCrToFiche } from '@/lib/secretariat/handlers/cr-writeback';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
 import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
 import { getWorkflow } from '@/lib/secretariat/workflows/registry';
@@ -1767,6 +1768,7 @@ export async function POST(request: Request): Promise<Response> {
 
           // 6. Upload PDF sur Google Drive
           let driveLink: string | undefined;
+          let driveFileId: string | undefined;
           if (pdfBuffer) {
             const pdfFilename = `${reference.replace(/\//g, '-')}.pdf`;
             const driveResult = await uploadToDrive(
@@ -1777,7 +1779,43 @@ export async function POST(request: Request): Promise<Response> {
             );
             if (driveResult.success) {
               driveLink = driveResult.webViewLink;
+              driveFileId = driveResult.fileId;
               console.info(`[telegram-webhook] PDF uploadé sur Drive : ${driveResult.fileId}`);
+
+              // 6bis. Write-back CR → fiche Projet vault (S16 Q3)
+              // Append le lien CR dans la section "## Comptes Rendus" de la fiche
+              // Projet correspondant à l'entité. PATCH in-place (R5 P0 #99).
+              // Idempotent : skip si le lien existe déjà.
+              // await obligatoire (Replit autoscale : pas de fire-and-forget).
+              if (driveLink && driveFileId) {
+                try {
+                  const writebackResult = await writeBackCrToFiche({
+                    entiteCode: pendingDraft.cr.entite,
+                    crFileId: driveFileId,
+                    crFilename: pdfFilename,
+                    crWebViewLink: driveLink,
+                    crDate: pendingDraft.cr.date_reunion,
+                    crTitle: craftTitle,
+                  });
+                  if (writebackResult.success) {
+                    if (writebackResult.modified) {
+                      console.info(
+                        `[telegram-webhook] write-back fiche Projet OK : section ${writebackResult.sectionCreated ? 'créée' : 'mise à jour'} (fileId ${writebackResult.ficheFileId})`,
+                      );
+                    } else {
+                      console.info('[telegram-webhook] write-back fiche Projet : skip idempotent (lien déjà présent)');
+                    }
+                  } else {
+                    console.warn('[telegram-webhook] write-back fiche Projet échoué :', writebackResult.error);
+                  }
+                } catch (wbErr) {
+                  // Le write-back ne doit jamais casser le workflow CR.
+                  console.warn(
+                    '[telegram-webhook] write-back fiche Projet exception :',
+                    wbErr instanceof Error ? wbErr.message : wbErr,
+                  );
+                }
+              }
             } else {
               console.warn('[telegram-webhook] échec upload Drive :', driveResult.error);
               await sendTelegramMessage(
