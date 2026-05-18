@@ -295,6 +295,87 @@ export async function getOrCreateSubfolder(
  * @param subfolder Nom du sous-dossier (Photos, Notes, Voice, Documents)
  * @param mimeType Type MIME du fichier
  */
+// ============================================================
+// PATCH in-place — édition fichier existant (R5 P0 #99)
+// ============================================================
+
+/**
+ * Met à jour le contenu d'un fichier Drive existant via PATCH in-place.
+ *
+ * RÈGLE R5 (P0 #99) — JAMAIS create+delete : casse fileId, wikilinks Obsidian,
+ * partages. Toujours PATCH le contenu sur le fileId existant.
+ *
+ * Endpoint : PATCH /upload/drive/v3/files/{fileId}?uploadType=media
+ * Préserve : fileId, mimeType (si non spécifié), partages, wikilinks.
+ *
+ * @param fileId ID Drive du fichier à mettre à jour
+ * @param content Nouveau contenu raw (string ou Buffer)
+ * @param mimeType Content-Type du body (ex: "text/markdown")
+ * @returns DriveUploadResult avec fileId préservé
+ */
+export async function updateFileContent(
+  fileId: string,
+  content: string | Buffer,
+  mimeType: string,
+): Promise<DriveUploadResult> {
+  // Validation inputs
+  if (!fileId || typeof fileId !== 'string' || fileId.trim().length === 0) {
+    return { success: false, error: 'fileId manquant ou invalide' };
+  }
+  if (!mimeType || typeof mimeType !== 'string' || mimeType.trim().length === 0) {
+    return { success: false, error: 'mimeType manquant ou invalide' };
+  }
+  if (content === undefined || content === null) {
+    return { success: false, error: 'content manquant' };
+  }
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return {
+      success: false,
+      error: 'PATCH Drive désactivé — credentials OAuth2 manquants (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN)',
+    };
+  }
+
+  try {
+    const bodyBuffer = typeof content === 'string'
+      ? Buffer.from(content, 'utf-8')
+      : content;
+
+    const url = `${DRIVE_API}/${encodeURIComponent(fileId)}?uploadType=media&fields=id,webViewLink&supportsAllDrives=true`;
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': mimeType,
+        'Content-Length': String(bodyBuffer.length),
+      },
+      body: bodyBuffer,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      return {
+        success: false,
+        error: `Drive PATCH ${response.status}: ${errorText.slice(0, 200)}`,
+      };
+    }
+
+    const data = (await response.json()) as { id?: string; webViewLink?: string };
+    return {
+      success: true,
+      fileId: data.id ?? fileId,
+      webViewLink: data.webViewLink,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Erreur Drive PATCH : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 export async function uploadToInbox(
   buffer: Buffer,
   filename: string,

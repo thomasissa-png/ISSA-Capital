@@ -66,12 +66,38 @@ export function dateFormatFr(iso: string): string {
 }
 
 function formatParticipants(participants: readonly Participant[]): string {
+  // S16 Q2 — Mode solo : pas de participant tiers → afficher "Présent : Thomas Issa"
+  // (signataire implicite). Le pipeline upstream (system prompt REGLE 14) garantit
+  // que ce cas est intentionnel (visite seul, activité perso, signature notariale solo).
+  if (participants.length === 0) {
+    return '- Thomas Issa, Président (signataire — mode solo)';
+  }
   return participants
     .map(
       (p) =>
         `- ${p.prenom} ${p.nom}, ${p.titre}, ${p.societe} (${p.qualite_relation})`,
     )
     .join('\n');
+}
+
+/**
+ * Détecte si un CR est en mode solo (pas de participant tiers).
+ *
+ * Mode solo = 0 participant OU uniquement Thomas Issa lui-même.
+ * Utilisé pour adapter les libellés ("Présent" vs "Participants").
+ */
+function isModeSolo(participants: readonly Participant[]): boolean {
+  if (participants.length === 0) return true;
+  if (participants.length === 1) {
+    const p = participants[0];
+    if (p && p.prenom === 'Thomas' && p.nom === 'Issa') return true;
+  }
+  return false;
+}
+
+/** Libellé du bloc participants adapté au mode (solo vs multi). */
+function participantsLabel(participants: readonly Participant[]): string {
+  return isModeSolo(participants) ? 'Présent' : 'Participants';
 }
 
 /**
@@ -104,7 +130,7 @@ export function renderCrForTelegram(cr: CRDraft, reference?: string): string {
   lines.push(`*Objet* : ${cr.objet}`);
   lines.push('');
 
-  lines.push('*Participants* :');
+  lines.push(`*${participantsLabel(cr.participants)}* :`);
   lines.push(formatParticipants(cr.participants));
   lines.push('');
 

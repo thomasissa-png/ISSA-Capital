@@ -171,7 +171,10 @@ export const CRDraftSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'date_reunion doit être au format YYYY-MM-DD'),
   lieu: z.string().min(1, 'lieu requis'),
-  participants: z.array(ParticipantSchema).min(1, 'au moins un participant requis'),
+  // S16 Q2 — Mode solo : accepte 0 participant tiers (visite immo seul, activité perso,
+  // signature notariale solo). Cf docs/ia/secretariat-system-prompt.md REGLE 14.
+  // Le pipeline aval (renderer, PDF, history) gère le cas array vide.
+  participants: z.array(ParticipantSchema),
   objet: z.string().min(10, "objet doit contenir au moins 10 caractères"),
   montant_ttc_eur: z.number().positive().nullable(),
   etablissement_nom: z.string().nullable(),
