@@ -148,16 +148,34 @@ describe('CR Renderer — renderCrForTelegram par entité', () => {
 // ============================================================
 
 describe('Contacts — formatContactsForPrompt', () => {
-  it('contient Carl Standertskjold-Nordenstam', async () => {
+  it('contient les contacts du vault quand le mock en fournit', async () => {
+    const vaultMod = await import('../vault-contacts');
+    vi.mocked(vaultMod.getVaultContacts).mockResolvedValueOnce([
+      {
+        prenom: 'Carl',
+        nom: 'Standertskjold-Nordenstam',
+        titre: 'Co-fondateur',
+        societe: 'Gradient One / Versi',
+        entitesVisibles: ['GO', 'VI', 'VV'],
+      },
+      {
+        prenom: 'Maxime',
+        nom: 'Lemoine',
+        titre: 'Co-fondateur',
+        societe: 'Gradient One / Versi',
+        entitesVisibles: ['GO', 'VI', 'VV'],
+      },
+    ]);
     const { formatContactsForPrompt } = await import('../contacts');
     const output = await formatContactsForPrompt();
     expect(output).toContain('Carl Standertskjold-Nordenstam');
+    expect(output).toContain('Maxime Lemoine');
   });
 
-  it('contient Maxime Lemoine', async () => {
+  it('retourne le message par défaut si vault vide', async () => {
     const { formatContactsForPrompt } = await import('../contacts');
     const output = await formatContactsForPrompt();
-    expect(output).toContain('Maxime Lemoine');
+    expect(output).toBe('(Aucun contact récurrent enregistré)');
   });
 });
 

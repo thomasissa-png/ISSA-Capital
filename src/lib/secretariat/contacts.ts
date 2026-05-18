@@ -1,10 +1,13 @@
 /**
- * Base de contacts récurrents — Secrétariat ISSA Capital.
+ * Contacts récurrents — Secrétariat ISSA Capital.
  *
- * Persistée dans /home/runner/issa-data/contacts.json.
- * Les contacts de base sont embarqués dans le code et fusionnés avec
- * les contacts ajoutés dynamiquement (via Anya quand elle rencontre
- * une personne inconnue).
+ * Sources fusionnées par `getAllContacts()` :
+ * 1. Vault Drive (07. Contacts/) via `vault-contacts.ts` — source de vérité (S15.5F)
+ * 2. Contacts dynamiques persistés dans `/home/runner/issa-data/contacts.json`
+ *    (ajoutés par Anya quand elle rencontre quelqu'un d'inconnu en CR)
+ *
+ * Plus de BASE_CONTACTS hardcodés depuis S15.5F (suppression dette technique).
+ * Thomas Issa (signataire CR) est référencé en dur dans `cr-renderer.ts`.
  *
  * Injecté dans le system prompt Claude via [INJECTION_DATABASE_CONTACTS_ICI].
  */
@@ -26,60 +29,6 @@ export interface Contact {
   entitesVisibles: string[];
   notes?: string;
 }
-
-/**
- * Contacts de base — embarqués dans le code, toujours présents.
- */
-const BASE_CONTACTS: Contact[] = [
-  {
-    prenom: 'Thomas',
-    nom: 'Issa',
-    titre: 'Président',
-    societe: 'ISSA Capital SAS',
-    entitesVisibles: ['IC', 'GO', 'VI', 'VV'],
-    notes: 'Fondateur. Accès toutes entités. Signataire de tous les CR.',
-  },
-  {
-    prenom: 'Jean-Pierre',
-    nom: 'Issa',
-    titre: 'Co-Managing Director',
-    societe: '2J Impression',
-    entitesVisibles: ['IC'],
-    notes: 'Père de Thomas. Figure fondatrice patrimoniale. Board ISSA Capital.',
-  },
-  {
-    prenom: 'Carl',
-    nom: 'Standertskjold-Nordenstam',
-    titre: 'Co-fondateur',
-    societe: 'Gradient One / Versi',
-    entitesVisibles: ['GO', 'VI', 'VV'],
-    notes: "Co-fondateur Versi (2022). Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC. NON responsable immobilier — c'est Maxime qui gère l'immobilier.",
-  },
-  {
-    prenom: 'Maxime',
-    nom: 'Lemoine',
-    titre: 'Co-fondateur',
-    societe: 'Gradient One / Versi',
-    entitesVisibles: ['GO', 'VI', 'VV'],
-    notes: "Co-fondateur Versi (2022). Co-actionnaire Gradient One. Accès GO/VI/VV uniquement, JAMAIS IC. RESPONSABLE de la partie immobilière (Versi Immobilier, Versi Invest, projets immo).",
-  },
-  {
-    prenom: 'Martin',
-    nom: 'Yhuel',
-    titre: 'Avocat Associé',
-    societe: 'PNM Avocats',
-    entitesVisibles: ['IC', 'GO', 'VI', 'VV'],
-    notes: 'Avocat de la famille Issa. Droit des sociétés, capital-investissement, M&A. Basé à Lille.',
-  },
-  {
-    prenom: 'Emmanuel',
-    nom: 'Gomez',
-    titre: 'Conseiller',
-    societe: 'Indépendant',
-    entitesVisibles: ['IC', 'GO', 'VI', 'VV'],
-    notes: 'Ex-Président de Gradient One. Conseiller proche de Thomas Issa (sans contrat). Accès toutes entités.',
-  },
-];
 
 // ============================================================
 // Persistence
@@ -173,15 +122,15 @@ export async function getAllContacts(): Promise<Contact[]> {
     vaultContacts = raw.map(vaultToContact);
   } catch (err) {
     console.warn(
-      `[contacts] erreur vault, fallback BASE+dynamic : ${err instanceof Error ? err.message : String(err)}`,
+      `[contacts] erreur vault, fallback dynamic uniquement : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
-  // Fusion avec dédup : vault prime sur BASE prime sur dynamic
+  // Fusion avec dédup : vault prime sur dynamic
   const seen = new Set<string>();
   const result: Contact[] = [];
 
-  // 1. Vault contacts (priorité maximale)
+  // 1. Vault contacts (source de vérité)
   for (const c of vaultContacts) {
     const key = deduplicationKey(c);
     if (!seen.has(key)) {
@@ -190,16 +139,7 @@ export async function getAllContacts(): Promise<Contact[]> {
     }
   }
 
-  // 2. BASE contacts (fallback, ne duplique pas un vault)
-  for (const c of BASE_CONTACTS) {
-    const key = deduplicationKey(c);
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(c);
-    }
-  }
-
-  // 3. Dynamic contacts (Anya-added, ne duplique pas vault/BASE)
+  // 2. Dynamic contacts (Anya-added, ne duplique pas le vault)
   for (const c of dynamic) {
     const key = deduplicationKey(c);
     if (!seen.has(key)) {
