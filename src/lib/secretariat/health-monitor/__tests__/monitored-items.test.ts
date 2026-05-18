@@ -64,16 +64,15 @@ describe('monitored-items', () => {
   // Structure du registre
   // ============================================================
 
-  it('exporte exactement 3 items', async () => {
+  it('exporte 7 items (3 OAuth + 4 Task B)', async () => {
     const { MONITORED_ITEMS } = await importModule();
-    expect(MONITORED_ITEMS).toHaveLength(3);
+    expect(MONITORED_ITEMS).toHaveLength(7);
   });
 
-  it('tous les items ont la catégorie oauth', async () => {
+  it('les 3 premiers items ont la catégorie oauth', async () => {
     const { MONITORED_ITEMS } = await importModule();
-    for (const item of MONITORED_ITEMS) {
-      expect(item.category).toBe('oauth');
-    }
+    const oauthItems = MONITORED_ITEMS.filter((i) => i.category === 'oauth');
+    expect(oauthItems).toHaveLength(3);
   });
 
   it('IDs uniques', async () => {
@@ -110,9 +109,10 @@ describe('monitored-items', () => {
   // getExpiresAt fonctionne via les items
   // ============================================================
 
-  it('getExpiresAt retourne null si aucun timestamp enregistré', async () => {
+  it('getExpiresAt retourne null pour les 3 OAuth items si aucun timestamp enregistré', async () => {
     const { MONITORED_ITEMS } = await importModule();
-    for (const item of MONITORED_ITEMS) {
+    const oauthItems = MONITORED_ITEMS.filter((i) => i.category === 'oauth');
+    for (const item of oauthItems) {
       const expires = await item.getExpiresAt();
       expect(expires).toBeNull();
     }

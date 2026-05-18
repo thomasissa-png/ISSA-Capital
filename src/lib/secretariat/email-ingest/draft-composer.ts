@@ -24,6 +24,7 @@ import type { TriageResult } from '../triage/types';
 import { createDraft } from '../gmail-source/gmail-client';
 import { findContactCached, readVaultFile } from '../vault-reader';
 import { parseObsidianFile } from '../vault-client/frontmatter';
+import { recordAnthropicUsage } from '../health-monitor/anthropic-usage';
 
 // ============================================================
 // Constantes
@@ -313,6 +314,18 @@ async function generateDraftBody(
       },
       { signal: controller.signal },
     );
+
+    // Track usage Anthropic (fire-and-forget)
+    try {
+      void recordAnthropicUsage({
+        model: SONNET_MODEL,
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        cacheReadTokens: (response.usage as unknown as Record<string, number>).cache_read_input_tokens ?? 0,
+      });
+    } catch (e) {
+      console.warn('[anthropic-usage] record failed', e);
+    }
 
     const textBlock = response.content.find((b) => b.type === 'text');
     return textBlock && 'text' in textBlock ? textBlock.text.trim() : null;

@@ -18,6 +18,7 @@ import {
   type TriageResult,
   type KnownContact,
 } from './types';
+import { recordAnthropicUsage } from '../health-monitor/anthropic-usage';
 
 // ============================================================
 // Constantes
@@ -213,6 +214,18 @@ async function callHaiku(
       );
     } finally {
       clearTimeout(timer);
+    }
+
+    // Track usage Anthropic (fire-and-forget)
+    try {
+      void recordAnthropicUsage({
+        model: HAIKU_MODEL,
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        cacheReadTokens: (response.usage as unknown as Record<string, number>).cache_read_input_tokens ?? 0,
+      });
+    } catch (e) {
+      console.warn('[anthropic-usage] record failed', e);
     }
 
     // Extraire le texte brut
