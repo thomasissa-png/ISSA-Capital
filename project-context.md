@@ -256,6 +256,7 @@ Les informations suivantes sont archivées dans `docs/project-context-archive.md
 | ia (S15) | 2026-05-17 | docs/ia/llm-provider-evaluation-opensource-alternatives.md | Evaluation 8 alternatives open source (Mistral, Llama, DeepSeek, Qwen, Gemma, Phi, Cohere, Falcon). Top 3 : Mistral API (28/30), Anthropic statu quo (27/30), Llama/Groq (25/30). Reco = maintenir Anthropic. ROI migration Mistral = 0,36-2,16 (< seuil 3). Mistral = seul candidat RGPD UE natif credible. | DeepSeek/Qwen ecartes (meme raison que Kimi : serveurs CN). Gemma/Phi/Falcon ecartes (pas d'API/sous-dimensionnes). Cohere ecarte (plus cher, pas de split). Llama/Groq ecarte (meme RGPD USA qu'Anthropic, zero avantage). Economie max = 0,15 EUR/mois vs Anthropic avec cache. |
 | fullstack (S16) | 2026-05-18 | types.ts (CRDraftSchema), cr-renderer.ts, pdf-generator.ts, secretariat-system-prompt.md (REGLE 14), __tests__/cr-mode-solo.test.ts (8 tests), 1255 tests verts | S16 Q2 — CR mode solo : pipeline accepte 0 participant tiers (visite immo seul, activité perso, signature notariale solo). Zod assoupli (`.min(1)` retiré), libellé "Présent" vs "Participants", PDF gère array vide, REGLE 14 system prompt définit le comportement. Naming/dossier Drive INCHANGÉS (décision Thomas verbatim S15). | Mode solo = 0 tiers OU Thomas Issa seul. Détection automatique (pas de clarification systématique). Section 1 reste obligatoire (justif intérêt social). Non-régression : tests multi-participants existants verts. |
 | fullstack (S16) | 2026-05-18 | drive-upload.ts (updateFileContent PATCH in-place), handlers/cr-writeback.ts, telegram/webhook/route.ts (step 6bis), 2 test files (27 tests), 1255 tests verts total | S16 Q3 — Write-back CR → fiche Projet vault. updateFileContent(fileId, content, mimeType) via `PATCH /upload/drive/v3/files/{fileId}?uploadType=media` (R5 P0 #99). writeBackCrToFiche : lookup entité→fileId, lecture live readFileById, upsertCrSection (créa/append idempotent), PATCH in-place mimeType `text/markdown`. Branchement post-uploadToDrive dans webhook : try/catch isole l'erreur write-back du flux CR principal. Hardcoded `PROJET_FICHE_FILE_IDS` (TODO S17 R7 : résoudre via vault-reader). | PATCH in-place préserve fileId/wikilinks/partages. Idempotence par `includes(webViewLink)`. Section markdown créée si absente, sinon ligne ajoutée juste après le heading (nouveaux CR en premier). Write-back non-bloquant : warn console si échec, n'interrompt pas le workflow CR. |
+| orchestrator (S16 clôture) | 2026-05-18 | CLAUDE.md (141→120L), lessons-learned.md (propagation 3 P0/P1 S15), project-context.md (325→287L), drive-edit-strategy.md (workaround mimeType), session-s16-thomas-actions.md, archive/ (S15 health-monitor plan), session-memo-s17.md | S16 reprise+autopilote complet : (1) sanity bloc — propagation #99/#100/#101 dans CLAUDE.md R5/R6/R7, branche renommée S16. (2) C3/C4/C5 audit TTL+doc+archive. (3) B1 cartographie MCP vérifiée — structure Drive cohérente. (4) B2 merge S16→default branch (FF strict). (5) Lancement C1+C2 fullstack en parallèle. Note B2 : pas de branche "main", default GitHub = `claude/issa-capital-s14-ttl-audit-ZQcQS`. | Autopilote validé Thomas. Caps tous OK fin S16. 1255 tests verts cumulés. Travail consolidé sur la default branch (pas de divergence). |
 
 ---
 
@@ -275,15 +276,15 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 16
+## Mémo de reprise — Session 17
 
-- **Numéro de session** : 16 (clôture S15 le 2026-05-18)
-- **Mémo détaillé** : `docs/session-memo-s16.md` (état complet S15, actions A1-A5, sujets Q1-Q3, métriques)
-- **Branche S15 (non-mergée)** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `1f1992b`, 1220 tests verts)
-- **Branche S16 active** : `claude/issa-capital-s16-resume-sanity-iQzJl`
+- **Numéro de session** : 17 (clôture S16 le 2026-05-18)
+- **Mémo détaillé** : `docs/session-memo-s17.md` (état complet S16, actions Thomas A4/A5, tests R6 prioritaires)
+- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `582c85c`, 1255 tests verts)
+- **Pas de branche `main`** — voir mémo S17
 
-### Commande de reprise S16
+### Commande de reprise S17
 
 ```
-@orchestrator — Session S16. Lis docs/session-memo-s16.md + lessons-learned.md. Actions Thomas A1-A3 faites, A4-A5 en cours, B1 cartographie OK, B2 = merge S15 (autopilote).
+@orchestrator — Session S17. Branche `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `582c85c`). Lis docs/session-memo-s17.md + lessons-learned.md. Priorité = tests R6 (A5/Q2/Q3 E2E réels) avant tout nouveau jalon.
 ```
