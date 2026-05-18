@@ -89,6 +89,8 @@ import {
   ROUTER_CALLBACK_PREFIX,
 } from '@/lib/secretariat/workflows/inbox-message-router';
 import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
+import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
+import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1637,6 +1639,27 @@ export async function POST(request: Request): Promise<Response> {
       if (callbackData.startsWith(ROUTER_CALLBACK_PREFIX)) {
         const routerMsg = await handleRouterCallback(callbackChatId, callbackData);
         await sendTelegramMessage(callbackChatId, routerMsg);
+        return Response.json({ ok: true });
+      }
+
+      // Health monitor — callbacks préfixés par "health_renewed:" ou "health_snooze:"
+      if (callbackData.startsWith('health_renewed:')) {
+        await handleHealthRenewed({
+          callbackQueryId: callbackQueryId,
+          callbackData,
+          chatId: callbackChatId,
+          messageId: update.callback_query.message?.message_id ?? 0,
+        });
+        return Response.json({ ok: true });
+      }
+
+      if (callbackData.startsWith('health_snooze:')) {
+        await handleHealthSnooze({
+          callbackQueryId: callbackQueryId,
+          callbackData,
+          chatId: callbackChatId,
+          messageId: update.callback_query.message?.message_id ?? 0,
+        });
         return Response.json({ ok: true });
       }
 
