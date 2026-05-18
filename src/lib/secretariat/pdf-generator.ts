@@ -237,27 +237,50 @@ export async function generateCrPdf(params: {
 
     doc.moveDown(0.5);
 
-    // Participants
+    // Participants — adapté au mode solo (S16 Q2)
+    // Mode solo = 0 participant tiers OU uniquement Thomas Issa.
+    // Libellé : "Présent" en mode solo, "Participants" sinon.
+    const isSolo =
+      cr.participants.length === 0 ||
+      (cr.participants.length === 1 &&
+        cr.participants[0]?.prenom === 'Thomas' &&
+        cr.participants[0]?.nom === 'Issa');
+    const labelParticipants = isSolo ? 'Présent :' : 'Participants :';
+
     doc
       .font(FONT_BOLD)
       .fontSize(FONT_SIZE_LABEL)
       .fillColor(COLOR_SECONDARY)
-      .text('Participants :', PAGE_MARGIN, doc.y, {
+      .text(labelParticipants, PAGE_MARGIN, doc.y, {
         width: doc.page.width - PAGE_MARGIN * 2,
       });
     doc.moveDown(0.2);
 
-    for (const p of cr.participants) {
+    if (cr.participants.length === 0) {
+      // Mode solo strict (aucun participant dans le JSON) : afficher Thomas comme signataire.
       doc
         .font(FONT_REGULAR)
         .fontSize(FONT_SIZE_BODY)
         .fillColor(COLOR_PRIMARY)
         .text(
-          `  •  ${p.prenom} ${p.nom}, ${p.titre}, ${p.societe} (${p.qualite_relation})`,
+          '  •  Thomas Issa, Président (signataire — mode solo)',
           PAGE_MARGIN,
           doc.y,
           { width: doc.page.width - PAGE_MARGIN * 2, lineGap: LINE_GAP },
         );
+    } else {
+      for (const p of cr.participants) {
+        doc
+          .font(FONT_REGULAR)
+          .fontSize(FONT_SIZE_BODY)
+          .fillColor(COLOR_PRIMARY)
+          .text(
+            `  •  ${p.prenom} ${p.nom}, ${p.titre}, ${p.societe} (${p.qualite_relation})`,
+            PAGE_MARGIN,
+            doc.y,
+            { width: doc.page.width - PAGE_MARGIN * 2, lineGap: LINE_GAP },
+          );
+      }
     }
 
     doc.moveDown(0.5);
