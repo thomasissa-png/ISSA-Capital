@@ -14,6 +14,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { exchangeCode } from '@/lib/secretariat/ticktick/oauth';
+import { recordOAuthCallback } from '@/lib/secretariat/health-monitor/oauth-timestamps';
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -38,6 +39,13 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const tokens = await exchangeCode(code, redirectUri);
+
+    // Enregistrer le callback OAuth pour le health-monitor (silencieux)
+    try {
+      recordOAuthCallback('ticktick');
+    } catch (e) {
+      console.warn('[oauth-callback] recordOAuthCallback failed', e);
+    }
 
     // TickTick ne retourne PAS de refresh_token (stratégie 180j sur access_token).
     // On affiche l'access_token : c'est ce que Thomas stocke dans Replit Secrets.

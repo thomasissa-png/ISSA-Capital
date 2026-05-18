@@ -11,6 +11,7 @@
  */
 
 import { getAccessToken } from '../drive-upload';
+import { recordOAuthUsage } from '../health-monitor/oauth-timestamps';
 
 // ============================================================
 // Constantes
@@ -233,6 +234,9 @@ export async function resolvePath(
     fileId: currentId,
     cachedAt: Date.now(),
   });
+
+  // Health-monitor : enregistrer l'usage OAuth Drive (fire-and-forget, throttlé 1x/jour)
+  recordOAuthUsage('drive');
 
   return { success: true, fileId: currentId };
 }

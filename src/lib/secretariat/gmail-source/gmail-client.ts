@@ -9,6 +9,7 @@
  */
 
 import { getAccessToken } from '../drive-upload';
+import { recordOAuthUsage } from '../health-monitor/oauth-timestamps';
 
 // ============================================================
 // Constantes
@@ -87,6 +88,10 @@ export async function listMessages(
 
   const data = (await response.json()) as GmailListResponse;
   console.warn(`[gmail-client] listMessages : ${data.messages?.length ?? 0} résultats (estimé: ${data.resultSizeEstimate ?? '?'})`);
+
+  // Health-monitor : enregistrer l'usage OAuth Gmail (fire-and-forget, throttlé 1x/jour)
+  recordOAuthUsage('gmail');
+
   return data.messages ?? [];
 }
 
