@@ -11,6 +11,8 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { getVaultContacts } from './vault-contacts';
+import type { VaultContact } from './vault-contacts';
 
 const DATA_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
 const CONTACTS_PATH = resolve(DATA_DIR, 'contacts.json');
@@ -134,19 +136,87 @@ function saveDynamicContacts(contacts: Contact[]): void {
 }
 
 /**
- * Retourne tous les contacts (base + dynamiques).
+ * Convertit un VaultContact en Contact (interface existante).
  */
-export function getAllContacts(): Contact[] {
+function vaultToContact(vc: VaultContact): Contact {
+  return {
+    prenom: vc.prenom,
+    nom: vc.nom,
+    titre: vc.titre,
+    societe: vc.societe,
+    entitesVisibles: vc.entitesVisibles,
+    notes: vc.notes,
+  };
+}
+
+/**
+ * Clé de déduplication : prenom+nom en lowercase, trimmed.
+ */
+function deduplicationKey(c: Contact): string {
+  return `${c.prenom.trim().toLowerCase()}|${c.nom.trim().toLowerCase()}`;
+}
+
+/**
+ * Retourne tous les contacts (vault + base + dynamiques), dédupliqués.
+ *
+ * Priorité : vault > BASE > dynamic (le vault est la source de vérité,
+ * BASE est fallback si vault indisponible).
+ * Déduplication par prenom+nom (case-insensitive, trim).
+ */
+export async function getAllContacts(): Promise<Contact[]> {
   const dynamic = loadDynamicContacts();
-  return [...BASE_CONTACTS, ...dynamic];
+
+  // Charger les contacts vault (avec fallback gracieux)
+  let vaultContacts: Contact[] = [];
+  try {
+    const raw = await getVaultContacts();
+    vaultContacts = raw.map(vaultToContact);
+  } catch (err) {
+    console.warn(
+      `[contacts] erreur vault, fallback BASE+dynamic : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // Fusion avec dédup : vault prime sur BASE prime sur dynamic
+  const seen = new Set<string>();
+  const result: Contact[] = [];
+
+  // 1. Vault contacts (priorité maximale)
+  for (const c of vaultContacts) {
+    const key = deduplicationKey(c);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(c);
+    }
+  }
+
+  // 2. BASE contacts (fallback, ne duplique pas un vault)
+  for (const c of BASE_CONTACTS) {
+    const key = deduplicationKey(c);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(c);
+    }
+  }
+
+  // 3. Dynamic contacts (Anya-added, ne duplique pas vault/BASE)
+  for (const c of dynamic) {
+    const key = deduplicationKey(c);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(c);
+    }
+  }
+
+  return result;
 }
 
 /**
  * Ajoute un nouveau contact (depuis Anya quand elle rencontre quelqu'un d'inconnu).
- * Vérifie qu'il n'existe pas déjà (par nom de famille).
+ * Vérifie qu'il n'existe pas déjà (par prenom+nom).
  */
-export function addContact(contact: Contact): boolean {
-  const all = getAllContacts();
+export async function addContact(contact: Contact): Promise<boolean> {
+  const all = await getAllContacts();
   const exists = all.some(
     (c) => c.nom.toLowerCase() === contact.nom.toLowerCase() &&
            c.prenom.toLowerCase() === contact.prenom.toLowerCase(),
@@ -162,8 +232,8 @@ export function addContact(contact: Contact): boolean {
 /**
  * Formate tous les contacts pour injection dans le system prompt.
  */
-export function formatContactsForPrompt(): string {
-  const all = getAllContacts();
+export async function formatContactsForPrompt(): Promise<string> {
+  const all = await getAllContacts();
   if (all.length === 0) return '(Aucun contact récurrent enregistré)';
 
   return all.map((c) => {

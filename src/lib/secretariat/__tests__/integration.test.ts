@@ -7,10 +7,15 @@
  * Chaque test DOIT passer -- si un test echoue, le code source est a corriger.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { CRDraft, Entite } from '../types';
+
+// Mock vault-contacts pour éviter les appels Drive en test
+vi.mock('../vault-contacts', () => ({
+  getVaultContacts: vi.fn().mockResolvedValue([]),
+}));
 
 // Chemins des fichiers de persistence (mêmes que dans les modules sources)
 const DATA_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
@@ -145,13 +150,13 @@ describe('CR Renderer — renderCrForTelegram par entité', () => {
 describe('Contacts — formatContactsForPrompt', () => {
   it('contient Carl Standertskjold-Nordenstam', async () => {
     const { formatContactsForPrompt } = await import('../contacts');
-    const output = formatContactsForPrompt();
+    const output = await formatContactsForPrompt();
     expect(output).toContain('Carl Standertskjold-Nordenstam');
   });
 
   it('contient Maxime Lemoine', async () => {
     const { formatContactsForPrompt } = await import('../contacts');
-    const output = formatContactsForPrompt();
+    const output = await formatContactsForPrompt();
     expect(output).toContain('Maxime Lemoine');
   });
 });

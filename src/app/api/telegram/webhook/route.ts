@@ -288,7 +288,7 @@ async function generateCR(
     const client = getAnthropicClient();
 
     // Injecter la base de contacts récurrents dans le system prompt
-    const contactsBlock = formatContactsForPrompt();
+    const contactsBlock = await formatContactsForPrompt();
     systemPrompt = systemPrompt.replace(
       '[INJECTION_DATABASE_CONTACTS_ICI]',
       contactsBlock,
@@ -559,7 +559,7 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
     } | null | undefined;
 
     if (newContact?.prenom && newContact?.nom && newContact?.titre && newContact?.societe) {
-      const added = addContact({
+      const added = await addContact({
         prenom: newContact.prenom,
         nom: newContact.nom,
         titre: newContact.titre,
@@ -627,7 +627,7 @@ async function generateCRFromVoice(
     let systemPrompt = loadSystemPrompt();
     const client = getAnthropicClient();
 
-    const contactsBlock = formatContactsForPrompt();
+    const contactsBlock = await formatContactsForPrompt();
     systemPrompt = systemPrompt.replace(
       '[INJECTION_DATABASE_CONTACTS_ICI]',
       contactsBlock,
