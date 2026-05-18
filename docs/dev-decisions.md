@@ -1229,3 +1229,75 @@ Si le même email est retraité (cas théorique — la dédup Gmail devrait l'em
 - `src/lib/secretariat/email-ingest/email-ingest-runner.ts` — import + appel `createTickTickTaskForEmail` après pending
 - `.env.example` — ajout 5 env vars TickTick
 - `docs/dev-decisions.md` — cette section
+
+---
+
+## Session 15 — Fix batch 2.1 : Webhook TickTick retiré + GitHub Actions cron
+
+**Date** : 2026-05-18
+
+### Contexte (2 problèmes découverts après livraison batch 2)
+
+**Problème 1 — Replit cron pas fiable** : le Repl dev s'endort. Un cron interne (Replit Scheduled Task) ne peut pas tourner de manière fiable sans Deployment payant. Thomas valide la bascule sur **GitHub Actions cron** (gratuit, externe, indépendant du sleep du Repl).
+
+**Problème 2 — TickTick API n'a pas de webhooks** : `developer.ticktick.com` documente uniquement des endpoints CRUD. Aucun mécanisme de webhook sortant n'est exposé par TickTick. Le `webhook/route.ts` créé par le jalon 5C est donc **inutilisable côté TickTick** — Thomas n'a aucun moyen de configurer un webhook chez eux. Thomas valide la **bascule sur polling toutes les 15 min**.
+
+### Décisions
+
+**1. Bascule webhook → polling 15 min**
+
+- Suppression logique de l'endpoint webhook (remplacé par 410 Gone temporaire pour répondre proprement aux callers fantômes, puis `git rm` après quelques jours sans hit).
+- Nouveau module `src/lib/secretariat/ticktick/poll.ts` :
+  - `pollTickTickTasks()` → `listTasks()` + diff vs snapshot précédent + émission d'events.
+  - 3 types d'events : `task.completed`, `task.updated`, `task.created.external`.
+  - Tâches créées par Anya sont identifiées via tag `anya-*` (cf. `email-ingest/ticktick-integration.ts`). Évite de re-émettre des events pour les tâches qu'Anya vient juste de créer.
+  - Pour l'instant les handlers loguent uniquement. Intégration Telegram = TODO post-MVP (facile à brancher).
+- Nouvel endpoint `src/app/api/secretariat/ticktick/cron-poll/route.ts` : GET protégé Bearer, appelé par GH Actions.
+
+**2. GitHub Actions cron (externe au Repl)**
+
+- `.github/workflows/cron-email-ingest.yml` — `0 * * * *` (1h, comme avant).
+- `.github/workflows/cron-ticktick-poll.yml` — `*/15 * * * *` (15 min).
+- Les deux utilisent `secrets.CRON_SECRET` (header Authorization Bearer) + `secrets.APP_BASE_URL` (URL prod du Repl).
+- `workflow_dispatch: {}` activé pour permettre déclenchement manuel depuis l'onglet Actions GitHub.
+
+**3. Réutilisation du même `CRON_SECRET`**
+
+Email-ingest et TickTick poll partagent le secret. Thomas n'a qu'une seule valeur à gérer dans GitHub Secrets ET Replit Secrets. Acceptable : si l'un fuit, l'autre fuit aussi — même surface d'attaque (les deux endpoints sont read-only/poll, pas d'écriture critique).
+
+**4. Snapshot store local — `/home/runner/issa-data/ticktick-snapshot.json`**
+
+Même pattern que `conversation-store.ts` : priorité `/home/runner/` (persistant Replit), fallback `/tmp/`. Stockage local choisi plutôt que Drive pour éviter la latence (le cron tourne toutes les 15 min, un round-trip Drive ajouterait 1-2s à chaque run). Tradeoff acceptable : si le Repl se réinitialise (redéploiement), le snapshot est perdu → premier poll suivant ne fera AUCUN event (les tâches Anya sont skip via tag, les externes deviennent "non-event" car déjà en snapshot vide → considérées comme baseline). Bug latent : une complétion qui aurait eu lieu pendant la perte de snapshot ne sera pas détectée. Acceptable pour V1.
+
+**5. Pas de notification de suppression**
+
+Les tâches présentes dans le snapshot précédent mais absentes du listing actuel sont ignorées. Raison : TickTick API peut filtrer les tâches complétées d'un projet selon les params, et une absence pourrait être un faux positif. Risque > bénéfice.
+
+**6. Robustesse erreur listTasks**
+
+Si `listTasks()` throw (TickTick down, OAuth expiré), `pollTickTickTasks` retourne `stats.error` et **ne touche PAS au snapshot**. Le cron suivant retentera 15 min plus tard. L'endpoint renvoie 200 + `ok=false` dans le body — permet à GH Actions de différencier "cron a tourné, TickTick KO" (200 + error) de "endpoint cassé" (5xx alerte).
+
+### Actions manuelles Thomas
+
+Voir le guide post-déploiement dans le handoff S15.2.1 (cf. message de commit + handoff orchestrator).
+
+### Fichiers ajoutés / modifiés / retirés
+
+**Ajoutés** :
+- `src/lib/secretariat/ticktick/poll.ts` — pipeline polling + diff
+- `src/lib/secretariat/ticktick/__tests__/poll.test.ts` — 21 tests (diff, snapshot, pipeline)
+- `src/app/api/secretariat/ticktick/cron-poll/route.ts` — endpoint cron GET
+- `src/app/api/secretariat/ticktick/cron-poll/__tests__/route.test.ts` — 9 tests
+- `.github/workflows/cron-email-ingest.yml`
+- `.github/workflows/cron-ticktick-poll.yml`
+
+**Modifiés** :
+- `src/app/api/secretariat/ticktick/webhook/route.ts` — stub 410 Gone (à supprimer définitivement après vérification quelques jours)
+- `src/app/api/secretariat/ticktick/webhook/__tests__/route.test.ts` — 2 tests 410
+- `.env.example` — retrait `TICKTICK_WEBHOOK_SECRET`, commentaire de retrait
+- `docs/dev-decisions.md` — cette section
+
+**À retirer (git rm) après quelques jours sans hit en prod** :
+- `src/app/api/secretariat/ticktick/webhook/route.ts`
+- `src/app/api/secretariat/ticktick/webhook/__tests__/route.test.ts`
+- Section `## Webhook` dans `src/lib/secretariat/ticktick/types.ts` (export `TickTickWebhookEvent` orphelin)
