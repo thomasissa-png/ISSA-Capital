@@ -1,5 +1,5 @@
 /**
- * Pull engine — TickTick → vault (S18.2).
+ * Pull engine — TickTick → vault (S18.2, mis à jour S19).
  *
  * Algorithme (spec §2 pull, §3, §4) :
  *
@@ -16,9 +16,14 @@
  *      c. Pas de match : tâche créée dans TickTick app (mobile) →
  *         AJOUTER dans Todo.md sous `## Inbox` (créer la section si absente).
  *      d. Si TickTick status=2 ET vault [ ] → patch vault [x].
- *   4. Pour clé state TickTick absente du fetch (potentiellement deleted TickTick) :
- *      → Red line §9.2 : envoyer carte Telegram, JAMAIS delete silencieux.
- *      → TTL 7j sur le pending (R3).
+ *   4. Pour clé state TickTick absente du fetch (delete TickTick) :
+ *      → S19 (remplace red line §9.2) : completion silencieuse. La ligne
+ *        vault `- [ ]` est patchée `- [x]` via PATCH in-place R5, zéro
+ *        notification utilisateur, JSONL trace obligatoire. Préserve
+ *        l'historique (pas de delete destructif).
+ *      → Idempotent : si la ligne est déjà `[x]` → no-op silencieux.
+ *      → Ligne introuvable (vault modifié entre pull et patch) → log warn,
+ *        no-op. Le prochain cron re-trace via vault-scanner.
  *   5. Update state.lastPollTickTick = now
  *
  * Verrou push/pull simple (state.syncLock, TTL 30s) pour éviter qu'un cron
@@ -274,12 +279,13 @@ export interface TickTickPullClient {
   listAllTasks(projectIds: ReadonlyArray<string>): Promise<TickTickRawTask[]>;
 }
 
+/**
+ * @deprecated S19 — completion silencieuse remplace la carte Telegram delete.
+ * Interface conservée pour rétro-compat de l'API publique (cron-pull peut
+ * encore l'instancier, mais elle ne sera plus appelée). Le pull-engine
+ * accepte un paramètre `notifier?` optionnel ignoré.
+ */
 export interface TelegramDeleteNotifier {
-  /**
-   * Envoie une carte Telegram pour demander confirmation suppression vault
-   * suite à un delete TickTick. Retourne true si l'envoi (ou la mise en
-   * pending) a réussi.
-   */
   notifyDeleteRequest(params: {
     ticktickId: string;
     taskKey: string;
@@ -307,13 +313,15 @@ function recordError(stats: PullStats, message: string): void {
  * @param state State courant (sera mutated : ticktickModifiedAt, lastPollTickTick)
  * @param ttClient Client TickTick mockable
  * @param vaultPatcher Patcher Drive (lecture + PATCH in-place R5)
- * @param notifier Telegram delete notifier
+ * @param _notifier (S19 déprécié — ignoré, conservé pour rétro-compat appelants).
+ *   Les deletes TickTick sont désormais traités par completion silencieuse
+ *   `[ ]` → `[x]`, sans notification Telegram.
  */
 export async function runPullEngine(
   state: SyncState,
   ttClient: TickTickPullClient,
   vaultPatcher: VaultPatcher,
-  notifier: TelegramDeleteNotifier,
+  _notifier?: TelegramDeleteNotifier,
 ): Promise<{ stats: PullStats; results: PullResult[] }> {
   const t0 = Date.now();
   const stats = emptyPullStats();
@@ -529,62 +537,138 @@ export async function runPullEngine(
   }
 
   // ============================================================
-  // Detection deletes : clé state avec ticktickId absent du fetch
-  // → carte Telegram demandée (red line §9.2). Pas de delete silencieux.
+  // Detection deletes TickTick : clé state avec ticktickId absent du fetch.
+  // S19 (remplace red line §9.2) — completion silencieuse vault :
+  //   - ligne `- [ ]` (variantes `*`/`+`) → `- [x]` via PATCH in-place R5
+  //   - déjà `[x]` ou variante done → no-op silencieux (idempotent)
+  //   - ligne introuvable / hors range → log warn, no-op (race condition,
+  //     prochain cron re-trace)
+  //   - JSONL trace obligatoire `ticktick-delete-silent-completion`
+  //   - state.tasks[key] : on met à jour lastSyncedAt pour ne plus le
+  //     considérer comme "à compléter" au prochain cron (idempotence cross-run)
   // ============================================================
+  // Regex match `- [ ]` / `* [ ]` / `+ [ ]` avec indentation optionnelle.
+  const uncheckedRe = /^(\s*[-*+]\s+\[)\s(\])/u;
+  // Regex match `- [x]` / `[X]` — déjà complété.
+  const checkedRe = /^\s*[-*+]\s+\[[xX]\]/u;
   for (const [key, entry] of Object.entries(state.tasks)) {
     if (seenTickTickIds.has(entry.ticktickId)) continue;
     if (!entry.ticktickId) continue;
     const { vaultPath, lineNumber } = parseKey(key);
     if (!vaultPath || !lineNumber) continue;
-    // Lire titre vault pour la carte
-    let title = '(titre inconnu)';
+
     try {
       const file = await readFileCached(vaultPath);
-      if (file) {
-        const lines = file.content.split(/\r?\n/u);
-        const line = lines[lineNumber - 1];
-        if (line) title = line.replace(/^\s*[-*+]\s+\[[ xX]\]\s+/u, '').slice(0, 80);
-      }
-    } catch { /* ignore */ }
-    try {
-      const ok = await notifier.notifyDeleteRequest({
-        ticktickId: entry.ticktickId,
-        taskKey: key,
-        title,
-        vaultPath,
-        lineNumber,
-      });
-      if (ok) {
-        results.push({ action: 'delete_requested', ticktickId: entry.ticktickId, taskKey: key });
-        stats.deletedRequested++;
+      if (!file) {
+        console.warn(
+          `[pull-engine] silent-completion: fichier introuvable ${vaultPath} ` +
+          `(tt=${entry.ticktickId}) — no-op, prochain cron re-trace`,
+        );
         await safeAudit({
-          op: 'pending-delete',
-          direction: 'pull',
-          status: 'ok',
-          taskId: entry.ticktickId,
-          vaultPath,
-          vaultLine: lineNumber,
-        });
-      } else {
-        recordError(stats, `notifyDelete échec ${key}`);
-        stats.skipped++;
-        await safeAudit({
-          op: 'pending-delete',
+          op: 'ticktick-delete-silent-completion',
           direction: 'pull',
           status: 'error',
           taskId: entry.ticktickId,
           vaultPath,
           vaultLine: lineNumber,
-          error: 'notifyDelete returned false',
+          error: 'file_missing',
         });
+        continue;
       }
+
+      const lines = file.content.split(/\r?\n/u);
+      const line = lines[lineNumber - 1];
+
+      if (!line) {
+        console.warn(
+          `[pull-engine] silent-completion: ligne L${lineNumber} hors range ` +
+          `${vaultPath} (tt=${entry.ticktickId}) — no-op`,
+        );
+        await safeAudit({
+          op: 'ticktick-delete-silent-completion',
+          direction: 'pull',
+          status: 'error',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+          error: 'line_out_of_range',
+        });
+        continue;
+      }
+
+      // Idempotence : déjà [x] → no-op silencieux + JSONL trace ok.
+      if (checkedRe.test(line)) {
+        await safeAudit({
+          op: 'ticktick-delete-silent-completion',
+          direction: 'pull',
+          status: 'ok',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+          stats: { idempotent: true },
+        });
+        // Pas d'incrément stats — c'est un no-op
+        continue;
+      }
+
+      // Ligne pas une checkbox `[ ]` reconnue : vault a été modifié
+      // (déplacement, refacto) entre push et pull. Log warn, no-op.
+      if (!uncheckedRe.test(line)) {
+        console.warn(
+          `[pull-engine] silent-completion: ligne non-checkbox ${vaultPath}:L${lineNumber} ` +
+          `(tt=${entry.ticktickId}) — no-op, prochain cron re-trace`,
+        );
+        await safeAudit({
+          op: 'ticktick-delete-silent-completion',
+          direction: 'pull',
+          status: 'error',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+          error: 'line_not_checkbox',
+        });
+        continue;
+      }
+
+      // Patch `[ ]` → `[x]` en préservant indentation et le reste de la ligne.
+      const newLine = line.replace(uncheckedRe, '$1x$2');
+      const newContent = replaceLineByNumber(file.content, lineNumber, newLine);
+      const ok = await vaultPatcher.patchFile(file.fileId, newContent);
+      if (!ok) {
+        recordError(stats, `PATCH silent-completion ${vaultPath}:L${lineNumber} échoué`);
+        await safeAudit({
+          op: 'ticktick-delete-silent-completion',
+          direction: 'pull',
+          status: 'error',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+          error: 'patch_failed',
+        });
+        continue;
+      }
+
+      // Update state pour idempotence cross-run (lastSyncedAt à now).
+      state.tasks[key] = {
+        ...entry,
+        lastSyncedAt: new Date().toISOString(),
+      };
+      fileCache.set(vaultPath, { content: newContent, fileId: file.fileId });
+      results.push({ action: 'completed_silently', ticktickId: entry.ticktickId, taskKey: key });
+      stats.completedSilently++;
+      await safeAudit({
+        op: 'ticktick-delete-silent-completion',
+        direction: 'pull',
+        status: 'ok',
+        taskId: entry.ticktickId,
+        vaultPath,
+        vaultLine: lineNumber,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      recordError(stats, `notifyDelete ${key}: ${msg}`);
-      stats.skipped++;
+      recordError(stats, `silent-completion ${key}: ${msg}`);
       await safeAudit({
-        op: 'pending-delete',
+        op: 'ticktick-delete-silent-completion',
         direction: 'pull',
         status: 'error',
         taskId: entry.ticktickId,
@@ -593,6 +677,11 @@ export async function runPullEngine(
         error: msg.slice(0, 500),
       });
     }
+  }
+
+  // S19 — purge pendingDeletes hérités (rétro-compat state Drive existant).
+  if (state.pendingDeletes && Object.keys(state.pendingDeletes).length > 0) {
+    delete state.pendingDeletes;
   }
 
   state.lastPollTickTick = new Date().toISOString();

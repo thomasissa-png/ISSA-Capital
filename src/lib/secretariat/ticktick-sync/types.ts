@@ -106,24 +106,10 @@ export interface SyncState {
   /** Verrou simple anti-concurrence push/pull (S18.2).
    *  Si défini, un sync est en cours depuis `lockAcquiredAt`. TTL 30s. */
   syncLock?: { kind: 'push' | 'pull'; lockAcquiredAt: string };
-  /** Pending delete confirmations Telegram (S18.2 red line §9.2).
-   *  Clé = ticktickId. TTL 7j (R3). */
-  pendingDeletes?: Record<string, PendingDelete>;
-}
-
-/** Pending delete confirmation Telegram (R3 TTL ≥ 7j). */
-export interface PendingDelete {
-  ticktickId: string;
-  taskKey: string;
-  title: string;
-  vaultPath: string;
-  lineNumber: number;
-  /** Project TickTick (utile si callback [Garder] recrée la tâche). */
-  projectId?: string;
-  createdAt: string;
-  /** Message Telegram envoyé — pour edit après callback */
-  telegramMessageId?: number;
-  telegramChatId?: number | string;
+  /** @deprecated S19 — pendingDeletes Telegram retiré (completion silencieuse).
+   *  Le champ reste optionnel pour rétro-compat de l'état Drive existant ;
+   *  il est ignoré en lecture et purgé à la prochaine sauvegarde. */
+  pendingDeletes?: Record<string, unknown>;
 }
 
 /** State vide (premier run) */
@@ -259,7 +245,7 @@ export type PullAction =
   | 'patched_vault'   // TickTick gagne → vault PATCH
   | 'created_in_vault' // tâche TickTick inconnue → ajoutée à Todo.md
   | 'completed_in_vault' // status TT 2, vault [ ] → patch [x]
-  | 'delete_requested' // carte Telegram envoyée (§9.2 red line)
+  | 'completed_silently' // delete TickTick → vault `[ ]` patché `[x]` (S19, remplace red line §9.2)
   | 'vault_wins'      // égalité ou vault plus récent → no-op pull
   | 'skipped';
 
@@ -275,7 +261,8 @@ export interface PullStats {
   patched: number;
   created: number;
   completed: number;
-  deletedRequested: number;
+  /** Deletes TickTick traités en completion silencieuse vault (S19, remplace deletedRequested). */
+  completedSilently: number;
   vaultWins: number;
   skipped: number;
   errors: number;
@@ -289,7 +276,7 @@ export function emptyPullStats(): PullStats {
     patched: 0,
     created: 0,
     completed: 0,
-    deletedRequested: 0,
+    completedSilently: 0,
     vaultWins: 0,
     skipped: 0,
     errors: 0,
@@ -326,8 +313,8 @@ export type AuditOp =
   | 'create-from-tt'
   | 'patch-line'
   | 'complete-sync'
-  | 'pending-delete'
-  | 'keep';
+  /** S19 — delete TickTick → completion silencieuse vault (remplace red line §9.2). */
+  | 'ticktick-delete-silent-completion';
 
 export type AuditDirection = 'push' | 'pull';
 
