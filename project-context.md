@@ -285,15 +285,15 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 18
+## Mémo de reprise — Session 19
 
-- **Numéro de session** : 18 (clôture S17 le 2026-05-19)
-- **Mémo détaillé** : `docs/session-memo-s18.md` (Phase 4 spec + adaptations S15 #102 + jalons découpés)
-- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD post-S17)
-- **Mission unique S18** : Phase 4 sync vault ↔ TickTick (spec Thomas 372L `second-cerveau/Anya - Prompt Claude Code TickTick sync.md`)
+- **Numéro de session** : 19 (clôture S18 le 2026-05-19)
+- **Mémo détaillé** : `docs/session-memo-s19.md` (Phase 4 livrée S18, S18.4 = tests E2E réels Thomas, dette héritée)
+- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `2d4fc2f`, 1544 tests verts)
+- **Phase 4 sync vault ↔ TickTick** : ✅ complète côté code (S18.1+S18.2+S18.3a+S18.3b). S18.4 = validation E2E réelle Thomas (R6, hors session orchestrator).
 
-### Commande de reprise S18
+### Commande de reprise S19
 
 ```
-@orchestrator — Session S18. Lis docs/session-memo-s18.md + spec Phase 4 dans le vault. Priorité unique = sync vault ↔ TickTick.
+@orchestrator — Session S19. Branche `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `2d4fc2f`). Lis docs/session-memo-s19.md + lessons-learned.md. Priorité = R6 tests E2E sync vault↔TickTick OU dette ancienne au choix Thomas (Bail P0, helper extractPdfText, Sonnet 4→4.6 A/B).
 ```
