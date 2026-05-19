@@ -1,0 +1,19 @@
+name: Cron Calendar Ingest (Google Calendar → vault Reunions, every 15 min)
+
+on:
+  schedule:
+    # Toutes les 15 minutes — décalé de 1 min vs cron-ticktick-sync-push
+    # (push tourne sur */5, pull sur */5+30s) pour éviter pic API simultané.
+    - cron: '1,16,31,46 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  calendar-ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger calendar-ingest cron
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_BASE_URL }}/api/secretariat/calendar-ingest/cron"
