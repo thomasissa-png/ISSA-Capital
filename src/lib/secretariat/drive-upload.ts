@@ -16,21 +16,154 @@
  *   GOOGLE_REFRESH_TOKEN — Refresh token (obtenu une fois via /api/drive-auth)
  */
 
+import { findProjetFicheByEntite } from './vault-reader';
+
 const DRIVE_API = 'https://www.googleapis.com/upload/drive/v3/files';
 const DRIVE_FILES_API = 'https://www.googleapis.com/drive/v3/files';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 /**
- * Mapping entité → dossier Google Drive.
+ * Mapping entité → dossier Google Drive (LEGACY — fallback uniquement).
+ *
+ * S20.C — Thomas veut que les PDF CR atterrissent dans le même dossier que
+ * la fiche projet entité (`02. Projets/02. Pro/`), pas dans `02. Comptes
+ * Rendus/` (legacy à plat). La résolution dynamique via le vault prend le
+ * relai. Cette table reste comme filet de sécurité runtime si le vault est
+ * temporairement indisponible.
+ *
+ * TODO S21 : retirer après validation prod sur les 4 entités (R7 — source
+ * live > hardcoded).
  */
-const DRIVE_FOLDERS: Record<string, string> = {
+const LEGACY_DRIVE_FOLDERS: Record<string, string> = {
   IC: '1AUUB3Kx2hOil0GNIC858dD_ndUQ4VAOx',
   GO: '1dapRQ5ZPeEIlTLEm5h0yGaMiuH5HYYJ0',
   VI: '1loe-NKbuXm6t3_OMt8ILt_l2dW7IspIA',
   VV: '1mge-P2u54V3qApXKkQNi2YHb5b8K50iN',
 };
 
-const DEFAULT_FOLDER_ID = DRIVE_FOLDERS['IC']!;
+const DEFAULT_FOLDER_ID = LEGACY_DRIVE_FOLDERS['IC']!;
+
+// ============================================================
+// Cache résolution parent vault (TTL 1h)
+// ============================================================
+
+const PARENT_FOLDER_CACHE_TTL_MS = 60 * 60 * 1_000;
+const PARENT_FOLDER_CACHE_KEY = '__issa_parent_folder_cache__' as const;
+
+interface ParentFolderCacheEntry {
+  folderId: string | null;
+  ts: number;
+}
+
+function getParentFolderCache(): Map<string, ParentFolderCacheEntry> {
+  if (!(PARENT_FOLDER_CACHE_KEY in globalThis)) {
+    (globalThis as Record<string, unknown>)[PARENT_FOLDER_CACHE_KEY] =
+      new Map<string, ParentFolderCacheEntry>();
+  }
+  return (globalThis as Record<string, unknown>)[PARENT_FOLDER_CACHE_KEY] as Map<
+    string,
+    ParentFolderCacheEntry
+  >;
+}
+
+/**
+ * Résout le dossier parent d'une fiche projet entité dans le vault.
+ *
+ * Pipeline :
+ *   1. Cache hit (TTL 1h) ?
+ *   2. `findProjetFicheByEntite(entiteCode)` → fileId de la fiche projet
+ *   3. Drive GET `/drive/v3/files/{fileId}?fields=parents` → parents[0]
+ *   4. Cache du résultat (1h)
+ *
+ * Fallback gracieux : retourne `null` si entité inconnue, fiche introuvable,
+ * Drive API en erreur, ou credentials manquants. Le caller DOIT gérer le `null`
+ * (typiquement : fallback sur `LEGACY_DRIVE_FOLDERS`).
+ *
+ * R7 : source live (vault) prioritaire sur hardcoded. Les fichiers CR suivent
+ * automatiquement les déplacements de la fiche projet dans Obsidian.
+ *
+ * @param entiteCode Code entité (IC | GO | VI | VV)
+ * @returns folderId Drive du parent de la fiche, ou null si non résolu
+ */
+export async function resolveParentFolderForEntite(
+  entiteCode: string,
+): Promise<string | null> {
+  const code = entiteCode?.toUpperCase().trim();
+  if (!code) {
+    return null;
+  }
+
+  // 1. Cache hit
+  const cache = getParentFolderCache();
+  const cached = cache.get(code);
+  if (cached && Date.now() - cached.ts < PARENT_FOLDER_CACHE_TTL_MS) {
+    return cached.folderId;
+  }
+
+  try {
+    // 2. Résolution fiche projet vault
+    const fiche = await findProjetFicheByEntite(code);
+    if (!fiche || !fiche.fileId) {
+      cache.set(code, { folderId: null, ts: Date.now() });
+      return null;
+    }
+
+    // 3. Credentials Drive
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      console.warn(
+        `[drive-upload] resolveParentFolderForEntite(${code}) : credentials OAuth2 manquants`,
+      );
+      // Ne pas cacher un null lié à un problème transitoire de credentials
+      return null;
+    }
+
+    // 4. GET parents de la fiche
+    const url = `${DRIVE_FILES_API}/${encodeURIComponent(fiche.fileId)}?fields=parents&supportsAllDrives=true`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.warn(
+        `[drive-upload] resolveParentFolderForEntite(${code}) : Drive ${response.status} — ${errorText.slice(0, 200)}`,
+      );
+      return null;
+    }
+
+    const data = (await response.json()) as { parents?: string[] };
+    const parentId = data.parents && data.parents.length > 0 ? data.parents[0] : null;
+
+    if (!parentId) {
+      console.warn(
+        `[drive-upload] resolveParentFolderForEntite(${code}) : fiche ${fiche.fileId} sans parents`,
+      );
+      cache.set(code, { folderId: null, ts: Date.now() });
+      return null;
+    }
+
+    cache.set(code, { folderId: parentId, ts: Date.now() });
+    return parentId;
+  } catch (err) {
+    console.warn(
+      `[drive-upload] resolveParentFolderForEntite(${entiteCode}) erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return null;
+  }
+}
+
+/**
+ * Internals exportés exclusivement pour les tests.
+ */
+export const _driveUploadInternals = {
+  LEGACY_DRIVE_FOLDERS,
+  DEFAULT_FOLDER_ID,
+  PARENT_FOLDER_CACHE_KEY,
+  clearParentFolderCache(): void {
+    getParentFolderCache().clear();
+  },
+};
 
 export interface DriveUploadResult {
   success: boolean;
@@ -94,7 +227,23 @@ export async function uploadToDrive(
     };
   }
 
-  const folderId = (entiteCode && DRIVE_FOLDERS[entiteCode]) ?? DEFAULT_FOLDER_ID;
+  // S20.C — R7 : tenter résolution dynamique via vault (parent de la fiche
+  // projet entité) AVANT fallback hardcoded. Les PDF CR doivent atterrir
+  // dans le même dossier Drive que la fiche projet (02. Projets/02. Pro/),
+  // pas dans le legacy 02. Comptes Rendus/.
+  let folderId: string | null = null;
+  if (entiteCode) {
+    folderId = await resolveParentFolderForEntite(entiteCode);
+  }
+  if (!folderId) {
+    // Fallback legacy — sera retirable S21 après validation prod des 4 entités.
+    folderId = (entiteCode && LEGACY_DRIVE_FOLDERS[entiteCode]) ?? DEFAULT_FOLDER_ID;
+    if (entiteCode) {
+      console.warn(
+        `[drive-upload] entité ${entiteCode} non résolue via vault, fallback hardcoded ${folderId}`,
+      );
+    }
+  }
 
   try {
     // Metadata du fichier
