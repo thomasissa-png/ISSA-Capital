@@ -45,7 +45,7 @@ vi.mock('../../../ticktick-sync/project-manager', async () => {
     createMissingProjects: vi.fn(async (_token: string, state: ReturnType<typeof emptyState>) => {
       const names = ['Personnel', 'Versi', 'ISSA', 'Gradient One', 'Immobilier', 'Sarani', 'Inbox'];
       for (const n of names) state.projects[n] = `mock_${n}`;
-      return names.map((n) => ({ name: n, id: `mock_${n}` }));
+      return names.map((n) => ({ name: n, id: `mock_${n}`, reused: false }));
     }),
   };
 });
@@ -159,5 +159,120 @@ describe('handleTickTickProjectsCallback — R4 dispatch E2E', () => {
       data: `${TICKTICK_PROJECTS_CALLBACK_PREFIX}create`,
     });
     expect(result).toBe('no_token');
+  });
+});
+
+// ============================================================
+// Hotfix S18.3 — save incrémental + statuts variants
+// ============================================================
+
+describe('handleTickTickProjectsCallback — hotfix S18.3', () => {
+  const baseParams = {
+    callback_query_id: 'q2',
+    message_id: 99,
+    chat_id: 67890,
+  };
+
+  it('catch path : createMissingProjects throw → saveSyncState appelé avec state partiel', async () => {
+    const { createMissingProjects } = await import(
+      '../../../ticktick-sync/project-manager'
+    );
+    const { saveSyncState } = await import('../../../ticktick-sync/state-store');
+    const { sendSimpleMessage } = await import('../../telegram-cards');
+
+    // Mock : mutate state avec 4 projets, puis throw au 5ème (cas Thomas avec Immobilier)
+    vi.mocked(createMissingProjects).mockImplementationOnce(
+      async (_token: string, state: ReturnType<typeof emptyState>) => {
+        state.projects.Personnel = 'partial_1';
+        state.projects.Versi = 'partial_2';
+        state.projects.ISSA = 'partial_3';
+        state.projects['Gradient One'] = 'partial_4';
+        throw new Error(
+          'Échec création projet "Immobilier" après 4/7 mappés. Cause : HTTP 500 unknown_exception',
+        );
+      },
+    );
+
+    const result = await handleTickTickProjectsCallback({
+      ...baseParams,
+      data: `${TICKTICK_PROJECTS_CALLBACK_PREFIX}create`,
+    });
+
+    expect(result).toMatch(/^error:/);
+
+    // saveSyncState appelé AVANT le message d'erreur, avec le state partiel
+    expect(saveSyncState).toHaveBeenCalledTimes(1);
+    const savedState = vi.mocked(saveSyncState).mock.calls[0]?.[0];
+    expect(savedState?.projects.Personnel).toBe('partial_1');
+    expect(savedState?.projects['Gradient One']).toBe('partial_4');
+    expect(savedState?.projects.Immobilier).toBeUndefined();
+
+    // Message Telegram contient le compteur partiel (4/7)
+    expect(sendSimpleMessage).toHaveBeenCalledTimes(1);
+    const msgCall = vi.mocked(sendSimpleMessage).mock.calls[0];
+    expect(String(msgCall?.[1])).toMatch(/4\/7 mappés/);
+  });
+
+  it('statut "tous récupérés" si createMissingProjects retourne 7 reused', async () => {
+    const { createMissingProjects } = await import(
+      '../../../ticktick-sync/project-manager'
+    );
+    const { editMessageText } = await import('../../telegram-cards');
+
+    vi.mocked(createMissingProjects).mockImplementationOnce(
+      async (_token: string, state: ReturnType<typeof emptyState>) => {
+        const names = [
+          'Personnel',
+          'Versi',
+          'ISSA',
+          'Gradient One',
+          'Immobilier',
+          'Sarani',
+          'Inbox',
+        ];
+        for (const n of names) state.projects[n] = `reused_${n}`;
+        return names.map((n) => ({ name: n, id: `reused_${n}`, reused: true }));
+      },
+    );
+
+    const result = await handleTickTickProjectsCallback({
+      ...baseParams,
+      data: `${TICKTICK_PROJECTS_CALLBACK_PREFIX}create`,
+    });
+
+    expect(result).toBe('created');
+    const editCall = vi.mocked(editMessageText).mock.calls[0];
+    expect(String(editCall?.[2])).toMatch(/7 projets récupérés depuis TickTick/);
+  });
+
+  it('statut "mix" si createMissingProjects retourne reused + new', async () => {
+    const { createMissingProjects } = await import(
+      '../../../ticktick-sync/project-manager'
+    );
+    const { editMessageText } = await import('../../telegram-cards');
+
+    vi.mocked(createMissingProjects).mockImplementationOnce(
+      async (_token: string, state: ReturnType<typeof emptyState>) => {
+        const reusedNames = ['Personnel', 'Versi', 'ISSA'];
+        const newNames = ['Gradient One', 'Immobilier', 'Sarani', 'Inbox'];
+        for (const n of reusedNames) state.projects[n] = `r_${n}`;
+        for (const n of newNames) state.projects[n] = `n_${n}`;
+        return [
+          ...reusedNames.map((n) => ({ name: n, id: `r_${n}`, reused: true })),
+          ...newNames.map((n) => ({ name: n, id: `n_${n}`, reused: false })),
+        ];
+      },
+    );
+
+    const result = await handleTickTickProjectsCallback({
+      ...baseParams,
+      data: `${TICKTICK_PROJECTS_CALLBACK_PREFIX}create`,
+    });
+
+    expect(result).toBe('created');
+    const editCall = vi.mocked(editMessageText).mock.calls[0];
+    const msg = String(editCall?.[2]);
+    expect(msg).toMatch(/4 projet/);
+    expect(msg).toMatch(/3 récupéré/);
   });
 });
