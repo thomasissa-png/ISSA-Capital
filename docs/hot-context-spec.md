@@ -7,25 +7,23 @@
 
 ---
 
-## 0. Alignement vault Drive (vérification R1 post-orchestrator)
+## 0. Alignement vault Drive — ARBITRAGES TRANCHÉS Thomas S19
 
-L'orchestrator n'a pas eu accès aux MCP Drive. Claude principal a lu les 2 fichiers vault directement. **3 contradictions à arbitrer Thomas avant Phase B** :
+L'orchestrator n'a pas eu accès aux MCP Drive. Claude principal a lu les 2 fichiers vault directement. **Thomas a tranché les 3 contradictions** :
 
-### A. Cible tokens — 300 ou 500 ?
-- `hot-context.md` frontmatter actuel : `budget_tokens: ~300`
-- `hot-context.md` footer Maintenance : "Cible stricte **~500 tokens**"
-- `Workflow Hot Context.md` Périmètre : "~500 tokens (~350 mots)"
-- **Reco spec** : 300 (frontmatter le plus récent, briefing minimum). Si Thomas valide → mettre à jour Workflow + footer cohérence.
+### A. Cible tokens → **500** ✅ TRANCHÉ
+- Décision : on suit `Workflow Hot Context.md` (500 tokens).
+- **Action Phase C** : mettre à jour le frontmatter `hot-context.md` vault `budget_tokens: ~300` → `budget_tokens: ~500` (PATCH R5).
+- Le token-estimator émet un warn-only au-delà de 500 (la carte Telegram affiche le delta, Thomas valide quand même si pertinent).
 
-### B. Format sections — 4 (actuel) ou 5 (Workflow doc) ?
-- `hot-context.md` actuel = **4 sections** : Je bouge sur / J'attends / Décisions en arbitrage / Maintenance
-- `Workflow Hot Context.md` Périmètre = **5 blocs** : Projets actifs / Décisions récentes / Follow-ups / Personnes à recontacter / Sujets sensibles red lines
-- **Reco spec** : V1 sur les 4 sections actuelles (le format vivant), reporter Personnes + Red lines en V2 si Thomas veut les ré-ajouter — sinon mettre à jour le Workflow doc pour qu'il reflète les 4 sections.
+### B. Format sections → **4 sections actuelles** ✅ TRANCHÉ
+- Décision : V1 sur les 4 sections existantes (Je bouge sur / J'attends / Décisions en arbitrage / Maintenance).
+- **Action Phase C** : mettre à jour `Workflow Hot Context.md` vault pour refléter le format 4 sections (les 5 blocs historiques sont obsolètes). PATCH R5.
+- Personnes à recontacter + Red lines actifs : pas dans V1, ré-arbitrage possible en V2.
 
-### C. Trigger — cron 5min (S19) contredit inline (Workflow doc)
-- Workflow doc : "Trigger : à la fin de chaque CR ou après ingestion d'un email classifié decision/follow-up"
-- Décision S19 Thomas : cron 5min séparé
-- **Reco spec** : cron 5min (S19 prévaut, décision plus récente). Mettre à jour Workflow doc en Phase C.
+### C. Trigger → **cron 5min** ✅ TRANCHÉ (S19)
+- Décision S19 Thomas prévaut sur le Workflow doc.
+- **Action Phase C** : annoter le Workflow Hot Context.md vault pour mentionner cron 5min (et non plus "à la fin de chaque CR / email").
 
 ### D. Red lines vault NON intégrées par orchestrator → injectées §2.1 ci-dessous
 - Pas d'invention (source vérifiable obligatoire) — cohérent CLAUDE.md commandement 2
