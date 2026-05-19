@@ -575,4 +575,44 @@ Voir B4. C'est le même problème (certificat non généré).
 
 ---
 
+## S18.2 — Sync TickTick → vault + conflits + scan inline (livré 2026-05-19)
+
+**Action Thomas requise** :
+
+1. **Replit Secret à ajouter** :
+   - `OBSIDIAN_VAULT_NAME` — Nom EXACT de ton vault Obsidian local (case-sensitive). Permet la construction du deep-link `obsidian://open?vault=<name>&file=...` envoyé par la carte Telegram [Voir] quand TickTick supprime une tâche. Si non défini, fallback = `ThomasIssa`.
+   - Action : Replit → Secrets → `OBSIDIAN_VAULT_NAME` = `<ton nom de vault>`.
+
+2. **Secrets déjà configurés (S18.1)** — Aucun nouveau secret Replit autre que `OBSIDIAN_VAULT_NAME`. Le cron-pull réutilise tous les secrets de S18.1 :
+   - `CRON_SECRET`, `TICKTICK_ACCESS_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID_THOMAS`, `DRIVE_VAULT_ROOT_ID`.
+
+3. **GitHub Actions** — Le workflow `cron-ticktick-sync-pull.yml` (toutes les 5 min, décalé +30s vs push) utilise les secrets GitHub déjà en place :
+   - `CRON_SECRET` (idem push)
+   - `APP_BASE_URL` (idem push)
+   Aucun nouveau secret GitHub à ajouter.
+
+4. **Vérification après premier pull (à valider visuellement)** :
+   - Sur l'app TickTick iPhone, crée une tâche manuelle dans projet "Inbox" (ex: "test pull S18.2").
+   - Attends 5 min (ou trigger manuel `workflow_dispatch` sur GH Actions).
+   - Vérifie dans Obsidian : la tâche doit apparaître sous `## Inbox` de `03. Tâches/Todo.md`.
+   - Modifie le titre de la tâche dans TickTick → attendre 5 min → la ligne vault doit être mise à jour (last-write-wins TickTick gagne).
+   - Supprime la tâche dans TickTick → Anya envoie une carte Telegram [Oui][Garder][Voir] (TTL pending 7j R3).
+
+5. **Red line §9.2 — pas de delete silencieux** :
+   - Anya NE SUPPRIME JAMAIS une ligne du vault sans confirmation Telegram explicite.
+   - Si la carte expire (>7j sans réponse), le pending est purgé et la tâche reste dans le vault (la tâche sera re-créée TickTick au prochain cron push).
+
+6. **Verrou push/pull** :
+   - Un verrou simple (TTL 30s) dans `_Inbox/AnyaState/ticktick-sync-state.json` empêche le push et le pull de tourner simultanément. Si l'un est bloqué (crash), le verrou se libère automatiquement après 30s.
+
+7. **Rollback** : désactiver `cron-ticktick-sync-pull.yml` dans GitHub Actions (un clic). Le push S18.1 continue de fonctionner. État Drive intact.
+
+**Hors scope S18.2** (reporté S18.3) :
+- Récursion sous-dossiers vault (V1 scanne 4 dossiers racine : `Réunions/<year>/<month>` mois courant, `Projets/01. Perso`, `Projets/02. Pro`, `Notes`).
+- Tests E2E réels iPhone (R6 — validation visuelle Thomas requise).
+- Audit JSONL des pulls (write trace dans `_Inbox/AnyaLogs/`).
+- Re-création TickTick effective sur action [Garder] (V1 = clear `state.tasks[key]`, prochain push créera, mais ID TickTick change).
+
+---
+
 
