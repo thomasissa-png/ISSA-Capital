@@ -33,6 +33,33 @@ const CONTACT_CACHE_TTL_MS = 60 * 60 * 1_000;
 /** TTL cache listing dossier : 1 heure */
 const FOLDER_CACHE_TTL_MS = 60 * 60 * 1_000;
 
+/** TTL cache fiche Projet : 1 heure (cohérent avec contacts-cache pattern) */
+const PROJET_FICHE_CACHE_TTL_MS = 60 * 60 * 1_000;
+
+/**
+ * Chemin logique du dossier des fiches Projet vault (relatif à DRIVE_VAULT_ROOT_ID = "00. Me/").
+ * Source de vérité : docs/session-s16-thomas-actions.md ("00. Me/02. Projets/02. Pro/<projet>.md").
+ */
+const PROJET_FICHE_FOLDER_PATH = '02. Projets/02. Pro';
+
+/**
+ * Mapping entité → nom de fiche Projet vault.
+ *
+ * Note (R7) : ce mapping est une **convention humaine stable** (code court entité ↔ nom
+ * projet), pas un fileId Drive. Il survit aux renommages de fichiers (tant que Thomas
+ * garde le nom canonique). Si Thomas renomme une fiche, on cherche par le nom canonique
+ * via `searchByName`. Si le nom canonique change, c'est ici qu'il faut le mettre à jour
+ * (1 ligne).
+ *
+ * Extensible : ajouter Versimo (VM), Immocrew (IM) si fiches Projet créées dans le vault.
+ */
+const ENTITE_TO_FICHE_NAME: Record<string, string> = {
+  IC: 'ISSA Capital',
+  GO: 'Gradient One',
+  VI: 'Versi Immobilier',
+  VV: 'Versi Invest',
+};
+
 // ============================================================
 // Types
 // ============================================================
@@ -54,6 +81,15 @@ export interface VaultFolderEntry {
   name: string;
 }
 
+export interface ProjetFicheResult {
+  /** fileId Drive de la fiche Projet trouvée */
+  fileId: string;
+  /** Nom canonique de la fiche (ex: "ISSA Capital") */
+  ficheName: string;
+  /** Nom de fichier réel trouvé dans le vault (peut différer si renommé en .md) */
+  resolvedFilename: string;
+}
+
 // ============================================================
 // Caches mémoire
 // ============================================================
@@ -66,6 +102,16 @@ const contactCache = new Map<string, CachedItem<ContactMatch | null>>();
 
 /** Cache dossier : clé = folderPath → liste d'entrées */
 const folderCache = new Map<string, CachedItem<VaultFolderEntry[]>>();
+
+/**
+ * Cache fiche Projet : clé = entiteCode normalisé (uppercase) → ProjetFicheResult | null.
+ * Identifiant explicite `__issa_projet_fiche_cache__` cohérent avec le pattern
+ * `contacts-cache.ts` (S14) pour reconnaissance grep cross-projet.
+ */
+const __issa_projet_fiche_cache__ = new Map<
+  string,
+  CachedItem<ProjetFicheResult | null>
+>();
 
 // ============================================================
 // API publique — Lecture fichier avec cache
@@ -222,12 +268,13 @@ export async function findContactCached(
 // ============================================================
 
 /**
- * Invalide tout le cache vault-reader (fichiers, contacts, dossiers).
+ * Invalide tout le cache vault-reader (fichiers, contacts, dossiers, fiches Projet).
  */
 export function invalidateAllVaultCache(): void {
   fileCache.clear();
   contactCache.clear();
   folderCache.clear();
+  __issa_projet_fiche_cache__.clear();
 }
 
 /**
@@ -252,16 +299,139 @@ export function invalidateFolderCache(folderPath: string): void {
 }
 
 /**
+ * Invalide le cache de la fiche Projet d'une entité spécifique.
+ */
+export function invalidateProjetFicheCache(entiteCode?: string): void {
+  if (entiteCode) {
+    __issa_projet_fiche_cache__.delete(entiteCode.toUpperCase().trim());
+  } else {
+    __issa_projet_fiche_cache__.clear();
+  }
+}
+
+/**
  * Retourne le nombre total d'entrées en cache (pour les tests).
  */
 export function getVaultCacheSize(): {
   files: number;
   contacts: number;
   folders: number;
+  projetFiches: number;
 } {
   return {
     files: fileCache.size,
     contacts: contactCache.size,
     folders: folderCache.size,
+    projetFiches: __issa_projet_fiche_cache__.size,
   };
 }
+
+// ============================================================
+// API publique — Résolution fiche Projet par code entité
+// ============================================================
+
+/**
+ * Résout dynamiquement la fiche Projet vault correspondant à un code entité.
+ *
+ * Pipeline :
+ *   1. Mapping entité → nom canonique (ex: IC → "ISSA Capital")
+ *   2. Listing du dossier `02. Projets/02. Pro/` (live, avec cache TTL 1h)
+ *   3. Match par nom (avec ou sans `.md`)
+ *   4. Cache résultat 1h
+ *
+ * Fallback gracieux : si entité inconnue, dossier introuvable, ou fiche absente
+ * → return `null` + log warn. Ne throw jamais.
+ *
+ * R7 : remplace l'ancien hardcoded `PROJET_FICHE_FILE_IDS`. Suit les renommages
+ * de fichier Obsidian tant que le nom canonique reste cohérent.
+ *
+ * @param entiteCode Code entité (IC | GO | VI | VV — extensible)
+ * @returns ProjetFicheResult avec fileId Drive, ou null si non trouvable
+ */
+export async function findProjetFicheByEntite(
+  entiteCode: string,
+): Promise<ProjetFicheResult | null> {
+  const code = entiteCode?.toUpperCase().trim();
+  if (!code) {
+    console.warn('[vault-reader] findProjetFicheByEntite : entiteCode vide');
+    return null;
+  }
+
+  // Cache hit ?
+  const cached = __issa_projet_fiche_cache__.get(code);
+  if (cached && Date.now() - cached.ts < PROJET_FICHE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  // Lookup nom canonique
+  const ficheName = ENTITE_TO_FICHE_NAME[code];
+  if (!ficheName) {
+    console.warn(
+      `[vault-reader] entité inconnue "${code}" — codes connus : ${Object.keys(ENTITE_TO_FICHE_NAME).join(', ')}`,
+    );
+    // Cache du null pour éviter de retenter sur la même entité inconnue
+    __issa_projet_fiche_cache__.set(code, { data: null, ts: Date.now() });
+    return null;
+  }
+
+  try {
+    // Lister le dossier des fiches Projet (utilise le cache folderCache via listVaultFolder)
+    const entries = await listVaultFolder(PROJET_FICHE_FOLDER_PATH);
+
+    if (entries.length === 0) {
+      console.warn(
+        `[vault-reader] dossier fiches Projet vide ou introuvable : ${PROJET_FICHE_FOLDER_PATH}`,
+      );
+      __issa_projet_fiche_cache__.set(code, { data: null, ts: Date.now() });
+      return null;
+    }
+
+    // Recherche : match exact "Nom.md" puis match par strip d'extension (case-insensitive)
+    const targetWithExt = `${ficheName}.md`.toLowerCase();
+    const targetBase = ficheName.toLowerCase();
+
+    const found = entries.find((e) => {
+      const name = e.name.toLowerCase();
+      return (
+        name === targetWithExt ||
+        name.replace(/\.md$/, '') === targetBase
+      );
+    });
+
+    if (!found) {
+      console.warn(
+        `[vault-reader] fiche Projet "${ficheName}" non trouvée dans ${PROJET_FICHE_FOLDER_PATH} (entité ${code})`,
+      );
+      __issa_projet_fiche_cache__.set(code, { data: null, ts: Date.now() });
+      return null;
+    }
+
+    const result: ProjetFicheResult = {
+      fileId: found.id,
+      ficheName,
+      resolvedFilename: found.name,
+    };
+
+    __issa_projet_fiche_cache__.set(code, { data: result, ts: Date.now() });
+    return result;
+  } catch (err) {
+    console.warn(
+      `[vault-reader] erreur findProjetFicheByEntite(${code}) : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    // Fallback stale si existant
+    if (cached) {
+      console.warn(`[vault-reader] retour cache stale pour fiche Projet ${code}`);
+      return cached.data;
+    }
+    return null;
+  }
+}
+
+/**
+ * Exporte les internals pour les tests (mapping + chemin dossier).
+ * À utiliser exclusivement dans les fichiers `__tests__/`.
+ */
+export const _vaultReaderInternals = {
+  ENTITE_TO_FICHE_NAME,
+  PROJET_FICHE_FOLDER_PATH,
+};

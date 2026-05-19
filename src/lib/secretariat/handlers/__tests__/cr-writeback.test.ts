@@ -26,6 +26,10 @@ vi.mock('../../vault-client/obsidian-file', () => ({
   readFileById: vi.fn(),
 }));
 
+vi.mock('../../vault-reader', () => ({
+  findProjetFicheByEntite: vi.fn(),
+}));
+
 // ============================================================
 // Imports après mocks
 // ============================================================
@@ -33,10 +37,12 @@ vi.mock('../../vault-client/obsidian-file', () => ({
 import { writeBackCrToFiche, _internals } from '../cr-writeback';
 import { updateFileContent, getAccessToken } from '../../drive-upload';
 import { readFileById } from '../../vault-client/obsidian-file';
+import { findProjetFicheByEntite } from '../../vault-reader';
 
 const mockUpdateFileContent = vi.mocked(updateFileContent);
 const mockGetAccessToken = vi.mocked(getAccessToken);
 const mockReadFileById = vi.mocked(readFileById);
+const mockFindProjetFicheByEntite = vi.mocked(findProjetFicheByEntite);
 
 // ============================================================
 // Constantes test
@@ -129,6 +135,19 @@ describe('writeBackCrToFiche — handler complet', () => {
     mockUpdateFileContent.mockReset();
     mockGetAccessToken.mockReset();
     mockReadFileById.mockReset();
+    mockFindProjetFicheByEntite.mockReset();
+    // Par défaut : IC résout vers ISSA Capital (mocké pour ne pas dépendre du vault live)
+    mockFindProjetFicheByEntite.mockImplementation(async (code: string) => {
+      const upper = code.toUpperCase().trim();
+      if (upper === 'IC') {
+        return {
+          fileId: ISSA_CAPITAL_FILE_ID,
+          ficheName: 'ISSA Capital',
+          resolvedFilename: 'ISSA Capital.md',
+        };
+      }
+      return null;
+    });
   });
 
   // ============================================================
@@ -157,13 +176,16 @@ describe('writeBackCrToFiche — handler complet', () => {
   // Lookup entité
   // ============================================================
 
-  it('rejette une entité inconnue avec un message explicite', async () => {
+  it('rejette une entité inconnue avec un message explicite (fiche introuvable via vault-reader)', async () => {
+    // Le mock par défaut renvoie null pour toute entité ≠ IC → simule "non trouvée"
     const result = await writeBackCrToFiche({ ...baseInput, entiteCode: 'ZZ' });
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/Entité inconnue "ZZ"/);
-    expect(result.error).toMatch(/IC, GO, VI, VV/);
-    // Pas d'appel réseau pour une entité invalide
+    expect(result.error).toMatch(/Fiche Projet non trouvée pour entité "ZZ"/);
+    expect(mockFindProjetFicheByEntite).toHaveBeenCalledWith('ZZ');
+    // Pas de PATCH ni lecture quand la fiche est introuvable
     expect(mockGetAccessToken).not.toHaveBeenCalled();
+    expect(mockReadFileById).not.toHaveBeenCalled();
+    expect(mockUpdateFileContent).not.toHaveBeenCalled();
   });
 
   // ============================================================
@@ -331,16 +353,54 @@ describe('writeBackCrToFiche — handler complet', () => {
   });
 
   // ============================================================
-  // Validation des 4 entités hardcodées (R7 P1 #101)
+  // Résolution dynamique fiche Projet (R7 — vault-reader live)
   // ============================================================
 
-  it('reconnaît les 4 codes entités IC/GO/VI/VV', () => {
-    const { PROJET_FICHE_FILE_IDS } = _internals;
-    expect(Object.keys(PROJET_FICHE_FILE_IDS).sort()).toEqual(['GO', 'IC', 'VI', 'VV']);
-    // Tous les fileIds sont des strings non-vides
-    for (const id of Object.values(PROJET_FICHE_FILE_IDS)) {
-      expect(typeof id).toBe('string');
-      expect(id.length).toBeGreaterThan(10);
-    }
+  it('appelle findProjetFicheByEntite avec le code entité fourni', async () => {
+    mockGetAccessToken.mockResolvedValue(FAKE_TOKEN);
+    mockReadFileById.mockResolvedValue({
+      success: true,
+      content: '# Fiche\n',
+      fileId: ISSA_CAPITAL_FILE_ID,
+    });
+    mockUpdateFileContent.mockResolvedValue({ success: true, fileId: ISSA_CAPITAL_FILE_ID });
+
+    await writeBackCrToFiche(baseInput);
+
+    expect(mockFindProjetFicheByEntite).toHaveBeenCalledTimes(1);
+    expect(mockFindProjetFicheByEntite).toHaveBeenCalledWith('IC');
+  });
+
+  it('utilise le fileId renvoyé par vault-reader (suit les renommages Obsidian)', async () => {
+    // Scénario : Thomas renomme "Gradient One.md" — vault-reader trouve toujours par nom canonique,
+    // renvoie un fileId qui correspond à la fiche actuelle (même fileId, nom de fichier différent).
+    const GO_FILE_ID = 'go-renamed-but-same-fileid';
+    mockFindProjetFicheByEntite.mockResolvedValueOnce({
+      fileId: GO_FILE_ID,
+      ficheName: 'Gradient One',
+      resolvedFilename: 'Gradient One.md',
+    });
+    mockGetAccessToken.mockResolvedValue(FAKE_TOKEN);
+    mockReadFileById.mockResolvedValue({
+      success: true,
+      content: '# Gradient One\n',
+      fileId: GO_FILE_ID,
+    });
+    mockUpdateFileContent.mockResolvedValue({ success: true, fileId: GO_FILE_ID });
+
+    const result = await writeBackCrToFiche({ ...baseInput, entiteCode: 'GO' });
+
+    expect(result.success).toBe(true);
+    expect(result.modified).toBe(true);
+    expect(result.ficheFileId).toBe(GO_FILE_ID);
+    // Vérifie que la lecture et le PATCH ont utilisé le fileId résolu dynamiquement
+    expect(mockReadFileById).toHaveBeenCalledWith(FAKE_TOKEN, GO_FILE_ID);
+    const [calledFileId] = mockUpdateFileContent.mock.calls[0]!;
+    expect(calledFileId).toBe(GO_FILE_ID);
+  });
+
+  it('plus aucun PROJET_FICHE_FILE_IDS exporté dans _internals (R7)', () => {
+    // Vérifie que la dette R7 a été retirée : pas de mapping hardcoded exporté
+    expect((_internals as Record<string, unknown>).PROJET_FICHE_FILE_IDS).toBeUndefined();
   });
 });

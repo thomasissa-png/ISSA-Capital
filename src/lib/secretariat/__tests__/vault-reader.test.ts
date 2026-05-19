@@ -42,11 +42,14 @@ import {
   readVaultFile,
   listVaultFolder,
   findContactCached,
+  findProjetFicheByEntite,
   invalidateAllVaultCache,
   invalidateFileCache,
   invalidateContactCache,
   invalidateFolderCache,
+  invalidateProjetFicheCache,
   getVaultCacheSize,
+  _vaultReaderInternals,
 } from '../vault-reader';
 
 // ============================================================
@@ -324,5 +327,145 @@ describe('invalidateAllVaultCache', () => {
     expect(getVaultCacheSize().files).toBe(0);
     expect(getVaultCacheSize().folders).toBe(0);
     expect(getVaultCacheSize().contacts).toBe(0);
+  });
+});
+
+// ============================================================
+// Tests : findProjetFicheByEntite (R7 — résolution dynamique fiche Projet)
+// ============================================================
+
+describe('findProjetFicheByEntite', () => {
+  const VAULT_FICHES = [
+    { id: 'fileid-IC', name: 'ISSA Capital.md' },
+    { id: 'fileid-GO', name: 'Gradient One.md' },
+    { id: 'fileid-VI', name: 'Versi Immobilier.md' },
+    { id: 'fileid-VV', name: 'Versi Invest.md' },
+  ];
+
+  it('résout IC vers ISSA Capital.md (chemin vault `02. Projets/02. Pro`)', async () => {
+    mockListMarkdownFiles.mockResolvedValueOnce(VAULT_FICHES);
+
+    const result = await findProjetFicheByEntite('IC');
+
+    expect(result).not.toBeNull();
+    expect(result!.fileId).toBe('fileid-IC');
+    expect(result!.ficheName).toBe('ISSA Capital');
+    expect(result!.resolvedFilename).toBe('ISSA Capital.md');
+    // Vérifie qu'on a interrogé le bon dossier
+    expect(mockListMarkdownFiles).toHaveBeenCalledWith(
+      _vaultReaderInternals.PROJET_FICHE_FOLDER_PATH,
+    );
+  });
+
+  it('résout GO/VI/VV vers leurs fiches respectives', async () => {
+    // 3 appels successifs, chaque appel re-utilise le cache folderCache (1 seul listMarkdownFiles)
+    mockListMarkdownFiles.mockResolvedValue(VAULT_FICHES);
+
+    const go = await findProjetFicheByEntite('GO');
+    const vi = await findProjetFicheByEntite('VI');
+    const vv = await findProjetFicheByEntite('VV');
+
+    expect(go!.fileId).toBe('fileid-GO');
+    expect(go!.ficheName).toBe('Gradient One');
+    expect(vi!.fileId).toBe('fileid-VI');
+    expect(vi!.ficheName).toBe('Versi Immobilier');
+    expect(vv!.fileId).toBe('fileid-VV');
+    expect(vv!.ficheName).toBe('Versi Invest');
+  });
+
+  it('renvoie null pour une entité inconnue (pas dans le mapping)', async () => {
+    const result = await findProjetFicheByEntite('ZZ');
+
+    expect(result).toBeNull();
+    // Pas d'appel Drive — short-circuit sur mapping
+    expect(mockListMarkdownFiles).not.toHaveBeenCalled();
+    // Le null est caché pour ne pas re-tenter
+    expect(getVaultCacheSize().projetFiches).toBe(1);
+  });
+
+  it('renvoie null pour entiteCode vide ou undefined', async () => {
+    expect(await findProjetFicheByEntite('')).toBeNull();
+    expect(await findProjetFicheByEntite('   ')).toBeNull();
+    expect(mockListMarkdownFiles).not.toHaveBeenCalled();
+  });
+
+  it('cache hit au second appel (un seul listing Drive)', async () => {
+    mockListMarkdownFiles.mockResolvedValueOnce(VAULT_FICHES);
+
+    const first = await findProjetFicheByEntite('IC');
+    const second = await findProjetFicheByEntite('IC');
+
+    expect(first).toEqual(second);
+    expect(first!.fileId).toBe('fileid-IC');
+    // Le cache fiche Projet évite même de re-toucher le folderCache
+    expect(mockListMarkdownFiles).toHaveBeenCalledTimes(1);
+  });
+
+  it('détecte une fiche renommée (.md retiré) via match base name', async () => {
+    // Scénario : Thomas a renommé le fichier sans extension visible côté Drive
+    mockListMarkdownFiles.mockResolvedValueOnce([
+      { id: 'fileid-IC-renamed', name: 'issa capital.md' }, // casse différente
+    ]);
+
+    const result = await findProjetFicheByEntite('IC');
+
+    expect(result).not.toBeNull();
+    expect(result!.fileId).toBe('fileid-IC-renamed');
+    expect(result!.ficheName).toBe('ISSA Capital');
+    expect(result!.resolvedFilename).toBe('issa capital.md');
+  });
+
+  it('renvoie null si la fiche existe pas dans le vault (dossier vide)', async () => {
+    mockListMarkdownFiles.mockResolvedValueOnce([]);
+
+    const result = await findProjetFicheByEntite('IC');
+
+    expect(result).toBeNull();
+    expect(getVaultCacheSize().projetFiches).toBe(1);
+  });
+
+  it('renvoie null si la fiche cherchée est absente (autre fiche présente)', async () => {
+    mockListMarkdownFiles.mockResolvedValueOnce([
+      { id: 'fileid-other', name: 'Autre Projet.md' },
+    ]);
+
+    const result = await findProjetFicheByEntite('IC');
+
+    expect(result).toBeNull();
+  });
+
+  it('renvoie null si le listing Drive échoue (fallback gracieux, pas de throw)', async () => {
+    mockListMarkdownFiles.mockRejectedValueOnce(new Error('Drive API down'));
+
+    // Ne throw pas
+    const result = await findProjetFicheByEntite('IC');
+
+    expect(result).toBeNull();
+  });
+
+  it('normalise le code entité en uppercase (ic == IC)', async () => {
+    mockListMarkdownFiles.mockResolvedValueOnce(VAULT_FICHES);
+
+    const result = await findProjetFicheByEntite('ic');
+
+    expect(result).not.toBeNull();
+    expect(result!.fileId).toBe('fileid-IC');
+  });
+
+  it('invalideProjetFicheCache vide bien le cache', async () => {
+    mockListMarkdownFiles.mockResolvedValue(VAULT_FICHES);
+
+    await findProjetFicheByEntite('IC');
+    expect(getVaultCacheSize().projetFiches).toBe(1);
+
+    invalidateProjetFicheCache('IC');
+    expect(getVaultCacheSize().projetFiches).toBe(0);
+
+    // Sans argument : vide tout
+    await findProjetFicheByEntite('IC');
+    await findProjetFicheByEntite('GO');
+    expect(getVaultCacheSize().projetFiches).toBe(2);
+    invalidateProjetFicheCache();
+    expect(getVaultCacheSize().projetFiches).toBe(0);
   });
 });

@@ -7,40 +7,24 @@
  *   3. Ce handler s'exécute pour append le lien CR dans la fiche Projet vault
  *
  * Comportement :
- *   - Lookup fiche Projet via mapping entiteCode → fileId
- *   - Lecture live via vault-reader (cache TTL 1h)
+ *   - Lookup fiche Projet via vault-reader live (R7 — pas de fileId hardcodé,
+ *     résolution par nom canonique dans `02. Projets/02. Pro/`).
+ *   - Lecture live via readFileById (vault-reader sait déjà l'identifier)
  *   - Parse markdown : trouve/crée section "## Comptes Rendus"
  *   - Append ligne : `- [YYYY-MM-DD] [Titre CR](webViewLink)`
  *   - Idempotence : skip si le webViewLink est déjà présent
  *   - PATCH in-place via updateFileContent (R5 P0 #99 — JAMAIS create+delete)
  *
- * Jalon S16 Q3.
+ * Jalon S16 Q3. Migration R7 hardcoded → vault-reader live : S17.
  */
 
 import { updateFileContent, getAccessToken } from '../drive-upload';
 import { readFileById } from '../vault-client/obsidian-file';
+import { findProjetFicheByEntite } from '../vault-reader';
 
 // ============================================================
-// Constantes — mapping entité → fileId fiche Projet vault
+// Constantes
 // ============================================================
-
-/**
- * Mapping entité → fileId Drive de la fiche Projet vault correspondante.
- *
- * Source : cartographie B1 validée S16 (cf docs/session-memo-s16.md).
- * Chemin vault : `00. Me/02. Projets/02. Pro/<projet>.md`.
- *
- * TODO S17 (R7 P1 #101) — Résoudre dynamiquement via vault-reader/search au
- * lieu d'un hardcoded. Acceptable pour MVP car les 4 fileIds sont stables
- * (fiches Projets racine, jamais déplacées). Sortie : remplacer ce mapping
- * par `findProjetFileId(entiteCode)` qui recherche dans le vault.
- */
-const PROJET_FICHE_FILE_IDS: Record<string, string> = {
-  IC: '1l8oTuQDUePowMPCks-vDIdwLeBru-IRZ', // ISSA Capital.md
-  GO: '1SqgvQ2UHh9tFEWuFuv3gY8NJVZU37l-u', // Gradient One.md
-  VI: '1Hx1q4OyQbSFJBjLVP8ux8uFe71HNsmqq', // Versi Immobilier.md
-  VV: '1X2M9XJzPfQg725uoxBNhgh-GdtzgBIKy', // Versi Invest.md
-};
 
 const SECTION_HEADING = '## Comptes Rendus';
 
@@ -159,15 +143,21 @@ export async function writeBackCrToFiche(
     };
   }
 
-  // Lookup fiche Projet
-  const ficheFileId = PROJET_FICHE_FILE_IDS[input.entiteCode];
-  if (!ficheFileId) {
+  // Lookup fiche Projet — résolution dynamique via vault-reader (R7)
+  const fiche = await findProjetFicheByEntite(input.entiteCode);
+  if (!fiche) {
+    // Pattern actuel : skip non-bloquant. Le webhook log un warn mais le CR principal n'est pas affecté.
+    console.warn(
+      `[cr-writeback] fiche Projet non trouvée pour entité ${input.entiteCode} — write-back skip`,
+    );
     return {
       success: false,
       modified: false,
-      error: `Entité inconnue "${input.entiteCode}" — codes acceptés : ${Object.keys(PROJET_FICHE_FILE_IDS).join(', ')}`,
+      error: `Fiche Projet non trouvée pour entité "${input.entiteCode}" (vault-reader)`,
     };
   }
+
+  const ficheFileId = fiche.fileId;
 
   // Lecture fiche live (pas via cache — on veut la version la plus à jour pour le PATCH)
   const accessToken = await getAccessToken();
@@ -175,6 +165,7 @@ export async function writeBackCrToFiche(
     return {
       success: false,
       modified: false,
+      ficheFileId,
       error: 'Credentials OAuth2 manquants pour lire la fiche Projet',
     };
   }
@@ -241,7 +232,6 @@ export async function writeBackCrToFiche(
 // ============================================================
 
 export const _internals = {
-  PROJET_FICHE_FILE_IDS,
   SECTION_HEADING,
   formatCrLine,
   upsertCrSection,
