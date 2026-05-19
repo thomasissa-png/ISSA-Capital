@@ -19,6 +19,10 @@ import { createCalendarEvent } from '@/lib/google/calendar';
 import { appendToTodoInbox } from '../drive-todo';
 import { callAnthropic } from '../llm/client';
 import { HAIKU_4_5 } from '../llm/models';
+// NOTE S20.A : `savePreview`/`getPreview`/`deletePreview`/`generatePendingId`
+// sont importés directement par `handlers/inbox-edit.ts`. Ici on garde le
+// router minimal (cache existant), le store inbox-preview est utilisé dès
+// qu'on bascule sur la carte 7 boutons (intégration progressive)._
 
 // ============================================================
 // Types
@@ -50,6 +54,20 @@ const ANTHROPIC_MODEL = HAIKU_4_5;
 
 /** Préfixe callback_data pour les boutons du router */
 export const ROUTER_CALLBACK_PREFIX = 'inbox_router:';
+
+/** Préfixes callback_data pour les 4 boutons d'édition (S20.A — R4). */
+export const INBOX_EDIT_TITRE_PREFIX = 'cb_inbox_edit_titre_';
+export const INBOX_EDIT_DATE_PREFIX = 'cb_inbox_edit_date_';
+export const INBOX_EDIT_HEURE_PREFIX = 'cb_inbox_edit_heure_';
+export const INBOX_EDIT_LIEU_PREFIX = 'cb_inbox_edit_lieu_';
+
+/** Tous les préfixes d'édition pour le dispatch webhook. */
+export const INBOX_EDIT_PREFIXES = [
+  INBOX_EDIT_TITRE_PREFIX,
+  INBOX_EDIT_DATE_PREFIX,
+  INBOX_EDIT_HEURE_PREFIX,
+  INBOX_EDIT_LIEU_PREFIX,
+] as const;
 
 // ============================================================
 // Cache globalThis — persiste entre les re-évaluations Next.js
@@ -304,38 +322,59 @@ function parseExtractionResult(rawText: string): {
 // ============================================================
 
 /**
- * Formate la carte de preview pour Telegram.
+ * Formate la carte de preview pour Telegram (S20.A).
+ *
+ * Affiche : titre, date, heure, lieu, description (si présente).
+ * Champs absents : "—" pour rester compact et inviter l'édit via ✏️.
  */
-function buildPreviewMessage(data: ExtractedMessage): string {
+export function buildPreviewMessage(data: ExtractedMessage): string {
   const lines: string[] = ['\u{1F4DD} J\'ai compris :'];
 
   lines.push(`\u{2022} Titre : ${data.titre}`);
-
-  if (data.date) {
-    // Formatter en JJ/MM/AAAA
-    const parts = data.date.split('-');
-    const dateFr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : data.date;
-    lines.push(`\u{2022} Date : ${dateFr}`);
-  } else {
-    lines.push('\u{2022} Date : non détectée');
-  }
-
-  if (data.heure) {
-    lines.push(`\u{2022} Heure : ${data.heure}`);
-  }
-
-  if (data.lieu) {
-    lines.push(`\u{2022} Lieu : ${data.lieu}`);
-  }
+  lines.push(`\u{2022} Date : ${data.date ? formatDateFr(data.date) : '—'}`);
+  lines.push(`\u{2022} Heure : ${data.heure ?? '—'}`);
+  lines.push(`\u{2022} Lieu : ${data.lieu ?? '—'}`);
 
   if (data.description) {
     lines.push(`\u{2022} Info : ${data.description}`);
   }
 
   lines.push('');
-  lines.push('Où je le mets ?');
+  lines.push('Modifie un champ ou choisis la destination :');
 
   return lines.join('\n');
+}
+
+/** YYYY-MM-DD → JJ/MM/AAAA. */
+function formatDateFr(iso: string): string {
+  const parts = iso.split('-');
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : iso;
+}
+
+/**
+ * Construit le clavier 7 boutons sur 3 lignes (S20.A) :
+ *   L1 : ✏️ Titre | ✏️ Date | ✏️ Heure | ✏️ Lieu
+ *   L2 : 📅 GCal  | 📋 Tâches
+ *   L3 : ✗ Annuler
+ */
+export function buildPreviewKeyboard(
+  pendingId: string,
+): Array<Array<{ text: string; callback_data: string }>> {
+  return [
+    [
+      { text: '✏️ Titre', callback_data: `${INBOX_EDIT_TITRE_PREFIX}${pendingId}` },
+      { text: '✏️ Date', callback_data: `${INBOX_EDIT_DATE_PREFIX}${pendingId}` },
+      { text: '✏️ Heure', callback_data: `${INBOX_EDIT_HEURE_PREFIX}${pendingId}` },
+      { text: '✏️ Lieu', callback_data: `${INBOX_EDIT_LIEU_PREFIX}${pendingId}` },
+    ],
+    [
+      { text: '\u{1F4C5} GCal', callback_data: `${ROUTER_CALLBACK_PREFIX}calendar:${pendingId}` },
+      { text: '\u{1F4CB} Tâches', callback_data: `${ROUTER_CALLBACK_PREFIX}task:${pendingId}` },
+    ],
+    [
+      { text: '✗ Annuler', callback_data: `${ROUTER_CALLBACK_PREFIX}cancel:${pendingId}` },
+    ],
+  ];
 }
 
 /**
@@ -528,5 +567,7 @@ export async function handleRouterCallback(
 // ============================================================
 // Exports pour tests
 // ============================================================
+// `buildPreviewMessage` est déjà exporté en `export function` ligne 333.
+// On exporte ici uniquement les helpers internes utiles aux tests.
 
-export { buildPreviewMessage, parseExtractionResult, buildExtractionPrompt };
+export { parseExtractionResult, buildExtractionPrompt };

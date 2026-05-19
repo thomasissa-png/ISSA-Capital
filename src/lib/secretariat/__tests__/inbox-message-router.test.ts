@@ -152,6 +152,9 @@ describe('parseExtractionResult', () => {
 // ============================================================
 
 describe('buildPreviewMessage', () => {
+  // S20.A : format de carte mis à jour pour le pattern 7 boutons.
+  // Date/Heure/Lieu sont toujours affichés (avec "—" si null) pour inviter
+  // l'édit via ✏️. Footer change : "Modifie un champ ou choisis la destination :".
   it('affiche tous les champs remplis', () => {
     const msg = buildPreviewMessage({
       titre: 'Sortie enfants Aquaboulevard',
@@ -165,10 +168,10 @@ describe('buildPreviewMessage', () => {
     expect(msg).toContain('14:00');
     expect(msg).toContain('Aquaboulevard');
     expect(msg).toContain('Avec les enfants');
-    expect(msg).toContain('Où je le mets ?');
+    expect(msg).toContain('Modifie un champ ou choisis la destination');
   });
 
-  it('affiche "non détectée" si date null', () => {
+  it('affiche "—" pour les champs nuls (invite à l\'édit ✏️)', () => {
     const msg = buildPreviewMessage({
       titre: 'Acheter du pain',
       date: null,
@@ -176,9 +179,11 @@ describe('buildPreviewMessage', () => {
       lieu: null,
       description: null,
     });
-    expect(msg).toContain('non détectée');
-    expect(msg).not.toContain('Heure');
-    expect(msg).not.toContain('Lieu');
+    expect(msg).toContain('Acheter du pain');
+    // S20.A : tous les champs sont affichés, "—" remplace les null
+    expect(msg).toContain('Date : —');
+    expect(msg).toContain('Heure : —');
+    expect(msg).toContain('Lieu : —');
   });
 });
 

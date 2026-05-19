@@ -285,6 +285,56 @@ export async function editMessageText(
 }
 
 /**
+ * Modifie le texte d'un message Telegram et remplace le inline keyboard.
+ * Variante de `editMessageText` qui préserve/met à jour des boutons.
+ *
+ * - Si `buttons` est un tableau (même vide) : remplace le inline_keyboard.
+ * - Si `buttons` est `null` : retire complètement le inline_keyboard.
+ *
+ * Utilisé par le flux édit conversationnel inbox-router (S20.A) :
+ * - clic "✏️ Heure" → re-render carte avec instructions + bouton [Annuler]
+ * - saisie heure → re-render carte avec les 7 boutons initiaux
+ */
+export async function editMessageTextWithButtons(
+  chatId: number | string,
+  messageId: number,
+  newText: string,
+  buttons: Array<Array<{ text: string; callback_data: string }>> | null,
+): Promise<boolean> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || token === '__TO_FILL__') return false;
+
+  const url = `${TELEGRAM_API_BASE}/bot${token}/editMessageText`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: newText,
+  };
+  if (buttons === null) {
+    body['reply_markup'] = { inline_keyboard: [] };
+  } else {
+    body['reply_markup'] = { inline_keyboard: buttons };
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    return response.ok;
+  } catch {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
+/**
  * Envoie un message texte simple dans un chat Telegram (pour "Voir" et "Modifier").
  * Retourne le message_id envoyé.
  */

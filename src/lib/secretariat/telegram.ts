@@ -15,6 +15,8 @@ const TIMEOUT_MS = 10_000;
 export interface TelegramSendResult {
   success: boolean;
   error?: string;
+  /** message_id Telegram du message envoyé (présent en cas de succès). */
+  messageId?: number;
 }
 
 /**
@@ -578,7 +580,19 @@ export async function sendTelegramMessageWithButtons(
       clearTimeout(timer);
 
       if (response.ok) {
-        return { success: true };
+        // Extraire message_id pour usage édit conversationnel (S20.A inbox-router).
+        try {
+          const data = (await response.json()) as {
+            ok?: boolean;
+            result?: { message_id?: number };
+          };
+          const messageId = data.result?.message_id;
+          return messageId !== undefined
+            ? { success: true, messageId }
+            : { success: true };
+        } catch {
+          return { success: true };
+        }
       }
 
       if (response.status >= 500 && attempt === 1) {

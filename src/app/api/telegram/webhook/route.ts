@@ -91,6 +91,11 @@ import {
   handleRouterCallback,
   ROUTER_CALLBACK_PREFIX,
 } from '@/lib/secretariat/workflows/inbox-message-router';
+import {
+  handleInboxEditCallback,
+  handleInboxEditText,
+  hasActivePendingEdit,
+} from '@/lib/secretariat/handlers/inbox-edit';
 import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
 import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
 import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
@@ -1170,6 +1175,16 @@ export async function POST(request: Request): Promise<Response> {
         return await handleSlashCommand(chatId, normalizedText);
       }
 
+      // ── Niveau 1b : édition conversationnelle inbox-preview (S20.A) ──
+      // Si une carte preview attend une saisie (awaitingField != null), on
+      // route ce texte vers le parser dédié avant tout autre traitement.
+      // R4 : court-circuite le router classique pour ne pas re-créer une
+      // nouvelle carte alors qu'on attend une réponse sur la précédente.
+      if (await hasActivePendingEdit(chatId)) {
+        await handleInboxEditText(text, chatId);
+        return Response.json({ ok: true });
+      }
+
       // ── Niveau 2 : workflow actif ──────────────────────────────
       const activeWorkflow = getActiveWorkflow(chatId);
       if (activeWorkflow) {
@@ -1596,6 +1611,17 @@ export async function POST(request: Request): Promise<Response> {
       }
 
       if (!isAllowedChatId(callbackChatId)) {
+        return Response.json({ ok: true });
+      }
+
+      // Inbox edit — callbacks préfixés par "cb_inbox_edit_{titre|date|heure|lieu}_"
+      // (S20.A — R4 : handler dédié + dispatch + tests)
+      if (callbackData.startsWith('cb_inbox_edit_')) {
+        await handleInboxEditCallback(
+          callbackData,
+          callbackChatId,
+          update.callback_query.message?.message_id ?? 0,
+        );
         return Response.json({ ok: true });
       }
 
