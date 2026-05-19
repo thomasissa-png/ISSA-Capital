@@ -542,5 +542,37 @@ Voir B4. C'est le même problème (certificat non généré).
 
 ---
 
+## S18.1 — Sync vault → TickTick (livré 2026-05-19)
+
+**Action Thomas requise** :
+
+1. **Replit Secrets** — Vérifier que les secrets suivants sont configurés (déjà en place pour la plupart, juste à confirmer) :
+   - `CRON_SECRET` — déjà utilisé par `cron-email-ingest` et `cron-ticktick-poll`. Pas de nouvelle valeur à créer.
+   - `TICKTICK_ACCESS_TOKEN` — déjà configuré en S15.2.x (180j de durée de vie).
+   - `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID_THOMAS` — déjà configurés.
+   - `DRIVE_VAULT_ROOT_ID` — déjà configuré (pointe sur `00. Me/`).
+
+2. **GitHub Actions** — Le workflow `cron-ticktick-sync-push.yml` (toutes les 5 min) utilise les secrets GitHub déjà en place :
+   - `CRON_SECRET` (idem cron poll)
+   - `APP_BASE_URL` (idem cron poll)
+   Aucun nouveau secret GitHub à ajouter.
+
+3. **Premier run — confirmation projets TickTick** (red line spec §8 step 4) :
+   - Quand le cron tournera la première fois, Anya t'enverra une carte Telegram :
+     *"Sync TickTick — premier run. Je vais créer 7 projets dans TickTick : Personnel, Versi, ISSA, Gradient One, Immobilier, Sarani, Inbox. Confirmer ?"* [Créer] [Annuler]
+   - Clique **[Créer]** une seule fois. Les 7 projets seront créés et leurs IDs persistés dans `_Inbox/AnyaState/ticktick-sync-state.json` sur Drive.
+   - Tant que tu n'as pas cliqué [Créer], chaque cron skip avec un log et te ré-envoie la carte. Pas de spam (idempotence : si les projets sont déjà créés, no-op).
+
+4. **Vérification après premier sync** :
+   - Ouvrir TickTick iPhone → vérifier que les 7 projets sont visibles
+   - Les tâches actives de `03. Tâches/Todo.md` doivent apparaître dans le bon projet en moins de 5 min
+   - Cocher dans le vault → tâche TickTick complétée au prochain cron
+   - Supprimer une ligne du vault → tâche TickTick supprimée au prochain cron
+
+5. **Rollback** : si le sync se comporte mal, désactiver le workflow GitHub Actions `cron-ticktick-sync-push.yml` (un clic dans l'UI GitHub). Le state Drive reste intact ; ré-activer plus tard reprendra là où on s'est arrêté.
+
+**Hors scope S18.1** (reporté S18.2/S18.3) : pull TickTick → vault, résolution conflits, validation Telegram deletes, iCal réunions, scan tâches inline dans Reunions/Projets.
+
+---
 
 

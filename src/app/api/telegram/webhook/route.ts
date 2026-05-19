@@ -94,6 +94,10 @@ import {
 import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
 import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
 import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
+import {
+  TICKTICK_PROJECTS_CALLBACK_PREFIX,
+  handleTickTickProjectsCallback,
+} from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1621,6 +1625,18 @@ export async function POST(request: Request): Promise<Response> {
       // (handleTelegramCallback dispatch en interne entre les 2 préfixes)
       if (callbackData.startsWith('email_val:') || callbackData.startsWith('email_nomatch:')) {
         await handleEmailValCallback({
+          callback_query_id: callbackQueryId,
+          data: callbackData,
+          message_id: update.callback_query.message?.message_id ?? 0,
+          chat_id: callbackChatId,
+        });
+        return Response.json({ ok: true });
+      }
+
+      // TickTick sync — callbacks préfixés par "tickticksync_projects:" (S18.1)
+      // Confirmation création initiale des 7 projets TickTick (red line spec §8 step 4).
+      if (callbackData.startsWith(TICKTICK_PROJECTS_CALLBACK_PREFIX)) {
+        await handleTickTickProjectsCallback({
           callback_query_id: callbackQueryId,
           data: callbackData,
           message_id: update.callback_query.message?.message_id ?? 0,
