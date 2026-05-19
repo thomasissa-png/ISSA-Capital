@@ -1,16 +1,22 @@
 /**
  * Parser markdown → VaultTask.
  *
- * Format attendu (cf. spec Phase 4 §1) :
- *   `- [ ] description 📅 YYYY-MM-DD #tag1 #tag2 🔼 🔁 weekly ⏰ HH:MM`
+ * Format attendu (cf. spec Phase 4 §1, refacto S18.4) :
+ *   `- [ ] description 📅 YYYY-MM-DD #tag1 #tag2 ⏫|🔼|🔽|⏬ 🔁 weekly ⏰ HH:MM`
  *
  * Comportements clés :
  *   - `[ ]` ou `[x]` → status 0 ou 2
  *   - 📅 YYYY-MM-DD → dueDate ISO (UTC minuit, isAllDay true)
  *   - ⏰ HH:MM ou 🕐 HH:MM → ajoute heure, isAllDay false
- *   - 🔼 → priority 5 (high), 🔽 → priority 1 (low)
+ *   - Priorité (convention Obsidian Tasks) :
+ *       ⏫ → 5 (high) → projet "Critique"
+ *       🔼 → 3 (medium) → projet "Important"
+ *       aucun emoji → 0 (défaut) → projet "Important"
+ *       🔽 → 1 (low) → projet "Priorité basse"
+ *       ⏬ → 1 (lowest, mappé low) → projet "Priorité basse"
  *   - 🔁 weekly|daily|monthly → repeatFlag RRULE simple
- *   - #tag → tags (sans `#`), premier tag mappé détermine projectName
+ *   - #tag → tags (sans `#`) — informatif uniquement depuis S18.4 (le projet
+ *     est routé par priorité, plus par tag)
  *   - `#hide-tcw` présent → skip (return null)
  *
  * Renvoie `null` si :
@@ -21,7 +27,7 @@
 import {
   type VaultTask,
   type TaskPosition,
-  resolveProjectName,
+  priorityToProjectName,
 } from './types';
 
 // ============================================================
@@ -44,9 +50,17 @@ const REPEAT_RE = /🔁\s*(daily|weekly|monthly|yearly)\b/iu;
 /** Tag #slug — autorise lettres ASCII, chiffres, tiret, underscore */
 const TAG_RE = /#([a-zA-Z0-9][a-zA-Z0-9_-]*)/gu;
 
-/** Priority : 🔼 = high, 🔽 = low */
+/**
+ * Priority emojis (convention Obsidian Tasks) :
+ *   - ⏫ → 5 (high) → "Critique"
+ *   - 🔼 → 3 (medium) → "Important"
+ *   - 🔽 → 1 (low) → "Priorité basse"
+ *   - ⏬ → 1 (lowest, mappé low) → "Priorité basse"
+ */
+const PRIORITY_HIGHEST = '⏫';
 const PRIORITY_HIGH = '🔼';
 const PRIORITY_LOW = '🔽';
+const PRIORITY_LOWEST = '⏬';
 
 /** Tag spécial à filtrer (red line §9.6) */
 const HIDE_TAG = 'hide-tcw';
@@ -82,8 +96,10 @@ function cleanTitle(raw: string): string {
     .replace(TIME_RE, '')
     .replace(REPEAT_RE, '')
     .replace(TAG_RE, '')
+    .replaceAll(PRIORITY_HIGHEST, '')
     .replaceAll(PRIORITY_HIGH, '')
     .replaceAll(PRIORITY_LOW, '')
+    .replaceAll(PRIORITY_LOWEST, '')
     // Autres clocks possibles (⏰ déjà géré par TIME_RE si suivi de chiffres)
     .replaceAll(DATE_EMOJI, '')
     .replace(/\s+/gu, ' ')
@@ -164,10 +180,12 @@ export function parseTaskLine(
     }
   }
 
-  // Priority
-  let priority: 0 | 1 | 5 = 0;
-  if (rest.includes(PRIORITY_HIGH)) priority = 5;
-  else if (rest.includes(PRIORITY_LOW)) priority = 1;
+  // Priority (convention Obsidian Tasks — ordre des tests important :
+  // ⏫ avant 🔼 ; 🔽/⏬ tous deux → 1). Premier emoji détecté gagne.
+  let priority: 0 | 1 | 3 | 5 = 0;
+  if (rest.includes(PRIORITY_HIGHEST)) priority = 5;
+  else if (rest.includes(PRIORITY_HIGH)) priority = 3;
+  else if (rest.includes(PRIORITY_LOW) || rest.includes(PRIORITY_LOWEST)) priority = 1;
 
   // Recurrence
   let repeatFlag: string | undefined;
@@ -181,10 +199,11 @@ export function parseTaskLine(
   const title = cleanTitle(rest);
   if (!title) return null;
 
-  // Filter out #hide-tcw from tags before projet resolution
-  // (déjà gated par early-return ci-dessus, mais defensive)
+  // Filter out #hide-tcw from tags (defensive — early-return déjà fait)
   const projectTags = tags.filter((t) => t !== HIDE_TAG);
-  const projectName = resolveProjectName(projectTags);
+  // S18.4 : projet routé par PRIORITÉ, plus par tag (les tags sont conservés
+  // dans la VaultTask pour traçabilité mais n'influencent plus le projet).
+  const projectName = priorityToProjectName(priority);
 
   const task: VaultTask = {
     title,

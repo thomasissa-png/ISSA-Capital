@@ -38,16 +38,44 @@ describe('serializeTaskToLine — round-trip', () => {
     expect(reparsed!.isAllDay).toBe(false);
   });
 
-  it('round-trip avec tags + projet', () => {
+  it('round-trip avec tags + projet (S18.4 : routé par priorité, défaut Important)', () => {
     const { parsed, reparsed } = roundTrip('- [ ] dev #versi #urgent');
     expect(reparsed!.tags).toEqual(parsed.tags);
-    expect(reparsed!.projectName).toBe('Versi');
+    // S18.4 : pas d'emoji priorité → défaut "Important"
+    expect(reparsed!.projectName).toBe('Important');
   });
 
-  it('round-trip avec priorité haute', () => {
-    const { parsed, reparsed } = roundTrip('- [ ] urgent 🔼');
+  it('round-trip avec priorité haute ⏫ (S18.4)', () => {
+    const { parsed, reparsed } = roundTrip('- [ ] urgent ⏫');
     expect(reparsed!.priority).toBe(parsed.priority);
     expect(reparsed!.priority).toBe(5);
+    expect(reparsed!.projectName).toBe('Critique');
+  });
+
+  it('round-trip avec priorité medium 🔼 (S18.4)', () => {
+    const { parsed, reparsed } = roundTrip('- [ ] medium 🔼');
+    expect(reparsed!.priority).toBe(parsed.priority);
+    expect(reparsed!.priority).toBe(3);
+    expect(reparsed!.projectName).toBe('Important');
+  });
+
+  it('round-trip avec priorité basse 🔽 (S18.4)', () => {
+    const { parsed, reparsed } = roundTrip('- [ ] secondaire 🔽');
+    expect(reparsed!.priority).toBe(parsed.priority);
+    expect(reparsed!.priority).toBe(1);
+    expect(reparsed!.projectName).toBe('Priorité basse');
+  });
+
+  it('⏬ (lowest) → sérialisé comme 🔽 (low) — round-trip stable', () => {
+    const parsed1 = parseTaskLine('- [ ] vraiment pas urgent ⏬', POS)!;
+    expect(parsed1.priority).toBe(1);
+    const serialized = serializeTaskToLine(parsed1);
+    // Le serializer émet 🔽 (pas ⏬) car priority=1 → "Priorité basse"
+    expect(serialized).toContain('🔽');
+    expect(serialized).not.toContain('⏬');
+    // Re-parse : toujours priority 1
+    const reparsed = parseTaskLine(serialized, POS)!;
+    expect(reparsed.priority).toBe(1);
   });
 
   it('round-trip avec récurrence', () => {
@@ -56,9 +84,9 @@ describe('serializeTaskToLine — round-trip', () => {
     expect(reparsed!.repeatFlag).toBe('FREQ=WEEKLY');
   });
 
-  it('round-trip ligne complète', () => {
+  it('round-trip ligne complète (S18.4 : ⏫ = high)', () => {
     const { parsed, reparsed } = roundTrip(
-      '- [ ] Préparer pitch 📅 2026-05-19 ⏰ 14:00 #gradient #urgent 🔼 🔁 weekly',
+      '- [ ] Préparer pitch 📅 2026-05-19 ⏰ 14:00 #gradient #urgent ⏫ 🔁 weekly',
     );
     expect(reparsed).not.toBeNull();
     expect(reparsed!.title).toBe(parsed.title);

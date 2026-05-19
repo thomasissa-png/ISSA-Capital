@@ -32,7 +32,9 @@ import { serializeTaskToLine } from './serializer';
 import {
   positionKey,
   emptyPullStats,
+  priorityToProjectName,
   type ConflictDecision,
+  type ProjectName,
   type PullResult,
   type PullStats,
   type SyncState,
@@ -132,16 +134,23 @@ export function resolveConflict(
 export function ticktickToVaultTask(
   raw: TickTickRawTask,
   positionForRender: { vaultPath: string; lineNumber: number },
-  fallbackProjectName = 'Inbox',
+  fallbackProjectName?: ProjectName,
 ): VaultTask {
   const status: 0 | 2 = raw.status === 2 ? 2 : 0;
-  let priority: 0 | 1 | 5 = 0;
+  // S18.4 : priorité étendue à 0|1|3|5 (medium = 3 ajouté pour "Important")
+  let priority: 0 | 1 | 3 | 5 = 0;
   if (raw.priority === 5) priority = 5;
+  else if (raw.priority === 3) priority = 3;
   else if (raw.priority === 1) priority = 1;
 
   const tags = Array.isArray(raw.tags)
     ? raw.tags.map((t) => String(t).toLowerCase().trim()).filter(Boolean)
     : [];
+
+  // Le projet vault est dérivé de la priorité (S18.4) ; le fallback explicite
+  // ne sert qu'en mode override (tests ou cas exceptionnel).
+  const projectName: ProjectName =
+    fallbackProjectName ?? priorityToProjectName(priority);
 
   const task: VaultTask = {
     title: raw.title || '(sans titre)',
@@ -149,7 +158,7 @@ export function ticktickToVaultTask(
     priority,
     isAllDay: raw.isAllDay !== false, // default true
     tags,
-    projectName: fallbackProjectName,
+    projectName,
     position: positionForRender,
   };
   if (raw.dueDate) task.dueDate = raw.dueDate;

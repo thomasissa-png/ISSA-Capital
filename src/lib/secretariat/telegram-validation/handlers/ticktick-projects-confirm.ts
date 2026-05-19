@@ -1,9 +1,12 @@
 /**
- * Handler Telegram — confirmation création projets TickTick (S18.1).
+ * Handler Telegram — confirmation création projets TickTick (S18.1, refacto S18.4).
  *
- * Red line spec §8 step 4 : avant de créer 7 projets dans TickTick au
+ * Red line spec §8 step 4 : avant de créer les projets dans TickTick au
  * premier run, Anya doit obtenir confirmation explicite de Thomas via
  * Telegram (boutons [Créer] / [Annuler]).
+ *
+ * **S18.4** : 3 projets (Critique / Important / Priorité basse) au lieu de 7
+ * (mapping par priorité d'emojis Obsidian Tasks, plus par tag).
  *
  * Callback prefix : `tickticksync_projects:`
  * Actions : `create` | `cancel`
@@ -30,6 +33,7 @@ import {
   loadSyncState,
   saveSyncState,
 } from '../../ticktick-sync/state-store';
+import { PROJECT_NAMES } from '../../ticktick-sync/types';
 
 // ============================================================
 // Constantes publiques
@@ -222,7 +226,7 @@ export async function handleTickTickProjectsCallback(params: {
 
     // Compteur partiel pour Thomas (combien de projets ok avant le crash)
     const mappedCount = Object.keys(state.projects).length;
-    const totalCount = 7;
+    const totalCount = PROJECT_NAMES.length;
     await sendSimpleMessage(
       params.chat_id,
       `Erreur création projets TickTick (${mappedCount}/${totalCount} mappés avant échec) : ${msg.slice(0, 200)}`,

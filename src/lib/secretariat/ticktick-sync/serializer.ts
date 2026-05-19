@@ -34,7 +34,13 @@ function mapRepeatFlagToKeyword(rrule: string): string | undefined {
  * Sérialise une VaultTask en ligne markdown.
  *
  * Format de sortie (ordre stable pour idempotence) :
- *   `- [ ] title 📅 YYYY-MM-DD [⏰ HH:MM] [#tag1 #tag2] [🔼|🔽] [🔁 freq]`
+ *   `- [ ] title 📅 YYYY-MM-DD [⏰ HH:MM] [#tag1 #tag2] [⏫|🔼|🔽] [🔁 freq]`
+ *
+ * Mapping priority → emoji (convention Obsidian Tasks, S18.4) :
+ *   - 5 → ⏫ (high → "Critique")
+ *   - 3 → 🔼 (medium → "Important")
+ *   - 0 → aucun emoji (défaut → "Important")
+ *   - 1 → 🔽 (low → "Priorité basse" ; ⏬ lowest n'est PAS re-émis, mappé low)
  */
 export function serializeTaskToLine(task: VaultTask): string {
   const checkbox = task.status === 2 ? '[x]' : '[ ]';
@@ -51,7 +57,8 @@ export function serializeTaskToLine(task: VaultTask): string {
     parts.push(`#${tag}`);
   }
 
-  if (task.priority === 5) parts.push('🔼');
+  if (task.priority === 5) parts.push('⏫');
+  else if (task.priority === 3) parts.push('🔼');
   else if (task.priority === 1) parts.push('🔽');
 
   if (task.repeatFlag) {

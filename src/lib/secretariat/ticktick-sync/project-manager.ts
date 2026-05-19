@@ -1,8 +1,13 @@
 /**
- * Project manager — création et résolution des 7 projets TickTick.
+ * Project manager — création et résolution des 3 projets TickTick (S18.4).
  *
- * Au premier run (state.projects vide), Anya doit créer 7 projets dans TickTick :
- *   Personnel, Versi, ISSA, Gradient One, Immobilier, Sarani, Inbox.
+ * Au premier run (state.projects vide), Anya doit créer 3 projets dans TickTick :
+ *   Critique, Important, Priorité basse.
+ *
+ * **Refacto S18.4** : décision Thomas (S18) verbatim : « Je veux 3 projets,
+ * par priorité: critique, important, et priorité basse ». L'ancien mapping
+ * par 7 tags (Versi/ISSA/Gradient One/...) est supprimé ; le routing se fait
+ * désormais via `priorityToProjectName(priority)` dans le parser.
  *
  * Red line spec §8 step 4 : la création est gated par une confirmation
  * Telegram (carte avec boutons [Créer] / [Annuler]). Tant que les projets
@@ -11,7 +16,7 @@
  * Une fois créés, les IDs sont stockés dans `state.projects[name] = id` et
  * persistés via state-store. Plus jamais re-créés.
  *
- * **Hotfix S18.3 (Thomas en prod, cron crash sur "Immobilier" doublon)** :
+ * **Hotfix S18.3 (Thomas en prod, cron crash sur doublon de nom)** conservé :
  *   - `listExistingProjects` : fetch projets existants côté TickTick
  *   - `createMissingProjects` : idempotent par NOM (match case-insensitive
  *     + trim), réutilise les projets existants au lieu de tenter une
@@ -119,7 +124,8 @@ export async function listExistingProjects(
 // API publique
 // ============================================================
 
-/** Indique si la sync peut démarrer (7 projets connus dans le state). */
+/** Indique si la sync peut démarrer (tous les projets de `PROJECT_NAMES`
+ *  sont connus dans le state — 3 depuis S18.4). */
 export function projectsReady(state: SyncState): boolean {
   for (const name of PROJECT_NAMES) {
     if (!state.projects[name]) return false;

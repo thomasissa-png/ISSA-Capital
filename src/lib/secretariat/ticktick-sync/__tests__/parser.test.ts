@@ -9,14 +9,15 @@ import type { TaskPosition } from '../types';
 const POS: TaskPosition = { vaultPath: 'Taches/Todo.md', lineNumber: 1 };
 
 describe('parseTaskLine — basics', () => {
-  it('parse une ligne simple sans emojis', () => {
+  it('parse une ligne simple sans emojis (défaut = Important)', () => {
     const task = parseTaskLine('- [ ] Appeler Maxime', POS);
     expect(task).not.toBeNull();
     expect(task!.title).toBe('Appeler Maxime');
     expect(task!.status).toBe(0);
     expect(task!.priority).toBe(0);
     expect(task!.tags).toEqual([]);
-    expect(task!.projectName).toBe('Inbox');
+    // S18.4 : sans emoji priorité → projet "Important" (défaut)
+    expect(task!.projectName).toBe('Important');
     expect(task!.isAllDay).toBe(true);
     expect(task!.dueDate).toBeUndefined();
   });
@@ -65,59 +66,61 @@ describe('parseTaskLine — date et heure', () => {
   });
 });
 
-describe('parseTaskLine — priorité', () => {
-  it('🔼 → priority 5 (high)', () => {
-    const t = parseTaskLine('- [ ] urgent 🔼', POS);
+describe('parseTaskLine — priorité (S18.4 convention Obsidian Tasks)', () => {
+  it('⏫ → priority 5 (high) → Critique', () => {
+    const t = parseTaskLine('- [ ] urgent ⏫', POS);
     expect(t!.priority).toBe(5);
+    expect(t!.projectName).toBe('Critique');
   });
 
-  it('🔽 → priority 1 (low)', () => {
+  it('🔼 → priority 3 (medium) → Important', () => {
+    const t = parseTaskLine('- [ ] tâche medium 🔼', POS);
+    expect(t!.priority).toBe(3);
+    expect(t!.projectName).toBe('Important');
+  });
+
+  it('🔽 → priority 1 (low) → Priorité basse', () => {
     const t = parseTaskLine('- [ ] secondaire 🔽', POS);
     expect(t!.priority).toBe(1);
+    expect(t!.projectName).toBe('Priorité basse');
   });
 
-  it('sans emoji → priority 0', () => {
+  it('⏬ → priority 1 (lowest mappé low) → Priorité basse', () => {
+    const t = parseTaskLine('- [ ] vraiment pas urgent ⏬', POS);
+    expect(t!.priority).toBe(1);
+    expect(t!.projectName).toBe('Priorité basse');
+  });
+
+  it('sans emoji → priority 0 → Important (défaut)', () => {
     const t = parseTaskLine('- [ ] normal', POS);
     expect(t!.priority).toBe(0);
+    expect(t!.projectName).toBe('Important');
+  });
+
+  it('⏫ a priorité sur 🔼 si les deux présents (ordre de test)', () => {
+    const t = parseTaskLine('- [ ] mix 🔼 ⏫', POS);
+    expect(t!.priority).toBe(5);
   });
 });
 
-describe('parseTaskLine — tags et projets', () => {
-  it('extrait les tags sans #', () => {
+describe('parseTaskLine — tags et projets (S18.4)', () => {
+  it('extrait les tags sans # (informatif depuis S18.4)', () => {
     const t = parseTaskLine('- [ ] task #versi #urgent', POS);
     expect(t!.tags).toEqual(['versi', 'urgent']);
     expect(t!.title).toBe('task');
   });
 
-  it('mappe #versi → projet Versi', () => {
+  it('S18.4 : les tags ne routent PLUS le projet — défaut Important', () => {
+    // #versi ne mappe plus rien (mapping par tag supprimé)
     const t = parseTaskLine('- [ ] dev fonctionnalité #versi', POS);
-    expect(t!.projectName).toBe('Versi');
+    expect(t!.projectName).toBe('Important');
+    expect(t!.tags).toEqual(['versi']);
   });
 
-  it('mappe #famille → projet Personnel', () => {
-    const t = parseTaskLine('- [ ] anniversaire #famille', POS);
-    expect(t!.projectName).toBe('Personnel');
-  });
-
-  it('mappe #gradient-one → projet Gradient One', () => {
-    const t = parseTaskLine('- [ ] CR #gradient-one', POS);
-    expect(t!.projectName).toBe('Gradient One');
-  });
-
-  it('mappe #issa → projet ISSA', () => {
-    const t = parseTaskLine('- [ ] holding #issa', POS);
-    expect(t!.projectName).toBe('ISSA');
-  });
-
-  it('tag inconnu → projet Inbox (fallback)', () => {
-    const t = parseTaskLine('- [ ] task #xyz-inconnu', POS);
-    expect(t!.projectName).toBe('Inbox');
-    expect(t!.tags).toEqual(['xyz-inconnu']);
-  });
-
-  it('multi-tags : premier match gagne', () => {
-    const t = parseTaskLine('- [ ] task #xyz #versi #autre', POS);
-    expect(t!.projectName).toBe('Versi');
+  it('S18.4 : tag + priorité → projet déterminé par priorité', () => {
+    const t = parseTaskLine('- [ ] dev #gradient ⏫', POS);
+    expect(t!.projectName).toBe('Critique');
+    expect(t!.tags).toEqual(['gradient']);
   });
 });
 
@@ -149,9 +152,9 @@ describe('parseTaskLine — red line #hide-tcw', () => {
 });
 
 describe('parseTaskLine — combinaisons', () => {
-  it('ligne complète : tous les emojis', () => {
+  it('ligne complète : tous les emojis (S18.4 : ⏫ = high)', () => {
     const line =
-      '- [ ] Préparer pitch 📅 2026-05-19 ⏰ 14:00 #gradient #urgent 🔼 🔁 weekly';
+      '- [ ] Préparer pitch 📅 2026-05-19 ⏰ 14:00 #gradient #urgent ⏫ 🔁 weekly';
     const t = parseTaskLine(line, POS);
     expect(t).not.toBeNull();
     expect(t!.title).toBe('Préparer pitch');
@@ -159,7 +162,8 @@ describe('parseTaskLine — combinaisons', () => {
     expect(t!.isAllDay).toBe(false);
     expect(t!.priority).toBe(5);
     expect(t!.tags).toEqual(['gradient', 'urgent']);
-    expect(t!.projectName).toBe('Gradient One');
+    // S18.4 : projet routé par priorité (⏫ → Critique)
+    expect(t!.projectName).toBe('Critique');
     expect(t!.repeatFlag).toBe('FREQ=WEEKLY');
   });
 

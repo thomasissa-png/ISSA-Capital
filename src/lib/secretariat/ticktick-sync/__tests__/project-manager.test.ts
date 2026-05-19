@@ -1,15 +1,17 @@
 /**
  * Tests project-manager — création et résolution projets TickTick.
  *
+ * Refacto S18.4 : 3 projets (Critique / Important / Priorité basse) au lieu de 7.
+ *
  * Couvre :
  *   - projectsReady / missingProjects / resolveProjectId (helpers state)
  *   - createTickTickProject (POST) : OK / HTTP error / no id
  *   - listExistingProjects (GET) : OK array / HTTP error / non-array
- *   - createMissingProjects (S18.3 hotfix idempotence) :
- *       1. State vide + 0 existant TickTick → 7 créés tous neufs
- *       2. State vide + 7 existants TickTick (match nom) → 7 reused, 0 POST
- *       3. State vide + 3 existants TickTick (Personnel/Versi/ISSA) → 3 reused, 4 created
- *       4. State partiel (2 déjà skip) → 5 traités
+ *   - createMissingProjects (S18.3 hotfix idempotence, adapté S18.4 à 3 noms) :
+ *       1. State vide + 0 existant TickTick → 3 créés tous neufs
+ *       2. State vide + 3 existants TickTick (match nom) → 3 reused, 0 POST
+ *       3. State vide + 1 existant TickTick (Important) → 1 reused, 2 created
+ *       4. State partiel (1 déjà skip) → 2 traités
  *       5. POST throw 500 → re-fetch existants → si présent récupère, sinon propage avec compteur
  *       6. Match case-insensitive + trim
  */
@@ -97,11 +99,11 @@ describe('projectsReady', () => {
 
   it('false si certains projets manquent', () => {
     const s = emptyState();
-    s.projects.Personnel = 'p1';
+    s.projects.Critique = 'p1';
     expect(projectsReady(s)).toBe(false);
   });
 
-  it('true si tous les 7 projets présents', () => {
+  it('true si les 3 projets présents (S18.4)', () => {
     const s = emptyState();
     for (const name of PROJECT_NAMES) {
       s.projects[name] = `id_${name}`;
@@ -111,31 +113,30 @@ describe('projectsReady', () => {
 });
 
 describe('missingProjects', () => {
-  it('renvoie les 7 projets si state vide', () => {
+  it('renvoie les 3 projets si state vide (S18.4)', () => {
     expect(missingProjects(emptyState())).toEqual([...PROJECT_NAMES]);
   });
 
   it('renvoie uniquement ceux manquants', () => {
     const s = emptyState();
-    s.projects.Personnel = 'p1';
-    s.projects.Versi = 'p2';
+    s.projects.Critique = 'p1';
+    s.projects.Important = 'p2';
     const m = missingProjects(s);
-    expect(m).not.toContain('Personnel');
-    expect(m).not.toContain('Versi');
-    expect(m).toContain('ISSA');
-    expect(m).toContain('Inbox');
+    expect(m).not.toContain('Critique');
+    expect(m).not.toContain('Important');
+    expect(m).toContain('Priorité basse');
   });
 });
 
 describe('resolveProjectId', () => {
   it("renvoie l'id si présent", () => {
     const s = emptyState();
-    s.projects.Versi = 'proj_versi';
-    expect(resolveProjectId(s, 'Versi')).toBe('proj_versi');
+    s.projects.Critique = 'proj_critique';
+    expect(resolveProjectId(s, 'Critique')).toBe('proj_critique');
   });
 
   it('throw si projet absent', () => {
-    expect(() => resolveProjectId(emptyState(), 'Versi')).toThrow();
+    expect(() => resolveProjectId(emptyState(), 'Critique')).toThrow();
   });
 });
 
@@ -147,12 +148,12 @@ describe('createTickTickProject (mock fetch)', () => {
   it("renvoie l'id retourné par l'API", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
-      json: async () => ({ id: 'abc123', name: 'Versi' }),
+      json: async () => ({ id: 'abc123', name: 'Critique' }),
       text: async () => '',
     } as unknown as Response));
     vi.stubGlobal('fetch', fetchMock);
 
-    const id = await createTickTickProject('tok', 'Versi');
+    const id = await createTickTickProject('tok', 'Critique');
     expect(id).toBe('abc123');
   });
 
@@ -189,8 +190,8 @@ describe('listExistingProjects', () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => [
-        { id: 'p1', name: 'Versi', color: '#fff' },
-        { id: 'p2', name: 'ISSA' },
+        { id: 'p1', name: 'Critique', color: '#fff' },
+        { id: 'p2', name: 'Important' },
         { id: null, name: 'broken' }, // filtré : id non-string
       ],
       text: async () => '',
@@ -199,8 +200,8 @@ describe('listExistingProjects', () => {
 
     const list = await listExistingProjects('tok');
     expect(list).toHaveLength(2);
-    expect(list[0]).toEqual({ id: 'p1', name: 'Versi' });
-    expect(list[1]).toEqual({ id: 'p2', name: 'ISSA' });
+    expect(list[0]).toEqual({ id: 'p1', name: 'Critique' });
+    expect(list[1]).toEqual({ id: 'p2', name: 'Important' });
   });
 
   it('throw si HTTP non-ok', async () => {
@@ -231,21 +232,21 @@ describe('listExistingProjects', () => {
 // createMissingProjects — 5 cas hotfix S18.3
 // ============================================================
 
-describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
-  it('cas 1 : state vide + 0 existant TickTick → 7 créés tous neufs', async () => {
+describe('createMissingProjects (hotfix S18.3 idempotence, S18.4 noms refactos)', () => {
+  it('cas 1 : state vide + 0 existant TickTick → 3 créés tous neufs', async () => {
     const spy = mockFetchRouted({ existingProjects: [] });
 
     const s = emptyState();
     const mapped = await createMissingProjects('tok', s);
 
-    expect(mapped).toHaveLength(7);
+    expect(mapped).toHaveLength(3);
     expect(mapped.every((m) => m.reused === false)).toBe(true);
     expect(projectsReady(s)).toBe(true);
-    // 1 GET + 7 POST = 8 fetch
-    expect(spy).toHaveBeenCalledTimes(8);
+    // 1 GET + 3 POST = 4 fetch
+    expect(spy).toHaveBeenCalledTimes(4);
   });
 
-  it('cas 2 : state vide + 7 existants TickTick → 7 reused, 0 POST', async () => {
+  it('cas 2 : state vide + 3 existants TickTick → 3 reused, 0 POST', async () => {
     const existing = PROJECT_NAMES.map((name, i) => ({
       id: `existing_${i}`,
       name,
@@ -255,66 +256,60 @@ describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
     const s = emptyState();
     const mapped = await createMissingProjects('tok', s);
 
-    expect(mapped).toHaveLength(7);
+    expect(mapped).toHaveLength(3);
     expect(mapped.every((m) => m.reused === true)).toBe(true);
-    expect(s.projects.Personnel).toBe('existing_0');
-    expect(s.projects.Inbox).toBe('existing_6');
+    expect(s.projects.Critique).toBe('existing_0');
+    expect(s.projects.Important).toBe('existing_1');
+    expect(s.projects['Priorité basse']).toBe('existing_2');
     // 1 GET, 0 POST
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('cas 3 : state vide + 3 existants TickTick → 3 reused, 4 created', async () => {
+  it('cas 3 : state vide + 1 existant TickTick (Important) → 1 reused, 2 created', async () => {
     const existing = [
-      { id: 'ex_perso', name: 'Personnel' },
-      { id: 'ex_versi', name: 'Versi' },
-      { id: 'ex_issa', name: 'ISSA' },
+      { id: 'ex_important', name: 'Important' },
     ];
     const spy = mockFetchRouted({ existingProjects: existing });
 
     const s = emptyState();
     const mapped = await createMissingProjects('tok', s);
 
-    expect(mapped).toHaveLength(7);
+    expect(mapped).toHaveLength(3);
     const reused = mapped.filter((m) => m.reused);
     const created = mapped.filter((m) => !m.reused);
-    expect(reused).toHaveLength(3);
-    expect(created).toHaveLength(4);
-    expect(s.projects.Personnel).toBe('ex_perso');
-    expect(s.projects.Versi).toBe('ex_versi');
-    expect(s.projects.ISSA).toBe('ex_issa');
-    // 1 GET + 4 POST = 5 fetch
-    expect(spy).toHaveBeenCalledTimes(5);
+    expect(reused).toHaveLength(1);
+    expect(created).toHaveLength(2);
+    expect(s.projects.Important).toBe('ex_important');
+    // 1 GET + 2 POST = 3 fetch
+    expect(spy).toHaveBeenCalledTimes(3);
   });
 
-  it('cas 4 : state avec 2 déjà connus → skip ces 2, traite les 5 autres', async () => {
+  it('cas 4 : state avec 1 déjà connu → skip ce 1, traite les 2 autres', async () => {
     const spy = mockFetchRouted({ existingProjects: [] });
 
     const s = emptyState();
-    s.projects.Personnel = 'pre_existing_perso';
-    s.projects.Versi = 'pre_existing_versi';
+    s.projects.Critique = 'pre_existing_critique';
 
     const mapped = await createMissingProjects('tok', s);
 
-    // Seuls les 5 restants sont mappés (les 2 déjà en state sont skip)
-    expect(mapped).toHaveLength(5);
-    expect(mapped.find((m) => m.name === 'Personnel')).toBeUndefined();
-    expect(mapped.find((m) => m.name === 'Versi')).toBeUndefined();
-    // State conservé pour les 2 préexistants
-    expect(s.projects.Personnel).toBe('pre_existing_perso');
-    expect(s.projects.Versi).toBe('pre_existing_versi');
-    // 1 GET + 5 POST = 6 fetch
-    expect(spy).toHaveBeenCalledTimes(6);
+    // Seuls les 2 restants sont mappés
+    expect(mapped).toHaveLength(2);
+    expect(mapped.find((m) => m.name === 'Critique')).toBeUndefined();
+    // State conservé pour le préexistant
+    expect(s.projects.Critique).toBe('pre_existing_critique');
+    // 1 GET + 2 POST = 3 fetch
+    expect(spy).toHaveBeenCalledTimes(3);
   });
 
   it('cas 5a : POST throw 500, re-fetch trouve le projet → récupère sans propager', async () => {
-    // Premier GET : vide. POST "Immobilier" throw 500. Re-fetch : Immobilier
+    // Premier GET : vide. POST "Important" throw 500. Re-fetch : Important
     // a été créé côté TickTick (race serveur) → on doit le récupérer.
     let getCount = 0;
     const spy = vi.fn(async (_url: string, init?: RequestInit) => {
       const method = (init?.method ?? 'GET').toUpperCase();
       if (method === 'GET') {
         getCount++;
-        const data = getCount === 1 ? [] : [{ id: 'recovered_immo', name: 'Immobilier' }];
+        const data = getCount === 1 ? [] : [{ id: 'recovered_important', name: 'Important' }];
         return {
           ok: true,
           status: 200,
@@ -323,7 +318,7 @@ describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
         } as unknown as Response;
       }
       const body = JSON.parse(String(init?.body ?? '{}'));
-      if (body.name === 'Immobilier') {
+      if (body.name === 'Important') {
         return {
           ok: false,
           status: 500,
@@ -343,17 +338,17 @@ describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
     const s = emptyState();
     const mapped = await createMissingProjects('tok', s);
 
-    // Tous les 7 mappés : 1 reused (Immobilier récupéré post-erreur), 6 neufs
-    expect(mapped).toHaveLength(7);
-    expect(s.projects.Immobilier).toBe('recovered_immo');
-    const immoEntry = mapped.find((m) => m.name === 'Immobilier');
-    expect(immoEntry?.reused).toBe(true);
-    expect(immoEntry?.id).toBe('recovered_immo');
+    // 3 mappés : 1 reused (Important récupéré post-erreur), 2 neufs
+    expect(mapped).toHaveLength(3);
+    expect(s.projects.Important).toBe('recovered_important');
+    const entry = mapped.find((m) => m.name === 'Important');
+    expect(entry?.reused).toBe(true);
+    expect(entry?.id).toBe('recovered_important');
   });
 
   it('cas 5b : POST throw 500, re-fetch ne trouve PAS → propage erreur avec compteur partiel', async () => {
-    // Personnel et Versi créés OK. ISSA throw 500. Re-fetch reste vide
-    // → propage avec compteur "2/7 mappés".
+    // Critique créé OK. Important throw 500. Re-fetch reste vide
+    // → propage avec compteur "1/3 mappés".
     let getCount = 0;
     const spy = vi.fn(async (_url: string, init?: RequestInit) => {
       const method = (init?.method ?? 'GET').toUpperCase();
@@ -367,7 +362,7 @@ describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
         } as unknown as Response;
       }
       const body = JSON.parse(String(init?.body ?? '{}'));
-      if (body.name === 'ISSA') {
+      if (body.name === 'Important') {
         return {
           ok: false,
           status: 500,
@@ -386,32 +381,31 @@ describe('createMissingProjects (hotfix S18.3 idempotence)', () => {
 
     const s = emptyState();
     await expect(createMissingProjects('tok', s)).rejects.toThrow(
-      /Échec création projet "ISSA" après 2\/7 mappés/,
+      /Échec création projet "Important" après 1\/3 mappés/,
     );
 
-    // State partiel : Personnel + Versi présents (preuve d'incrémentalité — caller doit save)
-    expect(s.projects.Personnel).toBeDefined();
-    expect(s.projects.Versi).toBeDefined();
-    expect(s.projects.ISSA).toBeUndefined();
+    // State partiel : Critique présent (preuve d'incrémentalité — caller doit save)
+    expect(s.projects.Critique).toBeDefined();
+    expect(s.projects.Important).toBeUndefined();
   });
 
-  it('cas 6 : match nom case-insensitive + trim ("Immobilier " ↔ "immobilier")', async () => {
+  it('cas 6 : match nom case-insensitive + trim ("CRITIQUE " ↔ "critique")', async () => {
     const existing = [
-      { id: 'ci_perso', name: 'PERSONNEL' }, // upper
-      { id: 'ci_versi', name: ' versi ' }, // trim + lower
-      { id: 'ci_immo', name: 'IMMOBILIER  ' }, // upper + trailing spaces
+      { id: 'ci_critique', name: 'CRITIQUE' }, // upper
+      { id: 'ci_important', name: ' important ' }, // trim + lower
+      { id: 'ci_low', name: 'PRIORITÉ BASSE  ' }, // upper + trailing spaces
     ];
     mockFetchRouted({ existingProjects: existing });
 
     const s = emptyState();
     const mapped = await createMissingProjects('tok', s);
 
-    expect(s.projects.Personnel).toBe('ci_perso');
-    expect(s.projects.Versi).toBe('ci_versi');
-    expect(s.projects.Immobilier).toBe('ci_immo');
+    expect(s.projects.Critique).toBe('ci_critique');
+    expect(s.projects.Important).toBe('ci_important');
+    expect(s.projects['Priorité basse']).toBe('ci_low');
     const reusedNames = mapped.filter((m) => m.reused).map((m) => m.name);
-    expect(reusedNames).toContain('Personnel');
-    expect(reusedNames).toContain('Versi');
-    expect(reusedNames).toContain('Immobilier');
+    expect(reusedNames).toContain('Critique');
+    expect(reusedNames).toContain('Important');
+    expect(reusedNames).toContain('Priorité basse');
   });
 });

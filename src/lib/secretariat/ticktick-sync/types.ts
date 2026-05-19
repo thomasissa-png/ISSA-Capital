@@ -1,8 +1,13 @@
 /**
- * Types — sync bidirectionnel vault ↔ TickTick (S18.1).
+ * Types — sync bidirectionnel vault ↔ TickTick (S18.1 → refacto S18.4).
  *
  * Phase 4 push only : vault Obsidian = source de vérité, TickTick = miroir.
  * Pull TickTick → vault, résolution conflits, deletes Telegram : S18.2/S18.3.
+ *
+ * **Refacto S18.4** : passage de 7 projets par TAG vault → 3 projets par PRIORITÉ.
+ * Décision Thomas (S18) verbatim : « Je veux 3 projets, par priorité: critique,
+ * important, et priorité basse ». Les emojis Obsidian Tasks (⏫ 🔼 🔽 ⏬) sont
+ * désormais l'unique source du routing projet.
  *
  * Spec source : `second-cerveau/Anya - Prompt Claude Code TickTick sync.md`
  * Adaptations S15 : pas de refresh_token TickTick (#102), pas de webhook
@@ -16,16 +21,16 @@
 /**
  * Une tâche extraite d'une ligne markdown du vault.
  *
- * Format source attendu :
- *   `- [ ] description 📅 YYYY-MM-DD #tag1 #tag2 🔼 🔁 weekly ⏰ HH:MM`
+ * Format source attendu (convention Obsidian Tasks) :
+ *   `- [ ] description 📅 YYYY-MM-DD #tag1 #tag2 ⏫|🔼|🔽|⏬ 🔁 weekly ⏰ HH:MM`
  *
  * Champs dérivés du parsing :
  *   - status : 0 (todo) | 2 (done) — depuis `[ ]` ou `[x]`
- *   - priority : 0 | 1 | 5 — depuis 🔼 / 🔽 (3 = medium pas utilisé V1)
+ *   - priority : 0 | 1 | 3 | 5 — depuis ⏫ (5) / 🔼 (3) / 🔽 ou ⏬ (1) / aucun (0)
  *   - dueDate : ISO 8601 (UTC) — depuis 📅 (+ ⏰ si présent)
  *   - isAllDay : false si heure spécifiée, true sinon
- *   - tags : liste sans préfixe `#`
- *   - projectName : nom du projet TickTick déterminé via PROJECT_TAG_MAPPING
+ *   - tags : liste sans préfixe `#` (informatif uniquement depuis S18.4)
+ *   - projectName : nom du projet TickTick déterminé via priorityToProjectName(priority)
  *   - repeatFlag : RRULE simple depuis 🔁
  */
 export interface VaultTask {
@@ -33,16 +38,16 @@ export interface VaultTask {
   title: string;
   /** 0 = active, 2 = completed */
   status: 0 | 2;
-  /** 0 = none, 1 = low, 5 = high (TickTick API) */
-  priority: 0 | 1 | 5;
+  /** 0 = none (défaut), 1 = low, 3 = medium, 5 = high (mapping TickTick API) */
+  priority: 0 | 1 | 3 | 5;
   /** ISO 8601 si présent (ex: "2026-05-19T00:00:00.000Z") */
   dueDate?: string;
   /** True si pas d'heure spécifiée */
   isAllDay: boolean;
-  /** Tags sans `#` (ex: ["versi", "urgent"]) */
+  /** Tags sans `#` (ex: ["versi", "urgent"]) — informatif depuis S18.4 */
   tags: string[];
-  /** Nom du projet TickTick cible (clé de PROJECT_TAG_MAPPING) */
-  projectName: string;
+  /** Nom du projet TickTick cible (Critique / Important / Priorité basse) */
+  projectName: ProjectName;
   /** RRULE simple (ex: "FREQ=WEEKLY") si 🔁 présent */
   repeatFlag?: string;
   /** Position vault : "chemin/du/fichier.md:L42" */
@@ -132,41 +137,57 @@ export function emptyState(): SyncState {
 }
 
 // ============================================================
-// Project mapping
+// Project mapping (S18.4 — par PRIORITÉ, plus par TAG)
 // ============================================================
 
 /**
- * Mapping tag vault (sans `#`) → nom projet TickTick.
+ * Les 3 projets TickTick créés au premier run (décision Thomas S18 verbatim :
+ * « Je veux 3 projets, par priorité: critique, important, et priorité basse »).
  *
- * Convention humaine stable (R7) : pas un fileId, pas une env var.
- * Pour ajouter une entité, +1 ligne ici. Premier tag matché gagne.
+ * Le routing d'une tâche se fait via `priorityToProjectName(priority)`, où
+ * `priority` provient des emojis Obsidian Tasks (`⏫` `🔼` `🔽` `⏬`).
  *
- * `Inbox` est le fallback (aucun tag mappé).
+ * Le défaut "Important" est volontaire (cf. justification S18.4) : 100% des
+ * tâches actuelles du vault n'ont pas d'emoji priorité. Si défaut = "Priorité
+ * basse", tout y tombe → tri inutile. Avec défaut = "Important", Thomas garde
+ * le tri actif (marque explicitement les ⏫ critiques et les 🔽 à dégrader).
  */
-export const PROJECT_TAG_MAPPING: Record<string, string[]> = {
-  Personnel: ['famille', 'maison', 'sante', 'perso', 'admin', 'finance'],
-  Versi: ['versi'],
-  ISSA: ['issa', 'issa-capital'],
-  'Gradient One': ['gradient-one', 'gradient'],
-  Immobilier: ['immobilier-direct', 'immo'],
-  Sarani: ['sarani'],
-  Inbox: [],
-};
+export const PROJECT_NAMES = [
+  'Critique',
+  'Important',
+  'Priorité basse',
+] as const;
 
-/** Liste ordonnée des noms de projets à créer au premier run. */
-export const PROJECT_NAMES: ReadonlyArray<string> = Object.keys(PROJECT_TAG_MAPPING);
+/** Nom de projet TickTick (3 valeurs strictes depuis S18.4). */
+export type ProjectName = (typeof PROJECT_NAMES)[number];
 
-/** Détermine le projet TickTick depuis une liste de tags. */
-export function resolveProjectName(tags: ReadonlyArray<string>): string {
-  for (const tag of tags) {
-    const normalized = tag.toLowerCase().trim();
-    for (const [projectName, mappedTags] of Object.entries(PROJECT_TAG_MAPPING)) {
-      if (mappedTags.includes(normalized)) {
-        return projectName;
-      }
+/**
+ * Map priorité TickTick (`VaultTask.priority`) → nom de projet TickTick.
+ *
+ * Mapping (cf. convention Obsidian Tasks) :
+ *   - 5 (⏫ high)              → "Critique"
+ *   - 3 (🔼 medium)            → "Important"
+ *   - 0 (aucun emoji, défaut)  → "Important"
+ *   - 1 (🔽 low ou ⏬ lowest)   → "Priorité basse"
+ *
+ * Toute tâche scannée DOIT pouvoir être routée — pas de fallback "Inbox"
+ * historique. Une priorité hors énum lève (`never` exhaustivity check).
+ */
+export function priorityToProjectName(priority: 0 | 1 | 3 | 5): ProjectName {
+  switch (priority) {
+    case 5:
+      return 'Critique';
+    case 3:
+    case 0:
+      return 'Important';
+    case 1:
+      return 'Priorité basse';
+    default: {
+      // Exhaustivity guard — TypeScript détecte tout nouveau cas non géré
+      const _exhaustive: never = priority;
+      throw new Error(`priorityToProjectName: priorité non gérée ${String(_exhaustive)}`);
     }
   }
-  return 'Inbox';
 }
 
 // ============================================================

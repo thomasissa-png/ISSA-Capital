@@ -1,5 +1,9 @@
 /**
- * Tests types — emptyState, positionKey, resolveProjectName.
+ * Tests types — emptyState, positionKey, priorityToProjectName, PROJECT_NAMES.
+ *
+ * Refacto S18.4 : remplace `resolveProjectName(tags)` par
+ * `priorityToProjectName(priority)`. Décision Thomas (S18) : 3 projets par
+ * priorité au lieu de 7 par tag.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -7,9 +11,8 @@ import {
   emptyState,
   emptyStats,
   positionKey,
-  resolveProjectName,
+  priorityToProjectName,
   PROJECT_NAMES,
-  PROJECT_TAG_MAPPING,
 } from '../types';
 
 describe('emptyState', () => {
@@ -44,54 +47,36 @@ describe('positionKey', () => {
   });
 });
 
-describe('resolveProjectName', () => {
-  it('mappe famille → Personnel', () => {
-    expect(resolveProjectName(['famille'])).toBe('Personnel');
+describe('priorityToProjectName (S18.4)', () => {
+  it('5 (⏫ high) → Critique', () => {
+    expect(priorityToProjectName(5)).toBe('Critique');
   });
 
-  it('mappe versi → Versi', () => {
-    expect(resolveProjectName(['versi'])).toBe('Versi');
+  it('3 (🔼 medium) → Important', () => {
+    expect(priorityToProjectName(3)).toBe('Important');
   });
 
-  it('mappe gradient-one → Gradient One', () => {
-    expect(resolveProjectName(['gradient-one'])).toBe('Gradient One');
+  it('0 (aucun emoji, défaut) → Important', () => {
+    expect(priorityToProjectName(0)).toBe('Important');
   });
 
-  it('mappe gradient (alias) → Gradient One', () => {
-    expect(resolveProjectName(['gradient'])).toBe('Gradient One');
-  });
-
-  it('case-insensitive', () => {
-    expect(resolveProjectName(['VERSI'])).toBe('Versi');
-  });
-
-  it('fallback Inbox si tag inconnu', () => {
-    expect(resolveProjectName(['unknown-xyz'])).toBe('Inbox');
-  });
-
-  it('fallback Inbox si pas de tag', () => {
-    expect(resolveProjectName([])).toBe('Inbox');
-  });
-
-  it('multi-tags : premier match gagne', () => {
-    expect(resolveProjectName(['xyz', 'versi', 'issa'])).toBe('Versi');
+  it('1 (🔽/⏬ low) → Priorité basse', () => {
+    expect(priorityToProjectName(1)).toBe('Priorité basse');
   });
 });
 
-describe('PROJECT_NAMES', () => {
-  it('contient les 7 projets dans le bon ordre', () => {
+describe('PROJECT_NAMES (S18.4)', () => {
+  it('contient les 3 projets dans le bon ordre (priorité décroissante)', () => {
     expect(PROJECT_NAMES).toEqual([
-      'Personnel',
-      'Versi',
-      'ISSA',
-      'Gradient One',
-      'Immobilier',
-      'Sarani',
-      'Inbox',
+      'Critique',
+      'Important',
+      'Priorité basse',
     ]);
   });
 
-  it('Inbox est le fallback (pas de tags mappés)', () => {
-    expect(PROJECT_TAG_MAPPING.Inbox).toEqual([]);
+  it('utilise des caractères UTF-8 réels (pas d\'escapes)', () => {
+    // Le "é" de "Priorité" doit être un vrai caractère, pas é
+    expect(PROJECT_NAMES[2]).toContain('é');
+    expect(PROJECT_NAMES[2]?.length).toBe('Priorité basse'.length);
   });
 });

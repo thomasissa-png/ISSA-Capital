@@ -94,9 +94,11 @@ describe('runPushEngine — projets pas créés', () => {
 });
 
 describe('runPushEngine — NEW (create)', () => {
-  it('crée une tâche absente du state', async () => {
+  it('crée une tâche absente du state (S18.4 : sans emoji → Important)', async () => {
     const state = stateWithProjects();
     const client = createMockClient();
+    // S18.4 : le tag #versi n'a plus d'effet sur le projet ; absence d'emoji
+    // priorité → priority 0 → projet "Important".
     const tasks = [makeTask('- [ ] hello 📅 2026-05-19 #versi')];
 
     const { stats, results } = await runPushEngine(tasks, state, client);
@@ -113,7 +115,28 @@ describe('runPushEngine — NEW (create)', () => {
     const key = 'Taches/Todo.md:L1';
     expect(state.tasks[key]).toBeDefined();
     expect(state.tasks[key]?.ticktickId).toBe('tt_1');
-    expect(state.tasks[key]?.projectId).toBe('proj_versi');
+    // S18.4 : projet "Important" (défaut sans emoji) → key proj_important
+    expect(state.tasks[key]?.projectId).toBe('proj_important');
+  });
+
+  it('S18.4 : routing par priorité — ⏫ va dans proj_critique', async () => {
+    const state = stateWithProjects();
+    const client = createMockClient();
+    const tasks = [makeTask('- [ ] urgent ⏫', 1)];
+
+    await runPushEngine(tasks, state, client);
+    const key = 'Taches/Todo.md:L1';
+    expect(state.tasks[key]?.projectId).toBe('proj_critique');
+  });
+
+  it('S18.4 : routing par priorité — 🔽 va dans proj_priorité_basse', async () => {
+    const state = stateWithProjects();
+    const client = createMockClient();
+    const tasks = [makeTask('- [ ] secondaire 🔽', 1)];
+
+    await runPushEngine(tasks, state, client);
+    const key = 'Taches/Todo.md:L1';
+    expect(state.tasks[key]?.projectId).toBe('proj_priorité_basse');
   });
 
   it('crée plusieurs tâches en série', async () => {
