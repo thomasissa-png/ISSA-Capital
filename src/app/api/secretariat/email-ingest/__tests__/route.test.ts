@@ -49,6 +49,8 @@ function makeStats(overrides: Partial<IngestStats> = {}): IngestStats {
     preFilteredSpam: 2,
     haikuSpam: 1,
     pendingCreated: 1,
+    autoExecuted: 0,
+    systemEmailsFiltered: 0,
     draftsCreated: 0,
     draftsSkipped: 0,
     draftsFailed: 0,

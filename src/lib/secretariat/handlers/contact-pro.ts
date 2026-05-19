@@ -16,6 +16,7 @@ import type { TriageResult } from '../triage/types';
 import type { EmailMessage } from '../gmail-source/types';
 import type { ActionProposal } from './types';
 import { findContactByEmail } from '../vault-client';
+import { isSystemEmail } from '../email-ingest/system-email-filter';
 import {
   VAULT_PATHS,
   slugifyVaultFilename,
@@ -45,7 +46,41 @@ export async function handleContactPro(
     return buildExistingContactActions(triage, email, contact, date);
   }
 
+  // Filtre S18.5 : si l'expéditeur est une boîte système (noreply@, contact@,
+  // notifications@, etc.), ne pas proposer de créer une fiche contact.
+  // Verbatim Thomas : "qui ne sont donc pas des contacts. Je ne veux pas de ca"
+  if (isSystemEmail(email.from.email)) {
+    return buildSystemEmailActions(email);
+  }
+
   return buildNoMatchActions(triage, email, date);
+}
+
+// ============================================================
+// Email système (S18.5)
+// ============================================================
+
+/**
+ * Retourne uniquement mark_processed pour un email système.
+ *
+ * Comportement attendu :
+ *   - skip carte Telegram (autoExecute: true)
+ *   - skip dépôt A classifier/ (pas de create_file)
+ *   - skip création fiche (pas de prompt_create_contact_choice)
+ *   - email marqué traité dans Gmail
+ *
+ * Audit : l'exécution est tracée dans le JSONL via le runner (auto: true).
+ */
+function buildSystemEmailActions(email: EmailMessage): ActionProposal[] {
+  return [
+    {
+      type: 'mark_processed',
+      target: null,
+      payload: { messageId: email.id, reason: 'system-email' },
+      description: `Email système (${email.from.email}) — marqué traité sans action`,
+      autoExecute: true,
+    },
+  ];
 }
 
 // ============================================================
@@ -62,6 +97,11 @@ function buildExistingContactActions(
   const target = `${contact.folderPath}/${filename}`;
   const emailRef = buildEmailRef(email.source, email.id);
 
+  // S18.5 : auto-execute pour les contacts existants.
+  // Décision Thomas verbatim : "pour les contacts existants, je veux que
+  // l'histo soit ajouté automatiquement". Les 2 actions (append_historique
+  // + update_frontmatter) sont sûres : la fiche existe déjà, pas de risque
+  // de fausse fiche. Seul mark_processed reste auto (déjà le cas avant).
   return [
     {
       type: 'append_historique',
@@ -73,18 +113,21 @@ function buildExistingContactActions(
         title: buildHistoriqueTitle(date, triage.intent),
       },
       description: `Ajouter à l'historique de ${contact.name} : ${triage.intent}`,
+      autoExecute: true,
     },
     {
       type: 'update_frontmatter',
       target,
       payload: { date_derniere_interaction: date },
       description: `Mettre à jour la date de dernière interaction de ${contact.name}`,
+      autoExecute: true,
     },
     {
       type: 'mark_processed',
       target: null,
       payload: { messageId: email.id },
       description: 'Marquer l\'email comme traité dans Gmail',
+      autoExecute: true,
     },
   ];
 }

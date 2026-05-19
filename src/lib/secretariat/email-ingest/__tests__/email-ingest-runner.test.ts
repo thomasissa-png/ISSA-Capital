@@ -90,6 +90,23 @@ vi.mock('../../vault-client/audit-log', () => ({
   writeAuditLog: (...args: unknown[]) => mockWriteAuditLog(...args),
 }));
 
+// S18.5 : mock vault-client pour les auto-executions
+const mockAppendToHistorique = vi.fn().mockResolvedValue(true);
+const mockUpdateFrontmatter = vi.fn().mockResolvedValue(true);
+const mockCreateVaultFile = vi.fn().mockResolvedValue(true);
+
+vi.mock('../../vault-client', () => ({
+  appendToHistorique: (...args: unknown[]) => mockAppendToHistorique(...args),
+  updateFrontmatter: (...args: unknown[]) => mockUpdateFrontmatter(...args),
+  createVaultFile: (...args: unknown[]) => mockCreateVaultFile(...args),
+}));
+
+const mockAppendToTodoInbox = vi.fn().mockResolvedValue({ success: true });
+
+vi.mock('../../drive-todo', () => ({
+  appendToTodoInbox: (...args: unknown[]) => mockAppendToTodoInbox(...args),
+}));
+
 const mockCreateTickTickTaskForEmail = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../ticktick-integration', () => ({
@@ -159,6 +176,10 @@ beforeEach(() => {
   mockHandleAClassifier.mockResolvedValue([
     { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Test' },
   ]);
+  mockAppendToHistorique.mockResolvedValue(true);
+  mockUpdateFrontmatter.mockResolvedValue(true);
+  mockCreateVaultFile.mockResolvedValue(true);
+  mockAppendToTodoInbox.mockResolvedValue({ success: true });
 });
 
 // ============================================================
@@ -731,5 +752,147 @@ describe('runEmailIngest', () => {
     await runEmailIngest();
 
     expect(mockCreateTickTickTaskForEmail).not.toHaveBeenCalled();
+  });
+
+  // --- S18.5 : auto-execute pour contact existant + filtre emails système ---
+
+  it('S18.5 : actions autoExecute → PAS de carte Telegram (pending/savePending non appelé)', async () => {
+    const email = makeEmail({ id: 'msg_auto_existing' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_auto_existing' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    // Simule le retour d'un contact existant : 3 actions toutes autoExecute=true
+    mockHandleContactPro.mockResolvedValue([
+      {
+        type: 'append_historique',
+        target: '07. Contacts/03. Pro/Martin Yhuel.md',
+        payload: {
+          title: '### 2026-05-13 — suivi_dossier',
+          content: 'Résumé.',
+        },
+        description: 'Append histo',
+        autoExecute: true,
+      },
+      {
+        type: 'update_frontmatter',
+        target: '07. Contacts/03. Pro/Martin Yhuel.md',
+        payload: { date_derniere_interaction: '2026-05-13' },
+        description: 'Update date',
+        autoExecute: true,
+      },
+      {
+        type: 'mark_processed',
+        target: null,
+        payload: { messageId: 'msg_auto_existing' },
+        description: 'Mark',
+        autoExecute: true,
+      },
+    ]);
+
+    const stats = await runEmailIngest();
+
+    // Pas de carte Telegram
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    expect(mockSaveNoMatch).not.toHaveBeenCalled();
+    expect(mockSendNoMatchCard).not.toHaveBeenCalled();
+
+    // Pas de draft (Anya silencieuse)
+    expect(mockComposeDraft).not.toHaveBeenCalled();
+
+    // Stats : autoExecuted incrémenté, pendingCreated non
+    expect(stats.autoExecuted).toBe(1);
+    expect(stats.pendingCreated).toBe(0);
+    expect(stats.systemEmailsFiltered).toBe(0);
+  });
+
+  it('S18.5 : email système (noreply) → autoExecuted + systemEmailsFiltered incrémentés', async () => {
+    const email = makeEmail({
+      id: 'msg_sys_noreply',
+      from: { email: 'noreply@stripe.com' },
+    });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_sys_noreply' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    // handler retourne uniquement mark_processed avec reason=system-email
+    mockHandleContactPro.mockResolvedValue([
+      {
+        type: 'mark_processed',
+        target: null,
+        payload: { messageId: 'msg_sys_noreply', reason: 'system-email' },
+        description: 'Email système — marqué traité',
+        autoExecute: true,
+      },
+    ]);
+
+    const stats = await runEmailIngest();
+
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    expect(stats.autoExecuted).toBe(1);
+    expect(stats.systemEmailsFiltered).toBe(1);
+    expect(stats.pendingCreated).toBe(0);
+  });
+
+  it('S18.5 : si au moins une action n\'a PAS autoExecute → flux normal (carte Telegram)', async () => {
+    const email = makeEmail({ id: 'msg_mixed' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_mixed' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+
+    // 1 action auto + 1 non-auto → flux normal
+    mockHandleContactPro.mockResolvedValue([
+      {
+        type: 'append_historique',
+        target: 'test',
+        payload: {},
+        description: 'Auto',
+        autoExecute: true,
+      },
+      {
+        type: 'create_file',
+        target: 'test',
+        payload: {},
+        description: 'Pas auto',
+      },
+    ]);
+
+    const stats = await runEmailIngest();
+
+    expect(mockSavePending).toHaveBeenCalledTimes(1);
+    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
+    expect(stats.autoExecuted).toBe(0);
+    expect(stats.pendingCreated).toBe(1);
+  });
+
+  it('S18.5 : audit log auto-execute contient auto:true et reason', async () => {
+    const email = makeEmail({ id: 'msg_audit_auto', from: { email: 'martin@example.com' } });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_audit_auto' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+    mockHandleContactPro.mockResolvedValue([
+      {
+        type: 'mark_processed',
+        target: null,
+        payload: { messageId: 'msg_audit_auto' },
+        description: 'Mark',
+        autoExecute: true,
+      },
+    ]);
+
+    await runEmailIngest();
+
+    // Trouver l'appel audit pour l'auto-action
+    const autoCalls = mockWriteAuditLog.mock.calls.filter((call) => {
+      const entry = call[0] as { trigger?: string; payload?: { auto?: boolean } };
+      return entry.trigger?.startsWith('email_ingest:auto:') && entry.payload?.auto === true;
+    });
+
+    expect(autoCalls.length).toBeGreaterThan(0);
+    const firstAutoCall = autoCalls[0]![0] as { payload: { auto: boolean; reason: string } };
+    expect(firstAutoCall.payload.auto).toBe(true);
+    expect(['system-email', 'contact-existing']).toContain(firstAutoCall.payload.reason);
   });
 });

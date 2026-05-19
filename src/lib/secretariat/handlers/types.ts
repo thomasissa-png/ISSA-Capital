@@ -34,6 +34,22 @@ export interface ActionProposal {
   payload: Record<string, unknown>;
   /** Description humain-lisible affichée dans la carte Telegram */
   description: string;
+  /**
+   * Si true, l'action est exécutée automatiquement (sans validation Telegram).
+   * Utilisé pour les actions "sûres" : append historique + maj date pour
+   * un contact existant (S18.5, décision Thomas verbatim :
+   * "pour les contacts existants, je veux que l'histo soit ajouté
+   * automatiquement").
+   *
+   * Le runner email-ingest sépare les actions autoExecute du pending Telegram :
+   *   - autoExecute=true → exécution immédiate via callback-handler.executeAction
+   *   - autoExecute=false/undefined → mises dans le pending, validation Thomas
+   *
+   * Si TOUTES les actions sont autoExecute, aucune carte Telegram n'est envoyée
+   * (Anya silencieuse). C'est le comportement attendu pour les emails d'un
+   * contact connu.
+   */
+  autoExecute?: boolean;
 }
 
 // ============================================================

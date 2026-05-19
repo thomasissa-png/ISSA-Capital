@@ -44,6 +44,13 @@ import {
 } from '../telegram-validation';
 import type { NoMatchPending } from '../telegram-validation';
 import { writeAuditLog } from '../vault-client/audit-log';
+import {
+  appendToHistorique,
+  updateFrontmatter,
+  createVaultFile,
+} from '../vault-client';
+import { appendToTodoInbox } from '../drive-todo';
+import { markProcessed as markEmailProcessed } from '../gmail-source/gmail-source';
 import { createTickTickTaskForEmail } from './ticktick-integration';
 
 // ============================================================
@@ -55,6 +62,10 @@ export interface IngestStats {
   preFilteredSpam: number;
   haikuSpam: number;
   pendingCreated: number;
+  /** S18.5 : emails traités automatiquement (contact existant ou email système) */
+  autoExecuted: number;
+  /** S18.5 : emails système filtrés (noreply@, contact@, etc.) */
+  systemEmailsFiltered: number;
   draftsCreated: number;
   draftsSkipped: number;
   draftsFailed: number;
@@ -115,6 +126,8 @@ export async function runEmailIngest(): Promise<IngestStats> {
     preFilteredSpam: 0,
     haikuSpam: 0,
     pendingCreated: 0,
+    autoExecuted: 0,
+    systemEmailsFiltered: 0,
     draftsCreated: 0,
     draftsSkipped: 0,
     draftsFailed: 0,
@@ -180,6 +193,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
     `[email-ingest] terminé en ${stats.durationMs}ms — ` +
     `total=${stats.totalListed}, pré-filtrés=${stats.preFilteredSpam}, ` +
     `haiku-spam=${stats.haikuSpam}, pendings=${stats.pendingCreated}, ` +
+    `auto=${stats.autoExecuted}, sys=${stats.systemEmailsFiltered}, ` +
     `drafts=${stats.draftsCreated}/${stats.draftsSkipped}skip/${stats.draftsFailed}err, ` +
     `erreurs=${stats.errors}`,
   );
@@ -266,6 +280,28 @@ async function processOneEmail(
   const handler = getHandler(triage.category);
   const actions = await handler(triage, detail);
 
+  // S18.5 : si TOUTES les actions sont auto-exécutables, court-circuiter
+  // la validation Telegram. Cas typiques :
+  //   - contact existant (handleContactPro buildExistingContactActions)
+  //   - email système (noreply@, contact@) filtré par contact-pro
+  // Pas de carte Telegram, pas de pending, pas de draft (Anya silencieuse).
+  const allAutoExecute =
+    actions.length > 0 && actions.every((a) => a.autoExecute === true);
+
+  if (allAutoExecute) {
+    const isSystemEmailAction = actions.some(
+      (a) =>
+        a.type === 'mark_processed' &&
+        (a.payload as Record<string, unknown>)['reason'] === 'system-email',
+    );
+
+    await executeAutoActions(actions, detail, triage, isSystemEmailAction);
+
+    stats.autoExecuted++;
+    if (isSystemEmailAction) stats.systemEmailsFiltered++;
+    return;
+  }
+
   // Composer un brouillon de réponse Gmail (Jalon 5B)
   let draftResult: DraftResult | null = null;
   try {
@@ -351,6 +387,193 @@ async function processOneEmail(
   }
 
   stats.pendingCreated++;
+}
+
+// ============================================================
+// Auto-execute (S18.5)
+// ============================================================
+
+/**
+ * Exécute les actions auto-exécutables d'un email sans validation Telegram.
+ *
+ * Cas d'usage S18.5 :
+ *   1. Contact existant : append_historique + update_frontmatter + mark_processed
+ *      → fiche enrichie en silence, pas de carte Thomas
+ *   2. Email système (noreply@, contact@) : uniquement mark_processed
+ *      → email marqué traité, pas de carte
+ *
+ * Audit : chaque action écrit une ligne JSONL avec auto: true.
+ * Erreur silencieuse : si une action échoue (ex: Drive 503), on log mais
+ * on continue — le mark_processed final reste critique (sinon l'email
+ * sera re-traité au prochain cycle).
+ */
+async function executeAutoActions(
+  actions: ActionProposal[],
+  email: EmailMessage,
+  triage: TriageResult,
+  isSystemEmail: boolean,
+): Promise<void> {
+  const trigger = `email_ingest:auto:${email.id}`;
+
+  for (const action of actions) {
+    const result = await executeAutoAction(action, email, triage, trigger);
+
+    await writeAuditLog({
+      ts: new Date().toISOString(),
+      op: 'classify_note',
+      target: action.target ?? email.id,
+      trigger: `email_ingest:auto:${action.type}`,
+      payload: {
+        auto: true,
+        reason: isSystemEmail ? 'system-email' : 'contact-existing',
+        actionType: action.type,
+        emailId: email.id,
+        from: email.from.email,
+        subject: email.subject,
+        category: triage.category,
+        ok: result.ok,
+        ...(result.error ? { error: result.error } : {}),
+      },
+      status: result.ok ? 'success' : 'error',
+      ...(result.error ? { errorMessage: result.error } : {}),
+    });
+
+    if (!result.ok) {
+      console.warn(
+        `[email-ingest] auto-action ${action.type} échouée pour ${email.id} : ${result.error}`,
+      );
+    }
+  }
+}
+
+/**
+ * Exécute UNE action auto en appelant le vault-client directement.
+ *
+ * Dupliqué léger du callback-handler.executeAction car ici on a un
+ * EmailMessage direct (pas de PendingValidation). Garder la duplication
+ * volontairement (3 cases utilisés sur 7) pour éviter un refactor de
+ * callback-handler qui touche le critical path validation Telegram.
+ */
+async function executeAutoAction(
+  action: ActionProposal,
+  email: EmailMessage,
+  triage: TriageResult,
+  trigger: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    switch (action.type) {
+      case 'append_historique': {
+        if (!action.target) {
+          return { ok: false, error: 'target manquant pour append_historique' };
+        }
+        const lastSlash = action.target.lastIndexOf('/');
+        if (lastSlash === -1) {
+          return { ok: false, error: `target invalide : ${action.target}` };
+        }
+        const folderPath = action.target.slice(0, lastSlash);
+        const filename = action.target.slice(lastSlash + 1);
+
+        const title =
+          (action.payload['title'] as string) ??
+          `${new Date().toISOString().slice(0, 10)} — Email traité`;
+        const content = (action.payload['content'] as string) ?? triage.summary;
+
+        const success = await appendToHistorique(folderPath, filename, {
+          title,
+          content,
+          trigger,
+          updateLastInteraction:
+            (action.payload['updateLastInteraction'] as boolean) ?? true,
+        });
+        return success
+          ? { ok: true }
+          : { ok: false, error: 'appendToHistorique échoué' };
+      }
+
+      case 'update_frontmatter': {
+        if (!action.target) {
+          return { ok: false, error: 'target manquant pour update_frontmatter' };
+        }
+        const lastSlash = action.target.lastIndexOf('/');
+        if (lastSlash === -1) {
+          return { ok: false, error: `target invalide : ${action.target}` };
+        }
+        const folderPath = action.target.slice(0, lastSlash);
+        const filename = action.target.slice(lastSlash + 1);
+
+        // Le handler contact-pro passe le payload directement (pas dans .fields)
+        // Construire le mapping fields à partir du payload (hors meta keys)
+        const fields: Record<string, string | number | boolean | null> = {};
+        for (const [key, value] of Object.entries(action.payload)) {
+          if (
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean' ||
+            value === null
+          ) {
+            fields[key] = value;
+          }
+        }
+
+        const success = await updateFrontmatter({
+          folderPath,
+          filename,
+          fields,
+          trigger,
+        });
+        return success
+          ? { ok: true }
+          : { ok: false, error: 'updateFrontmatter échoué' };
+      }
+
+      case 'create_file':
+      case 'create_bien_stub': {
+        if (!action.target) {
+          return { ok: false, error: `target manquant pour ${action.type}` };
+        }
+        const lastSlash = action.target.lastIndexOf('/');
+        if (lastSlash === -1) {
+          return { ok: false, error: `target invalide : ${action.target}` };
+        }
+        const folderPath = action.target.slice(0, lastSlash);
+        const filename = action.target.slice(lastSlash + 1);
+        const content = (action.payload['content'] as string) ?? '';
+
+        const success = await createVaultFile(folderPath, filename, content, trigger);
+        return success
+          ? { ok: true }
+          : { ok: false, error: `createVaultFile échoué pour ${action.target}` };
+      }
+
+      case 'add_todo': {
+        const title = (action.payload['title'] as string) ?? triage.summary;
+        const date = (action.payload['date'] as string) ?? undefined;
+        const description =
+          (action.payload['description'] as string) ?? undefined;
+
+        const result = await appendToTodoInbox(title, date, description);
+        return result.success
+          ? { ok: true }
+          : { ok: false, error: result.error ?? 'appendToTodoInbox échoué' };
+      }
+
+      case 'mark_processed': {
+        const success = await markEmailProcessed(email.id);
+        return success ? { ok: true } : { ok: false, error: 'markProcessed échoué' };
+      }
+
+      case 'skip': {
+        return { ok: true };
+      }
+
+      default: {
+        return { ok: false, error: `type d'action inconnu (auto) : ${action.type}` };
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
+  }
 }
 
 // ============================================================

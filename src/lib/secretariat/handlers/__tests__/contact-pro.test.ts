@@ -243,4 +243,85 @@ describe('handleContactPro', () => {
     expect(actions[0]!.description).toContain('Martin Yhuel');
     expect(actions[0]!.description).toContain('suivi_dossier');
   });
+
+  // --- S18.5 : autoExecute pour contact existant ---
+
+  it('S18.5 : contact existant → toutes les actions ont autoExecute: true', async () => {
+    mocks.findContactByEmail.mockResolvedValue(existingContact);
+    const actions = await handleContactPro(makeTriage(), makeEmail());
+
+    expect(actions).toHaveLength(3);
+    expect(actions[0]!.autoExecute).toBe(true);
+    expect(actions[1]!.autoExecute).toBe(true);
+    expect(actions[2]!.autoExecute).toBe(true);
+  });
+
+  it('S18.5 : contact inconnu non-système → actions SANS autoExecute (carte Telegram requise)', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(
+      makeTriage(),
+      makeEmail({ from: { email: 'marc.durand@nouveauclient.com', name: 'Marc Durand' } }),
+    );
+
+    // 3 actions : create_file + prompt + mark_processed
+    expect(actions).toHaveLength(3);
+    for (const action of actions) {
+      // autoExecute non défini ou false → validation Telegram requise
+      expect(action.autoExecute === true).toBe(false);
+    }
+  });
+
+  // --- S18.5 : filtre emails système ---
+
+  it('S18.5 : email noreply@ → seulement mark_processed avec autoExecute', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(
+      makeTriage(),
+      makeEmail({ from: { email: 'noreply@stripe.com' } }),
+    );
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0]!.type).toBe('mark_processed');
+    expect(actions[0]!.autoExecute).toBe(true);
+    expect(actions[0]!.payload['reason']).toBe('system-email');
+  });
+
+  it('S18.5 : email contact@ → seulement mark_processed (pas de fiche, pas de carte)', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(
+      makeTriage(),
+      makeEmail({ from: { email: 'contact@example.com' } }),
+    );
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0]!.type).toBe('mark_processed');
+    expect(actions.find((a) => a.type === 'create_file')).toBeUndefined();
+    expect(actions.find((a) => a.type === 'prompt_create_contact_choice')).toBeUndefined();
+  });
+
+  it('S18.5 : email info.fr@ (préfixe + ".") → filtré comme système', async () => {
+    mocks.findContactByEmail.mockResolvedValue(null);
+    const actions = await handleContactPro(
+      makeTriage(),
+      makeEmail({ from: { email: 'info.fr@orange.fr' } }),
+    );
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0]!.type).toBe('mark_processed');
+    expect(actions[0]!.payload['reason']).toBe('system-email');
+  });
+
+  it('S18.5 : email noreply@ MAIS contact existant → flux contact existant (priorité)', async () => {
+    // Le contact existe : la logique contact existant prime sur le filtre système.
+    // Cas pratique : un contact a une adresse de notification configurée comme alias.
+    mocks.findContactByEmail.mockResolvedValue(existingContact);
+    const actions = await handleContactPro(
+      makeTriage(),
+      makeEmail({ from: { email: 'noreply@stripe.com' } }),
+    );
+
+    expect(actions).toHaveLength(3);
+    expect(actions[0]!.type).toBe('append_historique');
+    expect(actions[0]!.autoExecute).toBe(true);
+  });
 });
