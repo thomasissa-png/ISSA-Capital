@@ -34,6 +34,12 @@ export interface TickTickTask {
   completedTime?: string;
   tags?: string[];
   timeZone?: string;
+  /** ISO timestamp dernière modif (S18.2 pull engine — last-write-wins). */
+  modifiedTime?: string;
+  /** Alias de modifiedTime (certains endpoints TickTick varient). */
+  modifiedAt?: string;
+  /** Récurrence (S18.2 pull engine sync). */
+  repeatFlag?: string;
 }
 
 export interface CreateTaskInput {

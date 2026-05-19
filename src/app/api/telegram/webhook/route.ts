@@ -98,6 +98,10 @@ import {
   TICKTICK_PROJECTS_CALLBACK_PREFIX,
   handleTickTickProjectsCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
+import {
+  TICKTICK_DELETE_CALLBACK_PREFIX,
+  handleTickTickDeleteCallback,
+} from '@/lib/secretariat/telegram-validation/handlers/ticktick-delete-confirm';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1637,6 +1641,18 @@ export async function POST(request: Request): Promise<Response> {
       // Confirmation création initiale des 7 projets TickTick (red line spec §8 step 4).
       if (callbackData.startsWith(TICKTICK_PROJECTS_CALLBACK_PREFIX)) {
         await handleTickTickProjectsCallback({
+          callback_query_id: callbackQueryId,
+          data: callbackData,
+          message_id: update.callback_query.message?.message_id ?? 0,
+          chat_id: callbackChatId,
+        });
+        return Response.json({ ok: true });
+      }
+
+      // TickTick sync — callbacks préfixés par "tickticksync_delete:" (S18.2)
+      // Confirmation suppression vault suite à un delete TickTick (red line §9.2).
+      if (callbackData.startsWith(TICKTICK_DELETE_CALLBACK_PREFIX)) {
+        await handleTickTickDeleteCallback({
           callback_query_id: callbackQueryId,
           data: callbackData,
           message_id: update.callback_query.message?.message_id ?? 0,

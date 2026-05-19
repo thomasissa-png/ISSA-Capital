@@ -81,9 +81,12 @@ export interface SyncStateEntry {
   vaultHash: string;
   /** ISO timestamp du dernier sync réussi */
   lastSyncedAt: string;
+  /** ISO timestamp côté TickTick lors du dernier sync (modifiedAt vu).
+   *  Optionnel : présent depuis S18.2 (pull engine). Permet last-write-wins. */
+  ticktickModifiedAt?: string;
 }
 
-/** State complet persisté dans Drive (`_Inbox/AnyaLogs/ticktick-sync-state.json`) */
+/** State complet persisté dans Drive (`_Inbox/AnyaState/ticktick-sync-state.json`) */
 export interface SyncState {
   /** Version du schéma — bump si breaking change */
   version: 1;
@@ -93,6 +96,29 @@ export interface SyncState {
   projects: Record<string, string>;
   /** ISO timestamp du dernier sync full */
   lastFullSyncAt: string;
+  /** ISO timestamp du dernier pull TickTick→vault réussi (S18.2). */
+  lastPollTickTick?: string;
+  /** Verrou simple anti-concurrence push/pull (S18.2).
+   *  Si défini, un sync est en cours depuis `lockAcquiredAt`. TTL 30s. */
+  syncLock?: { kind: 'push' | 'pull'; lockAcquiredAt: string };
+  /** Pending delete confirmations Telegram (S18.2 red line §9.2).
+   *  Clé = ticktickId. TTL 7j (R3). */
+  pendingDeletes?: Record<string, PendingDelete>;
+}
+
+/** Pending delete confirmation Telegram (R3 TTL ≥ 7j). */
+export interface PendingDelete {
+  ticktickId: string;
+  taskKey: string;
+  title: string;
+  vaultPath: string;
+  lineNumber: number;
+  /** Project TickTick (utile si callback [Garder] recrée la tâche). */
+  projectId?: string;
+  createdAt: string;
+  /** Message Telegram envoyé — pour edit après callback */
+  telegramMessageId?: number;
+  telegramChatId?: number | string;
 }
 
 /** State vide (premier run) */
@@ -182,3 +208,77 @@ export function emptyStats(): PushStats {
     errorMessages: [],
   };
 }
+
+// ============================================================
+// Pull engine — TickTick → vault (S18.2)
+// ============================================================
+
+/**
+ * Représentation minimale d'une tâche reçue de l'API TickTick.
+ * Subset des champs documentés (https://developer.ticktick.com/).
+ */
+export interface TickTickRawTask {
+  id: string;
+  projectId: string;
+  title: string;
+  /** 0 = active, 2 = completed (cf. push side) */
+  status?: number;
+  priority?: number;
+  isAllDay?: boolean;
+  dueDate?: string;
+  tags?: string[];
+  repeatFlag?: string;
+  /** ISO timestamp modification (last-write-wins arbitre §4) */
+  modifiedAt?: string;
+  /** Optionnel : indicateur de suppression (TickTick peut le passer dans certains modes) */
+  deleted?: boolean | number;
+}
+
+export type PullAction =
+  | 'patched_vault'   // TickTick gagne → vault PATCH
+  | 'created_in_vault' // tâche TickTick inconnue → ajoutée à Todo.md
+  | 'completed_in_vault' // status TT 2, vault [ ] → patch [x]
+  | 'delete_requested' // carte Telegram envoyée (§9.2 red line)
+  | 'vault_wins'      // égalité ou vault plus récent → no-op pull
+  | 'skipped';
+
+export interface PullResult {
+  action: PullAction;
+  ticktickId: string;
+  taskKey?: string;
+  error?: string;
+}
+
+export interface PullStats {
+  fetched: number;
+  patched: number;
+  created: number;
+  completed: number;
+  deletedRequested: number;
+  vaultWins: number;
+  skipped: number;
+  errors: number;
+  durationMs: number;
+  errorMessages: string[];
+}
+
+export function emptyPullStats(): PullStats {
+  return {
+    fetched: 0,
+    patched: 0,
+    created: 0,
+    completed: 0,
+    deletedRequested: 0,
+    vaultWins: 0,
+    skipped: 0,
+    errors: 0,
+    durationMs: 0,
+    errorMessages: [],
+  };
+}
+
+/** Résultat de l'arbitre de conflit (cf. spec §4 last-write-wins). */
+export type ConflictDecision =
+  | 'ticktick_wins'   // ticktickModifiedAt > vaultLastSync → patch vault
+  | 'vault_wins'      // ticktickModifiedAt <= vaultLastSync → no-op pull
+  | 'unknown_state';  // pas d'entrée state → tâche orpheline TickTick (créée mobile)
