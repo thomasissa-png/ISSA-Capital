@@ -615,4 +615,54 @@ Voir B4. C'est le même problème (certificat non généré).
 
 ---
 
+## Annexe S18.6 — Calendar-ingest Google Calendar → vault Reunions
+
+**Livré** : module `src/lib/secretariat/calendar-ingest/` + endpoint `GET /api/secretariat/calendar-ingest/cron` + workflow `.github/workflows/cron-calendar-ingest.yml` (cadence 15 min).
+
+**Décision Thomas (verbatim S18.6)** :
+> « mon google calendar n'est pas sync avec ticktick et le vault ? C'est tres important. Si on minvite a un meeting il faut que ce soit géré ! »
+
+**Direction V1 (one-way)** :
+Google Calendar → vault `06. Réunions/YYYY/MM/` → TickTick (via iCal feed S18.3a déjà actif) + enrichissement automatique des fiches contacts existantes (cohérent S18.5 livrable A).
+
+**Hors scope V1** : bidirectionnel (vault → Google Calendar), détection conflits, reschedule auto, création automatique de fiches contacts stub (red line).
+
+### Actions Replit requises avant activation
+
+1. **Scope OAuth `calendar.readonly`** — Vérifier que le refresh token Google actuel (partagé Gmail + Drive) inclut bien le scope `https://www.googleapis.com/auth/calendar.readonly`. Si non :
+   - Soit re-générer un refresh token avec ce scope (re-faire le flow OAuth Google avec scopes étendus)
+   - Soit ajouter le scope au flow OAuth existant (`src/app/api/secretariat/ticktick/oauth/init/route.ts` — pas concerné, c'est TickTick. Le flow Google se fait via les credentials drive-upload).
+   - Test rapide après ajout du scope : `curl -fsS "https://<APP_BASE_URL>/api/secretariat/calendar-ingest/cron?token=<CRON_SECRET>&dryRun=1"` → doit retourner `stats.eventsFetched > 0` si Thomas a des events dans les 14 prochains jours.
+2. **Activer le workflow GitHub Actions** — Le fichier `.github/workflows/cron-calendar-ingest.yml` se déclenchera automatiquement après merge sur `main`. Cadence : 15 min décalée (`1,16,31,46 * * * *`).
+3. **Carte Telegram récap** — Aucune action requise si `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID_THOMAS` sont déjà configurés. Sinon : voir Annexe S14 Telegram.
+
+### Test de validation post-déploiement
+
+1. Inviter Thomas à une réunion test via Google Calendar (depuis un autre compte) :
+   - Sujet : "Test calendar-ingest S18.6"
+   - Date : J+1 (pour rester dans la fenêtre 14 jours)
+   - Inviter un participant qui a une fiche vault (ex: Maxime, Carl)
+2. Attendre max 15 min (ou trigger manuel : "Run workflow" sur GitHub Actions)
+3. Vérifier dans Obsidian :
+   - `06. Réunions/<année>/<mois>/<YYYY-MM-DD> - <Participants> - Test calendar-ingest.md` créé
+   - Frontmatter contient `google_calendar_event_id`, `google_calendar_html_link`
+   - Fiche du participant invité a une nouvelle ligne `### YYYY-MM-DD — Réunion : Test calendar-ingest S18.6` dans `## Historique` + `date_dernière_interaction` mis à jour
+4. Vérifier dans TickTick : la réunion apparaît via le feed iCal `06. Réunions` (peut prendre 1h selon refresh TickTick)
+5. Vérifier carte Telegram : message "Calendar-ingest — 1 réunion(s) traitée(s)"
+
+### State + audit
+
+- **State** : `_Inbox/AnyaState/calendar-ingest-state.json` (idempotence via `processedEvents[eventId].lastSeenUpdated`)
+- **Audit JSONL** : `_Inbox/AnyaLogs/calendar-ingest-YYYY-MM-DD.jsonl` (1 ligne par event traité)
+- **PATCH in-place R5** : toutes les écritures Drive (fiches réunions + fiches contacts + state + audit)
+
+### Plan B si scope OAuth calendar bloqué
+
+Si l'ajout du scope Calendar nécessite la re-validation OAuth manuelle par Thomas (consent screen Google), basculer en mode "dryRun temporaire" :
+- Le cron tournera et loggera `[calendar-source] pas de token OAuth2 — Calendar désactivé`
+- Aucune action vault, aucune carte Telegram
+- L'activation effective interviendra dès que le nouveau refresh_token avec scope Calendar sera configuré dans Replit Secrets
+
+---
+
 
