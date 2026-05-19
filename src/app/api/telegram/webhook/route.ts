@@ -1175,16 +1175,6 @@ export async function POST(request: Request): Promise<Response> {
         return await handleSlashCommand(chatId, normalizedText);
       }
 
-      // ── Niveau 1b : édition conversationnelle inbox-preview (S20.A) ──
-      // Si une carte preview attend une saisie (awaitingField != null), on
-      // route ce texte vers le parser dédié avant tout autre traitement.
-      // R4 : court-circuite le router classique pour ne pas re-créer une
-      // nouvelle carte alors qu'on attend une réponse sur la précédente.
-      if (await hasActivePendingEdit(chatId)) {
-        await handleInboxEditText(text, chatId);
-        return Response.json({ ok: true });
-      }
-
       // ── Niveau 2 : workflow actif ──────────────────────────────
       const activeWorkflow = getActiveWorkflow(chatId);
       if (activeWorkflow) {
@@ -1218,6 +1208,19 @@ export async function POST(request: Request): Promise<Response> {
         // Si success=true, le batch a été uploadé (message de confirmation envoyé par finalizeBatch)
         // Si success=false avec userMessage, format invalide → message d'erreur envoyé ci-dessus
         // Si success=false sans userMessage, pas de batch → ne devrait pas arriver ici
+        return Response.json({ ok: true });
+      }
+
+      // ── Niveau 2c : édition conversationnelle inbox-preview (S20.A) ──
+      // Un pending-edit (carte preview en attente d'une saisie) ne doit JAMAIS
+      // court-circuiter un workflow actif ni un batch photo en cours :
+      // - un pending-edit fantôme (Thomas a cliqué ✏️ puis lancé /cr ou un
+      //   autre flow sans répondre) reste 7j dans le store globalThis Map ;
+      // - sans cette priorité, il intercepterait tout texte → workflow CR
+      //   ne reçoit plus les réponses de Thomas → demande photos prématurée.
+      // Hotfix S20.B : ce check vient APRÈS workflow + batch photo.
+      if (await hasActivePendingEdit(chatId)) {
+        await handleInboxEditText(text, chatId);
         return Response.json({ ok: true });
       }
 
