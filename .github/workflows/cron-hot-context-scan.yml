@@ -1,0 +1,24 @@
+name: Cron Hot Context Scan (Anya S19.B, every 5 min)
+
+on:
+  schedule:
+    # Toutes les 5 minutes, décalé via offset interne pour éviter la
+    # concurrence parfaite avec cron-ticktick-sync-pull (lui aussi en */5).
+    # cron-ticktick-sync-pull a un sleep 30s ; ici on dort 90s pour garantir
+    # au moins 1 min de décalage entre les deux workflows.
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wait offset to avoid TickTick cron collision
+        # 90s : garantit >= 1min de décalage vs cron-ticktick-sync-pull (30s).
+        run: sleep 90
+      - name: Trigger hot-context scan
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_BASE_URL }}/api/secretariat/hot-context/cron-scan"

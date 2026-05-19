@@ -665,4 +665,40 @@ Si l'ajout du scope Calendar nécessite la re-validation OAuth manuelle par Thom
 
 ---
 
+## S19.B — Hot-context-updater (livré 2026-05-19)
+
+**Aucun nouveau secret Replit requis.** Le module hot-context réutilise tous les secrets déjà configurés en S14-S18 :
+- `CRON_SECRET` (auth cron route `/api/secretariat/hot-context/cron-scan`)
+- `ANTHROPIC_API_KEY` (Haiku 4.5 via wrapper `llm/client.ts`)
+- `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID_THOMAS` (carte validation patches)
+- OAuth Drive (scopes vault déjà configurés en S14)
+
+### GitHub Secrets requis (workflow `cron-hot-context-scan.yml`)
+
+Aucun ajout — réutilise `CRON_SECRET` et `APP_BASE_URL` (déjà configurés pour `cron-ticktick-sync-pull.yml`).
+
+### Activation
+
+1. **Merge sur main** : la branche contient le code + workflow GitHub Actions
+2. **Vérifier le workflow** : sur GitHub → Actions → "Cron Hot Context Scan (Anya S19.B, every 5 min)" → doit apparaître après le merge
+3. **Premier run** : déclenche manuellement via "Run workflow" pour valider l'auth + accès Drive (vérifier les logs Replit pour `[cron-hot-context-scan] terminé — candidates=X patches=Y`)
+4. **State auto-créé** : au premier run, `_Inbox/AnyaState/hot-context-state.json` est créé automatiquement (vide). Aucune action manuelle.
+
+### Phase C (post-merge, à valider visuellement Thomas — R6)
+
+Trois mises à jour vault à faire MANUELLEMENT par Claude principal (R6 — validation visuelle Thomas dans Obsidian avant batch) :
+1. **Frontmatter `00. Me/hot-context.md`** : passer `budget_tokens: ~300` → `budget_tokens: ~500` (PATCH in-place R5)
+2. **Document `08. Outils/Workflow Hot Context.md`** : refléter le format 4 sections (suppression des 5 blocs historiques) + mention cron 5min
+3. **Test E2E** : 1 patch end-to-end avec validation visuelle Thomas dans Obsidian avant déclaration done
+
+### Rollback
+
+Désactiver `cron-hot-context-scan.yml` dans GitHub Actions (un clic). Le state Drive reste intact, aucune perte de données.
+
+### Cap warn 500 tokens
+
+Mode **warn-only** : si le briefing dépasse 500 tokens après merge, la carte Telegram affiche le delta ("520 tokens (cap warn 500 dépassé : +20)"), Thomas valide quand même si pertinent. Pas de refus automatique.
+
+---
+
 

@@ -98,6 +98,10 @@ import {
   TICKTICK_PROJECTS_CALLBACK_PREFIX,
   handleTickTickProjectsCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
+import {
+  HOT_CONTEXT_CALLBACK_PREFIX,
+  handleHotContextPatchCallback,
+} from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
 // S19 — handler `tickticksync_delete:` retiré (completion silencieuse vault
 // remplace la carte Telegram delete). Code mort supprimé.
 
@@ -1639,6 +1643,18 @@ export async function POST(request: Request): Promise<Response> {
       // Confirmation création initiale des 7 projets TickTick (red line spec §8 step 4).
       if (callbackData.startsWith(TICKTICK_PROJECTS_CALLBACK_PREFIX)) {
         await handleTickTickProjectsCallback({
+          callback_query_id: callbackQueryId,
+          data: callbackData,
+          message_id: update.callback_query.message?.message_id ?? 0,
+          chat_id: callbackChatId,
+        });
+        return Response.json({ ok: true });
+      }
+
+      // Hot-context — callbacks préfixés par "hotcontext:" (S19.B, R4)
+      // Validation patches briefing 00. Me/hot-context.md (Valider/Modifier/Skip)
+      if (callbackData.startsWith(HOT_CONTEXT_CALLBACK_PREFIX)) {
+        await handleHotContextPatchCallback({
           callback_query_id: callbackQueryId,
           data: callbackData,
           message_id: update.callback_query.message?.message_id ?? 0,
