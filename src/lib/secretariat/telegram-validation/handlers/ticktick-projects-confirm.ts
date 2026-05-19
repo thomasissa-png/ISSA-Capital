@@ -178,29 +178,54 @@ export async function handleTickTickProjectsCallback(params: {
   const state = await loadSyncState();
 
   try {
-    const created = await createMissingProjects(accessToken, state);
+    const mapped = await createMissingProjects(accessToken, state);
     const ok = await saveSyncState(state);
 
     if (!ok) {
       await editMessageText(
         params.chat_id,
         params.message_id,
-        `Projets créés (${created.length}) mais sauvegarde state Drive échouée. Vérifier OAuth Drive.`,
+        `Projets mappés (${mapped.length}) mais sauvegarde state Drive échouée. Vérifier OAuth Drive.`,
       );
       return 'state_save_failed';
     }
 
-    const status = projectsReady(state)
-      ? `${created.length} projet(s) créé(s). Sync activée.`
-      : `${created.length} projet(s) créé(s). État incomplet, retenter.`;
+    // Distinguer nouveaux vs réutilisés (S18.3 hotfix)
+    const newCount = mapped.filter((m) => !m.reused).length;
+    const reusedCount = mapped.filter((m) => m.reused).length;
+    const ready = projectsReady(state);
+
+    let status: string;
+    if (!ready) {
+      status = `${mapped.length} projet(s) mappé(s) (${newCount} créés, ${reusedCount} récupérés). État incomplet, retenter.`;
+    } else if (newCount === 0 && reusedCount > 0) {
+      status = `${reusedCount} projets récupérés depuis TickTick (existants). Sync activée.`;
+    } else if (newCount > 0 && reusedCount > 0) {
+      status = `${newCount} projet(s) créé(s), ${reusedCount} récupéré(s). Sync activée.`;
+    } else {
+      status = `${newCount} projet(s) créé(s). Sync activée.`;
+    }
 
     await editMessageText(params.chat_id, params.message_id, status);
     return 'created';
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+
+    // **Hotfix S18.3** : sauve l'état partiel AVANT de répondre au user.
+    // `createMissingProjects` mutate state incrémentalement → si crash au
+    // 5ème projet, les 4 précédents (créés ou récupérés) sont dans state.
+    // Sans ce save, on les re-tente au prochain run → boucle d'erreur.
+    await saveSyncState(state).catch(() => {
+      // best-effort : si le save lui-même échoue, on log mais on remonte
+      // l'erreur originale de création (plus actionable pour Thomas)
+    });
+
+    // Compteur partiel pour Thomas (combien de projets ok avant le crash)
+    const mappedCount = Object.keys(state.projects).length;
+    const totalCount = 7;
     await sendSimpleMessage(
       params.chat_id,
-      `Erreur création projets TickTick : ${msg.slice(0, 200)}`,
+      `Erreur création projets TickTick (${mappedCount}/${totalCount} mappés avant échec) : ${msg.slice(0, 200)}`,
     );
     return `error: ${msg}`;
   }

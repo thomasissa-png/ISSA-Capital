@@ -10,6 +10,14 @@
  *
  * Une fois créés, les IDs sont stockés dans `state.projects[name] = id` et
  * persistés via state-store. Plus jamais re-créés.
+ *
+ * **Hotfix S18.3 (Thomas en prod, cron crash sur "Immobilier" doublon)** :
+ *   - `listExistingProjects` : fetch projets existants côté TickTick
+ *   - `createMissingProjects` : idempotent par NOM (match case-insensitive
+ *     + trim), réutilise les projets existants au lieu de tenter une
+ *     création qui renvoie HTTP 500 `unknown_exception`
+ *   - Recovery : si create throw, re-fetch existants pour vérifier si
+ *     TickTick l'a quand même créé (cas race / network)
  */
 
 import { PROJECT_NAMES, type SyncState } from './types';
@@ -59,6 +67,54 @@ export async function createTickTickProject(
   return data.id;
 }
 
+/**
+ * Liste tous les projets TickTick existants du user. Throws si HTTP non-ok.
+ *
+ * Endpoint GET /project → `[{id, name, color, ...}]`.
+ *
+ * Utilisé pour éviter de re-créer un projet qui existe déjà côté TickTick
+ * (cas : projet créé manuellement par Thomas, OU run précédent partiellement
+ * échoué qui a laissé des orphelins sans state).
+ */
+export async function listExistingProjects(
+  accessToken: string,
+): Promise<Array<{ id: string; name: string }>> {
+  const response = await fetch(`${TICKTICK_BASE}/project`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+    },
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!response.ok) {
+    const txt = await response.text().catch(() => '');
+    throw new Error(`TickTick list projects HTTP ${response.status}: ${txt}`);
+  }
+
+  const data = (await response.json()) as unknown;
+  if (!Array.isArray(data)) {
+    throw new Error(`TickTick list projects : réponse non-array`);
+  }
+
+  const out: Array<{ id: string; name: string }> = [];
+  for (const item of data) {
+    if (
+      item &&
+      typeof item === 'object' &&
+      typeof (item as { id?: unknown }).id === 'string' &&
+      typeof (item as { name?: unknown }).name === 'string'
+    ) {
+      out.push({
+        id: (item as { id: string }).id,
+        name: (item as { name: string }).name,
+      });
+    }
+  }
+  return out;
+}
+
 // ============================================================
 // API publique
 // ============================================================
@@ -76,31 +132,106 @@ export function missingProjects(state: SyncState): string[] {
   return PROJECT_NAMES.filter((name) => !state.projects[name]);
 }
 
+/** Normalise un nom de projet pour match (lower + trim). */
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
 /**
- * Crée tous les projets manquants dans TickTick et patch le state.
+ * Cherche un projet existant par nom (case-insensitive + trim).
+ * Retourne l'id ou null.
+ */
+function findExistingId(
+  existing: ReadonlyArray<{ id: string; name: string }>,
+  targetName: string,
+): string | null {
+  const needle = normalizeName(targetName);
+  for (const p of existing) {
+    if (normalizeName(p.name) === needle) return p.id;
+  }
+  return null;
+}
+
+/** Résultat enrichi de createMissingProjects (S18.3 hotfix). */
+export interface ProjectMapping {
+  name: string;
+  id: string;
+  /** true = projet existait déjà côté TickTick et a été réutilisé (pas créé). */
+  reused: boolean;
+}
+
+/**
+ * Crée tous les projets manquants dans TickTick et patch le state. **Hotfix S18.3** :
+ * idempotent par NOM côté TickTick (pas seulement par state Drive).
  *
- * Appelé après confirmation Telegram (callback `tickticksync_projects:create`).
- * Idempotent : ne re-crée pas un projet déjà présent dans state.projects.
+ * Algorithme :
+ *   1. Fetch projets existants côté TickTick via `listExistingProjects`
+ *   2. Pour chaque nom dans `PROJECT_NAMES` :
+ *      - Si déjà dans `state.projects[name]` → skip
+ *      - Si trouvé dans existants (match case-insensitive trim) → reuse id
+ *      - Sinon → tente create. Si throw, re-fetch existants pour vérifier
+ *        si TickTick l'a quand même créé (race) → reuse. Sinon propage
+ *        l'erreur AVEC compteur partiel.
+ *
+ * Le state est mutated incrémentalement : si la fonction throw au milieu,
+ * tout ce qui a été récupéré/créé AVANT est dans state.projects → le caller
+ * doit faire `saveSyncState(state)` dans son catch pour ne rien perdre.
  *
  * @param accessToken Bearer TickTick
  * @param state State courant (sera mutated)
- * @returns Liste des projets effectivement créés (nom + id)
+ * @returns Liste des projets mappés (créés OU réutilisés)
  */
 export async function createMissingProjects(
   accessToken: string,
   state: SyncState,
-): Promise<Array<{ name: string; id: string }>> {
-  const created: Array<{ name: string; id: string }> = [];
+): Promise<ProjectMapping[]> {
+  const mapped: ProjectMapping[] = [];
+
+  // Étape 1 : fetch existants une seule fois en amont
+  let existing = await listExistingProjects(accessToken);
 
   for (const name of PROJECT_NAMES) {
     if (state.projects[name]) continue;
 
-    const id = await createTickTickProject(accessToken, name);
-    state.projects[name] = id;
-    created.push({ name, id });
+    // Match par nom dans les existants TickTick
+    const existingId = findExistingId(existing, name);
+    if (existingId) {
+      state.projects[name] = existingId;
+      mapped.push({ name, id: existingId, reused: true });
+      continue;
+    }
+
+    // Tentative de création
+    try {
+      const id = await createTickTickProject(accessToken, name);
+      state.projects[name] = id;
+      mapped.push({ name, id, reused: false });
+    } catch (err) {
+      // Recovery : re-fetch existants, peut-être que TickTick l'a quand même
+      // créé (race, network coupé après création serveur, etc.)
+      try {
+        existing = await listExistingProjects(accessToken);
+        const recoveredId = findExistingId(existing, name);
+        if (recoveredId) {
+          state.projects[name] = recoveredId;
+          mapped.push({ name, id: recoveredId, reused: true });
+          continue;
+        }
+      } catch {
+        // re-fetch lui-même a échoué → on propage l'erreur originale
+      }
+
+      // Pas récupérable : propage avec compteur partiel
+      const partial = mapped.length;
+      const total = PROJECT_NAMES.length;
+      const origMsg = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Échec création projet "${name}" après ${partial}/${total} mappés. Cause : ${origMsg}`,
+      );
+    }
   }
 
-  return created;
+  return mapped;
 }
 
 /**
