@@ -132,7 +132,7 @@ export function buildDeleteKeyboard(
 
 /** Construit le deep-link Obsidian `obsidian://open?vault=...&file=...` */
 export function buildObsidianDeepLink(vaultPath: string): string {
-  const vaultName = process.env.OBSIDIAN_VAULT_NAME ?? 'ThomasIssa';
+  const vaultName = process.env.OBSIDIAN_VAULT_NAME ?? '00. Me';
   const file = encodeURIComponent(vaultPath);
   const vault = encodeURIComponent(vaultName);
   return `obsidian://open?vault=${vault}&file=${file}`;
