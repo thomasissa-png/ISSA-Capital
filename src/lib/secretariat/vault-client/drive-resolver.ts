@@ -283,3 +283,29 @@ export async function listMarkdownFiles(
     (c) => c.name.endsWith('.md') && !c.name.startsWith('_'),
   );
 }
+
+/**
+ * Liste les sous-dossiers immédiats d'un dossier Drive.
+ *
+ * Utilisé par le vault-scanner récursif (S18.3b livrable 2).
+ *
+ * @param folderPath Chemin logique du dossier parent
+ * @returns Liste de { id, name } des sous-dossiers trouvés
+ */
+export async function listSubfolders(
+  folderPath: string,
+): Promise<Array<{ id: string; name: string }>> {
+  const folderResult = await resolvePath(folderPath);
+  if (!folderResult.success || !folderResult.fileId) {
+    return [];
+  }
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) return [];
+
+  return listChildren(
+    accessToken,
+    folderResult.fileId,
+    'application/vnd.google-apps.folder',
+  );
+}

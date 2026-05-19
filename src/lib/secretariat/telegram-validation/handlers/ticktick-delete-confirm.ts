@@ -33,6 +33,10 @@ import { removeLineByNumber } from '../../ticktick-sync/pull-engine';
 import { resolveFilePath } from '../../vault-client/drive-resolver';
 import { updateFileContent, getAccessToken } from '../../drive-upload';
 import { listMarkdownFiles } from '../../vault-client/drive-resolver';
+import { logAuditEntry } from '../../ticktick-sync/audit-logger';
+import { parseTaskLine } from '../../ticktick-sync/parser';
+import { createTask as createTickTickTask } from '../../ticktick/ticktick-client';
+import { readVaultFile } from '../../vault-reader';
 
 // ============================================================
 // Constantes publiques
@@ -253,23 +257,68 @@ export async function handleTickTickDeleteCallback(params: {
   }
 
   // ============================================================
-  // Action: keep → recrée la tâche dans TickTick + clear pending
+  // Action: keep → re-create EFFECTIVE dans TickTick (S18.3b livrable 3)
   // ============================================================
   if (parsed.action === 'keep') {
-    // On clear simplement le pending. Le push-engine au prochain cron
-    // recréera la tâche si elle existe toujours dans le vault (state.tasks[key]
-    // pointe vers un ticktickId orphelin → DELETE échouera côté TT (404) →
-    // skipped). Pour forcer une recréation propre : on supprime aussi l'entry
-    // state.tasks[key] pour que le prochain scan vault déclenche NEW.
+    const recreated = await recreateTaskInTickTick(pending);
+
+    if (recreated.ok && recreated.newTicktickId) {
+      // Succès : on patch le state avec le nouvel ID, on clear le pending
+      if (state.pendingDeletes) delete state.pendingDeletes[parsed.ticktickId];
+      // Remplace l'entry state.tasks[taskKey] avec le nouvel ID
+      const oldEntry = state.tasks[pending.taskKey];
+      if (oldEntry) {
+        state.tasks[pending.taskKey] = {
+          ...oldEntry,
+          ticktickId: recreated.newTicktickId,
+          projectId: recreated.newProjectId ?? oldEntry.projectId,
+          lastSyncedAt: new Date().toISOString(),
+        };
+      }
+      await saveSyncState(state);
+
+      await logAuditEntry({
+        direction: 'push',
+        op: 'recreate',
+        ticktickId: recreated.newTicktickId,
+        vaultPath: pending.vaultPath,
+        lineNumber: pending.lineNumber,
+        status: 'success',
+        details: {
+          previousTicktickId: parsed.ticktickId,
+          title: pending.title,
+        },
+      });
+
+      await editMessageText(
+        params.chat_id,
+        params.message_id,
+        `Tâche '${pending.title}' re-créée dans TickTick (ID <code>${recreated.newTicktickId}</code>). Continuité préservée.`,
+      );
+      return 'recreated';
+    }
+
+    // Échec : fallback V1 (clear state.tasks pour que prochain push crée)
+    console.warn(`[ticktick-delete-confirm] recreate échec : ${recreated.error ?? 'unknown'}`);
+    await logAuditEntry({
+      direction: 'push',
+      op: 'recreate',
+      ticktickId: parsed.ticktickId,
+      vaultPath: pending.vaultPath,
+      lineNumber: pending.lineNumber,
+      status: 'error',
+      errorMessage: recreated.error ?? 'recreate_failed',
+    });
+
     if (state.pendingDeletes) delete state.pendingDeletes[parsed.ticktickId];
     if (state.tasks[pending.taskKey]) delete state.tasks[pending.taskKey];
     await saveSyncState(state);
     await editMessageText(
       params.chat_id,
       params.message_id,
-      `Tâche conservée dans le vault. Re-création TickTick au prochain cron push.`,
+      `Tâche conservée dans le vault. Re-création TickTick a échoué (${recreated.error?.slice(0, 80) ?? 'erreur'}) — sera retentée au prochain cron push.`,
     );
-    return 'kept';
+    return 'kept_fallback';
   }
 
   // ============================================================
@@ -290,6 +339,15 @@ export async function handleTickTickDeleteCallback(params: {
       if (state.pendingDeletes) delete state.pendingDeletes[parsed.ticktickId];
       if (state.tasks[pending.taskKey]) delete state.tasks[pending.taskKey];
       await saveSyncState(state);
+      await logAuditEntry({
+        direction: 'pull',
+        op: 'delete',
+        ticktickId: parsed.ticktickId,
+        vaultPath: pending.vaultPath,
+        lineNumber: pending.lineNumber,
+        status: 'success',
+        details: { title: pending.title, source: 'telegram_confirm' },
+      });
       await editMessageText(
         params.chat_id,
         params.message_id,
@@ -357,3 +415,88 @@ async function deleteLineFromVault(
   const patchRes = await updateFileContent(fileId, newContent, 'text/markdown');
   return patchRes.success;
 }
+
+// ============================================================
+// Helper — re-create EFFECTIVE de la tâche dans TickTick (S18.3b livrable 3)
+// ============================================================
+
+/**
+ * Re-crée la tâche dans TickTick à partir de sa ligne vault actuelle.
+ *
+ * Pipeline :
+ *  1. Lit la ligne vault à `pending.vaultPath:pending.lineNumber`
+ *  2. Parse via parseTaskLine → VaultTask
+ *  3. Détermine projectId via PROJECT_TAG_MAPPING + state.projects
+ *  4. Appelle ticktick createTask → nouvel ID
+ *
+ * Retourne ok=true + nouvel ID, ou ok=false + error (fallback clear côté caller).
+ */
+async function recreateTaskInTickTick(
+  pending: PendingDelete,
+): Promise<{ ok: boolean; newTicktickId?: string; newProjectId?: string; error?: string }> {
+  try {
+    // 1. Lire la ligne vault actuelle
+    const idx = pending.vaultPath.lastIndexOf('/');
+    const folder = idx > 0 ? pending.vaultPath.slice(0, idx) : '';
+    const filename = idx > 0 ? pending.vaultPath.slice(idx + 1) : pending.vaultPath;
+    const fileResult = await readVaultFile(folder, filename);
+    if (!fileResult.success || !fileResult.content) {
+      return { ok: false, error: `Fichier vault introuvable : ${pending.vaultPath}` };
+    }
+
+    const lines = fileResult.content.split(/\r?\n/u);
+    const rawLine = lines[pending.lineNumber - 1];
+    if (!rawLine) {
+      return { ok: false, error: `Ligne ${pending.lineNumber} absente du fichier` };
+    }
+
+    // 2. Parse via parseTaskLine
+    const parsed = parseTaskLine(rawLine, {
+      vaultPath: pending.vaultPath,
+      lineNumber: pending.lineNumber,
+    });
+    if (!parsed) {
+      return { ok: false, error: 'Ligne vault non parsable comme tâche' };
+    }
+
+    // 3. Résoudre projectId (priorité : state.projects[parsed.projectName], fallback pending.projectId)
+    const state = await loadSyncState();
+    let projectId: string | undefined = state.projects[parsed.projectName];
+    if (!projectId) {
+      // Fallback : conserver l'ancien projectId si disponible
+      projectId = pending.projectId;
+    }
+    if (!projectId) {
+      return { ok: false, error: `projectId introuvable pour "${parsed.projectName}"` };
+    }
+
+    // 4. createTask TickTick
+    const created = await createTickTickTask({
+      title: parsed.title,
+      projectId,
+      priority: parsed.priority,
+      dueDate: parsed.dueDate,
+      tags: parsed.tags,
+    });
+
+    if (!created.id) {
+      return { ok: false, error: 'TickTick createTask: pas d\'ID retourné' };
+    }
+
+    return {
+      ok: true,
+      newTicktickId: created.id,
+      newProjectId: created.projectId ?? projectId,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+// Export pour tests
+export const _ticktickDeleteConfirmInternals = {
+  recreateTaskInTickTick,
+};

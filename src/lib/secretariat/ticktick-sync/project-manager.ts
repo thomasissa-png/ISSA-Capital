@@ -13,6 +13,7 @@
  */
 
 import { PROJECT_NAMES, type SyncState } from './types';
+import { logAuditEntry } from './audit-logger';
 
 // ============================================================
 // API TickTick — création projet
@@ -95,9 +96,27 @@ export async function createMissingProjects(
   for (const name of PROJECT_NAMES) {
     if (state.projects[name]) continue;
 
-    const id = await createTickTickProject(accessToken, name);
-    state.projects[name] = id;
-    created.push({ name, id });
+    try {
+      const id = await createTickTickProject(accessToken, name);
+      state.projects[name] = id;
+      created.push({ name, id });
+      await logAuditEntry({
+        direction: 'push',
+        op: 'project-create',
+        status: 'success',
+        details: { projectName: name, projectId: id },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await logAuditEntry({
+        direction: 'push',
+        op: 'project-create',
+        status: 'error',
+        errorMessage: msg,
+        details: { projectName: name },
+      });
+      throw err;
+    }
   }
 
   return created;

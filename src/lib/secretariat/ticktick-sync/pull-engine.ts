@@ -40,6 +40,7 @@ import {
   type TickTickRawTask,
   type VaultTask,
 } from './types';
+import { logAuditEntry } from './audit-logger';
 
 // ============================================================
 // Conflict resolver — last-write-wins arbitre §4
@@ -341,6 +342,13 @@ export async function runPullEngine(
           recordError(stats, `Todo.md introuvable pour création ${tt.id}`);
           results.push({ action: 'skipped', ticktickId: tt.id, error: 'todo_md_missing' });
           stats.skipped++;
+          await logAuditEntry({
+            direction: 'pull',
+            op: 'create',
+            ticktickId: tt.id,
+            status: 'error',
+            errorMessage: 'todo_md_missing',
+          });
           continue;
         }
         // VaultTask synthétique pour serialisation
@@ -372,6 +380,14 @@ export async function runPullEngine(
         fileCache.set(todoPath, { content: newContent, fileId: file.fileId });
         results.push({ action: 'created_in_vault', ticktickId: tt.id, taskKey: newKey });
         stats.created++;
+        await logAuditEntry({
+          direction: 'pull',
+          op: 'create',
+          ticktickId: tt.id,
+          vaultPath: todoPath,
+          status: 'success',
+          details: { title: tt.title, projectId: tt.projectId },
+        });
         continue;
       }
 
@@ -406,6 +422,14 @@ export async function runPullEngine(
                 fileCache.set(vaultPath, { content: newContent, fileId: file.fileId });
                 results.push({ action: 'completed_in_vault', ticktickId: tt.id, taskKey: key });
                 stats.completed++;
+                await logAuditEntry({
+                  direction: 'pull',
+                  op: 'complete',
+                  ticktickId: tt.id,
+                  vaultPath,
+                  lineNumber,
+                  status: 'success',
+                });
                 continue;
               }
             }
@@ -447,12 +471,28 @@ export async function runPullEngine(
         fileCache.set(vaultPath, { content: newContent, fileId: file.fileId });
         results.push({ action: 'patched_vault', ticktickId: tt.id, taskKey: key });
         stats.patched++;
+        await logAuditEntry({
+          direction: 'pull',
+          op: 'conflict-resolved',
+          ticktickId: tt.id,
+          vaultPath,
+          lineNumber,
+          status: 'success',
+          details: { winner: 'ticktick' },
+        });
         continue;
       }
 
       // vault_wins → no-op (push gérera)
       results.push({ action: 'vault_wins', ticktickId: tt.id, taskKey: key });
       stats.vaultWins++;
+      await logAuditEntry({
+        direction: 'pull',
+        op: 'conflict-resolved',
+        ticktickId: tt.id,
+        status: 'skipped',
+        details: { winner: 'vault', taskKey: key },
+      });
     } catch (err) {
       recordError(stats, `${tt.id}: ${err instanceof Error ? err.message : String(err)}`);
       results.push({ action: 'skipped', ticktickId: tt.id, error: String(err) });
@@ -490,9 +530,27 @@ export async function runPullEngine(
       if (ok) {
         results.push({ action: 'delete_requested', ticktickId: entry.ticktickId, taskKey: key });
         stats.deletedRequested++;
+        await logAuditEntry({
+          direction: 'pull',
+          op: 'delete-prompt',
+          ticktickId: entry.ticktickId,
+          vaultPath,
+          lineNumber,
+          status: 'success',
+          details: { title: title.slice(0, 80), taskKey: key },
+        });
       } else {
         recordError(stats, `notifyDelete échec ${key}`);
         stats.skipped++;
+        await logAuditEntry({
+          direction: 'pull',
+          op: 'delete-prompt',
+          ticktickId: entry.ticktickId,
+          vaultPath,
+          lineNumber,
+          status: 'error',
+          errorMessage: 'notify_failed',
+        });
       }
     } catch (err) {
       recordError(stats, `notifyDelete ${key}: ${err instanceof Error ? err.message : String(err)}`);

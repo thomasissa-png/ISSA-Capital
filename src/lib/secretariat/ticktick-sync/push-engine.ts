@@ -40,6 +40,7 @@ import {
   type VaultTask,
 } from './types';
 import { resolveProjectId, projectsReady } from './project-manager';
+import { logAuditEntry } from './audit-logger';
 
 // ============================================================
 // Constantes
@@ -285,6 +286,16 @@ export async function runPushEngine(
             ticktickId: created.id,
           });
           stats.completed++;
+          await logAuditEntry({
+            direction: 'push',
+            op: 'complete',
+            ticktickId: created.id,
+            vaultPath: task.position.vaultPath,
+            lineNumber: task.position.lineNumber,
+            vaultHash: newHash,
+            status: 'success',
+            details: { initial: true },
+          });
         } else {
           const created = await client.createTask(buildPayload(task, projectId));
           state.tasks[key] = {
@@ -299,6 +310,16 @@ export async function runPushEngine(
             ticktickId: created.id,
           });
           stats.created++;
+          await logAuditEntry({
+            direction: 'push',
+            op: 'create',
+            ticktickId: created.id,
+            vaultPath: task.position.vaultPath,
+            lineNumber: task.position.lineNumber,
+            vaultHash: newHash,
+            status: 'success',
+            details: { projectId: created.projectId, title: task.title },
+          });
         }
         continue;
       }
@@ -308,6 +329,16 @@ export async function runPushEngine(
         // no-op (idempotence)
         results.push({ action: 'skipped', taskKey: key, ticktickId: existing.ticktickId });
         stats.skipped++;
+        await logAuditEntry({
+          direction: 'push',
+          op: 'skip',
+          ticktickId: existing.ticktickId,
+          vaultPath: task.position.vaultPath,
+          lineNumber: task.position.lineNumber,
+          vaultHash: newHash,
+          status: 'skipped',
+          details: { reason: 'idempotent' },
+        });
         continue;
       }
 
@@ -321,6 +352,15 @@ export async function runPushEngine(
           ticktickId: existing.ticktickId,
         });
         stats.completed++;
+        await logAuditEntry({
+          direction: 'push',
+          op: 'complete',
+          ticktickId: existing.ticktickId,
+          vaultPath: task.position.vaultPath,
+          lineNumber: task.position.lineNumber,
+          vaultHash: newHash,
+          status: 'success',
+        });
       } else {
         await client.updateTask(
           existing.ticktickId,
@@ -338,12 +378,30 @@ export async function runPushEngine(
           ticktickId: existing.ticktickId,
         });
         stats.updated++;
+        await logAuditEntry({
+          direction: 'push',
+          op: 'update',
+          ticktickId: existing.ticktickId,
+          vaultPath: task.position.vaultPath,
+          lineNumber: task.position.lineNumber,
+          vaultHash: newHash,
+          status: 'success',
+        });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       recordError(stats, `${key}: ${msg}`);
       results.push({ action: 'skipped', taskKey: key, error: msg });
       stats.skipped++;
+      await logAuditEntry({
+        direction: 'push',
+        op: existing ? 'update' : 'create',
+        ticktickId: existing?.ticktickId,
+        vaultPath: task.position.vaultPath,
+        lineNumber: task.position.lineNumber,
+        status: 'error',
+        errorMessage: msg,
+      });
     }
   }
 
@@ -359,11 +417,26 @@ export async function runPushEngine(
         ticktickId: entry.ticktickId,
       });
       stats.deleted++;
+      await logAuditEntry({
+        direction: 'push',
+        op: 'delete',
+        ticktickId: entry.ticktickId,
+        status: 'success',
+        details: { taskKey: key },
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       recordError(stats, `delete ${key}: ${msg}`);
       results.push({ action: 'skipped', taskKey: key, error: msg });
       stats.skipped++;
+      await logAuditEntry({
+        direction: 'push',
+        op: 'delete',
+        ticktickId: entry.ticktickId,
+        status: 'error',
+        errorMessage: msg,
+        details: { taskKey: key },
+      });
     }
   }
 

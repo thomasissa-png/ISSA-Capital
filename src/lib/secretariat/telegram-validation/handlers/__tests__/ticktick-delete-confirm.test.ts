@@ -52,6 +52,22 @@ vi.mock('../../../vault-client/drive-resolver', () => ({
   listMarkdownFiles: vi.fn(async () => [{ id: 'f1', name: 'Todo.md' }]),
 }));
 
+// S18.3b — mocks pour recreate effective
+const mockReadVaultFile = vi.fn();
+const mockCreateTickTickTask = vi.fn();
+
+vi.mock('../../../vault-reader', () => ({
+  readVaultFile: (...args: unknown[]) => mockReadVaultFile(...args),
+}));
+
+vi.mock('../../../ticktick/ticktick-client', () => ({
+  createTask: (...args: unknown[]) => mockCreateTickTickTask(...args),
+}));
+
+vi.mock('../../../ticktick-sync/audit-logger', () => ({
+  logAuditEntry: vi.fn(async () => undefined),
+}));
+
 // Mock global fetch (utilisé par deleteLineFromVault et sendDeleteConfirmCard)
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
@@ -65,6 +81,8 @@ beforeEach(() => {
   };
   process.env.OBSIDIAN_VAULT_NAME = 'TestVault';
   fetchMock.mockReset();
+  mockReadVaultFile.mockReset();
+  mockCreateTickTickTask.mockReset();
 });
 
 // ============================================================
@@ -215,14 +233,60 @@ describe('handleTickTickDeleteCallback — R4 dispatch E2E', () => {
     expect(mockState.tasks['Todo.md:L3']).toBeUndefined();
   });
 
-  it('action "keep" → recreate (clear pending + clear state.tasks)', async () => {
+  it('action "keep" → recreate effective TickTick (S18.3b livrable 3)', async () => {
     seedPending('tt_42');
+    // Mock readVaultFile → ligne vault parsable
+    mockReadVaultFile.mockResolvedValue({
+      success: true,
+      content: 'header\n- [ ] line2\n- [ ] à supprimer #inbox\n',
+    });
+    // Mock createTickTickTask → nouveau ID
+    mockCreateTickTickTask.mockResolvedValue({
+      id: 'tt_new_999',
+      projectId: 'p_inbox',
+      title: 'à supprimer',
+    });
     const result = await handleTickTickDeleteCallback({
       ...baseParams,
       data: `${TICKTICK_DELETE_CALLBACK_PREFIX}keep:tt_42`,
     });
-    expect(result).toBe('kept');
+    expect(result).toBe('recreated');
     expect(mockState.pendingDeletes?.['tt_42']).toBeUndefined();
+    // state.tasks doit avoir le nouvel ID, pas être supprimé
+    expect(mockState.tasks['Todo.md:L3']?.ticktickId).toBe('tt_new_999');
+    expect(mockCreateTickTickTask).toHaveBeenCalledTimes(1);
+  });
+
+  it('action "keep" → fallback clear si createTask échoue', async () => {
+    seedPending('tt_42');
+    mockReadVaultFile.mockResolvedValue({
+      success: true,
+      content: 'header\n- [ ] line2\n- [ ] à supprimer #inbox\n',
+    });
+    mockCreateTickTickTask.mockRejectedValue(new Error('TickTick HTTP 500'));
+    const result = await handleTickTickDeleteCallback({
+      ...baseParams,
+      data: `${TICKTICK_DELETE_CALLBACK_PREFIX}keep:tt_42`,
+    });
+    expect(result).toBe('kept_fallback');
+    // Fallback V1 : clear state.tasks pour que prochain push crée
+    expect(mockState.pendingDeletes?.['tt_42']).toBeUndefined();
+    expect(mockState.tasks['Todo.md:L3']).toBeUndefined();
+  });
+
+  it('action "keep" → fallback clear si ligne vault non parsable', async () => {
+    seedPending('tt_42');
+    // Ligne vault sans format `- [ ]` : parser retourne null
+    mockReadVaultFile.mockResolvedValue({
+      success: true,
+      content: 'header\nrandom text\nnot a task',
+    });
+    const result = await handleTickTickDeleteCallback({
+      ...baseParams,
+      data: `${TICKTICK_DELETE_CALLBACK_PREFIX}keep:tt_42`,
+    });
+    expect(result).toBe('kept_fallback');
+    expect(mockCreateTickTickTask).not.toHaveBeenCalled();
     expect(mockState.tasks['Todo.md:L3']).toBeUndefined();
   });
 
