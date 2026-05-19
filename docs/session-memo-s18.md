@@ -66,7 +66,7 @@ La spec a été écrite avant la découverte que TickTick n'expose ni `refresh_t
 ### Red lines (rappel)
 
 1. Vault canonique, gagne en conflit
-2. Pas de delete silencieux du vault (Telegram validation)
+2. ~~Pas de delete silencieux du vault (Telegram validation)~~ → **S19 update** : completion silencieuse (delete TickTick → vault `[ ]` patché `[x]`, zéro notification, JSONL trace). Cf. spec §9.2 S19.
 3. Pas de delete réunions depuis TickTick (feed read-only)
 4. Audit JSONL chaque op
 5. Backoff 429 (60 req/min max)

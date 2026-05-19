@@ -1,12 +1,15 @@
 /**
- * Tests d'intégration audit-log — vérifie le branchement dans push-engine,
- * pull-engine et ticktick-delete-confirm.
+ * Tests d'intégration audit-log — vérifie le branchement dans push-engine
+ * et pull-engine.
  *
  * On mocke `./audit-log` (appendAuditLog) avec un spy pour observer les
  * appels sans toucher Drive. Chaque scénario fonctionnel doit produire
  * une entrée d'audit avec l'op + direction + status corrects.
  *
  * Couverture spec critère §11.6 — chaque op tracée.
+ *
+ * S19 — section ticktick-delete-confirm retirée (handler supprimé, completion
+ * silencieuse remplace la carte Telegram delete).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -37,7 +40,6 @@ import {
   runPullEngine,
   type TickTickPullClient,
   type VaultPatcher,
-  type TelegramDeleteNotifier,
 } from '../pull-engine';
 import {
   emptyState,
@@ -219,10 +221,6 @@ function makePullClient(tasks: TickTickRawTask[]): TickTickPullClient {
   return { async listAllTasks() { return tasks; } };
 }
 
-const silentNotifier: TelegramDeleteNotifier = {
-  async notifyDeleteRequest() { return true; },
-};
-
 describe('audit-log branchement pull-engine', () => {
   it('appendAuditLog appelé pour create-from-tt (tâche orpheline TickTick)', async () => {
     const state = stateWithProjects();
@@ -233,7 +231,7 @@ describe('audit-log branchement pull-engine', () => {
       title: 'créée mobile',
       modifiedAt: '2026-05-19T10:00:00Z',
     };
-    await runPullEngine(state, makePullClient([tt]), patcher, silentNotifier);
+    await runPullEngine(state, makePullClient([tt]), patcher);
     const call = appendAuditLogSpy.mock.calls.find(
       ([e]) => e.op === 'create-from-tt' && e.direction === 'pull',
     );
@@ -259,7 +257,7 @@ describe('audit-log branchement pull-engine', () => {
       status: 2,
       modifiedAt: '2026-05-19T11:00:00Z',
     };
-    await runPullEngine(state, makePullClient([tt]), patcher, silentNotifier);
+    await runPullEngine(state, makePullClient([tt]), patcher);
     const call = appendAuditLogSpy.mock.calls.find(
       ([e]) => e.op === 'complete-sync' && e.direction === 'pull',
     );
@@ -284,7 +282,7 @@ describe('audit-log branchement pull-engine', () => {
       title: 'nouveau titre TT',
       modifiedAt: '2026-05-19T10:00:00Z', // > lastSyncedAt → TT gagne
     };
-    await runPullEngine(state, makePullClient([tt]), patcher, silentNotifier);
+    await runPullEngine(state, makePullClient([tt]), patcher);
     const patchCall = appendAuditLogSpy.mock.calls.find(
       ([e]) => e.op === 'patch-line' && e.direction === 'pull',
     );
@@ -313,7 +311,7 @@ describe('audit-log branchement pull-engine', () => {
       title: 'vieux titre',
       modifiedAt: '2026-05-19T09:00:00Z', // < lastSyncedAt → vault gagne
     };
-    await runPullEngine(state, makePullClient([tt]), patcher, silentNotifier);
+    await runPullEngine(state, makePullClient([tt]), patcher);
     const call = appendAuditLogSpy.mock.calls.find(
       ([e]) => e.op === 'conflict-vault-wins' && e.direction === 'pull',
     );
@@ -321,93 +319,27 @@ describe('audit-log branchement pull-engine', () => {
     expect(call![0].taskId).toBe('tt_vw');
   });
 
-  it('appendAuditLog appelé pour pending-delete (red line §9.2)', async () => {
+  it("appendAuditLog appelé pour ticktick-delete-silent-completion (S19, delete TT silencieux)", async () => {
     const state = stateWithProjects();
-    state.tasks['03. Tâches/Todo.md:L3'] = {
+    // Ligne 2 du vault = `- [ ] cible`
+    state.tasks['03. Tâches/Todo.md:L2'] = {
       ticktickId: 'tt_gone',
       projectId: 'proj_inbox',
       vaultHash: 'h',
       lastSyncedAt: '2026-05-19T00:00:00Z',
     };
     const patcher = makePullPatcher({
-      '03. Tâches/Todo.md': '## Inbox\n- [ ] supprimée\n- [ ] autre\n- [ ] cible\n',
+      '03. Tâches/Todo.md': '## Inbox\n- [ ] cible\n',
     });
-    // TickTick ne renvoie plus cette tâche → trigger pending-delete
-    await runPullEngine(state, makePullClient([]), patcher, silentNotifier);
+    // TickTick ne renvoie plus cette tâche → trigger silent completion
+    await runPullEngine(state, makePullClient([]), patcher);
     const call = appendAuditLogSpy.mock.calls.find(
-      ([e]) => e.op === 'pending-delete' && e.direction === 'pull',
+      ([e]) =>
+        e.op === 'ticktick-delete-silent-completion' &&
+        e.direction === 'pull' &&
+        e.taskId === 'tt_gone',
     );
     expect(call).toBeDefined();
-    expect(call![0].taskId).toBe('tt_gone');
     expect(call![0].status).toBe('ok');
-  });
-});
-
-// ============================================================
-// ticktick-delete-confirm — actions 'yes' / 'keep' / 'view'
-// ============================================================
-//
-// Pour ces tests, on mocke fortement les dépendances Drive/Telegram.
-// On vérifie juste que appendAuditLogSpy est invoqué avec l'op correcte.
-
-describe('audit-log branchement ticktick-delete-confirm', () => {
-  it("action 'keep' déclenche appendAuditLog op='keep'", async () => {
-    // Setup state avec pending
-    vi.resetModules();
-
-    vi.doMock('../state-store', () => ({
-      loadSyncState: vi.fn(async () => {
-        const s = stateWithProjects();
-        s.pendingDeletes = {
-          tt_keep_x: {
-            ticktickId: 'tt_keep_x',
-            taskKey: '03. Tâches/Todo.md:L7',
-            title: 'à garder',
-            vaultPath: '03. Tâches/Todo.md',
-            lineNumber: 7,
-            createdAt: new Date().toISOString(),
-          },
-        };
-        s.tasks['03. Tâches/Todo.md:L7'] = {
-          ticktickId: 'tt_keep_x',
-          projectId: 'proj_inbox',
-          vaultHash: 'h',
-          lastSyncedAt: '2026-05-19T00:00:00Z',
-        };
-        return s;
-      }),
-      saveSyncState: vi.fn(async () => true),
-    }));
-
-    vi.doMock('../../telegram', () => ({
-      answerCallbackQuery: vi.fn(async () => true),
-    }));
-
-    vi.doMock('../../telegram-validation/telegram-cards', () => ({
-      editMessageText: vi.fn(async () => true),
-      sendSimpleMessage: vi.fn(async () => true),
-    }));
-
-    vi.doMock('../audit-log', () => ({
-      appendAuditLog: appendAuditLogSpy,
-    }));
-
-    const mod = await import('../../telegram-validation/handlers/ticktick-delete-confirm');
-    const res = await mod.handleTickTickDeleteCallback({
-      callback_query_id: 'cb_1',
-      data: 'tickticksync_delete:keep:tt_keep_x',
-      message_id: 1,
-      chat_id: 42,
-    });
-    expect(res).toBe('kept');
-    const keepCall = appendAuditLogSpy.mock.calls.find(
-      ([e]) => e.op === 'keep' && e.taskId === 'tt_keep_x',
-    );
-    expect(keepCall).toBeDefined();
-
-    vi.doUnmock('../state-store');
-    vi.doUnmock('../../telegram');
-    vi.doUnmock('../../telegram-validation/telegram-cards');
-    vi.doUnmock('../audit-log');
   });
 });

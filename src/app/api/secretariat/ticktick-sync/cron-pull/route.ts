@@ -9,7 +9,8 @@
  *   1. lire state Drive
  *   2. fetch tâches TickTick (toutes les listes connues, via listTasks)
  *   3. last-write-wins, patch vault si TickTick gagne, créer si orphan
- *   4. envoyer cartes Telegram pour deletes détectés (red line §9.2)
+ *   4. S19 — deletes TickTick : completion silencieuse `[ ]` → `[x]` (zéro
+ *      Telegram, JSONL trace). Remplace red line §9.2 historique.
  *   5. sauver state Drive
  *
  * Verrou push/pull simple via state.syncLock (TTL 30s).
@@ -18,7 +19,6 @@
  *   - CRON_SECRET (header Authorization: Bearer)
  *   - TICKTICK_ACCESS_TOKEN
  *   - DRIVE_VAULT_ROOT_ID + scopes OAuth Drive
- *   - TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID_THOMAS (pour carte delete)
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
@@ -30,7 +30,6 @@ import {
   runPullEngine,
   releaseSyncLock,
   tryAcquireSyncLock,
-  type TelegramDeleteNotifier,
   type TickTickPullClient,
   type VaultPatcher,
 } from '@/lib/secretariat/ticktick-sync/pull-engine';
@@ -44,7 +43,6 @@ import {
   getAccessToken,
   updateFileContent,
 } from '@/lib/secretariat/drive-upload';
-import { sendDeleteConfirmCard } from '@/lib/secretariat/telegram-validation/handlers/ticktick-delete-confirm';
 import type { TickTickRawTask } from '@/lib/secretariat/ticktick-sync/types';
 
 // ============================================================
@@ -125,13 +123,8 @@ function buildVaultPatcher(): VaultPatcher {
   };
 }
 
-function buildDeleteNotifier(): TelegramDeleteNotifier {
-  return {
-    async notifyDeleteRequest(params) {
-      return sendDeleteConfirmCard(params);
-    },
-  };
-}
+// S19 — buildDeleteNotifier retiré : completion silencieuse remplace la carte
+// Telegram delete (cf. pull-engine.ts §"Detection deletes TickTick").
 
 // ============================================================
 // GET handler
@@ -197,8 +190,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     try {
       const ttClient = buildTickTickClient();
       const patcher = buildVaultPatcher();
-      const notifier = buildDeleteNotifier();
-      const pulled = await runPullEngine(state, ttClient, patcher, notifier);
+      const pulled = await runPullEngine(state, ttClient, patcher);
       stats = pulled.stats;
       results = pulled.results;
     } finally {
@@ -215,7 +207,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     console.warn(
       `[cron-ticktick-sync-pull] terminé — fetched=${stats.fetched} patched=${stats.patched} ` +
       `created=${stats.created} completed=${stats.completed} ` +
-      `deletedRequested=${stats.deletedRequested} vaultWins=${stats.vaultWins} ` +
+      `completedSilently=${stats.completedSilently} vaultWins=${stats.vaultWins} ` +
       `skipped=${stats.skipped} errors=${stats.errors} (${stats.durationMs}ms)`,
     );
 

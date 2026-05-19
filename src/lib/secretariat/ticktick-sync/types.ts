@@ -299,8 +299,7 @@ export type ConflictDecision =
  * Opérations tracées dans l'audit log.
  *   - Push : create, update, complete, delete, skip
  *   - Pull : create-from-tt, patch-line, complete-sync, conflict-*
- *   - Telegram : pending-delete (carte demandée), delete (action 'yes' validée),
- *     keep (action 'keep' clear pending)
+ *   - S19 : ticktick-delete-silent-completion (delete TT → vault [ ]→[x])
  */
 export type AuditOp =
   | 'create'

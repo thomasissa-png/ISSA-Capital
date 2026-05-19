@@ -26,9 +26,8 @@ vi.mock('@/lib/secretariat/vault-client/drive-resolver', () => ({
   listMarkdownFiles: vi.fn(async () => []),
 }));
 
-vi.mock('@/lib/secretariat/telegram-validation/handlers/ticktick-delete-confirm', () => ({
-  sendDeleteConfirmCard: vi.fn(async () => true),
-}));
+// S19 — mock ticktick-delete-confirm retiré : handler supprimé (completion
+// silencieuse remplace la carte Telegram delete).
 
 import { GET } from '../route';
 

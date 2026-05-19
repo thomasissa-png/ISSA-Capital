@@ -1,8 +1,11 @@
 /**
- * Tests pull-engine — TickTick → vault (S18.2).
+ * Tests pull-engine — TickTick → vault (S18.2, mis à jour S19).
  *
- * On teste avec des mocks injectables (TickTickPullClient, VaultPatcher,
- * TelegramDeleteNotifier) — pas de réseau, pas de Drive.
+ * On teste avec des mocks injectables (TickTickPullClient, VaultPatcher)
+ * — pas de réseau, pas de Drive.
+ *
+ * S19 — deletes TickTick = completion silencieuse vault (remplace red
+ * line §9.2 historique : carte Telegram retirée).
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -17,7 +20,6 @@ import {
   runPullEngine,
   type TickTickPullClient,
   type VaultPatcher,
-  type TelegramDeleteNotifier,
 } from '../pull-engine';
 import {
   emptyState,
@@ -68,26 +70,9 @@ function makeClient(tasks: TickTickRawTask[]): TickTickPullClient {
   };
 }
 
-function makeNotifier(): {
-  notifier: TelegramDeleteNotifier;
-  calls: Array<{ ticktickId: string; title: string; vaultPath: string; lineNumber: number }>;
-} {
-  const calls: Array<{ ticktickId: string; title: string; vaultPath: string; lineNumber: number }> = [];
-  return {
-    calls,
-    notifier: {
-      async notifyDeleteRequest(p) {
-        calls.push({
-          ticktickId: p.ticktickId,
-          title: p.title,
-          vaultPath: p.vaultPath,
-          lineNumber: p.lineNumber,
-        });
-        return true;
-      },
-    },
-  };
-}
+// S19 — makeNotifier retiré : completion silencieuse remplace la carte
+// Telegram delete. Les anciens tests `delete_requested` deviennent
+// `completed_silently` (cf. describe "delete TickTick → completion silencieuse").
 
 function makeReadyState(): SyncState {
   const s = emptyState();
@@ -283,8 +268,7 @@ describe('runPullEngine — pipeline pull', () => {
     const client = makeClient([
       { id: 'tt_1', projectId: 'p_inbox', title: 'new title', status: 0, modifiedAt: '2026-05-19T11:00:00Z' },
     ]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.patched).toBe(1);
     expect(store.files.get('Todo.md')?.content).toContain('new title');
   });
@@ -304,8 +288,7 @@ describe('runPullEngine — pipeline pull', () => {
     const client = makeClient([
       { id: 'tt_1', projectId: 'p_inbox', title: 'orig', status: 0, modifiedAt: ts },
     ]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.vaultWins).toBe(1);
     expect(res.stats.patched).toBe(0);
     expect(store.patchCalls).toHaveLength(0);
@@ -325,8 +308,7 @@ describe('runPullEngine — pipeline pull', () => {
     const client = makeClient([
       { id: 'tt_1', projectId: 'p_inbox', title: 'orig', status: 0, modifiedAt: '2026-05-19T10:00:00Z' },
     ]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.vaultWins).toBe(1);
     expect(res.stats.patched).toBe(0);
   });
@@ -338,8 +320,7 @@ describe('runPullEngine — pipeline pull', () => {
     const client = makeClient([
       { id: 'tt_new', projectId: 'p_inbox', title: 'créée mobile', status: 0, modifiedAt: '2026-05-19T11:00:00Z' },
     ]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.created).toBe(1);
     const content = store.files.get('03. Tâches/Todo.md')?.content ?? '';
     expect(content).toContain('créée mobile');
@@ -359,14 +340,14 @@ describe('runPullEngine — pipeline pull', () => {
     const client = makeClient([
       { id: 'tt_done', projectId: 'p_inbox', title: 'complete-me', status: 2, modifiedAt: '2026-05-19T11:00:00Z' },
     ]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.completed).toBe(1);
     expect(store.files.get('Todo.md')?.content).toContain('[x] complete-me');
   });
 
-  it('delete TickTick → demande Telegram (red line §9.2), pas de suppression silencieuse', async () => {
+  it('delete TickTick → completion silencieuse vault (S19, remplace red line §9.2)', async () => {
     const state = makeReadyState();
+    // Ligne 3 = `- [ ] orphan` (après "# T" + ligne vide)
     state.tasks['Todo.md:L3'] = {
       ticktickId: 'tt_gone',
       projectId: 'p_inbox',
@@ -377,13 +358,106 @@ describe('runPullEngine — pipeline pull', () => {
     const patcher = makePatcher(store);
     // TickTick ne renvoie plus tt_gone
     const client = makeClient([]);
-    const { notifier, calls } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
-    expect(res.stats.deletedRequested).toBe(1);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.ticktickId).toBe('tt_gone');
-    // PAS de patch effectué (red line)
+    const res = await runPullEngine(state, client, patcher);
+    expect(res.stats.completedSilently).toBe(1);
+    expect(res.results.some((r) => r.action === 'completed_silently')).toBe(true);
+    // Patch effectué (vault `[ ]` → `[x]`)
+    expect(store.patchCalls).toHaveLength(1);
+    expect(store.files.get('Todo.md')?.content).toContain('- [x] orphan');
+    // lastSyncedAt mis à jour pour idempotence cross-run
+    expect(state.tasks['Todo.md:L3']?.lastSyncedAt).not.toBe('2026-05-19T10:00:00Z');
+  });
+
+  it('delete TickTick idempotent — ligne déjà [x] → no-op silencieux', async () => {
+    const state = makeReadyState();
+    state.tasks['Todo.md:L3'] = {
+      ticktickId: 'tt_gone',
+      projectId: 'p_inbox',
+      vaultHash: 'h',
+      lastSyncedAt: '2026-05-19T10:00:00Z',
+    };
+    // Ligne déjà cochée — simule passage cron N°2 après N°1
+    const store = makeFakeStore({ 'Todo.md': '# T\n\n- [x] orphan déjà fait\n' });
+    const patcher = makePatcher(store);
+    const client = makeClient([]);
+    const res = await runPullEngine(state, client, patcher);
+    // Pas d'incrément stats — no-op
+    expect(res.stats.completedSilently).toBe(0);
+    expect(res.stats.errors).toBe(0);
+    // Aucun patch émis
     expect(store.patchCalls).toHaveLength(0);
+    // Contenu intact
+    expect(store.files.get('Todo.md')?.content).toContain('- [x] orphan déjà fait');
+  });
+
+  it('delete TickTick — variantes markdown `*` et `+` patchées', async () => {
+    const state = makeReadyState();
+    state.tasks['Todo.md:L1'] = {
+      ticktickId: 'tt_a',
+      projectId: 'p_inbox',
+      vaultHash: 'h',
+      lastSyncedAt: '2026-05-19T10:00:00Z',
+    };
+    state.tasks['Todo.md:L2'] = {
+      ticktickId: 'tt_b',
+      projectId: 'p_inbox',
+      vaultHash: 'h',
+      lastSyncedAt: '2026-05-19T10:00:00Z',
+    };
+    const store = makeFakeStore({ 'Todo.md': '* [ ] avec étoile\n+ [ ] avec plus\n' });
+    const patcher = makePatcher(store);
+    const res = await runPullEngine(state, makeClient([]), patcher);
+    expect(res.stats.completedSilently).toBe(2);
+    const content = store.files.get('Todo.md')?.content ?? '';
+    expect(content).toContain('* [x] avec étoile');
+    expect(content).toContain('+ [x] avec plus');
+  });
+
+  it('delete TickTick — ligne introuvable (vault modifié) → warn no-op, pas d\'erreur', async () => {
+    const state = makeReadyState();
+    // state pointe vers L99 hors range
+    state.tasks['Todo.md:L99'] = {
+      ticktickId: 'tt_gone',
+      projectId: 'p_inbox',
+      vaultHash: 'h',
+      lastSyncedAt: '2026-05-19T10:00:00Z',
+    };
+    const store = makeFakeStore({ 'Todo.md': '# T\n' });
+    const patcher = makePatcher(store);
+    const res = await runPullEngine(state, makeClient([]), patcher);
+    // No-op : pas de patch, pas de completion comptée
+    expect(res.stats.completedSilently).toBe(0);
+    expect(store.patchCalls).toHaveLength(0);
+    // Pas non plus d'incrément errors (recordError n'est pas appelé pour line_out_of_range)
+    // — c'est juste une trace JSONL error mais le pipeline reste sain
+  });
+
+  it('delete TickTick — ligne non-checkbox (refacto vault) → no-op silencieux', async () => {
+    const state = makeReadyState();
+    state.tasks['Todo.md:L2'] = {
+      ticktickId: 'tt_gone',
+      projectId: 'p_inbox',
+      vaultHash: 'h',
+      lastSyncedAt: '2026-05-19T10:00:00Z',
+    };
+    // Ligne 2 = du texte libre (vault refactorisé entre push et pull)
+    const store = makeFakeStore({ 'Todo.md': '# T\nplain text, plus une tâche\n' });
+    const patcher = makePatcher(store);
+    const res = await runPullEngine(state, makeClient([]), patcher);
+    expect(res.stats.completedSilently).toBe(0);
+    expect(store.patchCalls).toHaveLength(0);
+  });
+
+  it('delete TickTick — purge pendingDeletes hérités du state (rétro-compat S19)', async () => {
+    const state = makeReadyState();
+    // Ancien state Drive pré-S19 contient des pendingDeletes
+    state.pendingDeletes = {
+      tt_legacy: { ticktickId: 'tt_legacy', taskKey: 'x', title: 'old' },
+    };
+    const store = makeFakeStore({ 'Todo.md': '## Inbox\n' });
+    const patcher = makePatcher(store);
+    await runPullEngine(state, makeClient([]), patcher);
+    expect(state.pendingDeletes).toBeUndefined();
   });
 
   it('skip pipeline si projets pas encore prêts', async () => {
@@ -391,8 +465,7 @@ describe('runPullEngine — pipeline pull', () => {
     const store = makeFakeStore({});
     const patcher = makePatcher(store);
     const client = makeClient([]);
-    const { notifier } = makeNotifier();
-    const res = await runPullEngine(state, client, patcher, notifier);
+    const res = await runPullEngine(state, client, patcher);
     expect(res.stats.fetched).toBe(0);
     expect(res.results).toHaveLength(0);
   });
@@ -403,8 +476,7 @@ describe('runPullEngine — pipeline pull', () => {
     const store = makeFakeStore({ '03. Tâches/Todo.md': '## Inbox\n' });
     const patcher = makePatcher(store);
     const client = makeClient([]);
-    const { notifier } = makeNotifier();
-    await runPullEngine(state, client, patcher, notifier);
+    await runPullEngine(state, client, patcher);
     expect(state.lastPollTickTick).toBeDefined();
     expect(state.lastPollTickTick).not.toBe(before);
   });

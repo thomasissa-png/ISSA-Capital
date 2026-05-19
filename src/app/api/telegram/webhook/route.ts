@@ -98,10 +98,8 @@ import {
   TICKTICK_PROJECTS_CALLBACK_PREFIX,
   handleTickTickProjectsCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
-import {
-  TICKTICK_DELETE_CALLBACK_PREFIX,
-  handleTickTickDeleteCallback,
-} from '@/lib/secretariat/telegram-validation/handlers/ticktick-delete-confirm';
+// S19 — handler `tickticksync_delete:` retiré (completion silencieuse vault
+// remplace la carte Telegram delete). Code mort supprimé.
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1649,17 +1647,11 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // TickTick sync — callbacks préfixés par "tickticksync_delete:" (S18.2)
-      // Confirmation suppression vault suite à un delete TickTick (red line §9.2).
-      if (callbackData.startsWith(TICKTICK_DELETE_CALLBACK_PREFIX)) {
-        await handleTickTickDeleteCallback({
-          callback_query_id: callbackQueryId,
-          data: callbackData,
-          message_id: update.callback_query.message?.message_id ?? 0,
-          chat_id: callbackChatId,
-        });
-        return Response.json({ ok: true });
-      }
+      // S19 — dispatch `tickticksync_delete:` retiré : completion silencieuse
+      // vault remplace la carte Telegram delete (décision Thomas S19 :
+      // « Si je supprime des tâches dans TickTick, Anya pas besoin de me le dire »).
+      // Tout callback résiduel de ce préfixe (TTL 7j historique) tombera dans
+      // le default no-op du switch ci-dessous.
 
       // Workflow quittance — callbacks préfixés par "q_"
       const quittanceWf = getActiveWorkflow(callbackChatId);

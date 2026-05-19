@@ -134,7 +134,7 @@ Logique :
      - Compare timestamps : si TickTick plus récent → patch ligne vault (description, date, status)
      - Si même timestamp → vault gagne, push correctif vers TickTick (no-op)
    - Si tâche TickTick n'a pas de mapping vault → tâche créée depuis TickTick → ajouter dans `Todo.md > ## Inbox` avec format standard
-3. Pour les tâches DELETE TickTick : si Thomas supprime depuis TickTick → confirmer Telegram avant de supprimer du vault (red line : pas de delete silencieux)
+3. Pour les tâches DELETE TickTick : si Thomas supprime depuis TickTick → **completion silencieuse vault** (S19, cf. §9.2) : la ligne `- [ ]` est patchée `- [x]`, aucune notification utilisateur. Préserve l'historique vault.
 
 ## 3. Détection de changements
 
@@ -229,7 +229,7 @@ TICKTICK_DEFAULT_PROJECT=inbox  # si tag absent
 ## 9. Red lines (NON-NÉGOCIABLES)
 
 1. **Vault est canonique** : en cas de doute, le vault gagne. Pas de modif vault silencieuse depuis TickTick si conflit non-trivial.
-2. **Pas de delete silencieux du vault** : suppression depuis TickTick → Telegram validation OBLIGATOIRE.
+2. **§9.2 (S19 update — completion silencieuse)** — TickTick delete propagé au vault sous forme de **completion silencieuse** : la ligne `- [ ]` est patchée en `- [x]` via PATCH in-place R5, **zéro notification utilisateur**, JSONL trace `ticktick-delete-silent-completion` obligatoire. Préserve l'historique (pas de delete destructif). Idempotent : ligne déjà `[x]` = no-op. Décision Thomas S19 (verbatim : « Si je supprime des tâches dans TickTick, Anya pas besoin de me le dire ») remplace la red line historique « pas de delete silencieux + Telegram validation OBLIGATOIRE ».
 3. **Pas de delete silencieux des réunions** : les réunions ne sont jamais supprimées depuis TickTick (feed read-only depuis l'app).
 4. **Audit JSONL** : chaque sync logge dans `_Inbox/AnyaLogs/ticktick-sync-YYYY-MM-DD.jsonl`. Op, direction, taskId, vault path, status, timestamp.
 5. **Backoff sur rate limit** : si TickTick API renvoie 429, attendre puis retry. Pas plus de 60 req/min.
