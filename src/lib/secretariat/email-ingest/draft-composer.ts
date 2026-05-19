@@ -18,20 +18,20 @@
  * Spec: docs/session-memo-s15.md §5B.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { EmailMessage } from '../gmail-source/types';
 import type { TriageResult } from '../triage/types';
 import { createDraft } from '../gmail-source/gmail-client';
 import { findContactCached, readVaultFile } from '../vault-reader';
 import { parseObsidianFile } from '../vault-client/frontmatter';
-import { recordAnthropicUsage } from '../health-monitor/anthropic-usage';
+import { callAnthropic } from '../llm/client';
+import { SONNET_4 } from '../llm/models';
 
 // ============================================================
 // Constantes
 // ============================================================
 
 /** Modèle pour la rédaction de brouillons */
-const SONNET_MODEL = 'claude-sonnet-4-20250514';
+const SONNET_MODEL = SONNET_4;
 
 /** Timeout API Anthropic */
 const ANTHROPIC_TIMEOUT_MS = 30_000;
@@ -72,26 +72,6 @@ interface TonalityContext {
   instructions: string;
   /** Nom du contact (pour personnaliser le brouillon) */
   contactName?: string;
-}
-
-// ============================================================
-// Client Anthropic (singleton)
-// ============================================================
-
-let cachedClient: Anthropic | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (cachedClient !== null) {
-    return cachedClient;
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY manquant');
-  }
-
-  cachedClient = new Anthropic({ apiKey, maxRetries: 2 });
-  return cachedClient;
 }
 
 // ============================================================
@@ -290,52 +270,24 @@ async function generateDraftBody(
   triage: TriageResult,
   tonality: TonalityContext,
 ): Promise<string | null> {
-  const client = getAnthropicClient();
-
   const systemPrompt = buildSystemPrompt(tonality);
   const userMessage = buildUserMessage(email, triage, tonality);
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
-
   try {
-    const response = await client.messages.create(
-      {
-        model: SONNET_MODEL,
-        max_tokens: 1024,
-        system: [
-          {
-            type: 'text' as const,
-            text: systemPrompt,
-            cache_control: { type: 'ephemeral' as const },
-          },
-        ],
-        messages: [{ role: 'user', content: userMessage }],
-      },
-      { signal: controller.signal },
-    );
-
-    // Track usage Anthropic (fire-and-forget)
-    try {
-      void recordAnthropicUsage({
-        model: SONNET_MODEL,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        cacheReadTokens: (response.usage as unknown as Record<string, number>).cache_read_input_tokens ?? 0,
-      });
-    } catch (e) {
-      console.warn('[anthropic-usage] record failed', e);
-    }
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    return textBlock && 'text' in textBlock ? textBlock.text.trim() : null;
+    const { text } = await callAnthropic({
+      family: 'sonnet',
+      modelOverride: SONNET_MODEL,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+      maxTokens: 1024,
+      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+    });
+    return text || null;
   } catch (err) {
     console.warn(
       `[draft-composer] Sonnet erreur : ${err instanceof Error ? err.message : String(err)}`,
     );
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 

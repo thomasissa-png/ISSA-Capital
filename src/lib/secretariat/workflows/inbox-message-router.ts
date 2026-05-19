@@ -14,10 +14,11 @@
  * Décision Thomas : pas de routage automatique, c'est Thomas qui choisit.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { sendTelegramMessageWithButtons, sendTypingAction } from '../telegram';
 import { createCalendarEvent } from '@/lib/google/calendar';
 import { appendToTodoInbox } from '../drive-todo';
+import { callAnthropic } from '../llm/client';
+import { HAIKU_4_5 } from '../llm/models';
 
 // ============================================================
 // Types
@@ -45,7 +46,7 @@ const CACHE_TTL_MS = 10 * 60 * 1_000; // 10 minutes
 const ANTHROPIC_TIMEOUT_MS = 30_000;
 // Haiku 4.5 : suffisant pour extraction JSON simple + résolution date FR
 // + transcription audio native. ~5x moins cher et ~2x plus rapide que Sonnet.
-const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+const ANTHROPIC_MODEL = HAIKU_4_5;
 
 /** Préfixe callback_data pour les boutons du router */
 export const ROUTER_CALLBACK_PREFIX = 'inbox_router:';
@@ -81,26 +82,6 @@ function cleanExpiredEntries(): void {
       cache.delete(key);
     }
   }
-}
-
-// ============================================================
-// Anthropic client — singleton lazy (réutilise le même que le webhook)
-// ============================================================
-
-let cachedClient: Anthropic | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (cachedClient !== null) {
-    return cachedClient;
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === '__TO_FILL__') {
-    throw new Error('ANTHROPIC_API_KEY manquante ou placeholder');
-  }
-
-  cachedClient = new Anthropic({ apiKey, maxRetries: 2 });
-  return cachedClient;
 }
 
 // ============================================================
@@ -142,40 +123,17 @@ async function extractFromText(text: string): Promise<{
   error?: string;
 }> {
   try {
-    const client = getAnthropicClient();
     const today = new Date().toISOString().split('T')[0]!;
     const systemPrompt = buildExtractionPrompt(today);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
-
-    let message;
-    try {
-      message = await client.messages.create(
-        {
-          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
-          max_tokens: 512,
-          system: [
-            {
-              type: 'text' as const,
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' as const },
-            },
-          ],
-          messages: [{ role: 'user', content: text }],
-        },
-        { signal: controller.signal },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-
-    // Extraire le texte
-    const rawText = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
+    const { text: rawText } = await callAnthropic({
+      family: 'haiku',
+      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: text }],
+      maxTokens: 512,
+      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+    });
 
     return parseExtractionResult(rawText);
   } catch (err) {

@@ -9,7 +9,6 @@
  * Modèle : claude-haiku-4-5-20251001 (mention exacte du model ID).
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import type { EmailMessage } from '../gmail-source/types';
@@ -18,37 +17,18 @@ import {
   type TriageResult,
   type KnownContact,
 } from './types';
-import { recordAnthropicUsage } from '../health-monitor/anthropic-usage';
+import { callAnthropic } from '../llm/client';
+import { HAIKU_4_5 } from '../llm/models';
 
 // ============================================================
 // Constantes
 // ============================================================
 
 /** Modèle exact — Haiku 4.5 pour économie (~5x moins cher que Sonnet) */
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
+const HAIKU_MODEL = HAIKU_4_5;
 
 const TIMEOUT_MS = 30_000;
 const MAX_BODY_CHARS = 3000;
-
-// ============================================================
-// Anthropic client — singleton lazy
-// ============================================================
-
-let cachedClient: Anthropic | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (cachedClient !== null) {
-    return cachedClient;
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === '__TO_FILL__') {
-    throw new Error('ANTHROPIC_API_KEY manquante ou placeholder');
-  }
-
-  cachedClient = new Anthropic({ apiKey, maxRetries: 2 });
-  return cachedClient;
-}
 
 // ============================================================
 // Prompt système
@@ -191,51 +171,15 @@ async function callHaiku(
   userMessage: string,
 ): Promise<TriageResult | null> {
   try {
-    const client = getAnthropicClient();
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    let response;
-    try {
-      response = await client.messages.create(
-        {
-          model: HAIKU_MODEL,
-          max_tokens: 1024,
-          system: [
-            {
-              type: 'text' as const,
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' as const },
-            },
-          ],
-          messages: [{ role: 'user', content: userMessage }],
-        },
-        { signal: controller.signal },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-
-    // Track usage Anthropic (fire-and-forget)
-    try {
-      void recordAnthropicUsage({
-        model: HAIKU_MODEL,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        cacheReadTokens: (response.usage as unknown as Record<string, number>).cache_read_input_tokens ?? 0,
-      });
-    } catch (e) {
-      console.warn('[anthropic-usage] record failed', e);
-    }
-
-    // Extraire le texte brut
-    const rawText = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
-
-    return parseTriageResponse(rawText);
+    const { text } = await callAnthropic({
+      family: 'haiku',
+      modelOverride: HAIKU_MODEL,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+      maxTokens: 1024,
+      timeoutMs: TIMEOUT_MS,
+    });
+    return parseTriageResponse(text);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[triage] erreur appel Haiku : ${msg}`);

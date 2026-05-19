@@ -21,7 +21,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
+import { callAnthropic } from '@/lib/secretariat/llm/client';
+import { SONNET_4 } from '@/lib/secretariat/llm/models';
 import { TelegramUpdateSchema, ClaudeResponseSchema } from '@/lib/secretariat/types';
 import type { CRDraft } from '@/lib/secretariat/types';
 import {
@@ -158,26 +160,6 @@ function loadSystemPrompt(): string {
 }
 
 // ============================================================
-// Anthropic client — singleton lazy
-// ============================================================
-
-let cachedClient: Anthropic | null = null;
-
-function getAnthropicClient(): Anthropic {
-  if (cachedClient !== null) {
-    return cachedClient;
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === '__TO_FILL__') {
-    throw new Error('ANTHROPIC_API_KEY manquante ou placeholder');
-  }
-
-  cachedClient = new Anthropic({ apiKey, maxRetries: 2 });
-  return cachedClient;
-}
-
-// ============================================================
 // Vérification du secret webhook
 // ============================================================
 
@@ -227,7 +209,7 @@ function isAllowedChatId(chatId: number): boolean {
 // ============================================================
 
 const ANTHROPIC_TIMEOUT_MS = 60_000;
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+const ANTHROPIC_MODEL = SONNET_4;
 
 /**
  * Génère l'instruction temporelle dynamique pour le system prompt.
@@ -286,7 +268,6 @@ async function generateCR(
 }> {
   try {
     let systemPrompt = loadSystemPrompt();
-    const client = getAnthropicClient();
 
     // Injecter la base de contacts récurrents dans le system prompt
     const contactsBlock = await formatContactsForPrompt();
@@ -301,9 +282,6 @@ async function generateCR(
     // Le contexte temporel (dates, "ce matin"→date ISO) est maintenant dans
     // timeInstruction (injecté dans le system prompt). Ici on ajoute juste l'historique.
     const enrichedMessage = `[${recentCRs}]\n\n${messageText}`;
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
 
     const timeInstruction = buildTimeInstruction();
 
@@ -370,30 +348,28 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
       userContent = enrichedMessage;
     }
 
-    let message;
-    try {
-      message = await client.messages.create(
+    // Wrapper LLM unifié : cache_control auto sur la partie stable
+    // (systemPrompt + searchInstruction), partie dynamique (timeInstruction)
+    // concaténée sans cache pour préserver la variabilité de l'heure.
+    const { message } = await callAnthropic({
+      family: 'sonnet',
+      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+      system: systemPrompt + searchInstruction,
+      dynamicSystem: timeInstruction,
+      maxTokens: 4096,
+      tools: [
         {
-          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
-          max_tokens: 4096,
-          system: systemPrompt + timeInstruction + searchInstruction,
-          tools: [
-            {
-              type: 'web_search_20250305' as const,
-              name: 'web_search',
-              max_uses: 3,
-            },
-          ],
-          messages: [
-            ...conversationHistory,
-            { role: 'user' as const, content: userContent },
-          ],
+          type: 'web_search_20250305' as const,
+          name: 'web_search',
+          max_uses: 3,
         },
-        { signal: controller.signal },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
+      ],
+      messages: [
+        ...conversationHistory,
+        { role: 'user' as const, content: userContent },
+      ],
+      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+    });
 
     // Extraire le texte de la réponse (ignore les blocs tool_use/web_search_result)
     const textParts: string[] = [];
@@ -473,37 +449,21 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
       const retryPrompt = `Le JSON que tu as renvoyé est invalide. Voici le JSON :\n\`\`\`json\n${cleanJson.slice(0, 3000)}\n\`\`\`\n\nErreurs de validation :\n${issues}\n\nCorrige le JSON et renvoie-le complet. Ne renvoie QUE le JSON corrigé, sans texte avant ou après.`;
 
       try {
-        const retryController = new AbortController();
-        const retryTimer = setTimeout(() => retryController.abort(), ANTHROPIC_TIMEOUT_MS);
-
-        let retryMessage;
-        try {
-          retryMessage = await client.messages.create(
-            {
-              model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
-              max_tokens: 4096,
-              system: systemPrompt + timeInstruction + searchInstruction,
-              messages: [
-                ...conversationHistory,
-                { role: 'user' as const, content: userContent },
-                { role: 'assistant' as const, content: rawText },
-                { role: 'user' as const, content: retryPrompt },
-              ],
-            },
-            { signal: retryController.signal },
-          );
-        } finally {
-          clearTimeout(retryTimer);
-        }
-
-        // Extraire le texte de la réponse retry
-        const retryTextParts: string[] = [];
-        for (const block of retryMessage.content) {
-          if (block.type === 'text') {
-            retryTextParts.push(block.text);
-          }
-        }
-        const retryRawText = retryTextParts.join('\n').trim();
+        // Retry Zod via wrapper unifié : cache_control auto + tracking usage.
+        const { text: retryRawText } = await callAnthropic({
+          family: 'sonnet',
+          modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+          system: systemPrompt + searchInstruction,
+          dynamicSystem: timeInstruction,
+          maxTokens: 4096,
+          messages: [
+            ...conversationHistory,
+            { role: 'user' as const, content: userContent },
+            { role: 'assistant' as const, content: rawText },
+            { role: 'user' as const, content: retryPrompt },
+          ],
+          timeoutMs: ANTHROPIC_TIMEOUT_MS,
+        });
 
         // Extraire le JSON de la réponse retry
         let retryJson: string | null = null;
@@ -626,7 +586,6 @@ async function generateCRFromVoice(
 }> {
   try {
     let systemPrompt = loadSystemPrompt();
-    const client = getAnthropicClient();
 
     const contactsBlock = await formatContactsForPrompt();
     systemPrompt = systemPrompt.replace(
@@ -696,33 +655,27 @@ async function generateCRFromVoice(
     });
 
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
-
-    let message;
-    try {
-      message = await client.messages.create(
+    // Wrapper LLM unifié pour message vocal : cache_control auto sur
+    // (systemPrompt + searchInstruction), timeInstruction en dynamique.
+    const { message } = await callAnthropic({
+      family: 'sonnet',
+      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+      system: systemPrompt + searchInstruction,
+      dynamicSystem: timeInstruction,
+      maxTokens: 4096,
+      tools: [
         {
-          model: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
-          max_tokens: 4096,
-          system: systemPrompt + timeInstruction + searchInstruction,
-          tools: [
-            {
-              type: 'web_search_20250305' as const,
-              name: 'web_search',
-              max_uses: 3,
-            },
-          ],
-          messages: [
-            ...conversationHistory,
-            { role: 'user' as const, content: contentBlocks as unknown as Anthropic.MessageCreateParams['messages'][number]['content'] },
-          ],
+          type: 'web_search_20250305' as const,
+          name: 'web_search',
+          max_uses: 3,
         },
-        { signal: controller.signal },
-      );
-    } finally {
-      clearTimeout(timer);
-    }
+      ],
+      messages: [
+        ...conversationHistory,
+        { role: 'user' as const, content: contentBlocks as unknown as Anthropic.Messages.MessageParam['content'] },
+      ],
+      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+    });
 
     // Extraire le texte de la réponse
     const textParts: string[] = [];
