@@ -27,6 +27,7 @@ import { scanVault } from '@/lib/secretariat/ticktick-sync/vault-scanner';
 import { runPushEngine, createDefaultClient } from '@/lib/secretariat/ticktick-sync/push-engine';
 import { loadSyncState, saveSyncState } from '@/lib/secretariat/ticktick-sync/state-store';
 import { projectsReady, missingProjects } from '@/lib/secretariat/ticktick-sync/project-manager';
+import { releaseSyncLock, tryAcquireSyncLock } from '@/lib/secretariat/ticktick-sync/pull-engine';
 import { sendTickTickProjectsConfirmCard } from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
 
 // ============================================================
@@ -85,9 +86,28 @@ export async function GET(req: NextRequest): Promise<Response> {
       });
     }
 
-    const tasks = await scanVault();
-    const client = createDefaultClient(accessToken);
-    const { stats, results } = await runPushEngine(tasks, state, client);
+    // Verrou anti-concurrence push/pull (symétrique cron-pull, S18.3).
+    // Si un pull est en cours (lock < 30s), on skip ce push.
+    if (!tryAcquireSyncLock(state, 'push')) {
+      console.warn('[cron-ticktick-sync-push] verrou occupé — skip ce run');
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: 'sync_lock_busy',
+      });
+    }
+
+    let stats;
+    let results;
+    try {
+      const tasks = await scanVault();
+      const client = createDefaultClient(accessToken);
+      const pushed = await runPushEngine(tasks, state, client);
+      stats = pushed.stats;
+      results = pushed.results;
+    } finally {
+      releaseSyncLock(state);
+    }
 
     const saved = await saveSyncState(state);
     if (!saved) {

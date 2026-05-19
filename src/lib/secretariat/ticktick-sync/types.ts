@@ -282,3 +282,51 @@ export type ConflictDecision =
   | 'ticktick_wins'   // ticktickModifiedAt > vaultLastSync → patch vault
   | 'vault_wins'      // ticktickModifiedAt <= vaultLastSync → no-op pull
   | 'unknown_state';  // pas d'entrée state → tâche orpheline TickTick (créée mobile)
+
+// ============================================================
+// Audit log JSONL (red line §4 spec) — 1 ligne par op
+// ============================================================
+
+/**
+ * Opérations tracées dans l'audit log.
+ *   - Push : create, update, complete, delete, skip
+ *   - Pull : create-from-tt, patch-line, complete-sync, conflict-*
+ *   - Telegram : pending-delete (carte demandée), delete (action 'yes' validée),
+ *     keep (action 'keep' clear pending)
+ */
+export type AuditOp =
+  | 'create'
+  | 'update'
+  | 'complete'
+  | 'delete'
+  | 'skip'
+  | 'conflict-vault-wins'
+  | 'conflict-tt-wins'
+  | 'create-from-tt'
+  | 'patch-line'
+  | 'complete-sync'
+  | 'pending-delete'
+  | 'keep';
+
+export type AuditDirection = 'push' | 'pull';
+
+export type AuditStatus = 'ok' | 'error';
+
+/** Entrée d'audit log JSONL (1 ligne = 1 entrée sérialisée en JSON). */
+export interface AuditEntry {
+  /** ISO 8601 UTC */
+  ts: string;
+  op: AuditOp;
+  direction: AuditDirection;
+  status: AuditStatus;
+  /** ID TickTick si applicable */
+  taskId?: string;
+  /** Chemin vault relatif si applicable */
+  vaultPath?: string;
+  /** Numéro de ligne 1-indexed si applicable */
+  vaultLine?: number;
+  /** Message d'erreur si status=error */
+  error?: string;
+  /** Stats agrégées (utile pour entrées de résumé de cron) */
+  stats?: Record<string, unknown>;
+}

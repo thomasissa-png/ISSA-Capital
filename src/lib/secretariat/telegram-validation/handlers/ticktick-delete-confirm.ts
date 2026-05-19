@@ -33,6 +33,20 @@ import { removeLineByNumber } from '../../ticktick-sync/pull-engine';
 import { resolveFilePath } from '../../vault-client/drive-resolver';
 import { updateFileContent, getAccessToken } from '../../drive-upload';
 import { listMarkdownFiles } from '../../vault-client/drive-resolver';
+import { appendAuditLog } from '../../ticktick-sync/audit-log';
+
+/** Audit log non-bloquant (red line §4). */
+async function safeAudit(
+  entry: Parameters<typeof appendAuditLog>[0],
+): Promise<void> {
+  try {
+    await appendAuditLog(entry);
+  } catch (err) {
+    console.warn(
+      `[ticktick-delete-confirm] audit log non-fatal : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 // ============================================================
 // Constantes publiques
@@ -264,6 +278,14 @@ export async function handleTickTickDeleteCallback(params: {
     if (state.pendingDeletes) delete state.pendingDeletes[parsed.ticktickId];
     if (state.tasks[pending.taskKey]) delete state.tasks[pending.taskKey];
     await saveSyncState(state);
+    await safeAudit({
+      op: 'keep',
+      direction: 'pull',
+      status: 'ok',
+      taskId: parsed.ticktickId,
+      vaultPath: pending.vaultPath,
+      vaultLine: pending.lineNumber,
+    });
     await editMessageText(
       params.chat_id,
       params.message_id,
@@ -279,6 +301,15 @@ export async function handleTickTickDeleteCallback(params: {
     try {
       const ok = await deleteLineFromVault(pending.vaultPath, pending.lineNumber);
       if (!ok) {
+        await safeAudit({
+          op: 'delete',
+          direction: 'pull',
+          status: 'error',
+          taskId: parsed.ticktickId,
+          vaultPath: pending.vaultPath,
+          vaultLine: pending.lineNumber,
+          error: 'delete_line_from_vault returned false',
+        });
         await editMessageText(
           params.chat_id,
           params.message_id,
@@ -290,6 +321,14 @@ export async function handleTickTickDeleteCallback(params: {
       if (state.pendingDeletes) delete state.pendingDeletes[parsed.ticktickId];
       if (state.tasks[pending.taskKey]) delete state.tasks[pending.taskKey];
       await saveSyncState(state);
+      await safeAudit({
+        op: 'delete',
+        direction: 'pull',
+        status: 'ok',
+        taskId: parsed.ticktickId,
+        vaultPath: pending.vaultPath,
+        vaultLine: pending.lineNumber,
+      });
       await editMessageText(
         params.chat_id,
         params.message_id,
@@ -298,6 +337,15 @@ export async function handleTickTickDeleteCallback(params: {
       return 'deleted';
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      await safeAudit({
+        op: 'delete',
+        direction: 'pull',
+        status: 'error',
+        taskId: parsed.ticktickId,
+        vaultPath: pending.vaultPath,
+        vaultLine: pending.lineNumber,
+        error: msg.slice(0, 500),
+      });
       await sendSimpleMessage(
         params.chat_id,
         `Erreur suppression vault : ${msg.slice(0, 200)}`,

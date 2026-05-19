@@ -40,6 +40,20 @@ import {
   type VaultTask,
 } from './types';
 import { resolveProjectId, projectsReady } from './project-manager';
+import { appendAuditLog } from './audit-log';
+
+/** Audit log non-bloquant : try/catch + jamais throw. */
+async function safeAudit(
+  entry: Parameters<typeof appendAuditLog>[0],
+): Promise<void> {
+  try {
+    await appendAuditLog(entry);
+  } catch (err) {
+    console.warn(
+      `[push-engine] audit log non-fatal : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 // ============================================================
 // Constantes
@@ -285,6 +299,14 @@ export async function runPushEngine(
             ticktickId: created.id,
           });
           stats.completed++;
+          await safeAudit({
+            op: 'complete',
+            direction: 'push',
+            status: 'ok',
+            taskId: created.id,
+            vaultPath: task.position.vaultPath,
+            vaultLine: task.position.lineNumber,
+          });
         } else {
           const created = await client.createTask(buildPayload(task, projectId));
           state.tasks[key] = {
@@ -299,13 +321,21 @@ export async function runPushEngine(
             ticktickId: created.id,
           });
           stats.created++;
+          await safeAudit({
+            op: 'create',
+            direction: 'push',
+            status: 'ok',
+            taskId: created.id,
+            vaultPath: task.position.vaultPath,
+            vaultLine: task.position.lineNumber,
+          });
         }
         continue;
       }
 
       // Existing — comparer hash
       if (existing.vaultHash === newHash && task.status !== 2) {
-        // no-op (idempotence)
+        // no-op (idempotence) — pas d'audit (skip silencieux #hide-tcw / no-change)
         results.push({ action: 'skipped', taskKey: key, ticktickId: existing.ticktickId });
         stats.skipped++;
         continue;
@@ -321,6 +351,14 @@ export async function runPushEngine(
           ticktickId: existing.ticktickId,
         });
         stats.completed++;
+        await safeAudit({
+          op: 'complete',
+          direction: 'push',
+          status: 'ok',
+          taskId: existing.ticktickId,
+          vaultPath: task.position.vaultPath,
+          vaultLine: task.position.lineNumber,
+        });
       } else {
         await client.updateTask(
           existing.ticktickId,
@@ -338,12 +376,29 @@ export async function runPushEngine(
           ticktickId: existing.ticktickId,
         });
         stats.updated++;
+        await safeAudit({
+          op: 'update',
+          direction: 'push',
+          status: 'ok',
+          taskId: existing.ticktickId,
+          vaultPath: task.position.vaultPath,
+          vaultLine: task.position.lineNumber,
+        });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       recordError(stats, `${key}: ${msg}`);
       results.push({ action: 'skipped', taskKey: key, error: msg });
       stats.skipped++;
+      await safeAudit({
+        op: 'skip',
+        direction: 'push',
+        status: 'error',
+        taskId: existing?.ticktickId,
+        vaultPath: task.position.vaultPath,
+        vaultLine: task.position.lineNumber,
+        error: msg.slice(0, 500),
+      });
     }
   }
 
@@ -359,11 +414,24 @@ export async function runPushEngine(
         ticktickId: entry.ticktickId,
       });
       stats.deleted++;
+      await safeAudit({
+        op: 'delete',
+        direction: 'push',
+        status: 'ok',
+        taskId: entry.ticktickId,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       recordError(stats, `delete ${key}: ${msg}`);
       results.push({ action: 'skipped', taskKey: key, error: msg });
       stats.skipped++;
+      await safeAudit({
+        op: 'skip',
+        direction: 'push',
+        status: 'error',
+        taskId: entry.ticktickId,
+        error: `delete: ${msg.slice(0, 500)}`,
+      });
     }
   }
 

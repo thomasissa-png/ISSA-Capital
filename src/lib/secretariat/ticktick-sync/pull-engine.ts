@@ -40,6 +40,20 @@ import {
   type TickTickRawTask,
   type VaultTask,
 } from './types';
+import { appendAuditLog } from './audit-log';
+
+/** Audit log non-bloquant : try/catch + jamais throw. */
+async function safeAudit(
+  entry: Parameters<typeof appendAuditLog>[0],
+): Promise<void> {
+  try {
+    await appendAuditLog(entry);
+  } catch (err) {
+    console.warn(
+      `[pull-engine] audit log non-fatal : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 // ============================================================
 // Conflict resolver — last-write-wins arbitre §4
@@ -372,6 +386,13 @@ export async function runPullEngine(
         fileCache.set(todoPath, { content: newContent, fileId: file.fileId });
         results.push({ action: 'created_in_vault', ticktickId: tt.id, taskKey: newKey });
         stats.created++;
+        await safeAudit({
+          op: 'create-from-tt',
+          direction: 'pull',
+          status: 'ok',
+          taskId: tt.id,
+          vaultPath: todoPath,
+        });
         continue;
       }
 
@@ -406,6 +427,14 @@ export async function runPullEngine(
                 fileCache.set(vaultPath, { content: newContent, fileId: file.fileId });
                 results.push({ action: 'completed_in_vault', ticktickId: tt.id, taskKey: key });
                 stats.completed++;
+                await safeAudit({
+                  op: 'complete-sync',
+                  direction: 'pull',
+                  status: 'ok',
+                  taskId: tt.id,
+                  vaultPath,
+                  vaultLine: lineNumber,
+                });
                 continue;
               }
             }
@@ -447,16 +476,46 @@ export async function runPullEngine(
         fileCache.set(vaultPath, { content: newContent, fileId: file.fileId });
         results.push({ action: 'patched_vault', ticktickId: tt.id, taskKey: key });
         stats.patched++;
+        await safeAudit({
+          op: 'patch-line',
+          direction: 'pull',
+          status: 'ok',
+          taskId: tt.id,
+          vaultPath,
+          vaultLine: lineNumber,
+        });
+        await safeAudit({
+          op: 'conflict-tt-wins',
+          direction: 'pull',
+          status: 'ok',
+          taskId: tt.id,
+          vaultPath,
+          vaultLine: lineNumber,
+        });
         continue;
       }
 
       // vault_wins → no-op (push gérera)
       results.push({ action: 'vault_wins', ticktickId: tt.id, taskKey: key });
       stats.vaultWins++;
+      await safeAudit({
+        op: 'conflict-vault-wins',
+        direction: 'pull',
+        status: 'ok',
+        taskId: tt.id,
+      });
     } catch (err) {
-      recordError(stats, `${tt.id}: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      recordError(stats, `${tt.id}: ${msg}`);
       results.push({ action: 'skipped', ticktickId: tt.id, error: String(err) });
       stats.skipped++;
+      await safeAudit({
+        op: 'skip',
+        direction: 'pull',
+        status: 'error',
+        taskId: tt.id,
+        error: msg.slice(0, 500),
+      });
     }
   }
 
@@ -490,13 +549,40 @@ export async function runPullEngine(
       if (ok) {
         results.push({ action: 'delete_requested', ticktickId: entry.ticktickId, taskKey: key });
         stats.deletedRequested++;
+        await safeAudit({
+          op: 'pending-delete',
+          direction: 'pull',
+          status: 'ok',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+        });
       } else {
         recordError(stats, `notifyDelete échec ${key}`);
         stats.skipped++;
+        await safeAudit({
+          op: 'pending-delete',
+          direction: 'pull',
+          status: 'error',
+          taskId: entry.ticktickId,
+          vaultPath,
+          vaultLine: lineNumber,
+          error: 'notifyDelete returned false',
+        });
       }
     } catch (err) {
-      recordError(stats, `notifyDelete ${key}: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      recordError(stats, `notifyDelete ${key}: ${msg}`);
       stats.skipped++;
+      await safeAudit({
+        op: 'pending-delete',
+        direction: 'pull',
+        status: 'error',
+        taskId: entry.ticktickId,
+        vaultPath,
+        vaultLine: lineNumber,
+        error: msg.slice(0, 500),
+      });
     }
   }
 
