@@ -416,7 +416,10 @@ describe('findProjetFicheByEntite', () => {
   });
 
   it('renvoie null si la fiche existe pas dans le vault (dossier vide)', async () => {
-    mockListMarkdownFiles.mockResolvedValueOnce([]);
+    // S20.D : ni à plat ni en sous-dossier → 2 listings vides
+    mockListMarkdownFiles
+      .mockResolvedValueOnce([]) // 02. Pro à plat
+      .mockResolvedValueOnce([]); // 02. Pro/ISSA Capital sous-dossier
 
     const result = await findProjetFicheByEntite('IC');
 
@@ -425,9 +428,10 @@ describe('findProjetFicheByEntite', () => {
   });
 
   it('renvoie null si la fiche cherchée est absente (autre fiche présente)', async () => {
-    mockListMarkdownFiles.mockResolvedValueOnce([
-      { id: 'fileid-other', name: 'Autre Projet.md' },
-    ]);
+    // S20.D : autre fiche à plat, et sous-dossier ISSA Capital inexistant ([])
+    mockListMarkdownFiles
+      .mockResolvedValueOnce([{ id: 'fileid-other', name: 'Autre Projet.md' }])
+      .mockResolvedValueOnce([]);
 
     const result = await findProjetFicheByEntite('IC');
 
@@ -435,7 +439,12 @@ describe('findProjetFicheByEntite', () => {
   });
 
   it('renvoie null si le listing Drive échoue (fallback gracieux, pas de throw)', async () => {
-    mockListMarkdownFiles.mockRejectedValueOnce(new Error('Drive API down'));
+    // S20.D : les 2 listings échouent (parent ET sous-dossier).
+    // listVaultFolder catche les throws et retourne [] → findProjetFicheByEntite
+    // ne trouve rien → null. Pas de throw remontant à l'appelant.
+    mockListMarkdownFiles
+      .mockRejectedValueOnce(new Error('Drive API down'))
+      .mockRejectedValueOnce(new Error('Drive API down'));
 
     // Ne throw pas
     const result = await findProjetFicheByEntite('IC');
@@ -450,6 +459,138 @@ describe('findProjetFicheByEntite', () => {
 
     expect(result).not.toBeNull();
     expect(result!.fileId).toBe('fileid-IC');
+  });
+
+  // ============================================================
+  // S20.D — Scan 2 niveaux (fiche à plat OU dans sous-dossier par entité)
+  // ============================================================
+
+  describe('S20.D — sous-dossiers par entité', () => {
+    it('fiche à plat trouvée → retourne fileId direct (régression S17 préservée)', async () => {
+      // Comportement historique : un seul appel au dossier parent suffit
+      mockListMarkdownFiles.mockResolvedValueOnce(VAULT_FICHES);
+
+      const result = await findProjetFicheByEntite('IC');
+
+      expect(result).not.toBeNull();
+      expect(result!.fileId).toBe('fileid-IC');
+      expect(result!.resolvedFilename).toBe('ISSA Capital.md');
+      // Un seul listing : pas de fallback sous-dossier nécessaire
+      expect(mockListMarkdownFiles).toHaveBeenCalledTimes(1);
+      expect(mockListMarkdownFiles).toHaveBeenCalledWith(
+        _vaultReaderInternals.PROJET_FICHE_FOLDER_PATH,
+      );
+    });
+
+    it('fiche dans sous-dossier trouvée → scan 2 niveaux, retourne fileId', async () => {
+      // 1er listing (02. Pro) → vide (refactor en cours, fiche déplacée)
+      // 2e listing (02. Pro/ISSA Capital) → contient la fiche
+      mockListMarkdownFiles
+        .mockResolvedValueOnce([]) // dossier parent vide à plat
+        .mockResolvedValueOnce([
+          { id: 'fileid-IC-subfolder', name: 'ISSA Capital.md' },
+        ]);
+
+      const result = await findProjetFicheByEntite('IC');
+
+      expect(result).not.toBeNull();
+      expect(result!.fileId).toBe('fileid-IC-subfolder');
+      expect(result!.ficheName).toBe('ISSA Capital');
+      expect(result!.resolvedFilename).toBe('ISSA Capital.md');
+
+      // Vérifie les 2 chemins interrogés (ordre = parent puis sous-dossier)
+      expect(mockListMarkdownFiles).toHaveBeenNthCalledWith(
+        1,
+        _vaultReaderInternals.PROJET_FICHE_FOLDER_PATH,
+      );
+      expect(mockListMarkdownFiles).toHaveBeenNthCalledWith(
+        2,
+        `${_vaultReaderInternals.PROJET_FICHE_FOLDER_PATH}/ISSA Capital`,
+      );
+    });
+
+    it('fiche à plat absente ET sous-dossier vide → null + cache null', async () => {
+      // Cas dégénéré : aucun des 2 niveaux ne contient la fiche
+      mockListMarkdownFiles
+        .mockResolvedValueOnce([{ id: 'other', name: 'Autre Truc.md' }])
+        .mockResolvedValueOnce([]); // sous-dossier inexistant → [] gracieux
+
+      const result = await findProjetFicheByEntite('IC');
+
+      expect(result).toBeNull();
+      // Le null est caché pour éviter les retries inutiles
+      expect(getVaultCacheSize().projetFiches).toBe(1);
+    });
+
+    it('mix : 3 fiches à plat + 1 entité refactorisée en sous-dossier → toutes résolvent', async () => {
+      // Scénario réel transition Thomas : ISSA Capital refactor, GO/VI/VV pas encore
+      const PARTIAL_FLAT = [
+        { id: 'fileid-GO', name: 'Gradient One.md' },
+        { id: 'fileid-VI', name: 'Versi Immobilier.md' },
+        { id: 'fileid-VV', name: 'Versi Invest.md' },
+        // ISSA Capital absent — déplacé en sous-dossier
+      ];
+
+      // IC : 1er listing parent (sans IC) + 2e listing sous-dossier (avec IC)
+      // GO/VI/VV : cache folderCache (1h) → réutilisent le PARTIAL_FLAT chargé pour IC
+      mockListMarkdownFiles
+        .mockResolvedValueOnce(PARTIAL_FLAT) // appel 1 : 02. Pro (depuis IC)
+        .mockResolvedValueOnce([
+          { id: 'fileid-IC-sub', name: 'ISSA Capital.md' },
+        ]); // appel 2 : 02. Pro/ISSA Capital
+
+      const ic = await findProjetFicheByEntite('IC');
+      const go = await findProjetFicheByEntite('GO');
+      const vi = await findProjetFicheByEntite('VI');
+      const vv = await findProjetFicheByEntite('VV');
+
+      expect(ic!.fileId).toBe('fileid-IC-sub');
+      expect(go!.fileId).toBe('fileid-GO');
+      expect(vi!.fileId).toBe('fileid-VI');
+      expect(vv!.fileId).toBe('fileid-VV');
+
+      // 2 appels seulement : 02. Pro (caché ensuite) + 02. Pro/ISSA Capital
+      expect(mockListMarkdownFiles).toHaveBeenCalledTimes(2);
+    });
+
+    it('cache TTL inchangé (1h) — sous-dossier ne re-listé pas au 2e appel', async () => {
+      mockListMarkdownFiles
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { id: 'fileid-IC-sub', name: 'ISSA Capital.md' },
+        ]);
+
+      const first = await findProjetFicheByEntite('IC');
+      const second = await findProjetFicheByEntite('IC');
+
+      expect(first).toEqual(second);
+      expect(first!.fileId).toBe('fileid-IC-sub');
+      // Cache fiche Projet → 2 listings au total (1 parent + 1 sous-dossier),
+      // pas de re-listing au 2e appel
+      expect(mockListMarkdownFiles).toHaveBeenCalledTimes(2);
+    });
+
+    it('code entité inconnue → short-circuit, aucun listing Drive (régression)', async () => {
+      const result = await findProjetFicheByEntite('XX');
+
+      expect(result).toBeNull();
+      // Garantit que le scan 2 niveaux n'ajoute PAS de coût pour les inconnus
+      expect(mockListMarkdownFiles).not.toHaveBeenCalled();
+    });
+
+    it('sous-dossier match insensible à la casse (issa capital.md dans ISSA Capital/)', async () => {
+      mockListMarkdownFiles
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { id: 'fileid-IC-lower', name: 'issa capital.md' },
+        ]);
+
+      const result = await findProjetFicheByEntite('IC');
+
+      expect(result).not.toBeNull();
+      expect(result!.fileId).toBe('fileid-IC-lower');
+      expect(result!.resolvedFilename).toBe('issa capital.md');
+    });
   });
 
   it('invalideProjetFicheCache vide bien le cache', async () => {

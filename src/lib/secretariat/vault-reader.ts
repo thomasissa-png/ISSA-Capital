@@ -376,31 +376,40 @@ export async function findProjetFicheByEntite(
 
   try {
     // Lister le dossier des fiches Projet (utilise le cache folderCache via listVaultFolder)
+    // Note S20.D : on ne fait PLUS d'early-return sur entries vide, car le refactor
+    // sous-dossiers par entité peut laisser le dossier parent sans .md à plat. Le
+    // fallback sous-dossier (Tentative 2) doit toujours pouvoir s'exécuter.
     const entries = await listVaultFolder(PROJET_FICHE_FOLDER_PATH);
-
-    if (entries.length === 0) {
-      console.warn(
-        `[vault-reader] dossier fiches Projet vide ou introuvable : ${PROJET_FICHE_FOLDER_PATH}`,
-      );
-      __issa_projet_fiche_cache__.set(code, { data: null, ts: Date.now() });
-      return null;
-    }
 
     // Recherche : match exact "Nom.md" puis match par strip d'extension (case-insensitive)
     const targetWithExt = `${ficheName}.md`.toLowerCase();
     const targetBase = ficheName.toLowerCase();
 
-    const found = entries.find((e) => {
+    const matchFiche = (e: VaultFolderEntry): boolean => {
       const name = e.name.toLowerCase();
-      return (
-        name === targetWithExt ||
-        name.replace(/\.md$/, '') === targetBase
-      );
-    });
+      return name === targetWithExt || name.replace(/\.md$/, '') === targetBase;
+    };
+
+    // Tentative 1 — Fiche à plat dans `02. Pro/<FicheName>.md` (structure historique)
+    let found: VaultFolderEntry | undefined = entries.find(matchFiche);
+
+    // Tentative 2 (S20.D) — Fiche dans sous-dossier `02. Pro/<FicheName>/<FicheName>.md`
+    // (structure cible refactor Thomas : un sous-dossier par entité).
+    //
+    // Note implémentation : `listMarkdownFiles` (sous-jacent à `listVaultFolder`) ne
+    // retourne QUE les fichiers .md d'un dossier, jamais les sous-dossiers. On ne peut
+    // donc pas pré-filtrer la liste sur le mimeType. Stratégie : tenter directement le
+    // listing du sous-dossier candidat — si le path n'existe pas, `resolvePath` renvoie
+    // un échec gracieux et `listVaultFolder` renvoie `[]`. Pas de coût supplémentaire.
+    if (!found) {
+      const subfolderPath = `${PROJET_FICHE_FOLDER_PATH}/${ficheName}`;
+      const subEntries = await listVaultFolder(subfolderPath);
+      found = subEntries.find(matchFiche);
+    }
 
     if (!found) {
       console.warn(
-        `[vault-reader] fiche Projet "${ficheName}" non trouvée dans ${PROJET_FICHE_FOLDER_PATH} (entité ${code})`,
+        `[vault-reader] fiche Projet "${ficheName}" non trouvée dans ${PROJET_FICHE_FOLDER_PATH} (ni à plat, ni dans sous-dossier "${ficheName}/") — entité ${code}`,
       );
       __issa_projet_fiche_cache__.set(code, { data: null, ts: Date.now() });
       return null;
