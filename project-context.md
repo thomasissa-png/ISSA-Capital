@@ -261,6 +261,7 @@ Les informations suivantes sont archivées dans `docs/project-context-archive.md
 | fullstack (S17) | 2026-05-19 | docs/archive/secretariat-s4-whatsapp-craft/* (3 fichiers + README), docs/ia/anya-current-architecture.md, docs/ia/README.md | R3 audit S16 : archivage 1620L docs S4 obsolètes (WhatsApp/Craft/SQLite/RBAC) jamais implémentées. Nouveau anya-current-architecture.md (~150L) = source vérité unique stack live S16 (Telegram/Drive/Whisper/mono-user). README index docs/ia. | R3 nettoie pollution doc IA. Stack live unique source vérité. Pas d'agent qui parte sur fausse piste. |
 | fullstack (S17) | 2026-05-19 | vault-reader.ts (findProjetFicheByEntite), cr-writeback.ts (retrait hardcoded), 2 test files (+13 tests, 1268 verts) | R2 ferme W2 audit S16 + dette R7 (#101) commitée S16 (582c85c). Mapping fileId → résolution dynamique par nom canonique dans `02. Projets/02. Pro/`. Cache mémoire TTL 1h (`__issa_projet_fiche_cache__`) cohérent avec contacts-cache. Fallback gracieux null + warn (jamais throw). Commit `8cb26d7`. | Source live > hardcoded. Si Thomas renomme une fiche Projet, write-back suit. Nouvelle entité = +1 ligne mapping nom canonique (pas de fileId). Régularise violation R7 ajoutée S16. |
 | fullstack (S17) | 2026-05-19 | src/lib/secretariat/llm/{client,models}.ts + 2 test files (32 tests), migration 6 call sites (triage.ts, draft-composer.ts, inbox-message-router.ts, webhook/route.ts ×3), lessons-learned.md (#106 propag S17), 1300 tests verts | R1 wrapper LLM unifié ferme W1 audit @ia. cache_control auto + recordAnthropicUsage systématique sur les 6 sites. Webhook : splitSystemPrompt(stable, dynamic) — `systemPrompt + searchInstruction` cached, `timeInstruction` dynamique. Retry 429/500 (3x backoff 1/2/4s) + retry JSON x1 sur format json. Modèles centralisés (HAIKU_4_5, SONNET_4) avec override env ANTHROPIC_MODEL_OVERRIDE_*. | Facture Anthropic désormais 100% trackée (cache_read_input_tokens, cache_creation_input_tokens, output_tokens). Pré-requis pour A/B Sonnet 4.6 (reco S1 audit). Web_search_20250305 tool préservé. Non-régression : 1268 tests existants verts + 32 nouveaux = 1300. |
+| orchestrator (S17 clôture) | 2026-05-19 | Drive PATCH (fiche Thomas Issa via MCP Zapier), session-memo-s18.md | S17 clôture : (1) Déplacement fiche Thomas Issa.md vide `00. Me/` racine → `00. Me/01. Profil/` via PATCH content + PATCH parent in-place R5 (préserve fileId, wikilinks intacts). (2) Diagnostic A4 iCal Thomas : query param `token=` pas `secret=` (bug doc memo S16 corrigé), HTTP 500 cohérent avec absence TICKTICK_ACCESS_TOKEN env (flow OAuth init + callback + copie manuelle). (3) Découverte vault Phase 4 spec déjà écrite par Thomas (S12, 372L, statut "à implémenter"). | iCal fonctionnel après config Replit. Phase 4 sync vault ↔ TickTick = scope unique S18. R5 méthode mature (3e usage MCP : 6 fiches contacts S15 + Thomas Issa S17). |
 
 ---
 
@@ -280,15 +281,15 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 17
+## Mémo de reprise — Session 18
 
-- **Numéro de session** : 17 (clôture S16 le 2026-05-18)
-- **Mémo détaillé** : `docs/session-memo-s17.md` (état complet S16, actions Thomas A4/A5, tests R6 prioritaires)
-- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `582c85c`, 1255 tests verts)
-- **Pas de branche `main`** — voir mémo S17
+- **Numéro de session** : 18 (clôture S17 le 2026-05-19)
+- **Mémo détaillé** : `docs/session-memo-s18.md` (Phase 4 spec + adaptations S15 #102 + jalons découpés)
+- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD post-S17)
+- **Mission unique S18** : Phase 4 sync vault ↔ TickTick (spec Thomas 372L `second-cerveau/Anya - Prompt Claude Code TickTick sync.md`)
 
-### Commande de reprise S17
+### Commande de reprise S18
 
 ```
-@orchestrator — Session S17. Branche `claude/issa-capital-s14-ttl-audit-ZQcQS` (HEAD `582c85c`). Lis docs/session-memo-s17.md + lessons-learned.md. Priorité = tests R6 (A5/Q2/Q3 E2E réels) avant tout nouveau jalon.
+@orchestrator — Session S18. Lis docs/session-memo-s18.md + spec Phase 4 dans le vault. Priorité unique = sync vault ↔ TickTick.
 ```
