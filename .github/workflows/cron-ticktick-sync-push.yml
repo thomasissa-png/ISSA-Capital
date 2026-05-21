@@ -1,9 +1,20 @@
-name: Cron TickTick Sync Push (vault → TickTick, every 5 min)
+# DISABLED S20 — voir Workflow Todo.md SOT vault. Code conservé jusqu'à S21.
+#
+# Architecture S20 : TickTick = hub unique create-only, Todo.md = miroir read-only
+# régénéré toutes les 15min depuis TickTick par `mirror-renderer.ts` (branché sur
+# `cron-ticktick-poll.yml`). Le push vault → TickTick S18 entre en conflit direct
+# avec ce modèle (vault canonique vs TickTick canonique).
+#
+# Endpoint correspondant retourne désormais { ok: true, disabled: true } si la
+# variable d'env TICKTICK_SYNC_LEGACY_DISABLED=1 est positionnée.
+#
+# Suppression définitive prévue S21 (24h après bascule, voir `docs/ia/ticktick-gap-analysis-s20.md`).
+
+name: Cron TickTick Sync Push (DISABLED S20)
 
 on:
-  schedule:
-    # Toutes les 5 minutes
-    - cron: '*/5 * * * *'
+  # schedule: DISABLED S20 — voir en-tête
+  #   - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -11,8 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Trigger TickTick sync push
+      - name: Noop disabled S20
         run: |
-          curl -fsS -X GET \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_BASE_URL }}/api/secretariat/ticktick-sync/cron-push"
+          echo "Workflow désactivé S20 — voir en-tête du fichier."
+          echo "Pour réactiver : décommenter le bloc schedule + retirer TICKTICK_SYNC_LEGACY_DISABLED=1."

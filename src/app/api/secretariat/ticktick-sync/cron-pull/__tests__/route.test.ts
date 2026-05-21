@@ -69,4 +69,26 @@ describe('cron-pull route auth', () => {
     const res = await GET(req);
     expect(res.status).toBe(200);
   });
+
+  it('S20 kill switch — early return { ok:true, disabled:true } si TICKTICK_SYNC_LEGACY_DISABLED=1', async () => {
+    process.env.TICKTICK_SYNC_LEGACY_DISABLED = '1';
+    try {
+      const req = new NextRequest('http://localhost/api/secretariat/ticktick-sync/cron-pull');
+      const res = await GET(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toMatchObject({ ok: true, disabled: true });
+      expect(body.reason).toContain('S18');
+    } finally {
+      delete process.env.TICKTICK_SYNC_LEGACY_DISABLED;
+    }
+  });
+
+  it('S20 kill switch — pas activé si TICKTICK_SYNC_LEGACY_DISABLED absent', async () => {
+    delete process.env.TICKTICK_SYNC_LEGACY_DISABLED;
+    const req = new NextRequest('http://localhost/api/secretariat/ticktick-sync/cron-pull');
+    const res = await GET(req);
+    // Pas de kill switch → comportement normal (401 sans auth)
+    expect(res.status).toBe(401);
+  });
 });

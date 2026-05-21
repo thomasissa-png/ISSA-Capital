@@ -131,6 +131,18 @@ function buildVaultPatcher(): VaultPatcher {
 // ============================================================
 
 export async function GET(req: NextRequest): Promise<Response> {
+  // S20 KILL SWITCH — voir docs/ia/ticktick-gap-analysis-s20.md.
+  // Pull TickTick → vault désactivé : Todo.md devient miroir read-only régénéré
+  // par mirror-renderer.ts (full-file, pas patch ligne par ligne).
+  // Code conservé intact jusqu'à S21 (suppression définitive après 24h validation).
+  if (process.env.TICKTICK_SYNC_LEGACY_DISABLED === '1') {
+    return NextResponse.json({
+      ok: true,
+      disabled: true,
+      reason: 'S18 disabled S20 — see Workflow Todo.md SOT',
+    });
+  }
+
   const authHeader = req.headers.get('authorization');
   const queryToken = req.nextUrl.searchParams.get('token');
   const expectedSecret = process.env.CRON_SECRET;

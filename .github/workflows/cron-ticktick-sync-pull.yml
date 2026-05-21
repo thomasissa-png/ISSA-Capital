@@ -1,10 +1,21 @@
-name: Cron TickTick Sync Pull (TickTick → vault, every 5 min)
+# DISABLED S20 — voir Workflow Todo.md SOT vault. Code conservé jusqu'à S21.
+#
+# Architecture S20 : TickTick = hub unique create-only, Todo.md = miroir read-only
+# régénéré toutes les 15min depuis TickTick par `mirror-renderer.ts` (branché sur
+# `cron-ticktick-poll.yml`). Le pull TickTick → vault S18 PATCH `Todo.md` ligne
+# par ligne, AJOUT sous `## Inbox` — incompatible avec un miroir read-only
+# régénéré full-file.
+#
+# Endpoint correspondant retourne désormais { ok: true, disabled: true } si la
+# variable d'env TICKTICK_SYNC_LEGACY_DISABLED=1 est positionnée.
+#
+# Suppression définitive prévue S21 (24h après bascule, voir `docs/ia/ticktick-gap-analysis-s20.md`).
+
+name: Cron TickTick Sync Pull (DISABLED S20)
 
 on:
-  schedule:
-    # Toutes les 5 minutes (décalé de 2.5min vs cron-push pour éviter concurrence
-    # parfaite — le verrou state.syncLock évite quand même les collisions).
-    - cron: '*/5 * * * *'
+  # schedule: DISABLED S20 — voir en-tête
+  #   - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -12,11 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Wait offset to avoid push collision
-        # 30s offset pour réduire l'overlap avec cron-push (qui tourne au tick 0)
-        run: sleep 30
-      - name: Trigger TickTick sync pull
+      - name: Noop disabled S20
         run: |
-          curl -fsS -X GET \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_BASE_URL }}/api/secretariat/ticktick-sync/cron-pull"
+          echo "Workflow désactivé S20 — voir en-tête du fichier."
+          echo "Pour réactiver : décommenter le bloc schedule + retirer TICKTICK_SYNC_LEGACY_DISABLED=1."
