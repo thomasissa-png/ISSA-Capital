@@ -107,6 +107,15 @@ import {
   HOT_CONTEXT_CALLBACK_PREFIX,
   handleHotContextPatchCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
+// S20 — Telegram → TickTick (create-only) + callback `task_*` (R4)
+import {
+  handleAddTaskFromTelegram,
+  parseAddTaskFromText,
+} from '@/lib/secretariat/handlers/todo-from-telegram';
+import {
+  handleTaskCallback,
+  TASK_CALLBACK_PREFIX,
+} from '@/lib/secretariat/handlers/task';
 // S19 — handler `tickticksync_delete:` retiré (completion silencieuse vault
 // remplace la carte Telegram delete). Code mort supprimé.
 
@@ -1170,6 +1179,21 @@ export async function POST(request: Request): Promise<Response> {
 
       const normalizedText = text.trim().toLowerCase();
 
+      // ── S20 — slash command /todo (création tâche TickTick) ─────
+      // Doit être traité AVANT handleSlashCommand pour préserver la casse
+      // du titre (handleSlashCommand reçoit normalizedText en lowercase).
+      // R4 : préfixe `task_` → handler dédié + dispatch + test E2E.
+      if (normalizedText.startsWith('/todo') || normalizedText.startsWith('/task ')) {
+        const messageId = update.message.message_id;
+        const parsed = await parseAddTaskFromText(text);
+        await handleAddTaskFromTelegram({
+          chatId,
+          messageId,
+          parsed,
+        });
+        return Response.json({ ok: true });
+      }
+
       // ── Niveau 1 : commandes slash ──────────────────────────────
       if (normalizedText.startsWith('/')) {
         return await handleSlashCommand(chatId, normalizedText);
@@ -1688,6 +1712,20 @@ export async function POST(request: Request): Promise<Response> {
           data: callbackData,
           message_id: update.callback_query.message?.message_id ?? 0,
           chat_id: callbackChatId,
+        });
+        return Response.json({ ok: true });
+      }
+
+      // S20 — Telegram → TickTick : callback `task_*` (R4)
+      // Annulation tâche créée depuis Telegram (decision Thomas : completeTask
+      // par défaut, marque [x] côté TickTick, disparaît du miroir au prochain
+      // render). Voir handlers/task.ts + docs/ia/ticktick-gap-analysis-s20.md.
+      if (callbackData.startsWith(TASK_CALLBACK_PREFIX)) {
+        await handleTaskCallback({
+          callbackQueryId,
+          callbackData,
+          chatId: callbackChatId,
+          messageId: update.callback_query.message?.message_id ?? 0,
         });
         return Response.json({ ok: true });
       }
