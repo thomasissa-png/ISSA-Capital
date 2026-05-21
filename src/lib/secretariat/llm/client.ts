@@ -219,6 +219,10 @@ function defaultJsonValidator(rawText: string): boolean {
 }
 
 function recordUsage(message: AnthropicMessage, model: string): void {
+  // Mock-friendly : si `usage` absent (test mock partiel), skip silencieusement.
+  // En prod l'API Anthropic renvoie toujours `usage`.
+  if (!message.usage) return;
+
   try {
     const usage = message.usage as unknown as {
       input_tokens: number;
