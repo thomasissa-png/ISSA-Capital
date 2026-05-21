@@ -542,6 +542,28 @@ Voir B4. C'est le même problème (certificat non généré).
 
 ---
 
+## S20 — Bascule TickTick hub + miroir read-only (livré 2026-05-21)
+
+**Action Thomas requise (1 minute, urgent)** :
+
+1. **Replit Secrets** — Ajouter une variable :
+   - `TICKTICK_SYNC_LEGACY_DISABLED` = `1`
+
+   Cette variable désactive l'ancien moteur bidirectionnel S18 (`ticktick-sync/`) qui poussait vault → TickTick et patchait Todo.md depuis TickTick. Sans cette variable, les anciens crons GitHub (qui sont déjà désactivés côté `.github/workflows/`) continueraient à appeler les endpoints repo si ré-armés manuellement.
+
+2. **Vérification (smoke tests E2E) — à faire dans les 24h suivant le déploiement** :
+   - **Test 1 Telegram → TickTick** : envoyer depuis l'app Telegram le message `/todo Test S20 demain matin`. Attendu : carte de confirmation Telegram avec titre + échéance + priorité + bouton inline `Annuler`. Vérifier dans l'app TickTick (mobile ou web) que la tâche est créée avec tag `anya-telegram`.
+   - **Test 2 régénération miroir** : attendre 15 min (cron `cron-ticktick-poll.yml`). Ouvrir `03. Tâches/Todo.md` dans Obsidian (vault Drive). Attendu : header `<!-- AUTO-GENERATED depuis TickTick. NE PAS ÉDITER. -->` + sections par projet TickTick + section `## Inbox` en tête s'il y a des tâches orphelines.
+   - **Test 3 annulation** : dans Telegram, cliquer le bouton `Annuler` sur la carte du Test 1. Attendu : message Telegram remplacé par "❌ Tâche annulée." + au prochain cron (15 min), la tâche disparaît de `Todo.md` (filtrée car `status === 2`).
+
+3. **Rollback rapide si problème** : retirer `TICKTICK_SYNC_LEGACY_DISABLED` des Secrets Replit, redémarrer le déploiement. L'ancien moteur S18 reprend (mais les crons GitHub restent désactivés — il faut les ré-armer en éditant les workflows si besoin). Le code S18 est conservé intact jusqu'à la suppression définitive S21.
+
+4. **Suppression définitive S21** (post-validation 24h) : retrait du dossier `src/lib/secretariat/ticktick-sync/` + suppression des workflows `cron-ticktick-sync-{pull,push}.yml`.
+
+Voir spec complète : `docs/ia/ticktick-gap-analysis-s20.md` + vault SOT `08. Outils/Anya/Skills/Workflow Todo.md`.
+
+---
+
 ## S18.1 — Sync vault → TickTick (livré 2026-05-19)
 
 **Action Thomas requise** :
