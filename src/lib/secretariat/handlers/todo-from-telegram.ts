@@ -136,17 +136,112 @@ Retourne UNIQUEMENT un JSON strict sans markdown :
 {
   "intent": "add_task",
   "title": "texte de la tâche, VERBATIM (ne reformule pas)",
-  "dueDate": "2026-05-30T09:00:00.000Z" | null,
+  "dueDate": "YYYY-MM-DDTHH:mm:ss" | null,
   "priority": 5 | 3 | 1 | 0 | null,
   "projectName": "nom du projet TickTick mentionné" | null
 }
 
 Règles strictes :
 - title : conserve la phrase brute, retire seulement le préfixe "/todo " ou "/task " s'il est présent.
-- dueDate : uniquement si une date/heure explicite est mentionnée (demain, vendredi, dans 3 jours, 14h, etc.). Sinon null.
+- dueDate : HEURE LOCALE PARIS, format \`YYYY-MM-DDTHH:mm:ss\` SANS Z, SANS offset. Pas de millisecondes. Exemples : "demain 15h" → "2026-05-23T15:00:00", "samedi" (journée entière) → "2026-05-24T00:00:00", "lundi 9h30" → "2026-05-25T09:30:00". Si aucune date/heure mentionnée → null.
+- IMPORTANT : ne JAMAIS convertir en UTC. Le code TS s'en charge avec la timezone Europe/Paris. Renvoie toujours l'heure que l'utilisateur a dite, à Paris.
 - priority : 5 = critique, 3 = important, 1 = priorité basse, 0 = défaut. Seulement si l'utilisateur l'indique explicitement. Sinon null.
 - projectName : seulement si l'utilisateur cite un nom de projet. Sinon null.
 - Pas de markdown autour du JSON. Pas d'explication.`;
+
+// ============================================================
+// Conversion heure locale Paris → TickTick API (DST-safe)
+// ============================================================
+
+/**
+ * Convertit une dueDate "heure locale Paris" (format `YYYY-MM-DDTHH:mm:ss`,
+ * sans Z, sans offset) en triplet `{ dueDate, isAllDay, timeZone }` prêt à
+ * envoyer à l'API TickTick.
+ *
+ * - `isAllDay` = true si l'heure est 00:00:00 (Thomas n'a pas précisé d'heure).
+ * - `dueDate` = ISO UTC correct calculé via `Intl.DateTimeFormat` (DST-safe
+ *   pour `Europe/Paris` : UTC+1 en hiver, UTC+2 en été).
+ * - `timeZone` = `Europe/Paris` toujours quand dueDate présent.
+ *
+ * Retourne `{ dueDate: undefined }` si pas de date.
+ *
+ * Bug Thomas (S20.3) : avant ce fix, Sonnet renvoyait `T15:00:00.000Z` qui
+ * était interprété comme UTC → 15h UTC = 17h Paris été, et sans `isAllDay`/
+ * `timeZone` TickTick affichait minuit pile. Fix : Sonnet renvoie heure locale
+ * Paris, code TS gère la conversion + flags.
+ */
+export function parisLocalToTickTickFields(
+  parisLocalIso: string | undefined,
+): { dueDate: string | undefined; isAllDay: boolean | undefined; timeZone: string | undefined } {
+  if (!parisLocalIso) {
+    return { dueDate: undefined, isAllDay: undefined, timeZone: undefined };
+  }
+
+  // Parser le string : "YYYY-MM-DDTHH:mm:ss" (heure locale Paris)
+  const match = parisLocalIso.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/,
+  );
+  if (!match) {
+    console.warn(
+      `[todo-from-telegram] parisLocalToTickTickFields : format invalide "${parisLocalIso}", envoi tel quel`,
+    );
+    return { dueDate: parisLocalIso, isAllDay: false, timeZone: 'Europe/Paris' };
+  }
+
+  const [, yStr, moStr, dStr, hStr, miStr, sStr] = match;
+  const year = Number(yStr);
+  const month = Number(moStr);
+  const day = Number(dStr);
+  const hour = Number(hStr);
+  const minute = Number(miStr);
+  const second = sStr ? Number(sStr) : 0;
+
+  const isAllDay = hour === 0 && minute === 0 && second === 0;
+
+  // Calcul DST-safe : on construit un timestamp UTC "candidat" puis on
+  // mesure le décalage avec ce que `Europe/Paris` affiche → on corrige.
+  const candidateUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
+  const candidateDate = new Date(candidateUtcMs);
+
+  const parisParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(candidateDate);
+
+  const parisAsMap = Object.fromEntries(
+    parisParts.filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]),
+  );
+  const parisYear = Number(parisAsMap.year);
+  const parisMonth = Number(parisAsMap.month);
+  const parisDay = Number(parisAsMap.day);
+  const parisHour = Number(parisAsMap.hour) % 24;
+  const parisMinute = Number(parisAsMap.minute);
+  const parisSecond = Number(parisAsMap.second);
+
+  const parisAsUtcMs = Date.UTC(
+    parisYear,
+    parisMonth - 1,
+    parisDay,
+    parisHour,
+    parisMinute,
+    parisSecond,
+  );
+
+  // offsetMs = combien Paris est en avance sur UTC (positif en été/hiver)
+  const offsetMs = parisAsUtcMs - candidateUtcMs;
+  // Le vrai UTC = candidat - offset (car candidat était traité comme UTC,
+  // mais l'utilisateur voulait l'heure Paris)
+  const realUtcMs = candidateUtcMs - offsetMs;
+  const dueDate = new Date(realUtcMs).toISOString();
+
+  return { dueDate, isAllDay, timeZone: 'Europe/Paris' };
+}
 
 /**
  * Parse un message texte Telegram en ParsedAddTask via Sonnet 4 (Haiku 4.5 suffit
@@ -348,11 +443,14 @@ export async function handleAddTaskFromTelegram(
   // 3. Resolver projet (best-effort)
   const projectId = await resolveProjectIdByName(parsed.projectName);
 
-  // 4. Création TickTick
+  // 4. Création TickTick — convertir heure locale Paris → ISO UTC + flags TZ
+  const tzFields = parisLocalToTickTickFields(parsed.dueDate);
   const input: CreateTaskInput = {
     title: parsed.title,
     priority: parsed.priority ?? 0,
-    dueDate: parsed.dueDate,
+    dueDate: tzFields.dueDate,
+    isAllDay: tzFields.isAllDay,
+    timeZone: tzFields.timeZone,
     projectId,
     tags: [ANYA_TELEGRAM_TAG],
   };
@@ -720,12 +818,13 @@ Format de sortie :
 {
   "intent": "add_task",
   "title": "...",
-  "dueDate": "ISO 8601" | null,
+  "dueDate": "YYYY-MM-DDTHH:mm:ss" | null,
   "priority": 5 | 3 | 1 | 0 | null,
   "projectName": "..." | null
 }
 
 Règles :
+- dueDate format : HEURE LOCALE PARIS, \`YYYY-MM-DDTHH:mm:ss\` SANS Z, SANS offset, sans millisecondes. Le code TS convertit ensuite vers TickTick avec timezone Europe/Paris. JAMAIS de UTC.
 - Instruction "à 15h" / "plutôt vendredi" / "demain matin" → MAJ dueDate uniquement, garder title/priority/projectName.
 - Instruction "important" / "critique" / "priorité basse" → MAJ priority uniquement.
 - Instruction "change Martin en Marc" / "remplace X par Y" → MAJ title uniquement (preserve la formulation autour).
@@ -745,13 +844,13 @@ const PATCH_DRAFT_FEW_SHOTS: Array<{ role: 'user' | 'assistant'; content: string
     content:
       'Date de référence (now) : 2026-05-21T12:00:00.000Z\n\n' +
       'Draft actuel :\n' +
-      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T00:00:00.000Z","priority":null,"projectName":null}\n\n' +
+      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T00:00:00","priority":null,"projectName":null}\n\n' +
       'Instruction : à 15h',
   },
   {
     role: 'assistant',
     content:
-      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T15:00:00.000Z","priority":null,"projectName":null}',
+      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T15:00:00","priority":null,"projectName":null}',
   },
   // 2. Instruction date "samedi" sur draft sans dueDate
   {
@@ -765,7 +864,7 @@ const PATCH_DRAFT_FEW_SHOTS: Array<{ role: 'user' | 'assistant'; content: string
   {
     role: 'assistant',
     content:
-      '{"intent":"add_task","title":"Faire les courses","dueDate":"2026-05-23T00:00:00.000Z","priority":null,"projectName":null}',
+      '{"intent":"add_task","title":"Faire les courses","dueDate":"2026-05-23T00:00:00","priority":null,"projectName":null}',
   },
   // 3. Instruction priorité "important"
   {

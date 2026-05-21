@@ -46,11 +46,15 @@ export interface CreateTaskInput {
   title: string;
   content?: string;
   desc?: string;
-  dueDate?: string; // ISO 8601
+  dueDate?: string; // ISO 8601 (avec offset ou Z)
   startDate?: string; // ISO 8601
   priority?: number; // 0=none, 1=low, 3=medium, 5=high
   projectId?: string;
   tags?: string[];
+  /** Si true → tâche journée entière (heure ignorée par TickTick). */
+  isAllDay?: boolean;
+  /** IANA timezone (ex: "Europe/Paris") — sinon TickTick affiche en UTC. */
+  timeZone?: string;
 }
 
 export interface UpdateTaskInput {

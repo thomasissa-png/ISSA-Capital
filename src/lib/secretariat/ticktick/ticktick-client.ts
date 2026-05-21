@@ -83,6 +83,8 @@ export async function createTask(input: CreateTaskInput): Promise<TickTickTask> 
     priority: input.priority ?? 0,
     projectId: input.projectId,
     tags: input.tags,
+    isAllDay: input.isAllDay,
+    timeZone: input.timeZone,
   };
 
   return tickTickFetch<TickTickTask>('/task', {
