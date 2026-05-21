@@ -16,6 +16,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { pollTickTickTasks } from '@/lib/secretariat/ticktick/poll';
+import { regenerateTodoMirror } from '@/lib/secretariat/ticktick/mirror-renderer';
 
 // ============================================================
 // GET handler
@@ -57,11 +58,23 @@ export async function GET(req: NextRequest): Promise<Response> {
       (stats.error ? ` — ERROR: ${stats.error}` : ''),
     );
 
+    // S20 — régénération du miroir `03. Tâches/Todo.md` depuis TickTick.
+    // Best-effort isolé : toute erreur reste cantonnée à mirrorStats.error,
+    // le poll continue de tourner même si Drive est down.
+    let mirrorStats: Awaited<ReturnType<typeof regenerateTodoMirror>> | null = null;
+    try {
+      mirrorStats = await regenerateTodoMirror();
+    } catch (err) {
+      console.warn(
+        `[cron-ticktick-poll] erreur régénération miroir (non bloquant) : ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     // Si pollTickTickTasks a remonté une erreur (TickTick down), on
     // retourne 200 quand même — l'erreur est dans stats. Permet à GH
     // Actions de différencier "cron a tourné, TickTick KO" (200 + error
     // dans body) de "endpoint cassé" (5xx).
-    return NextResponse.json({ ok: !stats.error, stats });
+    return NextResponse.json({ ok: !stats.error, stats, mirror: mirrorStats });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn(`[cron-ticktick-poll] erreur pipeline : ${message}`);
