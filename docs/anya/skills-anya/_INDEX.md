@@ -16,11 +16,11 @@
 | | [No-match Contact](./Workflow%20No-match%20Contact.md) | Email expéditeur inconnu | `email/no-match.ts` + `handlers/nomatch.ts` | — | ~10-20/mois |
 | **C. Propagation vault** | [CR Write-back](./Workflow%20CR%20Write-back.md) | Post-génération CR (étape 3.6) | `cr-writeback/` | — | ~16/mois |
 | | [Hot Context Updater](./Workflow%20Hot%20Context%20Updater.md) | Cron 5min (décalé 90s vs TickTick) | `hot-context/updater.ts` | Haiku 4.5 | ~10-20/semaine |
-| **D. Transverses** | [TickTick Sync](./Workflow%20TickTick%20Sync.md) | Cron push 5min + pull 5min + iCal HTTP | `ticktick/` (push/pull/ical) | — | ~50-100/mois |
+| **D. Transverses** | [Workflow Todo](#) (voir vault SOT `08. Outils/Anya/Skills/Workflow Todo.md`) | Hub TickTick + miroir read-only | poll 15min + canaux create-only (Email, Telegram, Plaud, TickTick natif) | — | ~50-100/mois |
 | | [Validation Telegram](./Workflow%20Validation%20Telegram.md) | Tout workflow nécessitant validation | `telegram-validation/` + `pending-store/` | — | ~30-50/semaine |
 | | [Health Monitor](./Workflow%20Health%20Monitor.md) | Cron daily | `health-monitor/` + `anthropic-usage.ts` | — | 1/jour |
 
-**Total : 13 workflows** (12 nouveaux S19 + CR Réunion existant). Aucun split appliqué — `TickTick Sync` regroupe push/pull/iCal dans un seul fichier (3 sous-sections 3.A / 3.B / 3.C) car les 3 sous-pipelines partagent le même verrou anti-concurrence et la même state JSON.
+**Total : 13 workflows** (12 nouveaux S19 + CR Réunion existant). S20 — l'ancien workflow `TickTick Sync` (push/pull bidirectionnel S18) est **remplacé** par `Workflow Todo` (SOT vault). Modèle : TickTick = hub unique, `03. Tâches/Todo.md` = miroir read-only régénéré toutes les 15min. Canaux create-only : Email, Telegram, Plaud, TickTick natif. Code S18 (`ticktick-sync/`) conservé derrière kill switch `TICKTICK_SYNC_LEGACY_DISABLED=1`, suppression définitive S21.
 
 ## Conventions transverses (rappel des règles)
 

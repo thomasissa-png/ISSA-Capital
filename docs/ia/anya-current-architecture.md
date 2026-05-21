@@ -53,7 +53,8 @@ Webhook ack < 5s exigé par Telegram (sinon retry). Toute action lourde (LLM, Dr
 | `triage/` | Classification Haiku 4.5 (6 catégories : apporteur, candidat, contact-pro, locataire, a-classifier, autre). Prompt versionné `triage-v1.md`. |
 | `handlers/` | 6 handlers métier : `apporteur`, `candidat`, `contact-pro`, `locataire`, `a-classifier`, `cr-writeback`. Template unifié via `handlers/types.ts`. |
 | `telegram-validation/` | Pending-store Drive (TTL 7j R3) + cards 5 boutons (valider / modifier / no-match / skip / délai). |
-| `ticktick/` | OAuth direct + polling 15min + iCal export. Sync bidirectionnel vault ↔ TickTick (plan v2 voir `anya-ticktick-prompt-v2.md`). |
+| `ticktick/` | OAuth direct + polling 15min + iCal export + **mirror-renderer** (régénère `03. Tâches/Todo.md` depuis TickTick). Modèle S20 : TickTick = hub unique create-only, `Todo.md` = miroir read-only. Voir `docs/ia/ticktick-gap-analysis-s20.md` et vault SOT `08. Outils/Anya/Skills/Workflow Todo.md`. |
+| `ticktick-sync/` | **DEPRECATED S20** — ancien moteur bidirectionnel push/pull S18 (vault canonique). Désactivé via `TICKTICK_SYNC_LEGACY_DISABLED=1` + crons GitHub commentés. Suppression définitive S21 après 24h de validation du miroir read-only. |
 | `health-monitor/` | 7 items surveillés (Drive, Calendar, Gmail, TickTick, Anthropic, Whisper, FS) + budget alerte mensuel + cron daily. |
 | `vault-client/` | Écriture vault Drive : `updateFileContent()` PATCH in-place (R5), `createFile()`, `searchByName()`. |
 | `vault-reader/` | Lecture live vault Drive : `getFileContent()`, `findByPath()`, cache mémoire TTL 1h. |
