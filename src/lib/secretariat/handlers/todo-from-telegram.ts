@@ -623,7 +623,7 @@ export async function startModifyPreview(
   await editMessageTextWithButtons(
     entry.chatId,
     entry.messageId,
-    `✏️ Tape la version corrigée de la tâche (avec date/heure/priorité si besoin) :`,
+    `✏️ Quoi modifier ? (ex: 'à 15h', 'plutôt vendredi', 'important', 'change Martin en Marc')`,
     [
       [
         {
@@ -699,6 +699,273 @@ export async function reparseAndPreviewFromEdit(params: {
 }
 
 // ============================================================
+// S20.2 — PATCH intelligent (Modify partiel via Sonnet/Haiku)
+// ============================================================
+
+/**
+ * System prompt pour patch partiel d'un draft TickTick.
+ *
+ * Thomas a cliqué ✏️ Modifier puis tapé une courte instruction (ex: "à 15h",
+ * "plutôt vendredi", "important"). On ne re-parse PAS la tâche à zéro : on
+ * patche les champs concernés et on conserve TOUT le reste byte-à-byte.
+ *
+ * Modèle : Haiku 4.5 (extraction simple, coût ×5 inférieur à Sonnet).
+ */
+export const PATCH_DRAFT_SYSTEM_PROMPT = `Tu reçois un draft de tâche TickTick existant et une instruction courte de modification.
+Tu retournes UNIQUEMENT le draft PATCHÉ en JSON strict (sans markdown), avec :
+- Les champs concernés par l'instruction MODIFIÉS.
+- Tous les autres champs CONSERVÉS À L'IDENTIQUE.
+
+Format de sortie :
+{
+  "intent": "add_task",
+  "title": "...",
+  "dueDate": "ISO 8601" | null,
+  "priority": 5 | 3 | 1 | 0 | null,
+  "projectName": "..." | null
+}
+
+Règles :
+- Instruction "à 15h" / "plutôt vendredi" / "demain matin" → MAJ dueDate uniquement, garder title/priority/projectName.
+- Instruction "important" / "critique" / "priorité basse" → MAJ priority uniquement.
+- Instruction "change Martin en Marc" / "remplace X par Y" → MAJ title uniquement (preserve la formulation autour).
+- Instruction "projet immo" / "dans Famille" → MAJ projectName uniquement.
+- Instruction ambiguë → renvoyer le draft INCHANGÉ tel quel.
+- JAMAIS inventer un champ qui n'est pas dans l'instruction.
+- Pas de markdown autour du JSON. Pas d'explication.`;
+
+/**
+ * Few-shots pour fixer le comportement du modèle (4 exemples couvrant les 4
+ * familles d'instructions : date, priorité, titre, ambigu).
+ */
+const PATCH_DRAFT_FEW_SHOTS: Array<{ role: 'user' | 'assistant'; content: string }> = [
+  // 1. Instruction date "à 15h" (heure seule) sur draft avec dueDate
+  {
+    role: 'user',
+    content:
+      'Date de référence (now) : 2026-05-21T12:00:00.000Z\n\n' +
+      'Draft actuel :\n' +
+      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T00:00:00.000Z","priority":null,"projectName":null}\n\n' +
+      'Instruction : à 15h',
+  },
+  {
+    role: 'assistant',
+    content:
+      '{"intent":"add_task","title":"appeler Martin demain","dueDate":"2026-05-22T15:00:00.000Z","priority":null,"projectName":null}',
+  },
+  // 2. Instruction date "samedi" sur draft sans dueDate
+  {
+    role: 'user',
+    content:
+      'Date de référence (now) : 2026-05-21T12:00:00.000Z\n\n' +
+      'Draft actuel :\n' +
+      '{"intent":"add_task","title":"Faire les courses","dueDate":null,"priority":null,"projectName":null}\n\n' +
+      'Instruction : samedi',
+  },
+  {
+    role: 'assistant',
+    content:
+      '{"intent":"add_task","title":"Faire les courses","dueDate":"2026-05-23T00:00:00.000Z","priority":null,"projectName":null}',
+  },
+  // 3. Instruction priorité "important"
+  {
+    role: 'user',
+    content:
+      'Date de référence (now) : 2026-05-21T12:00:00.000Z\n\n' +
+      'Draft actuel :\n' +
+      '{"intent":"add_task","title":"préparer RDV","dueDate":null,"priority":null,"projectName":null}\n\n' +
+      'Instruction : important',
+  },
+  {
+    role: 'assistant',
+    content:
+      '{"intent":"add_task","title":"préparer RDV","dueDate":null,"priority":3,"projectName":null}',
+  },
+  // 4. Instruction titre "change Martin en Marc"
+  {
+    role: 'user',
+    content:
+      'Date de référence (now) : 2026-05-21T12:00:00.000Z\n\n' +
+      'Draft actuel :\n' +
+      '{"intent":"add_task","title":"appeler Martin Dupond","dueDate":null,"priority":null,"projectName":null}\n\n' +
+      'Instruction : change Martin en Marc',
+  },
+  {
+    role: 'assistant',
+    content:
+      '{"intent":"add_task","title":"appeler Marc Dupond","dueDate":null,"priority":null,"projectName":null}',
+  },
+];
+
+/**
+ * Patche un draft existant en fonction d'une instruction courte de Thomas.
+ *
+ * Contrat :
+ *  - Ne re-parse JAMAIS la tâche à zéro — patche uniquement les champs concernés.
+ *  - Préserve TOUS les autres champs byte-à-byte (title, dueDate, priority,
+ *    projectName).
+ *  - Si l'instruction est ambiguë / non comprise, retourne le draft INCHANGÉ
+ *    (l'appelant compare via JSON.stringify et re-demande à Thomas).
+ *  - Si Sonnet/Haiku échoue (réseau, JSON corrompu, etc.), retourne le draft
+ *    INCHANGÉ (never throw, jamais bloquer Thomas).
+ *
+ * @param draft Draft actuel (ParsedAddTask).
+ * @param instruction Texte court (ex: "à 15h", "important", "change X en Y").
+ * @param now Date de référence pour les expressions relatives.
+ */
+export async function patchDraftFromInstruction(
+  draft: ParsedAddTask,
+  instruction: string,
+  now: Date = new Date(),
+): Promise<ParsedAddTask> {
+  const cleaned = instruction.trim();
+  if (!cleaned) return draft;
+
+  // Sérialiser le draft pour le LLM (priority/dueDate/projectName en null si undefined).
+  const draftJson = JSON.stringify({
+    intent: 'add_task',
+    title: draft.title,
+    dueDate: draft.dueDate ?? null,
+    priority: draft.priority ?? null,
+    projectName: draft.projectName ?? null,
+  });
+
+  const userMessage =
+    `Date de référence (now) : ${now.toISOString()}\n\n` +
+    `Draft actuel :\n${draftJson}\n\n` +
+    `Instruction : ${cleaned}`;
+
+  try {
+    const response = await callAnthropic({
+      family: 'haiku',
+      maxTokens: 512,
+      system: PATCH_DRAFT_SYSTEM_PROMPT,
+      messages: [...PATCH_DRAFT_FEW_SHOTS, { role: 'user', content: userMessage }],
+      responseFormat: 'json',
+    });
+
+    const raw = response.text ?? '';
+    const jsonStr = raw
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
+
+    const parsed = JSON.parse(jsonStr) as Partial<ParsedAddTask> & {
+      dueDate?: string | null;
+      priority?: number | null;
+      projectName?: string | null;
+    };
+
+    const priority = parsed.priority;
+    const validPriority: 0 | 1 | 3 | 5 | undefined =
+      priority === 0 || priority === 1 || priority === 3 || priority === 5
+        ? (priority as 0 | 1 | 3 | 5)
+        : priority === null
+          ? undefined
+          : draft.priority;
+
+    return {
+      intent: 'add_task',
+      title:
+        typeof parsed.title === 'string' && parsed.title.trim().length > 0
+          ? parsed.title
+          : draft.title,
+      dueDate:
+        parsed.dueDate === null
+          ? undefined
+          : typeof parsed.dueDate === 'string'
+            ? parsed.dueDate
+            : draft.dueDate,
+      priority: validPriority,
+      projectName:
+        parsed.projectName === null
+          ? undefined
+          : typeof parsed.projectName === 'string'
+            ? parsed.projectName
+            : draft.projectName,
+    };
+  } catch (err) {
+    console.warn(
+      `[todo-from-telegram] patchDraftFromInstruction échoué : ${err instanceof Error ? err.message : String(err)} — retourne draft inchangé`,
+    );
+    return draft;
+  }
+}
+
+/**
+ * Sérialisation canonique d'un ParsedAddTask pour comparaison (a === b).
+ * Évite que `{title:"X"}` et `{title:"X", priority:undefined}` divergent.
+ */
+function canonicalize(draft: ParsedAddTask): string {
+  return JSON.stringify({
+    intent: 'add_task',
+    title: draft.title,
+    dueDate: draft.dueDate ?? null,
+    priority: draft.priority ?? null,
+    projectName: draft.projectName ?? null,
+  });
+}
+
+export interface PatchAndPreviewParams {
+  chatId: number;
+  /** message_id du message Telegram d'origine (audit / dédup uniquement). */
+  messageId: number;
+  /** Pending en phase `awaiting_edit` (avec son ancien draft). */
+  pending: TaskPendingEntry;
+  /** Instruction courte tapée par Thomas (ex: "à 15h"). */
+  instruction: string;
+  /** Injectable pour tests. */
+  now?: Date;
+}
+
+export interface PatchAndPreviewResult {
+  status: 'preview_sent' | 'unchanged' | 'error';
+  pendingId?: string;
+  error?: string;
+}
+
+/**
+ * Orchestrateur Fix 2 (S20.2) : Thomas a cliqué ✏️ Modifier puis tapé une
+ * instruction courte. On :
+ *  1. Patche le draft via `patchDraftFromInstruction` (Sonnet/Haiku partiel).
+ *  2. Si patched === before (LLM n'a rien compris) → re-demande Telegram +
+ *     conserve le pending en `awaiting_edit` (Thomas peut retaper).
+ *  3. Sinon → drop ancien pending + nouvelle preview avec le draft patché.
+ */
+export async function patchAndPreviewAddTaskFromInstruction(
+  params: PatchAndPreviewParams,
+): Promise<PatchAndPreviewResult> {
+  const { chatId, messageId, pending, instruction } = params;
+  const now = params.now ?? new Date();
+
+  const before = pending.parsed;
+  const patched = await patchDraftFromInstruction(before, instruction, now);
+
+  // Comparaison canonique : si rien n'a bougé, instruction non comprise.
+  if (canonicalize(before) === canonicalize(patched)) {
+    await sendTelegramMessage(
+      chatId,
+      `Je n'ai pas compris la modification. Reformule ou ❌ Annule la tâche.`,
+    );
+    return { status: 'unchanged' };
+  }
+
+  // Drop ancien pending (clean state) puis re-preview avec draft patché.
+  deleteTaskPending(pending.pendingId);
+  const previewResult = await previewAddTaskFromTelegram({
+    chatId,
+    messageId,
+    parsed: patched,
+    now,
+  });
+
+  if (previewResult.status === 'error') {
+    return { status: 'error', error: previewResult.error };
+  }
+  return { status: 'preview_sent', pendingId: previewResult.pendingId };
+}
+
+// ============================================================
 // Internals pour tests
 // ============================================================
 
@@ -711,4 +978,5 @@ export const _internals = {
   formatDueDate,
   priorityLabel,
   resolveProjectIdByName,
+  canonicalize,
 };

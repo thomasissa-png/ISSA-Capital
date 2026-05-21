@@ -174,7 +174,7 @@ async function extractFromText(text: string): Promise<{
  * Endpoint : https://api.openai.com/v1/audio/transcriptions
  * Format Telegram voice : OGG Opus 48kHz mono — supporté nativement.
  */
-async function transcribeWithWhisper(
+export async function transcribeWithWhisper(
   audioBase64: string,
   audioMimeType: string,
 ): Promise<{ success: boolean; text?: string; error?: string }> {
@@ -433,6 +433,11 @@ export async function handleInboxMessage(
  * Traite un message vocal en mode inbox → transcription + extraction + carte preview.
  *
  * Retourne true si le message a été traité.
+ *
+ * @deprecated S20.2 — voir SOT Workflow Todo.md vault. Le vocal Telegram passe
+ *   maintenant par le même flow que le texte court (Whisper → parseAddTaskFromText
+ *   → preview TickTick). Cette fonction n'est plus appelée par le webhook.
+ *   Suppression prévue : S21 (kill-switch progressif).
  */
 export async function handleInboxVoiceMessage(
   chatId: number,

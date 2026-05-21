@@ -92,10 +92,16 @@ import type { BatchPhoto } from '@/lib/secretariat/workflows/inbox-photo-batch';
 // `handleRouterCallback` + `ROUTER_CALLBACK_PREFIX` conservés pour les
 // callbacks anciens (TTL 7j historique inbox-edit S20.A qui partagent le
 // préfixe `inbox_router:`). Suppression complète : S21.
+// S20.2 — `handleInboxVoiceMessage` (router vocal Calendar/Todo.md) marqué
+// @deprecated. Le vocal Telegram passe maintenant par le même flow que le texte
+// court (transcription Whisper → parseAddTaskFromText → preview TickTick si
+// `looksLikeTask`, sinon fallback note Drive). Verbatim Thomas S20.2 : "soit
+// pas débile, évidemment qu'on intègre le vocal vu qu'on a plus qu'un flow".
+// Suppression complète : S21 (kill-switch progressif).
 import {
-  handleInboxVoiceMessage,
   handleRouterCallback,
   ROUTER_CALLBACK_PREFIX,
+  transcribeWithWhisper,
 } from '@/lib/secretariat/workflows/inbox-message-router';
 import {
   handleInboxEditCallback,
@@ -121,7 +127,7 @@ import {
 import {
   previewAddTaskFromTelegram,
   parseAddTaskFromText,
-  reparseAndPreviewFromEdit,
+  patchAndPreviewAddTaskFromInstruction,
   looksLikeTask,
 } from '@/lib/secretariat/handlers/todo-from-telegram';
 import {
@@ -1263,18 +1269,21 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // ── Niveau 2d : modification d'une carte preview TickTick (S20.1) ──
+      // ── Niveau 2d : modification d'une carte preview TickTick (S20.1 → S20.2) ──
       // Thomas a cliqué ✏️ Modifier sur une carte preview tâche → le pending
-      // est en phase `awaiting_edit`. Le prochain message texte est re-parsé
-      // et re-preview (nouveau pendingId, ancien drop).
+      // est en phase `awaiting_edit`. Le prochain message texte est traité
+      // comme une INSTRUCTION PARTIELLE (ex: "à 15h", "change Martin en Marc")
+      // via `patchDraftFromInstruction` — JAMAIS re-parsé à zéro (Fix S20.2
+      // Thomas : "modifier ne veut pas dire retaper le texte").
       // Priorité juste après inbox-edit pour le même raisonnement (un pending
       // fantôme ne doit pas avaler les workflows).
       const awaitingTaskEdit = findLatestAwaitingEditForChat(chatId);
       if (awaitingTaskEdit) {
-        await reparseAndPreviewFromEdit({
+        await patchAndPreviewAddTaskFromInstruction({
           chatId,
-          newText: text,
-          oldPendingId: awaitingTaskEdit.pendingId,
+          messageId: update.message.message_id,
+          pending: awaitingTaskEdit,
+          instruction: text,
         });
         return Response.json({ ok: true });
       }
@@ -1310,7 +1319,7 @@ export async function POST(request: Request): Promise<Response> {
       //   2. Workflow actif → handler du workflow
       //   3. Batch photo en attente de date → handleDateReply
       //   4. Pending inbox-edit awaiting → handleInboxEditText
-      //   5. Pending task awaiting_edit → reparseAndPreviewFromEdit
+      //   5. Pending task awaiting_edit → patchAndPreviewAddTaskFromInstruction (S20.2)
       //   6. Texte long → auto-CR
       //   7. Texte court tâche-like → preview TickTick (3 boutons)
       //   8. Sinon → note Drive
@@ -1516,19 +1525,59 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
 
-      // Mode inbox — essayer le router message (transcription vocale + Calendar/Todo)
-      // Si le router extrait un titre structuré → carte preview avec boutons
-      // Sinon fallback → upload direct vers Drive (comportement existant)
-      const voiceRouterHandled = await handleInboxVoiceMessage(
-        chatId,
+      // S20.2 — Mode inbox vocal : exactement le même flow que le texte court.
+      //   1. Transcription Whisper (OpenAI).
+      //   2. Si KO → fallback upload direct Drive (comportement préservé).
+      //   3. Si OK → parseAddTaskFromText + looksLikeTask → preview TickTick.
+      //   4. Sinon → fallback note Drive (texte transcrit comme caption éventuelle).
+      //
+      // L'ancien router `handleInboxVoiceMessage` (Calendar/Todo.md) n'est PLUS
+      // appelé : TickTick = hub unique, Todo.md miroir read-only (SOT vault
+      // `08. Outils/Anya/Skills/Workflow Todo.md`).
+      await sendTypingAction(chatId);
+      const transcript = await transcribeWithWhisper(
         audioResult.base64,
         audioResult.mimeType ?? 'audio/ogg',
       );
-      if (voiceRouterHandled) {
+
+      if (!transcript.success || !transcript.text) {
+        console.warn(
+          `[telegram-webhook] transcription Whisper KO (${transcript.error ?? 'inconnue'}) — fallback upload Drive direct`,
+        );
+        const inboxVoiceResult = await handleInboxVoice(
+          chatId,
+          audioResult.base64,
+          audioResult.mimeType ?? 'audio/ogg',
+          voiceData.duration,
+          voiceData.file_size,
+        );
+        await sendTelegramMessage(chatId, inboxVoiceResult.userMessage);
         return Response.json({ ok: true });
       }
 
-      // Fallback : upload direct vers Drive (pas de transcription)
+      // Transcription OK : appliquer EXACTEMENT le même flow que texte court.
+      const voiceText = transcript.text;
+      try {
+        const parsedTask = await parseAddTaskFromText(voiceText);
+        if (
+          parsedTask.title &&
+          parsedTask.title.trim().length > 0 &&
+          looksLikeTask(voiceText, parsedTask)
+        ) {
+          await previewAddTaskFromTelegram({
+            chatId,
+            messageId: update.message!.message_id,
+            parsed: parsedTask,
+          });
+          return Response.json({ ok: true });
+        }
+      } catch (err) {
+        console.warn(
+          `[telegram-webhook] parseAddTaskFromText échoué sur vocal (fallback note Drive) : ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+
+      // Fallback : sauvegarder le vocal comme note Drive (comportement préservé).
       const inboxVoiceResult = await handleInboxVoice(
         chatId,
         audioResult.base64,

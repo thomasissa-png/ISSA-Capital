@@ -62,13 +62,15 @@ const mocks = vi.hoisted(() => ({
   handleInboxVoice: vi.fn().mockResolvedValue({ success: true, userMessage: 'Vocal enregistré' }),
   handleInboxDocument: vi.fn().mockResolvedValue({ success: true, userMessage: 'Document enregistré' }),
   handleInboxAlbum: vi.fn().mockResolvedValue({ success: true, userMessage: 'Album enregistré' }),
-  // Inbox message router (deprecated S20.1 — only voice + callback still used)
+  // Inbox message router (S20.2 — handleInboxVoiceMessage @deprecated, plus
+  // appelé sur vocal ; transcribeWithWhisper utilisé directement par webhook).
   handleInboxVoiceMessage: vi.fn().mockResolvedValue(false),
   handleRouterCallback: vi.fn().mockResolvedValue('Action traitée'),
-  // S20.1 — Telegram → TickTick PREVIEW flow (mocks neutres)
+  transcribeWithWhisper: vi.fn().mockResolvedValue({ success: true, text: 'transcript test' }),
+  // S20.1 → S20.2 — Telegram → TickTick PREVIEW flow (mocks neutres)
   parseAddTaskFromText: vi.fn(),
   previewAddTaskFromTelegram: vi.fn().mockResolvedValue({ status: 'preview_sent', pendingId: 'pid-test' }),
-  reparseAndPreviewFromEdit: vi.fn().mockResolvedValue({ status: 'preview_sent', pendingId: 'pid-test-2' }),
+  patchAndPreviewAddTaskFromInstruction: vi.fn().mockResolvedValue({ status: 'preview_sent', pendingId: 'pid-test-2' }),
   looksLikeTask: vi.fn(),
   findLatestAwaitingEditForChat: vi.fn().mockReturnValue(null),
   handleTaskCallback: vi.fn().mockResolvedValue({ status: 'unknown_action' }),
@@ -190,13 +192,14 @@ vi.mock('@/lib/secretariat/workflows/inbox-message-router', () => ({
   handleInboxVoiceMessage: mocks.handleInboxVoiceMessage,
   handleRouterCallback: mocks.handleRouterCallback,
   ROUTER_CALLBACK_PREFIX: 'inbox_router:',
+  transcribeWithWhisper: mocks.transcribeWithWhisper,
 }));
 
-// S20.1 — mocks pour PREVIEW flow Telegram → TickTick + store pendings
+// S20.1 → S20.2 — mocks pour PREVIEW flow Telegram → TickTick + store pendings
 vi.mock('@/lib/secretariat/handlers/todo-from-telegram', () => ({
   parseAddTaskFromText: mocks.parseAddTaskFromText,
   previewAddTaskFromTelegram: mocks.previewAddTaskFromTelegram,
-  reparseAndPreviewFromEdit: mocks.reparseAndPreviewFromEdit,
+  patchAndPreviewAddTaskFromInstruction: mocks.patchAndPreviewAddTaskFromInstruction,
   looksLikeTask: mocks.looksLikeTask,
 }));
 
@@ -247,6 +250,25 @@ function textMessage(text: string, chatId = 12345): unknown {
       chat: { id: chatId, type: 'private' as const },
       date: Math.floor(Date.now() / 1000),
       text,
+    },
+  };
+}
+
+/** Construit un payload Telegram avec un message vocal (Fix 1 — S20.2). */
+function voiceMessage(chatId = 12345): unknown {
+  return {
+    update_id: 1,
+    message: {
+      message_id: 100,
+      chat: { id: chatId, type: 'private' as const },
+      date: Math.floor(Date.now() / 1000),
+      voice: {
+        file_id: 'voice-file-id-1',
+        file_unique_id: 'voice-uid-1',
+        duration: 5,
+        mime_type: 'audio/ogg',
+        file_size: 12345,
+      },
     },
   };
 }
@@ -441,5 +463,106 @@ describe('Router 3 niveaux', () => {
     expect(msg).toContain('Commande inconnue');
     expect(msg).toContain('/cr');
     expect(msg).toContain('/inbox');
+  });
+
+  // ----------------------------------------------------------
+  // Fix 1 (S20.2) — Vocal Telegram → preview TickTick
+  // ----------------------------------------------------------
+  it('Fix 1 — vocal task-like → transcribeWithWhisper + previewAddTaskFromTelegram (PAS handleInboxVoiceMessage)', async () => {
+    mocks.transcribeWithWhisper.mockResolvedValueOnce({
+      success: true,
+      text: 'appeler Martin demain matin',
+    });
+    mocks.parseAddTaskFromText.mockResolvedValueOnce({
+      intent: 'add_task',
+      title: 'appeler Martin demain matin',
+    });
+    mocks.looksLikeTask.mockReturnValueOnce(true);
+
+    const res = await POST(makeRequest(voiceMessage()));
+    expect(res.status).toBe(200);
+
+    expect(mocks.transcribeWithWhisper).toHaveBeenCalledOnce();
+    expect(mocks.previewAddTaskFromTelegram).toHaveBeenCalledWith(
+      expect.objectContaining({ chatId: 12345 }),
+    );
+    // Anti-régression : l'ancien router Calendar/Todo.md ne doit JAMAIS être appelé.
+    expect(mocks.handleInboxVoiceMessage).not.toHaveBeenCalled();
+    // Pas de fallback note Drive non plus (puisque c'est une tâche valide).
+    expect(mocks.handleInboxVoice).not.toHaveBeenCalled();
+  });
+
+  it('Fix 1 — vocal non-task (ack "ok merci") → fallback note Drive (handleInboxVoice)', async () => {
+    mocks.transcribeWithWhisper.mockResolvedValueOnce({
+      success: true,
+      text: 'ok merci',
+    });
+    mocks.parseAddTaskFromText.mockResolvedValueOnce({
+      intent: 'add_task',
+      title: 'ok merci',
+    });
+    mocks.looksLikeTask.mockReturnValueOnce(false);
+
+    const res = await POST(makeRequest(voiceMessage()));
+    expect(res.status).toBe(200);
+
+    expect(mocks.transcribeWithWhisper).toHaveBeenCalledOnce();
+    expect(mocks.previewAddTaskFromTelegram).not.toHaveBeenCalled();
+    // Fallback note Drive.
+    expect(mocks.handleInboxVoice).toHaveBeenCalled();
+    // Pas de router Calendar/Todo.md.
+    expect(mocks.handleInboxVoiceMessage).not.toHaveBeenCalled();
+  });
+
+  it('Fix 1 — vocal Whisper KO → fallback note Drive (comportement préservé)', async () => {
+    mocks.transcribeWithWhisper.mockResolvedValueOnce({
+      success: false,
+      error: 'OPENAI_API_KEY missing',
+    });
+
+    const res = await POST(makeRequest(voiceMessage()));
+    expect(res.status).toBe(200);
+
+    expect(mocks.transcribeWithWhisper).toHaveBeenCalledOnce();
+    // Whisper KO → on n'essaie même pas parseAddTaskFromText.
+    expect(mocks.parseAddTaskFromText).not.toHaveBeenCalled();
+    expect(mocks.previewAddTaskFromTelegram).not.toHaveBeenCalled();
+    // Fallback : upload direct Drive.
+    expect(mocks.handleInboxVoice).toHaveBeenCalled();
+    expect(mocks.handleInboxVoiceMessage).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // Fix 2 (S20.2) — Modify intelligent : webhook dispatch vers patchAndPreview
+  // ----------------------------------------------------------
+  it('Fix 2 — pending awaiting_edit + nouveau texte → patchAndPreviewAddTaskFromInstruction (PAS reparse complet)', async () => {
+    // Simule un pending en phase awaiting_edit (Thomas a cliqué ✏️ Modifier).
+    mocks.findLatestAwaitingEditForChat.mockReturnValueOnce({
+      pendingId: 'pid-abc',
+      phase: 'awaiting_edit',
+      parsed: { intent: 'add_task', title: 'appeler Martin' },
+      projectName: null,
+      projectId: null,
+      taskId: null,
+      chatId: 12345,
+      messageId: 100,
+      createdAt: Date.now(),
+    });
+
+    const res = await POST(makeRequest(textMessage('à 15h')));
+    expect(res.status).toBe(200);
+
+    // Le webhook dispatche vers patchAndPreviewAddTaskFromInstruction avec
+    // l'instruction "à 15h" — JAMAIS vers parseAddTaskFromText (re-parse complet
+    // que Thomas a explicitement banni en S20.2).
+    expect(mocks.patchAndPreviewAddTaskFromInstruction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatId: 12345,
+        instruction: 'à 15h',
+        pending: expect.objectContaining({ pendingId: 'pid-abc' }),
+      }),
+    );
+    // Pas de fallback note Drive (le pending awaiting_edit a la priorité).
+    expect(mocks.handleInboxText).not.toHaveBeenCalled();
   });
 });

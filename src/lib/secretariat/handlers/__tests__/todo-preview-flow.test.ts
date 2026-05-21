@@ -312,10 +312,12 @@ describe('startModifyPreview (callback task_modify)', () => {
     expect(result.status).toBe('awaiting_edit');
     const entry = getTaskPending(preview.pendingId!);
     expect(entry!.phase).toBe('awaiting_edit');
+    // S20.2 : message nouveau patch-friendly ("Quoi modifier ?") au lieu de
+    // l'ancien "Tape la version corrigée" (Thomas : modifier ≠ retaper).
     expect(editMessageTextWithButtons).toHaveBeenCalledWith(
       1,
       expect.any(Number),
-      expect.stringContaining('Tape la version corrigée'),
+      expect.stringContaining('Quoi modifier'),
       expect.any(Array),
     );
   });
