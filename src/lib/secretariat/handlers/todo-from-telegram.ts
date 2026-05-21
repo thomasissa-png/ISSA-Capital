@@ -1,26 +1,32 @@
 /**
- * Handler — Telegram → TickTick (création de tâche, S20).
+ * Handler — Telegram → TickTick (S20 → S20.1 PREVIEW flow).
  *
  * Canal create-only Telegram → TickTick (cf. vault SOT
  * `08. Outils/Anya/Skills/Workflow Todo.md` + `docs/ia/ticktick-gap-analysis-s20.md`).
  *
- * Flow :
- *  1. Le webhook Telegram détecte un message texte commençant par `/todo`
- *     (ou intent `add_task` détecté par Sonnet 4 sur message libre).
- *  2. Le handler `handleAddTaskFromTelegram` parse le texte via Sonnet 4
- *     en structured output : `{ title, dueDate?, priority?, projectName? }`.
- *  3. Idempotence : dédup en mémoire via `sha1(chatId + messageId)` TTL 1h
- *     (anti-replay Telegram).
- *  4. Crée la tâche via `createTask()` avec tag `anya-telegram`.
- *  5. Répond avec une carte de confirmation + bouton inline "Annuler" qui
- *     déclenche `completeTask` côté TickTick (décision par défaut S20).
+ * Flow S20.1 (post-bugfix Thomas — fix Bug 1 "modification" + Bug 2 "Calendar
+ * proposé") :
+ *  1. Webhook détecte `/todo` OU texte intent-tâche (heuristique `looksLikeTask`).
+ *  2. `parseAddTaskFromText` extrait `{ title, dueDate?, priority?, projectName? }`
+ *     via Sonnet/Haiku 4.5 (titre VERBATIM, jamais reformulé).
+ *  3. `previewAddTaskFromTelegram` affiche une carte PREVIEW avec 3 boutons :
+ *       [✅ Valider]  [✏️ Modifier]  [❌ Annuler]
+ *     + crée un pending dans `task-pending-store` (TTL 7j — R3).
+ *  4. Callbacks (handler `task.ts`) :
+ *       - `task_validate:<pendingId>` → `finalizeAddTaskFromPending` →
+ *         createTask + edit carte "✅ Tâche créée" + bouton Annuler classique.
+ *       - `task_modify:<pendingId>` → phase passe à 'awaiting_edit',
+ *         le prochain message texte est re-parsé et re-preview.
+ *       - `task_cancel_preview:<pendingId>` → drop pending, "❌ Tâche annulée."
+ *  5. Le titre reste VERBATIM (la phrase de Thomas n'est jamais reformulée).
  *
- * Le titre est conservé verbatim (la phrase de Thomas n'est jamais reformulée).
- * Sonnet ne fait qu'ajouter les metadata (date, priorité, projet) si elles
- * sont explicitement présentes dans le texte.
+ * Bug 2 (fix complémentaire dans webhook/route.ts) : le router obsolète
+ * `handleInboxMessage` (Calendar/Todo.md) n'est plus appelé sur texte libre.
+ * Sur un texte court, le webhook tente d'abord `looksLikeTask` → preview
+ * TickTick, sinon fallback note Drive.
  *
- * Préfixe callback `task_` — R4 stricte : handler dédié (`task.ts`) +
- * dispatch dans `webhook/route.ts` + test E2E.
+ * Préfixes callback `task_*` — R4 stricte : handler dédié (`task.ts`) +
+ * dispatch dans `webhook/route.ts` + tests E2E.
  */
 
 import { createHash } from 'node:crypto';
@@ -31,6 +37,14 @@ import {
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
 } from '../telegram';
+import { editMessageTextWithButtons } from '../telegram-validation/telegram-cards';
+import {
+  generateTaskPendingId,
+  saveTaskPending,
+  getTaskPending,
+  deleteTaskPending,
+  type TaskPendingEntry,
+} from '../task-pending-store';
 
 // ============================================================
 // Constantes
@@ -41,6 +55,20 @@ export const ANYA_TELEGRAM_TAG = 'anya-telegram';
 
 /** Préfixe callback_data — R4 : handler dédié + dispatch + test E2E. */
 export const TASK_CALLBACK_PREFIX = 'task_';
+
+/**
+ * Sous-préfixes callback_data — R4 stricte : chaque nouveau préfixe a son
+ * handler dans `task.ts` + dispatch webhook + test E2E.
+ *
+ * Limites Telegram : callback_data ≤ 64 bytes. pendingId = 16 chars max.
+ *   "task_validate:" (14) + 16 = 30 bytes ✅
+ *   "task_modify:"   (12) + 16 = 28 bytes ✅
+ *   "task_cancel_preview:" (20) + 16 = 36 bytes ✅
+ *   "task_cancel:"   (12) + ~24 (taskId TickTick) = 36 bytes ✅
+ */
+export const TASK_VALIDATE_PREFIX = 'task_validate:';
+export const TASK_MODIFY_PREFIX = 'task_modify:';
+export const TASK_CANCEL_PREVIEW_PREFIX = 'task_cancel_preview:';
 
 /** TTL dédup création (anti-replay Telegram). */
 const DEDUP_TTL_MS = 60 * 60 * 1_000; // 1h
@@ -361,6 +389,316 @@ export async function handleAddTaskFromTelegram(
 }
 
 // ============================================================
+// S20.1 — PREVIEW flow (fix Bug 1 : modification possible)
+// ============================================================
+
+/**
+ * Heuristique de détection "ressemble à une tâche" sur un texte court libre
+ * (fix Bug 2 : ne plus router vers Calendar/Todo.md).
+ *
+ * Règle simple :
+ *  - parsed.dueDate présent → c'est une tâche datée (RDV, rappel, échéance).
+ *  - OU le texte contient un verbe d'action FR (appeler, faire, relancer,
+ *    envoyer, préparer, rappeler, rappelle-moi, acheter, payer, etc.).
+ *
+ * Tout le reste (ack, salut, note, "ok", "merci") → fallback note Drive.
+ * Volontairement conservateur : mieux vaut fallback note qu'une carte preview
+ * intempestive sur "ok".
+ */
+const TASK_VERBS_RE =
+  /\b(appel(?:e|er|le)|relanc(?:e|er)|envoie|envoyer|fai(?:re|s)|prépare(?:r)?|rappel(?:le|le-moi|er)|achète(?:r)?|achete(?:r)?|paie(?:r)?|payer|réserve(?:r)?|reserve(?:r)?|réserver|book|booker|planifie(?:r)?|programme(?:r)?|organise(?:r)?|finir|finis|terminer|termine|envoyer|signer|signe|relire|lire|écrire|ecrire|écris|rédige(?:r)?|redige(?:r)?|appeler|téléphone(?:r)?|telephone(?:r)?|contacter|contacte|todo|à faire|a faire|tâche|tache)\b/i;
+
+export function looksLikeTask(text: string, parsed: ParsedAddTask): boolean {
+  if (parsed.dueDate) return true;
+  if (!text || text.trim().length === 0) return false;
+  // Très court (< 4 chars, type "ok", "ko", "ah") → jamais tâche.
+  if (text.trim().length < 4) return false;
+  return TASK_VERBS_RE.test(text);
+}
+
+// ============================================================
+// PREVIEW — carte 3 boutons (Valider / Modifier / Annuler)
+// ============================================================
+
+/**
+ * Construit le texte de la carte preview.
+ * Affiche : titre verbatim, échéance (si parsée), priorité (si != normale),
+ * projet (si nommé).
+ */
+function buildPreviewMessage(
+  parsed: ParsedAddTask,
+  projectName: string | null,
+): string {
+  const lines: string[] = [];
+  lines.push(`📝 Tâche à créer (preview) :`);
+  lines.push(`"${parsed.title}"`);
+  const due = formatDueDate(parsed.dueDate);
+  if (due) lines.push(`Échéance : ${due}`);
+  if (parsed.priority !== undefined && parsed.priority !== 0) {
+    lines.push(`Priorité : ${priorityLabel(parsed.priority)}`);
+  }
+  if (projectName) lines.push(`Projet : ${projectName}`);
+  return lines.join('\n');
+}
+
+/**
+ * Clavier 3 boutons sur 1 ligne (compact mobile) :
+ *   [✅ Valider] [✏️ Modifier] [❌ Annuler]
+ *
+ * Garantie callback_data ≤ 64 bytes par bouton (cf TASK_*_PREFIX commentaires).
+ */
+function buildPreviewKeyboard(
+  pendingId: string,
+): Array<Array<{ text: string; callback_data: string }>> {
+  return [
+    [
+      { text: '✅ Valider', callback_data: `${TASK_VALIDATE_PREFIX}${pendingId}` },
+      { text: '✏️ Modifier', callback_data: `${TASK_MODIFY_PREFIX}${pendingId}` },
+      { text: '❌ Annuler', callback_data: `${TASK_CANCEL_PREVIEW_PREFIX}${pendingId}` },
+    ],
+  ];
+}
+
+export interface PreviewAddTaskParams {
+  chatId: number;
+  /** message_id du message Telegram d'origine (utilisé pour dédup logger uniquement). */
+  messageId: number;
+  parsed: ParsedAddTask;
+  /** Injectable pour tests. */
+  now?: Date;
+}
+
+export interface PreviewAddTaskResult {
+  status: 'preview_sent' | 'error';
+  pendingId?: string;
+  error?: string;
+}
+
+/**
+ * Affiche une carte PREVIEW Telegram (sans créer la tâche) et stocke un pending.
+ *
+ * Bug 1 fix : permet à Thomas de Valider / Modifier / Annuler AVANT création.
+ * Bug 3 fix : projectId+projectName mémorisés dans le pending pour cancel O(1).
+ */
+export async function previewAddTaskFromTelegram(
+  params: PreviewAddTaskParams,
+): Promise<PreviewAddTaskResult> {
+  const { chatId, parsed } = params;
+  const now = params.now ?? new Date();
+
+  // Title vide → message d'erreur immédiat, pas de preview.
+  if (!parsed.title || parsed.title.trim().length === 0) {
+    await sendTelegramMessage(
+      chatId,
+      "Je n'ai pas réussi à extraire de tâche depuis ton message. Réessaie avec un texte plus explicite, par ex : `/todo Relancer Martin demain matin`.",
+    );
+    return { status: 'error', error: 'title vide après parsing' };
+  }
+
+  // Résolution projet (best-effort, mémorisée dans le pending pour cancel O(1)).
+  const projectId = (await resolveProjectIdByName(parsed.projectName)) ?? null;
+  const projectName = parsed.projectName ?? null;
+
+  // Envoi carte preview.
+  const pendingId = generateTaskPendingId();
+  const previewText = buildPreviewMessage(parsed, projectName);
+  const keyboard = buildPreviewKeyboard(pendingId);
+
+  const sent = await sendTelegramMessageWithButtons(chatId, previewText, keyboard);
+  const messageId = sent?.messageId ?? 0;
+
+  // Stocker le pending (TTL 7j — R3).
+  const entry: TaskPendingEntry = {
+    pendingId,
+    phase: 'preview',
+    parsed,
+    projectName,
+    projectId,
+    taskId: null,
+    chatId,
+    messageId,
+    createdAt: now.getTime(),
+  };
+  saveTaskPending(entry);
+
+  return { status: 'preview_sent', pendingId };
+}
+
+// ============================================================
+// FINALIZE — création réelle TickTick (appelée depuis task_validate)
+// ============================================================
+
+export interface FinalizeFromPendingResult {
+  status: 'created' | 'already_created' | 'expired' | 'error';
+  taskId?: string;
+  projectId?: string;
+  error?: string;
+}
+
+/**
+ * Crée la tâche TickTick à partir d'un pending validé.
+ *
+ * Idempotent : si le pending est déjà en phase 'created' (double-tap Valider),
+ * retourne `already_created` sans rappeler `createTask` (anti-doublon).
+ *
+ * Met à jour le pending avec taskId+projectId (utilisé par `task_cancel` O(1)).
+ * Édite la carte Telegram in-place : "✅ Tâche créée + bouton Annuler".
+ */
+export async function finalizeAddTaskFromPending(
+  pendingId: string,
+): Promise<FinalizeFromPendingResult> {
+  const entry = getTaskPending(pendingId);
+  if (!entry) {
+    return { status: 'expired', error: 'pending introuvable ou expiré (TTL 7j)' };
+  }
+
+  // Anti double-validation : si déjà créé, ne pas rappeler createTask.
+  if (entry.phase === 'created' && entry.taskId) {
+    return { status: 'already_created', taskId: entry.taskId, projectId: entry.projectId ?? undefined };
+  }
+
+  const { parsed, projectId, projectName, chatId, messageId } = entry;
+
+  const input: CreateTaskInput = {
+    title: parsed.title,
+    priority: parsed.priority ?? 0,
+    dueDate: parsed.dueDate,
+    projectId: projectId ?? undefined,
+    tags: [ANYA_TELEGRAM_TAG],
+  };
+
+  let task: TickTickTask;
+  try {
+    task = await createTask(input);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[todo-from-telegram] createTask échoué (preview→create) : ${message}`);
+    await editMessageTextWithButtons(chatId, messageId, `❌ Impossible de créer la tâche : ${message}`, []);
+    return { status: 'error', error: message };
+  }
+
+  // Patch pending : phase=created + taskId mémorisé (pour cancel O(1) — fix Bug 3).
+  const updated: TaskPendingEntry = {
+    ...entry,
+    phase: 'created',
+    taskId: task.id,
+    projectId: task.projectId ?? projectId,
+  };
+  saveTaskPending(updated);
+
+  // Re-render carte "✅ Tâche créée" + bouton Annuler classique (task_cancel).
+  const confirmText = buildConfirmationMessage(task, parsed, projectName ?? undefined);
+  const cancelButton = buildCancelButton(task.id);
+  const keyboard = cancelButton ? [[cancelButton]] : [];
+  await editMessageTextWithButtons(chatId, messageId, confirmText, keyboard);
+
+  return { status: 'created', taskId: task.id, projectId: updated.projectId ?? undefined };
+}
+
+// ============================================================
+// MODIFY — phase preview → awaiting_edit (handler appelé sur task_modify)
+// ============================================================
+
+/**
+ * Bascule un pending en phase `awaiting_edit` et édite la carte Telegram
+ * pour demander à Thomas de retaper la version corrigée.
+ *
+ * Le webhook détectera le prochain message texte via
+ * `findLatestAwaitingEditForChat(chatId)` et appellera `reparseAndPreview`.
+ */
+export async function startModifyPreview(
+  pendingId: string,
+): Promise<{ status: 'awaiting_edit' | 'expired' | 'error'; error?: string }> {
+  const entry = getTaskPending(pendingId);
+  if (!entry) {
+    return { status: 'expired', error: 'pending introuvable ou expiré' };
+  }
+  if (entry.phase === 'created') {
+    return { status: 'error', error: 'tâche déjà créée — modification impossible' };
+  }
+
+  const updated: TaskPendingEntry = { ...entry, phase: 'awaiting_edit' };
+  saveTaskPending(updated);
+
+  await editMessageTextWithButtons(
+    entry.chatId,
+    entry.messageId,
+    `✏️ Tape la version corrigée de la tâche (avec date/heure/priorité si besoin) :`,
+    [
+      [
+        {
+          text: '❌ Annuler',
+          callback_data: `${TASK_CANCEL_PREVIEW_PREFIX}${pendingId}`,
+        },
+      ],
+    ],
+  );
+
+  return { status: 'awaiting_edit' };
+}
+
+// ============================================================
+// CANCEL PREVIEW — drop pending, aucun appel TickTick
+// ============================================================
+
+/**
+ * Annule un preview (Thomas a cliqué ❌ Annuler AVANT validation).
+ * Drop le pending, édite la carte Telegram pour confirmer.
+ */
+export async function cancelPreview(
+  pendingId: string,
+): Promise<{ status: 'cancelled' | 'expired' | 'error'; error?: string }> {
+  const entry = getTaskPending(pendingId);
+  if (!entry) {
+    return { status: 'expired', error: 'pending introuvable ou expiré' };
+  }
+  if (entry.phase === 'created') {
+    return { status: 'error', error: 'tâche déjà créée — utilise le bouton Annuler classique' };
+  }
+
+  deleteTaskPending(pendingId);
+  await editMessageTextWithButtons(entry.chatId, entry.messageId, `❌ Tâche annulée.`, []);
+  return { status: 'cancelled' };
+}
+
+// ============================================================
+// REPARSE — réception du nouveau texte après task_modify
+// ============================================================
+
+/**
+ * Après que Thomas a cliqué ✏️ Modifier puis tapé un nouveau texte, on :
+ *  1. Drop l'ancien pending (clean state).
+ *  2. Re-parse via Sonnet/Haiku.
+ *  3. Re-affiche une carte preview (nouvelle ligne Telegram, nouveau pendingId).
+ *
+ * On ne fait PAS d'editMessageText sur l'ancienne carte : Telegram n'autorise
+ * pas d'éditer une carte avec un nouveau message_id (chaque preview est un
+ * nouveau message). L'ancienne carte (qui affiche "Tape la version corrigée")
+ * est laissée telle quelle (cleanup soft).
+ */
+export async function reparseAndPreviewFromEdit(params: {
+  chatId: number;
+  newText: string;
+  oldPendingId: string;
+  now?: Date;
+}): Promise<PreviewAddTaskResult> {
+  const { chatId, newText, oldPendingId } = params;
+  const now = params.now ?? new Date();
+
+  // Drop l'ancien pending (l'utilisateur a explicitement remplacé sa demande).
+  deleteTaskPending(oldPendingId);
+
+  // Re-parse + re-preview.
+  const parsed = await parseAddTaskFromText(newText, now);
+  return await previewAddTaskFromTelegram({
+    chatId,
+    messageId: 0,
+    parsed,
+    now,
+  });
+}
+
+// ============================================================
 // Internals pour tests
 // ============================================================
 
@@ -368,6 +706,8 @@ export const _internals = {
   dedupKey,
   buildConfirmationMessage,
   buildCancelButton,
+  buildPreviewMessage,
+  buildPreviewKeyboard,
   formatDueDate,
   priorityLabel,
   resolveProjectIdByName,

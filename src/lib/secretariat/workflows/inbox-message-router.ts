@@ -1,17 +1,20 @@
 /**
  * Workflow inbox message router — route texte/vocal vers Google Calendar ou Todo.md.
  *
- * Quand Thomas envoie un message court (texte ou vocal) en mode inbox
- * (aucun workflow actif, aucun batch photo en attente de date), Anya :
- *   1. Transcrit le vocal via Claude Sonnet 4.6 (audio natif)
- *   2. Extrait un JSON structuré { titre, date, heure, lieu, description }
- *   3. Affiche une carte preview avec boutons [Calendar] [Tâches] [Annuler]
- *   4. Thomas clique → action appliquée (Calendar API ou Todo.md append)
+ * @deprecated S20.1 — Le pipeline texte (`handleInboxMessage`) viole le SOT vault
+ * `08. Outils/Anya/Skills/Workflow Todo.md` : TickTick est le hub unique, Todo.md
+ * est un miroir read-only régénéré. Patcher Todo.md directement via
+ * `appendToTodoInbox` crée des divergences (R7). Remplacé par le PREVIEW flow
+ * TickTick dans `handlers/todo-from-telegram.ts` (`previewAddTaskFromTelegram`)
+ * + heuristique `looksLikeTask` côté webhook.
  *
- * Cache RAM avec TTL 10 min pour stocker les données entre l'extraction
- * et le callback de Thomas.
+ * Ce qui reste utilisé en S20.1 :
+ *   - `handleInboxVoiceMessage` : pipeline vocal (scope non couvert par bugs S20.1).
+ *   - `handleRouterCallback` : callbacks `inbox_router:*` historiques (TTL 7j).
+ *   - `buildPreviewMessage`, `buildPreviewKeyboard`, `INBOX_EDIT_*_PREFIX`,
+ *     `ROUTER_CALLBACK_PREFIX` : utilisés par `handlers/inbox-edit.ts` (S20.A).
  *
- * Décision Thomas : pas de routage automatique, c'est Thomas qui choisit.
+ * Plan de suppression complète : S21 (kill-switch progressif, pattern S18).
  */
 
 import { sendTelegramMessageWithButtons, sendTypingAction } from '../telegram';
@@ -381,6 +384,10 @@ export function buildPreviewKeyboard(
  * Traite un message texte en mode inbox → extraction + carte preview.
  *
  * Retourne true si le message a été traité (carte envoyée ou erreur gérée).
+ *
+ * @deprecated S20.1 — Plus appelé par le webhook (Bug 2 fix). Remplacé par
+ * `previewAddTaskFromTelegram` (TickTick uniquement, conforme SOT vault).
+ * Conservé temporairement pour éviter de casser des imports tiers ; suppression S21.
  */
 export async function handleInboxMessage(
   chatId: number,

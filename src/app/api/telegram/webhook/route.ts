@@ -85,8 +85,14 @@ import {
   cancelBatch,
 } from '@/lib/secretariat/workflows/inbox-photo-batch';
 import type { BatchPhoto } from '@/lib/secretariat/workflows/inbox-photo-batch';
+// S20.1 — `handleInboxMessage` (router texte Calendar/Todo.md) retiré du
+// webhook (Bug 2 fix : violait SOT vault `Workflow Todo.md` en patchant
+// directement Todo.md miroir). `handleInboxVoiceMessage` conservé pour les
+// vocaux (scope vocal non couvert par les bugs S20.1, à traiter séparément).
+// `handleRouterCallback` + `ROUTER_CALLBACK_PREFIX` conservés pour les
+// callbacks anciens (TTL 7j historique inbox-edit S20.A qui partagent le
+// préfixe `inbox_router:`). Suppression complète : S21.
 import {
-  handleInboxMessage,
   handleInboxVoiceMessage,
   handleRouterCallback,
   ROUTER_CALLBACK_PREFIX,
@@ -107,15 +113,22 @@ import {
   HOT_CONTEXT_CALLBACK_PREFIX,
   handleHotContextPatchCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
-// S20 — Telegram → TickTick (create-only) + callback `task_*` (R4)
+// S20 → S20.1 — Telegram → TickTick (PREVIEW flow) + callback `task_*` (R4)
+// Bug 1 fix : carte preview avec 3 boutons (Valider/Modifier/Annuler) AVANT
+//             création (vs création directe + Annuler en S20).
+// Bug 2 fix : `handleInboxMessage` (router Calendar/Todo.md) plus appelé sur
+//             texte libre — remplacé par `looksLikeTask` + preview TickTick.
 import {
-  handleAddTaskFromTelegram,
+  previewAddTaskFromTelegram,
   parseAddTaskFromText,
+  reparseAndPreviewFromEdit,
+  looksLikeTask,
 } from '@/lib/secretariat/handlers/todo-from-telegram';
 import {
   handleTaskCallback,
   TASK_CALLBACK_PREFIX,
 } from '@/lib/secretariat/handlers/task';
+import { findLatestAwaitingEditForChat } from '@/lib/secretariat/task-pending-store';
 // S19 — handler `tickticksync_delete:` retiré (completion silencieuse vault
 // remplace la carte Telegram delete). Code mort supprimé.
 
@@ -1179,14 +1192,16 @@ export async function POST(request: Request): Promise<Response> {
 
       const normalizedText = text.trim().toLowerCase();
 
-      // ── S20 — slash command /todo (création tâche TickTick) ─────
-      // Doit être traité AVANT handleSlashCommand pour préserver la casse
-      // du titre (handleSlashCommand reçoit normalizedText en lowercase).
-      // R4 : préfixe `task_` → handler dédié + dispatch + test E2E.
+      // ── S20.1 — slash command /todo → PREVIEW flow ──────────────
+      // Doit être traité AVANT handleSlashCommand pour préserver la casse du
+      // titre. Fix Bug 1 : affiche carte preview avec 3 boutons (Valider /
+      // Modifier / Annuler) au lieu de créer direct + bouton Annuler.
+      // R4 : préfixes `task_validate:`, `task_modify:`, `task_cancel_preview:`
+      //      → handler dédié `task.ts` + dispatch + tests E2E.
       if (normalizedText.startsWith('/todo') || normalizedText.startsWith('/task ')) {
         const messageId = update.message.message_id;
         const parsed = await parseAddTaskFromText(text);
-        await handleAddTaskFromTelegram({
+        await previewAddTaskFromTelegram({
           chatId,
           messageId,
           parsed,
@@ -1248,6 +1263,22 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
+      // ── Niveau 2d : modification d'une carte preview TickTick (S20.1) ──
+      // Thomas a cliqué ✏️ Modifier sur une carte preview tâche → le pending
+      // est en phase `awaiting_edit`. Le prochain message texte est re-parsé
+      // et re-preview (nouveau pendingId, ancien drop).
+      // Priorité juste après inbox-edit pour le même raisonnement (un pending
+      // fantôme ne doit pas avaler les workflows).
+      const awaitingTaskEdit = findLatestAwaitingEditForChat(chatId);
+      if (awaitingTaskEdit) {
+        await reparseAndPreviewFromEdit({
+          chatId,
+          newText: text,
+          oldPendingId: awaitingTaskEdit.pendingId,
+        });
+        return Response.json({ ok: true });
+      }
+
       // ── Niveau 3 : mode inbox (par défaut) ─────────────────────
       // Texte long (>= seuil) → démarrer automatiquement un workflow CR
       if (text.length >= AUTO_CR_TEXT_THRESHOLD) {
@@ -1263,18 +1294,46 @@ export async function POST(request: Request): Promise<Response> {
         return await handleCRText(chatId, text, normalizedText);
       }
 
-      // Texte court en mode inbox → essayer le router message (Calendar/Todo)
-      // Si le router extrait un titre structuré → carte preview avec boutons
-      // Sinon fallback → sauvegarder comme note Drive (comportement existant)
-      // Priorité handlers texte (documenté session 13) :
+      // Texte court en mode inbox (S20.1 — fix Bug 2 : kill router Calendar) :
+      //   1. Parse via Sonnet pour extraire titre + date éventuelle.
+      //   2. Si `looksLikeTask` (verbe d'action OU date présente) → preview TickTick.
+      //   3. Sinon → fallback note Drive (texte trop court / pas tâche).
+      //
+      // L'ancien router `handleInboxMessage` (Calendar/Todo.md) est désactivé
+      // car il violait le SOT vault `08. Outils/Anya/Skills/Workflow Todo.md`
+      // (TickTick = hub unique, Todo.md miroir read-only). Suppression S21
+      // (kill-switch progressif, pattern S18). Le module reste importé pour
+      // ses prefixes inbox-edit utilisés ailleurs.
+      //
+      // Priorité handlers texte (mise à jour S20.1) :
       //   1. Commande slash → handleSlashCommand
       //   2. Workflow actif → handler du workflow
       //   3. Batch photo en attente de date → handleDateReply
-      //   4. Texte long → auto-CR
-      //   5. Texte court → router message (Calendar/Todo) ou note Drive
-      const routerHandled = await handleInboxMessage(chatId, text);
-      if (routerHandled) {
-        return Response.json({ ok: true });
+      //   4. Pending inbox-edit awaiting → handleInboxEditText
+      //   5. Pending task awaiting_edit → reparseAndPreviewFromEdit
+      //   6. Texte long → auto-CR
+      //   7. Texte court tâche-like → preview TickTick (3 boutons)
+      //   8. Sinon → note Drive
+      try {
+        const parsedTask = await parseAddTaskFromText(text);
+        if (
+          parsedTask.title &&
+          parsedTask.title.trim().length > 0 &&
+          looksLikeTask(text, parsedTask)
+        ) {
+          await previewAddTaskFromTelegram({
+            chatId,
+            messageId: update.message.message_id,
+            parsed: parsedTask,
+          });
+          return Response.json({ ok: true });
+        }
+      } catch (err) {
+        // Best-effort : si le parsing Sonnet crashe, on fallback note Drive
+        // (jamais bloquer Thomas).
+        console.warn(
+          `[telegram-webhook] parseAddTaskFromText échoué (fallback note Drive) : ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
 
       // Fallback : sauvegarder comme note Drive
