@@ -62,10 +62,16 @@ const mocks = vi.hoisted(() => ({
   handleInboxVoice: vi.fn().mockResolvedValue({ success: true, userMessage: 'Vocal enregistré' }),
   handleInboxDocument: vi.fn().mockResolvedValue({ success: true, userMessage: 'Document enregistré' }),
   handleInboxAlbum: vi.fn().mockResolvedValue({ success: true, userMessage: 'Album enregistré' }),
-  // Inbox message router
-  handleInboxMessage: vi.fn().mockResolvedValue(false),
+  // Inbox message router (deprecated S20.1 — only voice + callback still used)
   handleInboxVoiceMessage: vi.fn().mockResolvedValue(false),
   handleRouterCallback: vi.fn().mockResolvedValue('Action traitée'),
+  // S20.1 — Telegram → TickTick PREVIEW flow (mocks neutres)
+  parseAddTaskFromText: vi.fn(),
+  previewAddTaskFromTelegram: vi.fn().mockResolvedValue({ status: 'preview_sent', pendingId: 'pid-test' }),
+  reparseAndPreviewFromEdit: vi.fn().mockResolvedValue({ status: 'preview_sent', pendingId: 'pid-test-2' }),
+  looksLikeTask: vi.fn(),
+  findLatestAwaitingEditForChat: vi.fn().mockReturnValue(null),
+  handleTaskCallback: vi.fn().mockResolvedValue({ status: 'unknown_action' }),
   // Workflow
   workflowStart: vi.fn().mockResolvedValue({
     newState: {
@@ -181,10 +187,26 @@ vi.mock('@/lib/secretariat/inbox', () => ({
 }));
 
 vi.mock('@/lib/secretariat/workflows/inbox-message-router', () => ({
-  handleInboxMessage: mocks.handleInboxMessage,
   handleInboxVoiceMessage: mocks.handleInboxVoiceMessage,
   handleRouterCallback: mocks.handleRouterCallback,
   ROUTER_CALLBACK_PREFIX: 'inbox_router:',
+}));
+
+// S20.1 — mocks pour PREVIEW flow Telegram → TickTick + store pendings
+vi.mock('@/lib/secretariat/handlers/todo-from-telegram', () => ({
+  parseAddTaskFromText: mocks.parseAddTaskFromText,
+  previewAddTaskFromTelegram: mocks.previewAddTaskFromTelegram,
+  reparseAndPreviewFromEdit: mocks.reparseAndPreviewFromEdit,
+  looksLikeTask: mocks.looksLikeTask,
+}));
+
+vi.mock('@/lib/secretariat/handlers/task', () => ({
+  handleTaskCallback: mocks.handleTaskCallback,
+  TASK_CALLBACK_PREFIX: 'task_',
+}));
+
+vi.mock('@/lib/secretariat/task-pending-store', () => ({
+  findLatestAwaitingEditForChat: mocks.findLatestAwaitingEditForChat,
 }));
 
 // ============================================================
@@ -359,36 +381,42 @@ describe('Router 3 niveaux', () => {
   });
 
   // ----------------------------------------------------------
-  // Texte < 100 chars sans workflow → mode inbox
+  // S20.1 — Texte court intent-tâche → preview TickTick (Bug 2 fix)
   // ----------------------------------------------------------
-  it('traite un texte court comme une note inbox', async () => {
+  it('texte court tâche-like ("Rappeler X") → preview TickTick (Bug 2 fix)', async () => {
+    mocks.parseAddTaskFromText.mockResolvedValueOnce({
+      intent: 'add_task',
+      title: 'Rappeler Jean-Pierre',
+    });
+    mocks.looksLikeTask.mockReturnValueOnce(true);
+
     const res = await POST(makeRequest(textMessage('Rappeler Jean-Pierre')));
     expect(res.status).toBe(200);
 
-    // Le texte est envoyé au handler inbox
-    expect(mocks.handleInboxText).toHaveBeenCalledWith(12345, 'Rappeler Jean-Pierre');
-
-    // Claude n'est PAS appelé
-    expect(mocks.create).not.toHaveBeenCalled();
-
-    // Message de confirmation inbox
-    const msg = (mocks.sendTelegramMessage.mock.calls[0] as [number, string])[1];
-    expect(msg).toContain('Note enregistrée');
+    // Le texte est routé vers le preview TickTick, PAS vers note Drive
+    expect(mocks.previewAddTaskFromTelegram).toHaveBeenCalledWith(
+      expect.objectContaining({ chatId: 12345 }),
+    );
+    expect(mocks.handleInboxText).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------
-  // Workflow expiré → retour inbox automatique
+  // S20.1 — Texte court non-tâche → fallback note Drive
   // ----------------------------------------------------------
-  it('traite un workflow expiré comme retour inbox', async () => {
-    // getActiveWorkflow retourne null quand le workflow est expiré (auto-cleanup)
+  it('texte court non-tâche ("ok") → fallback note Drive (Bug 2 fix)', async () => {
     mocks.getActiveWorkflow.mockReturnValue(null);
+    mocks.parseAddTaskFromText.mockResolvedValueOnce({
+      intent: 'add_task',
+      title: 'ok',
+    });
+    mocks.looksLikeTask.mockReturnValueOnce(false);
 
     const res = await POST(makeRequest(textMessage('ok')));
     expect(res.status).toBe(200);
 
-    // Le texte court va en mode inbox
+    // Pas de preview (looksLikeTask=false) → fallback note inbox
+    expect(mocks.previewAddTaskFromTelegram).not.toHaveBeenCalled();
     expect(mocks.handleInboxText).toHaveBeenCalledWith(12345, 'ok');
-    expect(mocks.create).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------
