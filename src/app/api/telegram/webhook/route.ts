@@ -222,6 +222,59 @@ async function loadCrSystemPrompt(): Promise<string> {
     parts.push('');
   }
 
+  // S21.8 — Hotfix prod : le SKILL.md vault ne contient pas l'instruction de
+  // sortie JSON stricte. Sans ce suffixe, Sonnet rédige le CR en markdown
+  // narratif et le pipeline ne parse pas → pas de PDF généré.
+  // Ce bloc est exigé par le contrat Zod côté backend (cr-schema.ts) et le
+  // parsing regex (route.ts:466). Il NE doit PAS être déplacé dans le SKILL.md
+  // vault — c'est une contrainte technique du code Anya, pas du contrat skill.
+  parts.push('## FORMAT DE SORTIE OBLIGATOIRE');
+  parts.push('');
+  parts.push(
+    'Tu réponds EXCLUSIVEMENT en JSON valide. Pas de texte hors JSON. Pas de markdown autour du JSON. Pas de bloc ```json. Schéma :',
+  );
+  parts.push('');
+  parts.push('```');
+  parts.push('{');
+  parts.push('  "status": "needs_clarification" | "ready",');
+  parts.push('  "clarification_question": string | null,');
+  parts.push('  "detected_entite": "IC" | "GO" | "VI" | "VV" | null,');
+  parts.push(
+    '  "detected_type": "dejeuner" | "conseil" | "appel" | "interne" | "visite-immo" | "signature-contrat" | "diner" | null,',
+  );
+  parts.push('  "cr": {');
+  parts.push('    "reference_placeholder": "[REF_TO_BE_GENERATED]",');
+  parts.push('    "entite": "IC" | "GO" | "VI" | "VV",');
+  parts.push(
+    '    "type_reunion": "dejeuner" | "conseil" | "appel" | "interne" | "visite-immo" | "signature-contrat" | "diner",',
+  );
+  parts.push('    "date_reunion": "YYYY-MM-DD",');
+  parts.push('    "lieu": string,');
+  parts.push('    "participants": [');
+  parts.push(
+    '      { "prenom": string, "nom": string, "titre": string, "societe": string, "qualite_relation": string }',
+  );
+  parts.push('    ],');
+  parts.push('    "objet": string,');
+  parts.push('    "montant_ttc_eur": number | null,');
+  parts.push('    "etablissement_nom": string | null,');
+  parts.push('    "section_1_objet_art_39_1": string,');
+  parts.push('    "section_2_points_abordes": string,');
+  parts.push('    "section_3_decisions": string,');
+  parts.push('    "section_4_suites_a_donner": string | null,');
+  parts.push('    "annexes_photographiques": [ { "numero": number, "legende": string } ] | null');
+  parts.push('  } | null');
+  parts.push('}');
+  parts.push('```');
+  parts.push('');
+  parts.push(
+    '**Règle de routage** : si une information critique manque (entité, type de réunion, date, lieu, objet, ou identité d\'un participant non reconnu dans la base contacts vault), réponds avec `status: "needs_clarification"` + `clarification_question` (UNE seule question précise) + `cr: null`. Sinon, réponds avec `status: "ready"` + `cr: { ... }` rempli selon le contrat des règles juridiques (§ 6 du skill).',
+  );
+  parts.push('');
+  parts.push(
+    '**Aucune prose hors JSON.** Pas de rédaction en markdown du CR — le backend produit le PDF à partir du JSON. Si tu rédiges en markdown, le pipeline plante et aucun PDF n\'est généré.',
+  );
+
   return parts.join('\n').trim();
 }
 
