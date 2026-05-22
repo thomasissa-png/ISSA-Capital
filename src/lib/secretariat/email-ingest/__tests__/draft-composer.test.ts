@@ -41,6 +41,23 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
+// S21.2 — skill-loader vault SOT (draft-email). Stub SkillContext minimal.
+const mockLoadSkill = vi.fn().mockResolvedValue({
+  name: 'draft-email',
+  vaultPath: 'TEST',
+  loadedAt: new Date(),
+  frontmatter: { name: 'draft-email' },
+  redLines: 'Ne JAMAIS inventer dates ou montants. Marqueur [À COMPLÉTER] si info manquante. Signature : "Thomas Issa". Texte brut, pas de HTML.',
+  decisionTree: 'Registre : tu si tutoiement, vous sinon.',
+  example: '',
+  recapTemplate: '',
+});
+
+vi.mock('../../skills/skill-loader', () => ({
+  loadSkill: (...args: unknown[]) => mockLoadSkill(...args),
+  invalidateSkillCache: vi.fn(),
+}));
+
 // ============================================================
 // Import du module testé (APRÈS les mocks)
 // ============================================================

@@ -25,6 +25,8 @@ import { findContactCached, readVaultFile } from '../vault-reader';
 import { parseObsidianFile } from '../vault-client/frontmatter';
 import { callAnthropic } from '../llm/client';
 import { SONNET_4 } from '../llm/models';
+import { loadSkill } from '../skills/skill-loader';
+import type { SkillContext } from '../skills/types';
 
 // ============================================================
 // Constantes
@@ -270,7 +272,18 @@ async function generateDraftBody(
   triage: TriageResult,
   tonality: TonalityContext,
 ): Promise<string | null> {
-  const systemPrompt = buildSystemPrompt(tonality);
+  // S21.2 — system prompt = SKILL.md vault `draft-email` + contexte dynamique
+  // (registre tu/vous, tonalité Thomas, contact). Le vault est la SOT.
+  // Si le vault est down, fallback repo docs/ia/skills/draft-email/SKILL.md.
+  let skillCtx: SkillContext | null = null;
+  try {
+    skillCtx = await loadSkill('draft-email');
+  } catch (err) {
+    console.warn(
+      `[draft-composer] loadSkill('draft-email') KO — fallback prompt hardcodé : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  const systemPrompt = buildSystemPrompt(tonality, skillCtx);
   const userMessage = buildUserMessage(email, triage, tonality);
 
   try {
@@ -293,17 +306,59 @@ async function generateDraftBody(
 
 /**
  * Construit le system prompt pour la rédaction du brouillon.
+ *
+ * S21.2 — Stratégie :
+ *  - Si `skillCtx` fourni (SKILL.md vault chargé) : le markdown vault forme
+ *    le préambule (identité + red lines + arbre décision + critères qualité),
+ *    et on ajoute en SUFFIXE le contexte dynamique runtime (registre tu/vous,
+ *    tonalité Thomas extraite de la fiche `Thomas Issa.md`).
+ *  - Si `skillCtx` null (vault ET fallback repo down) : fallback hardcodé
+ *    historique (préserve la résilience en mode dégradé).
+ *
+ * Le contexte dynamique reste injecté côté code car le SKILL.md vault ne peut
+ * pas connaître le contact runtime ni la tonalité courante de Thomas.
  */
-function buildSystemPrompt(tonality: TonalityContext): string {
-  return `Tu es l'assistant de rédaction de Thomas Issa, dirigeant d'ISSA Capital (holding patrimoniale familiale, immobilier résidentiel en Île-de-France).
-
-Tu rédiges des brouillons de réponse email que Thomas relira et enverra manuellement. Le brouillon doit être prêt à envoyer tel quel, mais Thomas peut le modifier.
+function buildSystemPrompt(
+  tonality: TonalityContext,
+  skillCtx: SkillContext | null,
+): string {
+  const dynamicSuffix = `
 
 ## Registre
 ${tonality.register === 'tu' ? 'Tutoiement. Tu tutoies le destinataire.' : 'Vouvoiement systématique. Tu vouvoies le destinataire.'}
 
 ## Tonalité Thomas
-${tonality.instructions}
+${tonality.instructions}`;
+
+  if (skillCtx) {
+    const parts: string[] = [];
+    parts.push(`# Skill : ${skillCtx.name}`);
+    parts.push(`> Source : ${skillCtx.vaultPath}`);
+    parts.push('');
+    parts.push("Tu es l'assistant de rédaction de Thomas Issa, dirigeant d'ISSA Capital (holding patrimoniale familiale, immobilier résidentiel en Île-de-France). Tu rédiges des brouillons de réponse email que Thomas relira et enverra manuellement.");
+    parts.push('');
+    if (skillCtx.redLines) {
+      parts.push('## Red lines');
+      parts.push(skillCtx.redLines);
+      parts.push('');
+    }
+    if (skillCtx.decisionTree) {
+      parts.push('## Arbre de décision');
+      parts.push(skillCtx.decisionTree);
+      parts.push('');
+    }
+    if (skillCtx.example) {
+      parts.push('## Exemple');
+      parts.push(skillCtx.example);
+      parts.push('');
+    }
+    return parts.join('\n').trim() + dynamicSuffix;
+  }
+
+  // Fallback ultime — vault ET repo down.
+  return `Tu es l'assistant de rédaction de Thomas Issa, dirigeant d'ISSA Capital (holding patrimoniale familiale, immobilier résidentiel en Île-de-France).
+
+Tu rédiges des brouillons de réponse email que Thomas relira et enverra manuellement. Le brouillon doit être prêt à envoyer tel quel, mais Thomas peut le modifier.
 
 ## Règles de rédaction
 - Phrases courtes et directes. Pas de formules creuses ("j'espère que vous allez bien", "je me permets de", "n'hésitez pas à").
@@ -312,7 +367,7 @@ ${tonality.instructions}
 - Signature : "Thomas Issa" (pas de titre, pas de numéro de téléphone, pas de formule de politesse longue).
 - Format : texte brut, pas de HTML, pas de markdown.
 - Longueur : 3 à 10 lignes maximum. Plus court = mieux.
-- Si l'email source contient une question à laquelle seul Thomas peut répondre (montant, date, décision), écrire le brouillon avec un marqueur [À COMPLÉTER : question] pour que Thomas sache quoi remplir.`;
+- Si l'email source contient une question à laquelle seul Thomas peut répondre (montant, date, décision), écrire le brouillon avec un marqueur [À COMPLÉTER : question] pour que Thomas sache quoi remplir.` + dynamicSuffix;
 }
 
 /**
