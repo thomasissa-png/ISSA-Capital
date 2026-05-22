@@ -192,6 +192,21 @@ vi.mock('@/lib/secretariat/telegram-validation/handlers/health-snooze', () => ({
   handleHealthSnooze: mocks.handleHealthSnooze,
 }));
 
+// S21.2 — skill-loader vault SOT (cr-reunion).
+vi.mock('@/lib/secretariat/skills/skill-loader', () => ({
+  loadSkill: vi.fn().mockResolvedValue({
+    name: 'cr-reunion',
+    vaultPath: 'TEST',
+    loadedAt: new Date(),
+    frontmatter: { name: 'cr-reunion' },
+    redLines: 'Red lines test.',
+    decisionTree: 'Arbre de décision test.',
+    example: '',
+    recapTemplate: '',
+  }),
+  invalidateSkillCache: vi.fn(),
+}));
+
 // ============================================================
 // Env vars
 // ============================================================

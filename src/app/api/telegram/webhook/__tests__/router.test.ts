@@ -180,6 +180,21 @@ vi.mock('@/lib/secretariat/workflows/registry', () => ({
   getWorkflow: mocks.getWorkflow,
 }));
 
+// S21.2 — skill-loader vault SOT (cr-reunion).
+vi.mock('@/lib/secretariat/skills/skill-loader', () => ({
+  loadSkill: vi.fn().mockResolvedValue({
+    name: 'cr-reunion',
+    vaultPath: 'TEST',
+    loadedAt: new Date(),
+    frontmatter: { name: 'cr-reunion' },
+    redLines: 'Red lines test. [INJECTION_DATABASE_CONTACTS_ICI]',
+    decisionTree: 'Arbre de décision test.',
+    example: '',
+    recapTemplate: '',
+  }),
+  invalidateSkillCache: vi.fn(),
+}));
+
 vi.mock('@/lib/secretariat/inbox', () => ({
   handleInboxPhoto: mocks.handleInboxPhoto,
   handleInboxText: mocks.handleInboxText,

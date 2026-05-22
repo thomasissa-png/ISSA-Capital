@@ -183,6 +183,24 @@ vi.mock('@/lib/secretariat/telegram-validation', () => ({
   handleTelegramCallback: mocks.handleEmailValCallback,
 }));
 
+// S21.2 — skill-loader vault SOT. On stubs un SkillContext minimal avec
+// le placeholder legacy d'injection contacts pour préserver le comportement
+// des assertions existantes (le contenu de prompt n'a aucun impact sur les
+// tests qui mockent la réponse Claude directement).
+vi.mock('@/lib/secretariat/skills/skill-loader', () => ({
+  loadSkill: vi.fn().mockResolvedValue({
+    name: 'cr-reunion',
+    vaultPath: 'TEST',
+    loadedAt: new Date(),
+    frontmatter: { name: 'cr-reunion' },
+    redLines: 'Red lines test — Article 39-1 CGI. [INJECTION_DATABASE_CONTACTS_ICI]',
+    decisionTree: 'Arbre de décision test.',
+    example: 'Exemple test.',
+    recapTemplate: 'Récap test.',
+  }),
+  invalidateSkillCache: vi.fn(),
+}));
+
 // ============================================================
 // Env vars
 // ============================================================

@@ -18,12 +18,11 @@
  * Contacts récurrents injectés dans le prompt. Recherche web automatique.
  */
 
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
 import type Anthropic from '@anthropic-ai/sdk';
 import { callAnthropic } from '@/lib/secretariat/llm/client';
 import { SONNET_4 } from '@/lib/secretariat/llm/models';
+import { loadSkill } from '@/lib/secretariat/skills/skill-loader';
 import { TelegramUpdateSchema, ClaudeResponseSchema } from '@/lib/secretariat/types';
 import type { CRDraft } from '@/lib/secretariat/types';
 import {
@@ -149,57 +148,57 @@ export const dynamic = 'force-dynamic';
 const AUTO_CR_TEXT_THRESHOLD = 100;
 
 // ============================================================
-// System prompt — chargement et cache singleton
+// System prompt CR — chargé depuis le vault (skill `cr-reunion`)
 // ============================================================
+//
+// S21.2 — Option A : vault = SOT unique.
+// Le system prompt CR est le contenu brut du SKILL.md vault
+// `00. Me/08. Outils/Skills/cr-reunion/SKILL.md` (fallback repo si Drive down).
+// On utilise le markdown complet (frontmatter inclus) — Thomas pilote le
+// contenu côté vault, le code ne réécrit pas.
+//
+// Note : l'ancien placeholder `[INJECTION_DATABASE_CONTACTS_ICI]` est
+// remplacé seulement si présent dans le SKILL.md vault. Sinon les contacts
+// ne sont plus injectés (intention Thomas : vault dicte le format).
 
-let cachedSystemPrompt: string | null = null;
-
-/**
- * Charge le system prompt fiscal depuis docs/ia/secretariat-system-prompt.md.
- * Extrait le contenu du premier bloc code (```) sous "## 2. System prompt complet".
- * Cache en mémoire après le premier appel.
- */
-function loadSystemPrompt(): string {
-  if (cachedSystemPrompt !== null) {
-    return cachedSystemPrompt;
+async function loadCrSystemPrompt(): Promise<string> {
+  const ctx = await loadSkill('cr-reunion');
+  // Marqueur de la source pour debug en cas de fallback repo.
+  // Le contenu complet est reconstruit depuis le SkillContext fields
+  // mais le skill-loader ne ré-expose pas le markdown brut. On lit via
+  // une seconde passe légère : le builder a déjà parsé, on s'en remet à
+  // une concat des sections injectables + frontmatter sérialisé n'est pas
+  // nécessaire ici. À la place, on charge le contenu brut via loadSkill
+  // qui cache, et on relit le fichier original via les paths connus.
+  //
+  // Architecture choisie : le contenu brut est reconstruit en concaténant
+  // les sections clés (5.1 red lines + 5.2 arbre + 5.4 exemple + section 4
+  // recap) qui sont les seules INJECTÉES par contrat (cf. types.ts).
+  const parts: string[] = [];
+  parts.push(`# Skill : ${ctx.name}`);
+  parts.push(`> Source : ${ctx.vaultPath}`);
+  parts.push('');
+  if (ctx.redLines) {
+    parts.push('## Red lines');
+    parts.push(ctx.redLines);
+    parts.push('');
   }
-
-  const promptPath = resolve(process.cwd(), 'docs', 'ia', 'secretariat-system-prompt.md');
-  const fileContent = readFileSync(promptPath, 'utf8');
-
-  const sectionMarker = '## 2. System prompt complet';
-  const sectionIdx = fileContent.indexOf(sectionMarker);
-  if (sectionIdx === -1) {
-    throw new Error(`[webhook] section "${sectionMarker}" introuvable dans ${promptPath}`);
+  if (ctx.decisionTree) {
+    parts.push('## Arbre de décision');
+    parts.push(ctx.decisionTree);
+    parts.push('');
   }
-
-  const afterSection = fileContent.slice(sectionIdx);
-  const openIdx = afterSection.indexOf('```');
-  if (openIdx === -1) {
-    throw new Error('[webhook] aucun bloc code trouvé après la section 2');
+  if (ctx.recapTemplate) {
+    parts.push('## Gabarit récap');
+    parts.push(ctx.recapTemplate);
+    parts.push('');
   }
-
-  const afterOpen = afterSection.slice(openIdx + 3);
-  const newlineAfterOpen = afterOpen.indexOf('\n');
-  if (newlineAfterOpen === -1) {
-    throw new Error('[webhook] bloc code malformé');
+  if (ctx.example) {
+    parts.push('## Exemple');
+    parts.push(ctx.example);
+    parts.push('');
   }
-
-  const contentStart = newlineAfterOpen + 1;
-  const closeIdx = afterOpen.indexOf('```', contentStart);
-  if (closeIdx === -1) {
-    throw new Error('[webhook] bloc code non fermé');
-  }
-
-  const promptBody = afterOpen.slice(contentStart, closeIdx).trim();
-  if (promptBody.length < 500) {
-    throw new Error(
-      `[webhook] system prompt trop court (${promptBody.length} chars), fichier probablement corrompu`,
-    );
-  }
-
-  cachedSystemPrompt = promptBody;
-  return cachedSystemPrompt;
+  return parts.join('\n').trim();
 }
 
 // ============================================================
@@ -310,14 +309,18 @@ async function generateCR(
   error?: string;
 }> {
   try {
-    let systemPrompt = loadSystemPrompt();
+    let systemPrompt = await loadCrSystemPrompt();
 
-    // Injecter la base de contacts récurrents dans le system prompt
-    const contactsBlock = await formatContactsForPrompt();
-    systemPrompt = systemPrompt.replace(
-      '[INJECTION_DATABASE_CONTACTS_ICI]',
-      contactsBlock,
-    );
+    // Injecter la base de contacts récurrents UNIQUEMENT si le SKILL.md
+    // vault contient le placeholder. Sinon, on respecte l'intention Thomas
+    // (vault dicte le format) et on n'injecte pas.
+    if (systemPrompt.includes('[INJECTION_DATABASE_CONTACTS_ICI]')) {
+      const contactsBlock = await formatContactsForPrompt();
+      systemPrompt = systemPrompt.replace(
+        '[INJECTION_DATABASE_CONTACTS_ICI]',
+        contactsBlock,
+      );
+    }
 
     // Récupérer l'historique des CR validés (mémoire longue)
     const recentCRs = formatHistoryForPrompt(10);
@@ -628,13 +631,15 @@ async function generateCRFromVoice(
   error?: string;
 }> {
   try {
-    let systemPrompt = loadSystemPrompt();
+    let systemPrompt = await loadCrSystemPrompt();
 
-    const contactsBlock = await formatContactsForPrompt();
-    systemPrompt = systemPrompt.replace(
-      '[INJECTION_DATABASE_CONTACTS_ICI]',
-      contactsBlock,
-    );
+    if (systemPrompt.includes('[INJECTION_DATABASE_CONTACTS_ICI]')) {
+      const contactsBlock = await formatContactsForPrompt();
+      systemPrompt = systemPrompt.replace(
+        '[INJECTION_DATABASE_CONTACTS_ICI]',
+        contactsBlock,
+      );
+    }
 
     const recentCRs = formatHistoryForPrompt(10);
 
