@@ -157,12 +157,24 @@ const AUTO_CR_TEXT_THRESHOLD = 100;
 // On utilise le markdown complet (frontmatter inclus) — Thomas pilote le
 // contenu côté vault, le code ne réécrit pas.
 //
-// Note : l'ancien placeholder `[INJECTION_DATABASE_CONTACTS_ICI]` est
-// remplacé seulement si présent dans le SKILL.md vault. Sinon les contacts
-// ne sont plus injectés (intention Thomas : vault dicte le format).
+// S21.4 — Les contacts du vault Drive `07. Contacts/` sont LUS LIVE à chaque
+// chargement (cache 1h dans vault-contacts.ts) et APPENDÉS systématiquement
+// au system prompt sous la section `## Contacts récurrents (vault Drive)`.
+// Plus de placeholder `[INJECTION_DATABASE_CONTACTS_ICI]` — le vault dicte
+// le format et les contacts sont lus en parallèle. Fallback gracieux : si
+// Drive down, le bloc reste vide et le LLM demande clarification.
 
 async function loadCrSystemPrompt(): Promise<string> {
-  const ctx = await loadSkill('cr-reunion');
+  // Lecture parallèle skill + contacts vault (les deux ont leur propre cache TTL)
+  const [ctx, contactsBlock] = await Promise.all([
+    loadSkill('cr-reunion'),
+    formatContactsForPrompt().catch((err) => {
+      console.warn(
+        `[cr-system-prompt] erreur lecture contacts vault : ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return '';
+    }),
+  ]);
   // Marqueur de la source pour debug en cas de fallback repo.
   // Le contenu complet est reconstruit depuis le SkillContext fields
   // mais le skill-loader ne ré-expose pas le markdown brut. On lit via
@@ -198,6 +210,18 @@ async function loadCrSystemPrompt(): Promise<string> {
     parts.push(ctx.example);
     parts.push('');
   }
+
+  // S21.4 — Bloc contacts vault live (toujours présent si Drive accessible)
+  if (contactsBlock && contactsBlock !== '(Aucun contact récurrent enregistré)') {
+    parts.push('## Contacts récurrents (vault Drive)');
+    parts.push(
+      'Liste des contacts connus de Thomas (lue en direct depuis le vault Obsidian, section `07. Contacts/`). Utilise ces fiches pour identifier les personnes mentionnées en réunion. Si une personne n\'est pas dans cette liste, demande clarification ou propose de créer une fiche.',
+    );
+    parts.push('');
+    parts.push(contactsBlock);
+    parts.push('');
+  }
+
   return parts.join('\n').trim();
 }
 
@@ -309,18 +333,10 @@ async function generateCR(
   error?: string;
 }> {
   try {
-    let systemPrompt = await loadCrSystemPrompt();
-
-    // Injecter la base de contacts récurrents UNIQUEMENT si le SKILL.md
-    // vault contient le placeholder. Sinon, on respecte l'intention Thomas
-    // (vault dicte le format) et on n'injecte pas.
-    if (systemPrompt.includes('[INJECTION_DATABASE_CONTACTS_ICI]')) {
-      const contactsBlock = await formatContactsForPrompt();
-      systemPrompt = systemPrompt.replace(
-        '[INJECTION_DATABASE_CONTACTS_ICI]',
-        contactsBlock,
-      );
-    }
+    // S21.4 — Le system prompt CR contient déjà le bloc contacts vault
+    // (lecture live + cache 1h) appendé par loadCrSystemPrompt(). Plus de
+    // post-traitement nécessaire.
+    const systemPrompt = await loadCrSystemPrompt();
 
     // Récupérer l'historique des CR validés (mémoire longue)
     const recentCRs = formatHistoryForPrompt(10);
@@ -631,15 +647,8 @@ async function generateCRFromVoice(
   error?: string;
 }> {
   try {
-    let systemPrompt = await loadCrSystemPrompt();
-
-    if (systemPrompt.includes('[INJECTION_DATABASE_CONTACTS_ICI]')) {
-      const contactsBlock = await formatContactsForPrompt();
-      systemPrompt = systemPrompt.replace(
-        '[INJECTION_DATABASE_CONTACTS_ICI]',
-        contactsBlock,
-      );
-    }
+    // S21.4 — Contacts vault déjà injectés par loadCrSystemPrompt()
+    const systemPrompt = await loadCrSystemPrompt();
 
     const recentCRs = formatHistoryForPrompt(10);
 

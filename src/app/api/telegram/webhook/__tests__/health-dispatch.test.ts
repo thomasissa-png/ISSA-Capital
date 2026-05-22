@@ -55,8 +55,8 @@ const mocks = vi.hoisted(() => ({
   clearActiveWorkflow: vi.fn(),
   // Reference counter
   getNextReference: vi.fn().mockReturnValue('IC-CR-2026-0001'),
-  // Contacts
-  formatContactsForPrompt: vi.fn().mockReturnValue('Contacts: Thomas'),
+  // Contacts (S21.4 — async, lit le vault Drive)
+  formatContactsForPrompt: vi.fn().mockResolvedValue('Contacts: Thomas'),
   // Inbox
   handleInboxPhoto: vi.fn().mockResolvedValue({ success: true, userMessage: 'Photo' }),
   handleInboxText: vi.fn().mockResolvedValue({ success: true, userMessage: 'Note' }),

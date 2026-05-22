@@ -55,8 +55,8 @@ const mocks = vi.hoisted(() => ({
   clearActiveWorkflow: vi.fn(),
   // Reference counter
   getNextReference: vi.fn().mockReturnValue('IC-CR-2026-0001'),
-  // Contacts
-  formatContactsForPrompt: vi.fn().mockReturnValue('Contacts: Thomas Issa — Président'),
+  // Contacts (S21.4 — async, lit le vault Drive)
+  formatContactsForPrompt: vi.fn().mockResolvedValue('Contacts: Thomas Issa — Président'),
   // Inbox
   handleInboxPhoto: vi.fn().mockResolvedValue({ success: true, userMessage: 'Photo enregistrée' }),
   handleInboxText: vi.fn().mockResolvedValue({ success: true, userMessage: 'Note enregistrée' }),
@@ -542,6 +542,37 @@ describe('POST /api/telegram/webhook', () => {
 
     // Pas de boutons de confirmation envoyés
     expect(mocks.sendTelegramConfirmation).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------
+  // 8.bis (S21.4) — Le system prompt inclut le bloc contacts vault
+  // ----------------------------------------------------------
+  it('S21.4 — injecte le bloc contacts vault live dans le system prompt CR', async () => {
+    mocks.getActiveWorkflow.mockReturnValue({
+      type: 'cr', step: 'collecting', data: {},
+      startedAt: Date.now(), expiresAt: Date.now() + 86400000,
+    });
+    mocks.formatContactsForPrompt.mockResolvedValueOnce(
+      '- Maxime Lemoine — Co-fondateur, Gradient One (entités visibles : [GO])',
+    );
+    mocks.create.mockResolvedValueOnce(
+      claudeResponseClarification('Avec quelle entité ?'),
+    );
+
+    await POST(makeRequest(textMessage('Déjeuner avec Maxime hier')));
+
+    // Le system prompt envoyé à Claude doit contenir le bloc contacts vault
+    expect(mocks.create).toHaveBeenCalled();
+    const createCall = mocks.create.mock.calls[0] as Array<{ system?: unknown }>;
+    const systemArg = createCall[0]?.system;
+    // system peut être string ou Array<{type, text, cache_control?}>
+    const systemText = typeof systemArg === 'string'
+      ? systemArg
+      : Array.isArray(systemArg)
+        ? (systemArg as Array<{ text?: string }>).map((b) => b.text ?? '').join('\n')
+        : '';
+    expect(systemText).toContain('Contacts récurrents (vault Drive)');
+    expect(systemText).toContain('Maxime Lemoine');
   });
 
   // ----------------------------------------------------------
