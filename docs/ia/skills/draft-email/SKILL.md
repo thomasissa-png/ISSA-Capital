@@ -1,73 +1,149 @@
 ---
 name: draft-email
-description: "Rédige un brouillon de réponse Gmail à partir d'un email entrant triagé. À utiliser pour toute catégorie hors spam et candidat. Le brouillon est créé via Gmail API et relu par Thomas avant envoi manuel."
+description: "Rédige un brouillon d'email pour Thomas — réponse à un message reçu ou nouveau message — calibré sur le destinataire (sa fiche contact) et le ton de Thomas. À utiliser quand Thomas dit 'réponds à cet email', 'rédige un mail à X sur Y', 'prépare une réponse à X'. Le brouillon est déposé dans Gmail ; il n'est JAMAIS envoyé — Thomas le relit et l'envoie lui-même."
 ---
 
-# Skill draft-email — brouillon de réponse Gmail
+# Skill draft-email — rédiger un brouillon d'email
 
-> Fallback repo (R7). Source de vérité : vault Drive `00. Me/08. Outils/Skills/draft-email/SKILL.md`.
-> Génère un brouillon de réponse Gmail prêt à être relu et envoyé manuellement par Thomas. Le ton et le registre (tu/vous) sont injectés dynamiquement à partir de la fiche contact et de la fiche Thomas Issa.
+> Rédiger un **brouillon** d'email pour Thomas — réponse à un message reçu, ou nouveau message — calibré sur le destinataire et le ton de Thomas. Le brouillon est créé dans Gmail via le connecteur ; **il n'est jamais envoyé**. Copie exécutable du workflow maître `08. Outils/Anya/Skills/Workflow Draft Email.md`.
 
 ## 1. Trigger
 
-Un email entrant a été triagé avec une catégorie qui mérite réponse (toute catégorie sauf `spam` et `candidat`). Le pipeline `email-ingest` appelle `composeDraft()` automatiquement.
+### Déclencheurs verbaux
+
+- **Réponse** : « réponds à [cet email / l'email de X] », « prépare une réponse à [contact] ».
+- **Nouveau message** : « rédige un mail à [contact] sur [sujet] », « écris à [contact] pour [intention] ».
+
+### Déclencheur contextuel
+
+Un email entrant appelant une réponse (question, demande, RDV à fixer).
+
+### Skill
+
+La skill s'appelle **`draft-email`**. Chargée sur phrase déclencheuse ou invoquée par son nom. Canaux : Cowork, Telegram via Anya.
+
+### Hors trigger
+
+- Jamais d'envoi automatique — la skill produit un brouillon, point.
+- Email de spam → pas de brouillon.
+
+> Le pipeline d'ingestion du bot ne draftait pas automatiquement pour les candidats locataires (ils ont leur propre workflow). Mais si Thomas demande explicitement de répondre à un candidat, la skill le fait normalement.
 
 ## 2. Input
 
-- **Email source** : expéditeur, objet, corps, date.
-- **TriageResult** : catégorie, intent, summary, matchedContact éventuel.
-- **Fiche contact vault** (`07. Contacts/`) : frontmatter `tutoiement` ou `registre` → tu/vous.
-- **Fiche Thomas Issa** (`07. Contacts/02. Famille/Thomas Issa.md`) : section `## Tonalité` injectée dans le prompt.
+### Selon le cas
+
+- **Réponse** : l'email reçu (expéditeur, objet, corps).
+- **Nouveau message** : la consigne de Thomas (destinataire, sujet, intention).
+
+### Fiche du contact destinataire
+
+À lire **en entier** (`07. Contacts/`). Elle calibre le ton **et** le fond du brouillon :
+
+- le **registre** — tutoiement si le frontmatter porte `tutoiement: true` ou un champ `registre` contenant « tu » ; vouvoiement par défaut ;
+- le **rôle, la fonction, la société** du contact ;
+- l'**historique des échanges** et les **dossiers en cours** — pour rester cohérent et ne pas redemander une information déjà connue.
+
+### Autres sources
+
+- **Tonalité de Thomas** — `01. Profil/voice-preferences.md` (source de référence, déjà chargée en session) ; à défaut, la section `## Tonalité` de sa fiche contact.
+- **`hot-context.md`** — contexte récent si pertinent.
+
+Sortie via le connecteur Gmail (création de brouillon). Jamais d'envoi.
 
 ## 3. Étapes
 
-### 3.1 Skip si catégorie non éligible
-Catégories sans brouillon : `spam`, `candidat`.
+### 3.1 Identifier le destinataire et lire sa fiche
 
-### 3.2 Charger le contexte tonalité
-Lire la fiche contact (cache TTL 1h) → registre tu/vous. Lire la fiche Thomas → section Tonalité.
+Déterminer le destinataire. Lire **sa fiche contact en entier** : registre (tu / vous), rôle et société, historique des échanges, dossiers en cours. Destinataire inconnu (aucune fiche) → demander une précision à Thomas, ne pas deviner.
 
-### 3.3 Générer le corps du brouillon via Sonnet
-Appel Anthropic Sonnet 4, maxTokens 1024, timeout 30s.
+### 3.2 Réunir le reste du contexte
+
+Pour une **réponse** : lire l'email reçu en entier. Pour un **nouveau message** : la consigne de Thomas. Charger la tonalité de Thomas et, si pertinent, le `hot-context`.
+
+### 3.3 Rédiger le brouillon
+
+Rédiger le corps en respectant les règles de rédaction (§ 5.2) et en s'appuyant sur le contexte du contact (§ 3.1). Sujet : pour une réponse, « Re: » + sujet d'origine s'il ne l'a pas déjà ; pour un nouveau message, un objet clair et court.
 
 ### 3.4 Créer le brouillon Gmail
-`drafts.create` via Gmail API. Sujet : `Re: <objet original>` si pas déjà préfixé.
 
-### 3.5 Retourner l'URL Gmail
-Pour le bouton Telegram « Ouvrir dans Gmail ».
+Créer le brouillon dans Gmail (destinataire, sujet, corps texte brut) via le connecteur. **Ne jamais envoyer.**
+
+### 3.5 Confirmer
+
+Rendre le récap : destinataire, sujet, aperçu, lien du brouillon. Inviter Thomas à relire, compléter les `[À COMPLÉTER]`, et envoyer lui-même.
 
 ## 4. Output
 
-- `draftId` Gmail
-- `gmailUrl` direct vers le brouillon
-- `preview` : première ligne du brouillon (notif Telegram)
+- Un brouillon dans Gmail (jamais envoyé).
+- Un récap rendu à Thomas avec le lien.
+
+### Récap (rendu à Thomas)
+
+```
+Brouillon créé.
+
+À : [Nom] <[email]>
+Objet : [sujet]
+Aperçu : [3 premières lignes]
+Gmail : [lien du brouillon]
+
+À relire, compléter les [À COMPLÉTER] éventuels, et envoyer manuellement.
+```
 
 ## 5. Méthode
 
 ### 5.1 Red lines
 
-1. Ne JAMAIS inventer de dates, montants, noms de biens ou informations factuelles non présentes dans l'email source.
-2. Si une info manque et que seul Thomas peut répondre → marqueur `[À COMPLÉTER : question]`.
-3. Signature : « Thomas Issa » seul (pas de titre, pas de téléphone, pas de formule longue).
-4. Format : texte brut uniquement, pas de HTML, pas de markdown.
-5. Longueur : 3 à 10 lignes max. Plus court = mieux.
-6. Pas de formules creuses (« j'espère que vous allez bien », « je me permets de », « n'hésitez pas »).
-7. Pas d'envoi automatique — Thomas relit et envoie manuellement.
+1. **Jamais d'envoi** — la skill crée un brouillon, jamais ne l'expédie.
+2. **Zéro invention** — aucun fait (date, montant, nom de bien, engagement) absent de l'email source, de la consigne ou de la fiche contact. Manquant → `[À COMPLÉTER : …]`.
+3. **Signature** — « Thomas Issa », sans titre, sans téléphone, sans formule de politesse longue.
+4. **Pas de destinataire inventé** — contact non identifiable → demander à Thomas.
 
-### 5.2 Arbre de décision — registre tu/vous
+### 5.2 Règles de rédaction
+
+- **Phrases courtes et directes.** Répondre précisément à la demande.
+- **Bannir les formules creuses** : « j'espère que vous allez bien », « je me permets de », « n'hésitez pas à ».
+- **Registre** : tutoiement seulement si la fiche contact l'indique (`tutoiement: true` ou `registre` mentionnant « tu ») ; vouvoiement par défaut, notamment pour tout contact professionnel.
+- **S'appuyer sur la fiche contact** : tenir compte du rôle du destinataire et de l'historique de la relation pour calibrer le fond. Ne pas redemander ce que la fiche indique déjà.
+- **Format** : texte brut — pas de HTML, pas de markdown.
+- **Longueur** : 3 à 10 lignes maximum. Plus court vaut mieux.
+- **Information que seul Thomas peut fournir** (montant, date, décision) → `[À COMPLÉTER : la question]`.
+- **Signature** : « Thomas Issa ».
+
+### 5.3 Exemple — comment la fiche contact calibre le brouillon
+
+**Demande** : « réponds à Karim Mokhtar, il relance sur le compromis Henri Barbusse 3 ».
+
+**Fiche contact lue** — `Karim Mokhtar` : apporteur d'affaires (donc vouvoiement) ; historique : c'est lui qui a présenté le Lot Henri Barbusse 3, le RDV notaire est en cours de calage.
+
+Ce que la fiche apporte : on **sait déjà** qui est Karim et de quel dossier il s'agit — inutile de le faire préciser ; le ton est celui d'un partenaire d'affaires ; on le remercie pour la coordination, cohérent avec son rôle d'apporteur.
+
+**Brouillon** :
 
 ```
-Fiche contact existe ?
-├── Oui
-│   ├── frontmatter.tutoiement = true → tu
-│   └── frontmatter.registre contient "tu" → tu
-│   └── sinon → vous
-└── Non → vous (défaut)
+Objet : Re: Compromis Lot Henri Barbusse 3 — RDV notaire
+
+Bonjour Karim,
+
+Je vous confirme le rendez-vous chez le notaire mercredi [À COMPLÉTER : heure]
+pour la signature du compromis sur le Lot 3 de la rue Henri Barbusse.
+
+Merci pour la coordination.
+
+À mercredi,
+Thomas Issa
 ```
 
-### 5.3 Critères de qualité
+L'heure exacte n'étant ni dans la demande ni dans la fiche, elle est laissée en `[À COMPLÉTER]`.
 
-- Réponse directe à la demande de l'email.
-- Tonalité conforme à la section Tonalité de la fiche Thomas.
-- Registre tu/vous conforme à la fiche contact.
-- Marqueurs `[À COMPLÉTER]` explicites pour toute info dépendant de Thomas.
+## Contenu du bundle
+
+- `SKILL.md` — ce fichier. La skill n'a pas de script : la rédaction est faite par Claude, le brouillon créé via le connecteur Gmail de Cowork.
+
+## Liens
+
+- Workflow maître : `08. Outils/Anya/Skills/Workflow Draft Email.md`
+- Skill de référence (modèle d'usage) : `08. Outils/Skills/traite-inbox/`
+- Préférences de voix : `01. Profil/voice-preferences.md`
+- Conventions vault : `CLAUDE.md` (racine vault)
