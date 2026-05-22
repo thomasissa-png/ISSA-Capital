@@ -1,8 +1,16 @@
 /**
- * Tests skill-loader — fondation migration prompts vault-driven (S20).
+ * Tests skill-loader — migration prompts vault-driven (S20 → S21).
  *
- * Couvre 14 cas : cache hit/miss/TTL, invalidation ciblée/globale, fallback repo,
- * intégrité (frontmatter, sections, [À CONFIRMER]), parsing, dédup concurrente.
+ * Couvre : cache hit/miss/TTL, invalidation ciblée/globale, fallback repo,
+ * intégrité (frontmatter, sections H2 + H3), parsing nouveau format SKILL.md,
+ * dédup concurrente.
+ *
+ * Format vault attendu (S21) :
+ *  - Frontmatter YAML : `name` + `description`
+ *  - 5 sections H2 : `## 1. Trigger` / `## 2. Input` / `## 3. Étapes` /
+ *    `## 4. Output` / `## 5. Méthode`
+ *  - Sections H3 dans 5 : `### 5.1 Red lines`, `### 5.2 Arbre de décision`,
+ *    `### 5.3 Critères de qualité`, optionnellement `### 5.4 Exemple complet`.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -32,40 +40,35 @@ import {
 import { SkillLoadError } from '../types';
 
 // ============================================================
-// Fixtures
+// Fixtures (nouveau format SKILL.md S21)
 // ============================================================
 
 const FIXTURE_VALID = `---
-skill: cr-reunion
-version: 1.0
-modeles_llm:
-  - sonnet-4 (claude-sonnet-4-20250514)
-modules_code:
-  - src/lib/secretariat/cr-renderer/
+name: cr-reunion
+description: "Produit un CR PDF à partir d'une note de réunion."
 ---
 
-# Workflow CR Réunion
+# Skill cr-reunion
 
 ## 1. Trigger
 
-Note Telegram > 100 chars.
+Note Telegram > 100 chars ou « fais le CR ».
 
 ## 2. Input
 
-Vault entité.
+Fiche entité, contacts, note, photos.
 
 ## 3. Étapes
 
-### 3.1 Ack webhook
-
-Ack < 5s.
+### 3.1 Identifier l'entité et le mode
+### 3.2 Attribuer la référence
+### 3.3 Rédiger le CRDraft
 
 ## 4. Output
 
-### Modifications vault
-PDF + section vault.
+PDF légal dans Comptes Rendus + propagation fiche entité.
 
-### Récap (gabarit Telegram envoyé à Thomas)
+### Récap (gabarit Telegram)
 \`\`\`
 CR généré.
 
@@ -73,25 +76,27 @@ Projet : [Nom Projet]
 PDF : [webViewLink]
 \`\`\`
 
----
-
 ## 5. Méthode
 
-### 5.1 Red lines (interdictions)
+### 5.1 Red lines
+
 - Jamais inventer de participant.
 - Jamais hardcoder fileId.
 
-### 5.2 Arbre de décision — mode multi vs solo
+### 5.2 Arbre de décision — solo vs multi
+
 \`\`\`
-Note > 100 chars
-├── tiers identifié → multi
+Note de réunion
+├── tiers nommé → multi
 └── solo → array vide
 \`\`\`
 
 ### 5.3 Critères de qualité
-G1 G2 G3.
+
+4 sections + en-tête + participants, aucune donnée inventée.
 
 ### 5.4 Exemple complet (cas réel — mode solo)
+
 **Input** : "Visite seul lot 2 Nanterre."
 
 **CR généré** :
@@ -100,9 +105,6 @@ G1 G2 G3.
 ## Présent
 Thomas Issa (seul)
 \`\`\`
-
-### 5.5 Maintenance
-Owner @ia.
 `;
 
 const FIXTURE_NO_FRONTMATTER = FIXTURE_VALID.replace(/^---[\s\S]*?---\n\n/, '');
@@ -110,6 +112,11 @@ const FIXTURE_NO_FRONTMATTER = FIXTURE_VALID.replace(/^---[\s\S]*?---\n\n/, '');
 const FIXTURE_MISSING_51 = FIXTURE_VALID.replace(
   /### 5\.1 Red lines[\s\S]*?### 5\.2/,
   '### 5.2',
+);
+
+const FIXTURE_MISSING_H2_INPUT = FIXTURE_VALID.replace(
+  /## 2\. Input[\s\S]*?## 3\. Étapes/,
+  '## 3. Étapes',
 );
 
 const FIXTURE_WITH_PENDING = FIXTURE_VALID.replace(
@@ -138,15 +145,15 @@ afterEach(() => {
 // Tests
 // ============================================================
 
-describe('skill-loader', () => {
+describe('skill-loader (S21 — format SKILL.md)', () => {
   it('test 1: cache miss → fetch vault → cache hit (1 seule lecture pour 2 appels)', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    const a = await loadSkill('CR Reunion');
-    const b = await loadSkill('CR Reunion');
+    const a = await loadSkill('cr-reunion');
+    const b = await loadSkill('cr-reunion');
 
     expect(mockedReadVault).toHaveBeenCalledTimes(1);
-    expect(a.name).toBe('CR Reunion');
+    expect(a.name).toBe('cr-reunion');
     expect(b).toBe(a); // même référence (cache)
   });
 
@@ -155,10 +162,10 @@ describe('skill-loader', () => {
 
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-21T10:00:00Z'));
-    await loadSkill('CR Reunion');
+    await loadSkill('cr-reunion');
 
     vi.setSystemTime(new Date('2026-05-21T10:00:00Z').getTime() + SKILL_CACHE_TTL_MS + 60_000);
-    await loadSkill('CR Reunion');
+    await loadSkill('cr-reunion');
 
     expect(mockedReadVault).toHaveBeenCalledTimes(2);
   });
@@ -166,9 +173,9 @@ describe('skill-loader', () => {
   it('test 3: invalidateSkillCache(name) → refetch ciblé', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    await loadSkill('CR Reunion');
-    invalidateSkillCache('CR Reunion');
-    await loadSkill('CR Reunion');
+    await loadSkill('cr-reunion');
+    invalidateSkillCache('cr-reunion');
+    await loadSkill('cr-reunion');
 
     expect(mockedReadVault).toHaveBeenCalledTimes(2);
   });
@@ -176,11 +183,11 @@ describe('skill-loader', () => {
   it('test 4: invalidateSkillCache() sans arg → flush complet', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    await loadSkill('CR Reunion');
-    await loadSkill('Email Ingest');
+    await loadSkill('cr-reunion');
+    await loadSkill('fin-de-bail');
     invalidateSkillCache();
-    await loadSkill('CR Reunion');
-    await loadSkill('Email Ingest');
+    await loadSkill('cr-reunion');
+    await loadSkill('fin-de-bail');
 
     expect(mockedReadVault).toHaveBeenCalledTimes(4);
   });
@@ -189,7 +196,7 @@ describe('skill-loader', () => {
     mockedReadVault.mockResolvedValue({ success: false, error: 'Drive désactivé' });
     mockedReadFs.mockReturnValue(FIXTURE_VALID);
 
-    const ctx = await loadSkill('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
 
     expect(ctx.vaultPath).toBe(FALLBACK_REPO_MARKER);
     expect(mockedReadFs).toHaveBeenCalledTimes(1);
@@ -202,7 +209,7 @@ describe('skill-loader', () => {
       content: FIXTURE_NO_FRONTMATTER,
     });
 
-    await expect(loadSkill('Broken')).rejects.toBeInstanceOf(SkillLoadError);
+    await expect(loadSkill('broken')).rejects.toBeInstanceOf(SkillLoadError);
   });
 
   it('test 7: section 5.1 manquante → SkillLoadError', async () => {
@@ -211,7 +218,16 @@ describe('skill-loader', () => {
       content: FIXTURE_MISSING_51,
     });
 
-    await expect(loadSkill('Broken2')).rejects.toThrow(/missing_section/);
+    await expect(loadSkill('broken2')).rejects.toThrow(/missing_section/);
+  });
+
+  it('test 7bis: section H2 obligatoire (## 2. Input) manquante → SkillLoadError', async () => {
+    mockedReadVault.mockResolvedValue({
+      success: true,
+      content: FIXTURE_MISSING_H2_INPUT,
+    });
+
+    await expect(loadSkill('broken3')).rejects.toThrow(/missing_section/);
   });
 
   it('test 8: [À CONFIRMER] dans 5.1 → warn issue + chargement OK', async () => {
@@ -221,8 +237,8 @@ describe('skill-loader', () => {
     });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const ctx = await loadSkill('CR Reunion');
-    expect(ctx.name).toBe('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
+    expect(ctx.name).toBe('cr-reunion');
 
     const issues = await checkSkillIntegrity(FIXTURE_WITH_PENDING);
     expect(issues.some((i) => i.reason === 'pending_confirmation')).toBe(true);
@@ -231,20 +247,19 @@ describe('skill-loader', () => {
     warnSpy.mockRestore();
   });
 
-  it('test 9: frontmatter parsé correctement (skill, version, modules_code)', async () => {
+  it('test 9: frontmatter parsé correctement (name + description)', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    const ctx = await loadSkill('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
 
-    expect(ctx.frontmatter.skill).toBe('cr-reunion');
-    expect(ctx.frontmatter.version).toBe(1.0);
-    expect(Array.isArray(ctx.frontmatter.modules_code)).toBe(true);
+    expect(ctx.frontmatter.name).toBe('cr-reunion');
+    expect(typeof ctx.frontmatter.description).toBe('string');
   });
 
   it('test 10: extraction 5.1 propre (pas de débordement sur 5.2)', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    const ctx = await loadSkill('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
 
     expect(ctx.redLines).toContain('Jamais inventer de participant');
     expect(ctx.redLines).toContain('Jamais hardcoder fileId');
@@ -255,18 +270,17 @@ describe('skill-loader', () => {
   it('test 11: extraction 5.4 (exemple) avec code blocks préservés', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    const ctx = await loadSkill('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
 
     expect(ctx.example).toContain('Visite seul lot 2 Nanterre');
     expect(ctx.example).toContain('```markdown');
     expect(ctx.example).toContain('Thomas Issa (seul)');
-    expect(ctx.example).not.toContain('### 5.5');
   });
 
   it('test 12: recapTemplate extrait du gabarit Telegram (section 4)', async () => {
     mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
 
-    const ctx = await loadSkill('CR Reunion');
+    const ctx = await loadSkill('cr-reunion');
 
     expect(ctx.recapTemplate).toContain('CR généré');
     expect(ctx.recapTemplate).toContain('Projet : [Nom Projet]');
@@ -291,9 +305,9 @@ describe('skill-loader', () => {
     });
     mockedReadVault.mockReturnValue(slow);
 
-    const p1 = loadSkill('CR Reunion');
-    const p2 = loadSkill('CR Reunion');
-    const p3 = loadSkill('CR Reunion');
+    const p1 = loadSkill('cr-reunion');
+    const p2 = loadSkill('cr-reunion');
+    const p3 = loadSkill('cr-reunion');
 
     resolveFn({ success: true, content: FIXTURE_VALID });
 
@@ -302,5 +316,22 @@ describe('skill-loader', () => {
     expect(mockedReadVault).toHaveBeenCalledTimes(1);
     expect(a).toBe(b);
     expect(b).toBe(c);
+  });
+
+  it('test 15: loadSkill("cr-reunion") parse correctement les 5 sections du SKILL.md vault', async () => {
+    mockedReadVault.mockResolvedValue({ success: true, content: FIXTURE_VALID });
+
+    const ctx = await loadSkill('cr-reunion');
+
+    // Frontmatter parsé
+    expect(ctx.frontmatter.name).toBe('cr-reunion');
+    // Sections H3 5.1 + 5.2 extraites
+    expect(ctx.redLines.length).toBeGreaterThan(20);
+    expect(ctx.decisionTree).toContain('tiers nommé');
+    // Section 5.4 optionnelle présente
+    expect(ctx.example.length).toBeGreaterThan(10);
+    // Intégrité PASS (pas d'issue error)
+    const issues = await checkSkillIntegrity(FIXTURE_VALID);
+    expect(issues.filter((i) => i.level === 'error')).toHaveLength(0);
   });
 });

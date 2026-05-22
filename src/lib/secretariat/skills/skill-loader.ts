@@ -1,11 +1,22 @@
 /**
- * Skill-loader Anya — chargement vault-driven des prompts de skills (S20).
+ * Skill-loader Anya — chargement vault-driven des prompts de skills (S20 → S21).
  *
- * Source de vérité : vault Drive `08. Outils/Anya/Skills/Workflow {Name}.md` (R1).
- * Fallback : `docs/anya/skills-anya/Workflow {Name}.md` (repo) si Drive down.
+ * Source de vérité (R1, S21) : vault Drive `00. Me/08. Outils/Skills/<skillName>/SKILL.md`.
+ *   - Frontmatter YAML : `name` (obligatoire) + `description`
+ *   - 5 sections H2 : `## 1. Trigger` / `## 2. Input` / `## 3. Étapes` /
+ *     `## 4. Output` / `## 5. Méthode`
+ *   - Section 5 sous-divisée (H3) : `### 5.1 Red lines`, `### 5.2 Arbre de décision`,
+ *     `### 5.3 Critères de qualité`, optionnellement `### 5.4 Exemple complet`.
+ *
+ * Fallback résilience prod (R7) : `docs/ia/skills/<skillName>/SKILL.md` (repo) si Drive down.
  *
  * Cache mémoire TTL 1h aligné sur `drive-resolver` (`CACHE_TTL_MS`).
- * Intégrité vérifiée à chaque chargement : frontmatter + 4 sections cibles présentes.
+ *
+ * Intégrité vérifiée à chaque chargement :
+ *   - frontmatter présent (avec champ `name`)
+ *   - sections H2 obligatoires : 1. Trigger, 2. Input, 3. Étapes, 4. Output
+ *   - sections H3 5.1 Red lines et 5.2 Arbre de décision présentes
+ *   - 5.4 Exemple complet : optionnel (tous les skills n'ont pas d'exemple)
  *
  * API publique :
  *  - loadSkill(name)                 — récupère le SkillContext (cache → vault → repo)
@@ -30,11 +41,14 @@ import { SkillLoadError } from './types';
 /** TTL cache mémoire (1h, aligné drive-resolver) */
 export const SKILL_CACHE_TTL_MS = 60 * 60 * 1000;
 
-/** Dossier vault contenant les skills (R1 source de vérité) */
-const VAULT_SKILLS_FOLDER = '08. Outils/Anya/Skills';
+/** Dossier vault contenant les skills (R1 source de vérité — vrai path S21) */
+const VAULT_SKILLS_FOLDER = '00. Me/08. Outils/Skills';
 
-/** Dossier repo fallback (committé) */
-const REPO_SKILLS_FOLDER = 'docs/anya/skills-anya';
+/** Dossier repo fallback (committé) — nouveau path S21 aligné sur structure vault */
+const REPO_SKILLS_FOLDER = 'docs/ia/skills';
+
+/** Nom de fichier standard d'un skill (un sous-dossier par skill) */
+const SKILL_FILENAME = 'SKILL.md';
 
 /** Marqueur vaultPath quand le fallback repo a servi */
 export const FALLBACK_REPO_MARKER = 'FALLBACK_REPO';
@@ -50,7 +64,7 @@ interface CacheEntry {
 
 const skillCache = new Map<string, CacheEntry>();
 
-/** In-flight promises pour dédupliquer les loads concurrents (test 14) */
+/** In-flight promises pour dédupliquer les loads concurrents */
 const inflight = new Map<string, Promise<SkillContext>>();
 
 /**
@@ -92,7 +106,7 @@ function findHeaderOutsideFences(text: string, headerRe: RegExp): number {
 
 /**
  * Extrait le contenu d'une section `### X.Y Titre` jusqu'au prochain header
- * de niveau ≤ 3 (### ou ##) — en ignorant ceux dans les code-fences.
+ * de niveau <= 3 (### ou ##) — en ignorant ceux dans les code-fences.
  */
 function extractSubSection(content: string, sectionNumber: string): string | null {
   const escaped = sectionNumber.replace(/\./g, '\\.');
@@ -100,7 +114,6 @@ function extractSubSection(content: string, sectionNumber: string): string | nul
   const headerStart = findHeaderOutsideFences(content, headerRe);
   if (headerStart === -1) return null;
 
-  // Skip la ligne d'en-tête elle-même
   const newlineAfterHeader = content.indexOf('\n', headerStart);
   if (newlineAfterHeader === -1) return '';
   const bodyStart = newlineAfterHeader + 1;
@@ -132,8 +145,10 @@ function extractH2Section(content: string, sectionPrefix: string): string | null
 }
 
 /**
- * Extrait le gabarit récap Telegram de la section 4.
- * Il est dans un sous-bloc `### Récap` contenant un code-fence triple-backticks.
+ * Extrait le gabarit récap Telegram de la section 4 si présent.
+ * Format legacy : sous-bloc `### Récap` avec un code-fence triple-backticks.
+ * Sur le nouveau format vault SKILL.md, la section 4 contient une description en prose
+ * (pas de gabarit explicite) → retourner chaîne vide (champ optionnel).
  */
 function extractRecapTemplate(section4Body: string): string | null {
   const recapHeaderRe = /^### Récap[^\n]*$/m;
@@ -142,11 +157,9 @@ function extractRecapTemplate(section4Body: string): string | null {
 
   const startIdx = match.index + match[0].length;
   const tail = section4Body.slice(startIdx);
-  // Cherche le code-fence ```
   const fenceOpen = tail.indexOf('```');
   if (fenceOpen === -1) return null;
   const afterOpen = fenceOpen + 3;
-  // Skip language tag éventuel jusqu'au \n
   const firstNl = tail.indexOf('\n', afterOpen);
   if (firstNl === -1) return null;
   const fenceClose = tail.indexOf('```', firstNl + 1);
@@ -155,11 +168,16 @@ function extractRecapTemplate(section4Body: string): string | null {
 }
 
 // ============================================================
-// Check intégrité
+// Check intégrité (format SKILL.md S21)
 // ============================================================
 
 /**
- * Vérifie qu'un skill markdown contient le frontmatter et les sections cibles.
+ * Vérifie qu'un skill markdown respecte le format SKILL.md S21 :
+ *  - frontmatter YAML présent (avec champ `name` ou `skill` legacy)
+ *  - sections H2 : `## 1. Trigger`, `## 2. Input`, `## 3. Étapes`, `## 4. Output`
+ *  - sections H3 : `### 5.1 Red lines`, `### 5.2 Arbre de décision`
+ *  - 5.4 Exemple complet : optionnel (warn si absent, jamais bloquant)
+ *
  * Retourne la liste des issues (vide si tout est OK).
  */
 export async function checkSkillIntegrity(
@@ -188,14 +206,31 @@ export async function checkSkillIntegrity(
     });
   }
 
-  // 2) Sections cibles (5.1, 5.2, 5.4, et ## 4. Output)
-  const requiredSubs: Array<{ num: string; label: string }> = [
-    { num: '5.1', label: 'Red lines' },
-    { num: '5.2', label: 'Arbre de décision' },
-    { num: '5.4', label: 'Exemple complet' },
+  // 2) Sections H2 obligatoires (nouveau format SKILL.md S21)
+  const requiredH2: Array<{ num: string; label: string }> = [
+    { num: '1', label: 'Trigger' },
+    { num: '2', label: 'Input' },
+    { num: '3', label: 'Étapes' },
+    { num: '4', label: 'Output' },
   ];
 
-  for (const { num, label } of requiredSubs) {
+  for (const { num, label } of requiredH2) {
+    if (extractH2Section(content, num) === null) {
+      issues.push({
+        level: 'error',
+        reason: 'missing_section',
+        details: `Section "## ${num}. ${label}" manquante`,
+      });
+    }
+  }
+
+  // 3) Sections H3 obligatoires dans la section 5 (red lines + arbre décision)
+  const requiredH3: Array<{ num: string; label: string }> = [
+    { num: '5.1', label: 'Red lines' },
+    { num: '5.2', label: 'Arbre de décision' },
+  ];
+
+  for (const { num, label } of requiredH3) {
     if (extractSubSection(content, num) === null) {
       issues.push({
         level: 'error',
@@ -205,16 +240,8 @@ export async function checkSkillIntegrity(
     }
   }
 
+  // 4) [À CONFIRMER] dans une section injectée → warn
   const section4 = extractH2Section(content, '4');
-  if (section4 === null) {
-    issues.push({
-      level: 'error',
-      reason: 'missing_section',
-      details: 'Section "## 4. Output" manquante',
-    });
-  }
-
-  // 3) [À CONFIRMER] dans une section injectée → warn
   const injectedConcat = [
     extractSubSection(content, '5.1') ?? '',
     extractSubSection(content, '5.2') ?? '',
@@ -234,19 +261,18 @@ export async function checkSkillIntegrity(
 }
 
 // ============================================================
-// Lecture vault ou fallback repo
+// Lecture vault ou fallback repo (format SKILL.md S21)
 // ============================================================
 
 /**
- * Lit le markdown d'un skill depuis le vault Drive (R1).
- * Retourne null si échec (Drive down, fichier manquant, etc.).
+ * Lit le SKILL.md d'un skill depuis le vault Drive (R1).
+ * Path : `00. Me/08. Outils/Skills/<skillName>/SKILL.md`.
+ * Retourne null si échec (Drive down, dossier manquant, etc.).
  */
 async function readSkillFromVault(skillName: string): Promise<string | null> {
   try {
-    const result = await readVaultFile(
-      VAULT_SKILLS_FOLDER,
-      `Workflow ${skillName}.md`,
-    );
+    const folder = `${VAULT_SKILLS_FOLDER}/${skillName}`;
+    const result = await readVaultFile(folder, SKILL_FILENAME);
     if (!result.success || !result.content) return null;
     return result.content;
   } catch {
@@ -255,15 +281,20 @@ async function readSkillFromVault(skillName: string): Promise<string | null> {
 }
 
 /**
- * Fallback : lit le skill depuis le repo (committé dans docs/anya/skills-anya/).
+ * Fallback résilience prod (R7) : lit le skill depuis le repo
+ * (`docs/ia/skills/<skillName>/SKILL.md`).
  * Retourne null si le fichier n'existe pas.
+ *
+ * Note : ce fallback existe pour le cas où Drive serait inaccessible.
+ * Il NE remplace PAS la source de vérité vault — il dépanne uniquement.
  */
 function readSkillFromRepo(skillName: string): string | null {
   try {
     const filePath = join(
       process.cwd(),
       REPO_SKILLS_FOLDER,
-      `Workflow ${skillName}.md`,
+      skillName,
+      SKILL_FILENAME,
     );
     return readFileSync(filePath, 'utf-8');
   } catch {
@@ -310,7 +341,7 @@ function buildContext(
 /**
  * Charge un skill (cache → vault → fallback repo).
  *
- * @param skillName Nom court du workflow (ex: "CR Reunion", "Email Ingest").
+ * @param skillName Nom court du skill = nom du dossier vault (ex: "cr-reunion", "fin-de-bail").
  * @throws SkillLoadError si vault ET fallback échouent, ou si intégrité KO.
  */
 export async function loadSkill(skillName: string): Promise<SkillContext> {
@@ -326,11 +357,11 @@ export async function loadSkill(skillName: string): Promise<SkillContext> {
 
   const promise = (async () => {
     try {
-      // 3) Lecture vault
+      // 3) Lecture vault (source de vérité R1)
       let content = await readSkillFromVault(skillName);
-      let vaultPath = `${VAULT_SKILLS_FOLDER}/Workflow ${skillName}.md`;
+      let vaultPath = `${VAULT_SKILLS_FOLDER}/${skillName}/${SKILL_FILENAME}`;
 
-      // 4) Fallback repo si vault down
+      // 4) Fallback repo si vault down (R7 — résilience prod, jamais SOT)
       if (content === null) {
         content = readSkillFromRepo(skillName);
         vaultPath = FALLBACK_REPO_MARKER;
@@ -339,7 +370,7 @@ export async function loadSkill(skillName: string): Promise<SkillContext> {
       if (content === null) {
         throw new SkillLoadError(
           skillName,
-          `Skill introuvable (ni vault "${VAULT_SKILLS_FOLDER}", ni repo "${REPO_SKILLS_FOLDER}")`,
+          `Skill introuvable (ni vault "${VAULT_SKILLS_FOLDER}/${skillName}", ni repo "${REPO_SKILLS_FOLDER}/${skillName}")`,
         );
       }
 
@@ -360,7 +391,6 @@ export async function loadSkill(skillName: string): Promise<SkillContext> {
         for (const w of warns) {
           console.warn(`[skill-loader] ${skillName} — ${w.reason}: ${w.details}`);
         }
-        // TODO S21 : brancher alert Telegram à Thomas pour les warns
       }
 
       // 6) Build + cache
