@@ -174,7 +174,10 @@ async function callHaiku(
       task: 'email-triage',
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
-      maxTokens: 1024,
+      // 2048 (et non 1024) : DeepSeek V4 Pro produit un `summary` plus verbeux
+      // que Flash et tronquait le JSON à 1024 (observé en prod S23, run 19:00).
+      // Marge aussi pour les champs S23 `projet` + `attachments_to_keep`.
+      maxTokens: 2048,
       responseFormat: 'json',
       timeoutMs: TIMEOUT_MS,
     });
