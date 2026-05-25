@@ -23,12 +23,13 @@
  */
 
 import { getAccessToken } from '../drive-upload';
-import { resolvePath } from '../vault-client/drive-resolver';
+import { resolvePath, resolveFilePath } from '../vault-client/drive-resolver';
 import {
   buildSignalId,
   detectSignal,
   passesHeuristicPrefilter,
 } from './signal-detector';
+import { HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME } from './applier';
 import { writeHotContextAudit } from './audit';
 import type { HotContextState, Patch, Signal } from './types';
 
@@ -101,6 +102,26 @@ async function readFileContent(accessToken: string, fileId: string): Promise<str
   });
   if (!response.ok) return '';
   return response.text();
+}
+
+/**
+ * Charge le contenu LIVE du briefing `hot-context.md` (défaut 1 — anti-doublon).
+ *
+ * Best-effort : en cas d'échec (token absent, fichier introuvable, lecture
+ * Drive KO) → retourne '' SANS planter le scan. Le détecteur tournera alors
+ * sans contexte (comportement legacy, dégradé mais non bloquant).
+ */
+async function loadExistingBriefingContent(accessToken: string): Promise<string> {
+  try {
+    const resolved = await resolveFilePath(HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME);
+    if (!resolved.success || !resolved.fileId) return '';
+    return await readFileContent(accessToken, resolved.fileId);
+  } catch (err) {
+    console.warn(
+      `[hot-context-scanner] lecture briefing live échouée (anti-doublon dégradé) : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return '';
+  }
 }
 
 // ============================================================
@@ -324,6 +345,10 @@ export async function scanForPatches(input: ScanInput): Promise<ScanResult> {
   let skippedAlreadyProcessed = 0;
   const patches: Patch[] = [];
 
+  // Défaut 1 — charge UNE fois le contenu live du briefing pour le passer au
+  // détecteur (anti-doublon). Best-effort : '' si token absent / fichier KO.
+  const existingContent = accessToken ? await loadExistingBriefingContent(accessToken) : '';
+
   for (const signal of allSignals) {
     // Pre-filter heuristique
     if (!passesHeuristicPrefilter(signal)) {
@@ -346,6 +371,7 @@ export async function scanForPatches(input: ScanInput): Promise<ScanResult> {
     // Appel Haiku
     const result = await detectSignal(signal, {
       currentFileTokens: input.state.lastFileTokensEstimate,
+      existingContent,
     });
     if (result.patch === null) continue;
 

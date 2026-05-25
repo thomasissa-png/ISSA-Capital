@@ -115,6 +115,14 @@ export interface ProcessedSignal {
   outcome: 'patched' | 'skipped' | 'rejected';
 }
 
+/**
+ * Phase d'un pending hot-context (défaut 2 — loop Modifier).
+ *  - `preview` : carte affichée avec boutons Valider/Modifier/Skip (défaut).
+ *  - `awaiting_edit` : Thomas a cliqué Modifier → le prochain texte libre est
+ *    capté comme instruction de reformulation du payload.
+ */
+export type HotContextPendingPhase = 'preview' | 'awaiting_edit';
+
 /** Pending patch en attente de validation Thomas. */
 export interface PendingPatchRecord {
   patchId: string;
@@ -123,6 +131,15 @@ export interface PendingPatchRecord {
   proposedAt: string;
   /** message_id Telegram (pour edit ultérieur). */
   telegramMessageId?: number;
+  /**
+   * Phase du pending (défaut 2). Absent = `preview` (rétrocompat pendings legacy).
+   */
+  phase?: HotContextPendingPhase;
+  /**
+   * Nombre de reformulations déjà appliquées (défaut 2). Cap à
+   * HOT_CONTEXT_MAX_MODIFY_ITERATIONS. Absent = 0.
+   */
+  modifyCount?: number;
 }
 
 /** State complet du module hot-context. */

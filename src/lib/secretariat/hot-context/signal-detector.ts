@@ -208,6 +208,12 @@ function payloadHasWikilink(section: PatchSection, payload: PatchPayload): boole
 export interface DetectSignalContext {
   /** Estimation tokens actuelle du fichier (pour pression cap). */
   currentFileTokens?: number;
+  /**
+   * Contenu LIVE actuel du briefing `hot-context.md` (défaut 1 — anti-doublon).
+   * Injecté dans le prompt pour qu'Haiku ne propose JAMAIS un 'add' déjà présent.
+   * Dynamique → ne JAMAIS le mettre dans la partie cachée (cache_control).
+   */
+  existingContent?: string;
 }
 
 /**
@@ -221,9 +227,26 @@ export async function detectSignal(
   signal: Signal,
   ctx: DetectSignalContext = {},
 ): Promise<DetectSignalResult> {
-  const dynamicSystem = ctx.currentFileTokens !== undefined && ctx.currentFileTokens > 450
-    ? `Fichier proche du cap (${ctx.currentFileTokens}/500 tokens) — privilégier 'remove' sur 'add' si pertinent.`
-    : '';
+  // Partie dynamique du system prompt (jamais cachée) : pression cap + contenu
+  // live du briefing (défaut 1 — anti-doublon). On la concatène pour qu'Haiku
+  // dispose à la fois de la pression tokens et du contenu actuel.
+  const dynamicParts: string[] = [];
+  if (ctx.currentFileTokens !== undefined && ctx.currentFileTokens > 450) {
+    dynamicParts.push(
+      `Fichier proche du cap (${ctx.currentFileTokens}/500 tokens) — privilégier 'remove' sur 'add' si pertinent.`,
+    );
+  }
+  if (ctx.existingContent !== undefined && ctx.existingContent.trim().length > 0) {
+    dynamicParts.push(
+      `## CONTENU ACTUEL DU BRIEFING (hot-context.md)\n` +
+        `\`\`\`markdown\n${ctx.existingContent.slice(0, 4000)}\n\`\`\`\n` +
+        `RÈGLE ANTI-DOUBLON STRICTE :\n` +
+        `- Ne propose JAMAIS un 'add' dont le contenu existe déjà ci-dessus, MÊME reformulé ou paraphrasé.\n` +
+        `- Si l'information est déjà couverte (même partiellement, même autre formulation) → \`patch: null\` avec \`reason_if_null\` explicite (ex: "déjà présent dans bouge").\n` +
+        `- 'remove' UNIQUEMENT sur signal explicite de résolution d'un item présent ci-dessus.`,
+    );
+  }
+  const dynamicSystem = dynamicParts.join('\n\n');
 
   const userMessage = JSON.stringify({
     source: signal.source,
@@ -295,6 +318,112 @@ export async function detectSignal(
   };
 
   return { patch, confidence: parsed.confidence, reasonIfNull: '' };
+}
+
+// ============================================================
+// Modify loop (défaut 2) — patch PARTIEL du payload depuis instruction
+// ============================================================
+
+const PATCH_PAYLOAD_SYSTEM_PROMPT = `# Rôle : Anya — reformule un payload de patch hot-context
+
+Thomas a vu un patch proposé pour son briefing \`hot-context.md\` et tape une INSTRUCTION COURTE pour l'ajuster (ex: « plutôt vendredi », « ajoute [[Projet X]] », « c'est Martin pas Marc »).
+
+Tu reçois le payload ACTUEL (JSON) + la section + l'instruction. Tu renvoies le payload MODIFIÉ.
+
+## Contrat STRICT
+1. PATCH PARTIEL — applique UNIQUEMENT la consigne. Ne reformule pas tout, ne réécris pas les champs non concernés.
+2. Préserve byte-à-byte tous les champs non visés par l'instruction.
+3. WIKILINK obligatoire — le payload modifié DOIT toujours contenir au moins un wikilink \`[[...]]\` (red line). Ne le retire jamais ; si l'instruction en ajoute un, garde aussi l'existant si pertinent.
+4. FORMAT télégraphique — phrases courtes, factuelles.
+5. Instruction ambiguë / non comprise → renvoie le payload INCHANGÉ.
+
+## Schémas par section
+- \`bouge\` : { "text": string }
+- \`attends\` : { "quoi": string, "deQui": string, "depuis": string (ISO YYYY-MM-DD si possible), "note"?: string }
+- \`arbitrage\` : { "sujet": string, "contexte": string }
+
+## Output JSON strict
+Renvoie UNIQUEMENT le payload JSON modifié (même schéma que l'entrée selon la section), sans bloc markdown, sans texte avant/après.`;
+
+/**
+ * Patche PARTIELLEMENT le payload d'un patch hot-context selon une instruction
+ * texte libre de Thomas (défaut 2 — loop Modifier). Modèle calqué sur
+ * `patchDraftFromInstruction` (TickTick) :
+ *  - applique UNIQUEMENT la consigne (jamais re-parse à zéro) ;
+ *  - préserve les champs non visés ;
+ *  - respecte la red line wikilink (`payloadHasWikilink`) : si la sortie LLM
+ *    perd le wikilink → on retourne le payload INCHANGÉ ;
+ *  - never throw : tout échec (réseau, JSON corrompu) → payload inchangé.
+ *
+ * @param patch Patch courant (on ne modifie que son payload).
+ * @param instruction Texte libre court de Thomas.
+ * @returns Le patch avec un payload potentiellement modifié (même référence
+ *   d'objet si rien n'a changé n'est PAS garanti — comparer via `payload`).
+ */
+export async function patchHotContextPayloadFromInstruction(
+  patch: Patch,
+  instruction: string,
+): Promise<Patch> {
+  const cleaned = instruction.trim();
+  if (!cleaned) return patch;
+
+  const userMessage = JSON.stringify({
+    section: patch.section,
+    currentPayload: patch.payload,
+    instruction: cleaned,
+  });
+
+  let rawText: string;
+  try {
+    const result = await callAnthropic({
+      family: 'haiku',
+      system: PATCH_PAYLOAD_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+      maxTokens: 400,
+      responseFormat: 'json',
+      timeoutMs: 30_000,
+    });
+    rawText = result.text;
+  } catch (err) {
+    console.warn(
+      `[signal-detector] patchHotContextPayloadFromInstruction échoué : ${err instanceof Error ? err.message : String(err)} — payload inchangé`,
+    );
+    return patch;
+  }
+
+  // Extraction permissive (bloc ```json``` ou objet brut)
+  const blockMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  const candidate =
+    blockMatch?.[1]?.trim() ?? rawText.match(/\{[\s\S]*\}/)?.[0]?.trim() ?? null;
+  if (!candidate) return patch;
+
+  let nextPayload: PatchPayload;
+  try {
+    nextPayload = JSON.parse(candidate) as PatchPayload;
+  } catch {
+    return patch;
+  }
+
+  // Red line wikilink : si la reformulation perd le wikilink → on REFUSE la
+  // modification (payload inchangé) plutôt que de violer la red line.
+  if (!payloadHasWikilink(patch.section, nextPayload)) {
+    console.warn(
+      '[signal-detector] reformulation sans wikilink refusée (red line) — payload inchangé',
+    );
+    return patch;
+  }
+
+  // Recalcul signalId/patchId : le payload a changé → l'identité du patch aussi.
+  const signalId = buildSignalId(
+    patch.source,
+    patch.sourceId,
+    patch.section,
+    patch.action,
+    nextPayload,
+  );
+  const patchId = buildPatchId(signalId, patch.section, patch.action);
+
+  return { ...patch, payload: nextPayload, signalId, patchId };
 }
 
 // ============================================================

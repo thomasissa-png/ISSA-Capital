@@ -93,6 +93,29 @@ function escapeCell(value: string): string {
   return value.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 }
 
+/**
+ * Normalise une ligne markdown pour comparaison anti-doublon robuste (défaut 1).
+ *
+ * Transformations :
+ *  - trim externe ;
+ *  - retrait du markdown trivial de tête (`- `, `* `, `+ `, `| `) ;
+ *  - minuscule ;
+ *  - collapse des espaces internes (tabs, espaces multiples → 1 espace).
+ *
+ * Objectif : « [[Item A]] », « - [[Item A]]  » et « [[item a]] » → même clé.
+ * Ne touche PAS au contenu réel (sert uniquement à détecter l'équivalence).
+ */
+function normalizeLineForDedup(line: string): string {
+  return line
+    .trim()
+    .replace(/^[-*+]\s+/, '') // puce markdown de tête
+    .replace(/^\|\s*/, '') // début de cellule tableau
+    .replace(/\s*\|\s*$/, '') // fin de cellule tableau
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ============================================================
 // Application sur l'AST
 // ============================================================
@@ -114,10 +137,13 @@ export function applyPatchOnAst(ast: HotContextAst, patch: Patch): HotContextAst
 
   const renderedLine = renderPatchLine(patch);
   const block: SectionBlock = ast[sectionKey];
+  const renderedNorm = normalizeLineForDedup(renderedLine);
 
   if (patch.action === 'add') {
-    // Idempotence : déjà présent ?
-    if (block.bodyLines.some((line) => line.trim() === renderedLine.trim())) {
+    // Idempotence renforcée (défaut 1) : déjà présent en comparaison NORMALISÉE
+    // (trim + minuscule + espaces collapsés + retrait puce/cellule). Bloque les
+    // doublons reformulés trivialement (« [[Item A]] » vs « - [[item a]] »).
+    if (block.bodyLines.some((line) => normalizeLineForDedup(line) === renderedNorm)) {
       return ast;
     }
     // Insertion : pour 'attends', on insère après la dernière ligne tableau ;
@@ -129,8 +155,8 @@ export function applyPatchOnAst(ast: HotContextAst, patch: Patch): HotContextAst
     };
   }
 
-  // action = remove
-  const idx = block.bodyLines.findIndex((line) => line.trim() === renderedLine.trim());
+  // action = remove — match normalisé (cohérent avec la détection de doublon add)
+  const idx = block.bodyLines.findIndex((line) => normalizeLineForDedup(line) === renderedNorm);
   if (idx === -1) return ast; // idempotence
   const newBodyLines = [...block.bodyLines.slice(0, idx), ...block.bodyLines.slice(idx + 1)];
   return {
