@@ -29,6 +29,8 @@ import {
 import { appendToTodoInbox } from '../drive-todo';
 import { markProcessed } from '../gmail-source/gmail-source';
 import { writeAuditLog } from '../vault-client/audit-log';
+import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
+import { executeCopyAttachment } from '../email-ingest/attachment-handler';
 import {
   VAULT_PATHS,
   slugifyVaultFilename,
@@ -176,6 +178,46 @@ async function executeAction(
         const emailId = pending.email.id;
         const success = await markProcessed(emailId);
         return success ? { ok: true } : { ok: false, error: 'markProcessed échoué' };
+      }
+
+      // S23 — historique projet (cas validé manuellement si l'auto a échoué ou
+      // si l'action a atterri dans la carte). Réutilise le helper projet-enricher.
+      case 'append_projet_historique': {
+        const code = action.payload['projetCode'] as string | undefined;
+        if (!code) {
+          return { ok: false, error: 'projetCode manquant pour append_projet_historique' };
+        }
+        const res = await appendProjetHistoriqueLine(code, {
+          title: action.payload['title'] as string,
+          content: action.payload['content'] as string,
+          trigger,
+        });
+        return res.status === 'enriched' || res.status === 'no-fiche'
+          ? { ok: true }
+          : { ok: false, error: res.error ?? 'append_projet_historique échoué' };
+      }
+
+      // S23 — copie PJ (proposée, validée par Thomas). download Gmail + upload
+      // Drive vers le sous-dossier résolu.
+      case 'copy_attachment': {
+        const messageId = action.payload['messageId'] as string | undefined;
+        const attachmentId = action.payload['attachmentId'] as string | undefined;
+        const attachmentName = action.payload['attachmentName'] as string | undefined;
+        const baseFolderPath = action.payload['baseFolderPath'] as string | undefined;
+        const subfolder = action.payload['subfolder'] as string | undefined;
+        if (!messageId || !attachmentId || !attachmentName || !baseFolderPath || !subfolder) {
+          return { ok: false, error: 'payload copy_attachment incomplet' };
+        }
+        const res = await executeCopyAttachment(
+          messageId,
+          {
+            name: attachmentName,
+            mimeType: (action.payload['attachmentMimeType'] as string) ?? 'application/octet-stream',
+            id: attachmentId,
+          },
+          { baseFolderPath, subfolder },
+        );
+        return res.ok ? { ok: true } : { ok: false, error: res.error ?? 'copy_attachment échoué' };
       }
 
       case 'skip': {

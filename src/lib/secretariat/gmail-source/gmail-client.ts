@@ -436,6 +436,66 @@ export function extractAttachments(
   return attachments;
 }
 
+/**
+ * Télécharge le binaire d'une pièce jointe Gmail (S23 — email-ingest cohérent).
+ *
+ * Endpoint : users.messages.attachments.get — renvoie le contenu en base64url.
+ * Réutilise getAccessToken() (mutualisé) + le pattern fetch + timeout des autres
+ * appels gmail-client. Plus généreux sur le timeout que les autres appels (PJ
+ * potentiellement lourde) tout en restant borné.
+ *
+ * @param messageId ID du message contenant la PJ
+ * @param attachmentId attachmentId de la PJ (champ `id` de EmailAttachment)
+ * @returns Buffer du binaire décodé, ou null en cas d'échec (token absent,
+ *   HTTP KO, payload vide). Ne throw jamais — l'appelant gère le null.
+ */
+export async function downloadAttachment(
+  messageId: string,
+  attachmentId: string,
+): Promise<Buffer | null> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    console.warn('[gmail-client] downloadAttachment : pas de token OAuth2');
+    return null;
+  }
+
+  const userId = process.env.GMAIL_USER_EMAIL ?? 'me';
+  const url = `${GMAIL_API}/users/${encodeURIComponent(userId)}/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      // PJ potentiellement lourde — timeout plus large que les autres appels.
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(
+        `[gmail-client] downloadAttachment(${messageId}/${attachmentId}) HTTP ${response.status} — ${errText.slice(0, 200)}`,
+      );
+      return null;
+    }
+
+    const data = (await response.json()) as { data?: string; size?: number };
+    if (!data.data) {
+      console.warn(
+        `[gmail-client] downloadAttachment(${messageId}/${attachmentId}) : payload sans data`,
+      );
+      return null;
+    }
+
+    // Gmail renvoie le binaire en base64url.
+    const base64 = data.data.replace(/-/g, '+').replace(/_/g, '/');
+    return Buffer.from(base64, 'base64');
+  } catch (err) {
+    console.warn(
+      `[gmail-client] downloadAttachment(${messageId}/${attachmentId}) erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return null;
+  }
+}
+
 // ============================================================
 // Utilitaires internes
 // ============================================================

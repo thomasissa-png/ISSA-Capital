@@ -52,6 +52,10 @@ import {
 import { appendToTodoInbox } from '../drive-todo';
 import { markProcessed as markEmailProcessed } from '../gmail-source/gmail-source';
 import { createTickTickTaskForEmail } from './ticktick-integration';
+import { buildCoherenceActions } from './coherence-actions';
+import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
+import { sendHotContextPatchCard } from '../telegram-validation/handlers/hot-context-patch';
+import type { Patch } from '../hot-context/types';
 
 // ============================================================
 // Types
@@ -278,7 +282,40 @@ async function processOneEmail(
 
   // Dispatch handler
   const handler = getHandler(triage.category);
-  const actions = await handler(triage, detail);
+  const handlerActions = await handler(triage, detail);
+
+  // S23 — actions de cohérence (historique projet, copie PJ, hot-context).
+  // Best-effort : un échec ne bloque PAS le traitement de l'email.
+  let coherenceActions: ActionProposal[] = [];
+  try {
+    coherenceActions = await buildCoherenceActions(detail, triage);
+  } catch (err) {
+    console.warn(
+      `[email-ingest] buildCoherenceActions échoué pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // (e) Hot-context → carte dédiée `hotcontext:` (PAS la carte email principale,
+  // anti-bruit : c'est un flux de validation distinct avec sa propre machinerie).
+  const hotContextActions = coherenceActions.filter((a) => a.type === 'update_hot_context');
+  for (const hcAction of hotContextActions) {
+    const patch = hcAction.payload['patch'] as Patch | undefined;
+    if (!patch) continue;
+    try {
+      await sendHotContextPatchCard(patch);
+    } catch (err) {
+      console.warn(
+        `[email-ingest] envoi carte hot-context pour ${messageId} échoué : ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // Les actions restantes (projet histo auto + copie PJ proposée) rejoignent le
+  // flux carte email principale / auto-execute classique.
+  const actions = [
+    ...handlerActions,
+    ...coherenceActions.filter((a) => a.type !== 'update_hot_context'),
+  ];
 
   // S18.5 : si TOUTES les actions sont auto-exécutables, court-circuiter
   // la validation Telegram. Cas typiques :
@@ -560,6 +597,26 @@ async function executeAutoAction(
       case 'mark_processed': {
         const success = await markEmailProcessed(email.id);
         return success ? { ok: true } : { ok: false, error: 'markProcessed échoué' };
+      }
+
+      // S23 — historique projet (silencieux). Réutilise la résolution fiche
+      // (findProjetFicheByEntite) + appendToHistorique PATCH in-place (R5) via
+      // le helper projet-enricher.
+      case 'append_projet_historique': {
+        const code = action.payload['projetCode'] as string | undefined;
+        if (!code) {
+          return { ok: false, error: 'projetCode manquant pour append_projet_historique' };
+        }
+        const res = await appendProjetHistoriqueLine(code, {
+          title: action.payload['title'] as string,
+          content: action.payload['content'] as string,
+          trigger: `email_ingest:auto:${email.id}`,
+        });
+        return res.status === 'enriched'
+          ? { ok: true }
+          : res.status === 'no-fiche'
+            ? { ok: true } // fiche absente = skip silencieux, pas une erreur
+            : { ok: false, error: res.error ?? 'append_projet_historique échoué' };
       }
 
       case 'skip': {
