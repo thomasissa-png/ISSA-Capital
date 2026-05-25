@@ -685,3 +685,74 @@ export async function uploadToInbox(
     };
   }
 }
+
+// ============================================================
+// Recherche Drive (files.list q=...)
+// ============================================================
+
+/** Métadonnées minimales d'un fichier Drive retourné par files.list. */
+export interface DriveFileMeta {
+  id: string;
+  name: string;
+  mimeType?: string;
+}
+
+/**
+ * Recherche des fichiers Drive via `files.list` avec une requête `q` brute.
+ *
+ * Gère la pagination (boucle jusqu'à épuisement du nextPageToken) et la
+ * recherche dans les Shared Drives (`supportsAllDrives` + `includeItemsFromAllDrives`).
+ *
+ * @param q   Requête Drive (ex: "name contains '[Livre]' and trashed=false").
+ * @returns   Liste des fichiers (id/name/mimeType), ou [] si Drive indisponible.
+ */
+export async function searchDriveFiles(q: string): Promise<DriveFileMeta[]> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    console.warn('[drive-search] Drive désactivé — credentials OAuth2 manquants');
+    return [];
+  }
+
+  const files: DriveFileMeta[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const url = new URL(DRIVE_FILES_API);
+    url.searchParams.set('q', q);
+    url.searchParams.set('fields', 'files(id,name,mimeType),nextPageToken');
+    url.searchParams.set('pageSize', '1000');
+    url.searchParams.set('supportsAllDrives', 'true');
+    url.searchParams.set('includeItemsFromAllDrives', 'true');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (err) {
+      console.warn(
+        `[drive-search] fetch erreur : ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return files;
+    }
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(`[drive-search] HTTP ${response.status} — ${errText.slice(0, 200)}`);
+      return files;
+    }
+
+    const data = (await response.json()) as {
+      files?: DriveFileMeta[];
+      nextPageToken?: string;
+    };
+    for (const f of data.files ?? []) {
+      if (f.id && f.name) files.push(f);
+    }
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return files;
+}
