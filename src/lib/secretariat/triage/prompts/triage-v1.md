@@ -53,7 +53,9 @@ Retourne UNIQUEMENT un JSON strict, sans markdown, sans explication :
       "target": "chemin vault si applicable" | null,
       "payload": {}
     }
-  ]
+  ],
+  "projet": "IC" | "GO" | "VI" | "VV" | "VM" | "IM"   // OPTIONNEL — omettre si aucun projet clair
+  "attachments_to_keep": ["facture-mars.pdf"]          // OPTIONNEL — omettre si aucune PJ à garder
 }
 ```
 
@@ -65,6 +67,36 @@ Retourne UNIQUEMENT un JSON strict, sans markdown, sans explication :
 - **matchedContact** : nom complet du contact matché dans les listes fournies, ou null si aucun match.
 - **summary** : 1-2 phrases. Factuel. Pas de "il semble que" ni "probablement".
 - **suggestedActions** : liste d'actions proposées. Chaque action a un `type`, un `target` (chemin vault optionnel), et un `payload` (données à écrire). Si `category=spam`, `suggestedActions = [{ "type": "skip", "target": null, "payload": {} }]`.
+- **projet** (OPTIONNEL) : code entité du projet clairement concerné par l'email. Voir section « Détection projet » ci-dessous. OMETTRE le champ si aucun projet connu n'est clairement en jeu ou si c'est ambigu.
+- **attachments_to_keep** (OPTIONNEL) : filenames des pièces jointes qui valent d'être conservées. Voir section « Pièces jointes » ci-dessous. OMETTRE le champ si aucune PJ ne mérite d'être gardée.
+
+## Détection projet (champ `projet`)
+
+ISSA Capital suit 6 entités/projets. Renseigne `projet` SEULEMENT si l'email concerne **clairement et sans ambiguïté** l'une d'elles (mention explicite du nom dans l'objet ou le corps) :
+
+| Code | Noms / alias |
+|---|---|
+| `IC` | ISSA Capital |
+| `GO` | Gradient One |
+| `VI` | Versi Immobilier, Versi Immo |
+| `VV` | Versi Invest, Versi Investissement |
+| `VM` | Versimo |
+| `IM` | Immocrew, Immo Crew |
+
+Règles STRICTES :
+- Un seul projet certain → renseigne le code. Plusieurs projets possibles ou doute → OMETS le champ.
+- « Versi » seul est AMBIGU (VI/VV/VM) → exige le nom complet. Dans le doute, OMETS.
+- Ne JAMAIS inférer un projet depuis le seul domaine de l'expéditeur ou un nom de famille (« Issa » est omniprésent → pas un signal projet).
+
+## Pièces jointes (champ `attachments_to_keep`)
+
+Quand l'email contient des pièces jointes (listées en « Attachments »), décide lesquelles valent d'être archivées dans le vault car elles **enrichissent un sujet suivi** (dossier projet, dossier locataire, doc administratif).
+
+GARDER (lister le filename) : factures, contrats, baux, états des lieux, devis, attestations, documents de projet, relevés, justificatifs.
+
+EXCLURE (ne PAS lister) : signatures inline et logos, pixels de tracking, images décoratives < ~15 Ko, PJ de newsletters / marketing / spam, bannières.
+
+Règle d'or : **dans le doute, ne pas lister.** Mieux vaut rater une PJ utile que de polluer le vault. Si `category` ∈ {`spam`, `a-classifier` à faible confiance} → ne liste AUCUNE PJ.
 
 ## Exemples
 
@@ -84,6 +116,26 @@ Output:
     { "type": "append_historique", "target": "07. Contacts/05. Locataires/01. Actuels/Kenan Beguigneau.md", "payload": { "section": "Demande quittance avril", "content": "Demande de quittance reçue par email." } },
     { "type": "add_todo", "target": null, "payload": { "task": "Générer quittance avril pour Kenan Beguigneau" } }
   ]
+}
+```
+
+### Email contact-pro avec facture rattachée à un projet
+Input: From: compta@cabinet-dupont.fr, Subject: "Facture travaux Versi Immobilier", Body: "Bonjour, veuillez trouver ci-joint la facture pour les travaux du projet Versi Immobilier.", Attachments: facture-2026-03.pdf (application/pdf), logo-cabinet.png (image/png)
+Contexte: Contacts pro: [{ nom: "Cabinet Dupont", email: "compta@cabinet-dupont.fr" }]
+
+Output:
+```json
+{
+  "category": "contact-pro",
+  "intent": "facture_travaux",
+  "confidence": 0.96,
+  "matchedContact": "Cabinet Dupont",
+  "summary": "Le Cabinet Dupont envoie une facture de travaux pour le projet Versi Immobilier.",
+  "suggestedActions": [
+    { "type": "append_historique", "target": "07. Contacts/01. Pro/Cabinet Dupont.md", "payload": { "section": "Facture travaux Versi Immobilier", "content": "Facture de travaux reçue." } }
+  ],
+  "projet": "VI",
+  "attachments_to_keep": ["facture-2026-03.pdf"]
 }
 ```
 
