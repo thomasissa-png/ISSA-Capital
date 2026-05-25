@@ -159,7 +159,7 @@ Une ligne de monitoring ne suffit pas. Stack d'observabilité :
 
 Si le projet doit répondre sur des données spécifiques (documentation, base de connaissances, catalogue) :
 - **Embeddings** : choisir le modèle d'embedding (voyage-3 pour Anthropic, text-embedding-3-small pour OpenAI). Dimensionner le vector store.
-- **Vector store** : pgvector (si PostgreSQL Replit), Pinecone, Qdrant. Recommander pgvector par défaut (zéro service externe).
+- **Vector store** : pgvector (sur Neon Postgres pour futurs projets ou PostgreSQL Replit pour legacy), Cloudflare Vectorize (edge-native, optimal stack 100% CF Workers), Pinecone, Qdrant. Recommander pgvector sur Neon par défaut (zéro service externe, partner Cloudflare). Vectorize si stack 100% CF Workers et latence edge critique.
 - **Chunking** : stratégie de découpage (par paragraphe, par section, sliding window). Taille cible : 500-1000 tokens par chunk.
 - **Hybrid search** : combiner recherche sémantique (embeddings) + recherche lexicale (keyword BM25) pour meilleure précision.
 - **Re-ranking** : re-classer les résultats de retrieval par pertinence avant de les passer au LLM.
