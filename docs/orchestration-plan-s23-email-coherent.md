@@ -66,14 +66,12 @@ Inchangé (DeepSeek V4 Pro, `draft-email`), jamais d'envoi auto (règle 11).
 
 ---
 
-## 6. Décisions ouvertes (input Thomas)
+## 6. Décisions VERROUILLÉES (Thomas, S23)
 
-- **Q-PJ-DESTINATION** : où copier une pièce jointe pertinente ?
-  - (a) Dossier du **projet** détecté si projet identifié, sinon dossier du **contact**, sinon un dossier **`_Inbox/Pièces jointes`** générique.
-  - (b) Toujours un dossier générique `_Inbox/Pièces jointes` (tri manuel ensuite).
-  - (c) Autre logique (ex. par type : factures → `Administratif`, baux → dossier bien).
-  Reco : (a) — cohérent avec l'enrichissement projet/contact déjà fait.
-- **Q-PJ-VALIDATION** : copie PJ en silencieux (autoExecute si pertinente) ou toujours proposée dans la carte ? Reco : autoExecute si contact connu + type doc utile, sinon proposée.
+- **PJ — destination CONTEXTUELLE, rattachée à un SUJET SUIVI uniquement** : projet détecté → sous-dossier `Documents/` du projet ; sinon dossier du **contact/locataire** concerné ; **sinon (aucun sujet suivi) → on ne classe PAS** (pas de dépotoir inbox). Sous-dossier Drive exact confirmé contre `_README` vault par l'orchestrator (R1/R11 : sous-agent sans MCP).
+- **PJ — filtre strict anti-clutter (verbatim Thomas : « attention à pas sauver tout et n'importe quoi »)** : on ne copie QUE les pièces **qui valent d'être gardées / qui enrichissent un sujet suivi** (projet, dossier locataire, doc administratif : facture, contrat, bail, état des lieux…). **Jugement par le triage LLM** (il lit déjà l'email — pas d'appel en plus) : il flague les PJ à garder + le sujet rattaché. Par défaut, dans le doute → **on ne copie pas**. Exclure : signatures inline, pixels de tracking, images < ~15 Ko, PJ de newsletters/marketing/spam.
+- **PJ — validation** : copie **PROPOSÉE dans la carte Telegram** (Thomas valide), pas en silencieux — cohérent avec « pas n'importe quoi » (on garde le contrôle sur ce qui se classe dans le vault).
+- **Historique projet** : silencieux si match unique certain (comme l'historique contact). Hot-context : toujours validé.
 
 ---
 
