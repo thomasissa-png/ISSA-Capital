@@ -80,7 +80,7 @@ describe('callLLM — routage par défaut', () => {
     expect(mockCallDeepSeek).toHaveBeenCalledTimes(1);
     expect(mockCreate).not.toHaveBeenCalled();
     const arg = mockCallDeepSeek.mock.calls[0]![0];
-    expect(arg.model).toBe('deepseek-v4-flash');
+    expect(arg.model).toBe('deepseek-v4-pro');
     expect(arg.system).toBe('sys triage');
     expect(result.text).toBe('{"category":"spam"}');
     expect(result.message).toBeUndefined();
@@ -103,7 +103,7 @@ describe('callLLM — routage par défaut', () => {
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(mockCallDeepSeek).not.toHaveBeenCalled();
     const arg = mockCreate.mock.calls[0]![0];
-    expect(arg.model).toBe('claude-sonnet-4-20250514');
+    expect(arg.model).toBe('claude-sonnet-4-6');
     expect(result.text).toBe('CR généré');
     expect(result.message).toBeDefined();
   });

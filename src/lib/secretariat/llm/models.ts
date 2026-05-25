@@ -16,18 +16,18 @@
 // Constantes par défaut (model IDs Anthropic officiels)
 // ============================================================
 
-/** Haiku 4.5 — triage email, router inbox. ~5x moins cher que Sonnet. */
+/** Haiku 4.5 — modèle Anthropic léger (famille haiku). */
 export const HAIKU_4_5 = 'claude-haiku-4-5-20251001';
 
-/** Sonnet 4 — CR (web_search), draft email. Production stable S4→S16. */
+/** Sonnet 4 (legacy) — ancienne version. Conservée pour rollback via override env. */
 export const SONNET_4 = 'claude-sonnet-4-20250514';
 
 /**
- * Sonnet 4.6 — préparé pour A/B test futur (reco audit S16 — S1).
- * Activer via env ANTHROPIC_MODEL_OVERRIDE_SONNET=claude-sonnet-4-6
- * pour basculer sans toucher au code.
+ * Sonnet 4.6 — version Sonnet COURANTE (S23). Défaut de la famille `sonnet`,
+ * utilisée par le CR (web_search). Rollback possible via
+ * ANTHROPIC_MODEL_OVERRIDE_SONNET=claude-sonnet-4-20250514.
  */
-// export const SONNET_4_6 = 'claude-sonnet-4-6';
+export const SONNET_4_6 = 'claude-sonnet-4-6';
 
 // ============================================================
 // Résolution dynamique (avec override env)
@@ -41,7 +41,7 @@ export function resolveSonnetModel(): string {
   if (override && override.trim().length > 0) {
     return override.trim();
   }
-  return SONNET_4;
+  return SONNET_4_6;
 }
 
 /**
@@ -72,11 +72,18 @@ export function resolveModelByFamily(family: ModelFamily): string {
 // ============================================================
 
 /**
- * DeepSeek V4 Flash — API payante compatible OpenAI (~10x moins cher que Sonnet).
- * Routé par tâche pour les workflows JSON sans web_search (S22).
+ * DeepSeek V4 Flash — tier économique (legacy S22). Conservé pour rollback
+ * par tâche via env `LLM_TASK_OVERRIDE_<TASK>=deepseek-v4-flash`.
  * String exacte attendue par l'endpoint `/chat/completions`.
  */
 export const DEEPSEEK_V4_FLASH = 'deepseek-v4-flash';
+
+/**
+ * DeepSeek V4 Pro — tier supérieur (raisonnement complexe, génération, code).
+ * Choisi par Thomas (S23) pour router inbox / triage email / brouillon email /
+ * hot-context : qualité privilégiée sur le coût. String exacte API DeepSeek.
+ */
+export const DEEPSEEK_V4_PRO = 'deepseek-v4-pro';
 
 // ============================================================
 // Registre tâche → modèle (sélection PAR TÂCHE — S22)
@@ -108,20 +115,20 @@ export interface TaskModelConfig {
 /**
  * Mapping par défaut tâche → modèle.
  *
- * Stratégie S22 :
- *  - DeepSeek V4 Flash : tâches JSON courtes, à fort volume, sans web_search
- *    (routage inbox, triage email, détection/modif hot-context, brouillon email).
- *  - Anthropic Sonnet : CR (utilise web_search — exclusivité Anthropic).
+ * Stratégie S23 (maj modèles, décision Thomas) :
+ *  - DeepSeek V4 Pro : tâches JSON/génération sans web_search (routage inbox,
+ *    triage email, détection/modif hot-context, brouillon email) — qualité > coût.
+ *  - Anthropic Sonnet 4.6 : CR (utilise web_search — exclusivité Anthropic).
  *
  * Override par tâche via env `LLM_TASK_OVERRIDE_<TASK_UPPER_SNAKE>`
- * (voir `resolveTaskModel`).
+ * (voir `resolveTaskModel`). Rollback vers Flash : `=deepseek-v4-flash`.
  */
 export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
-  'inbox-router': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
-  'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
-  'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
-  'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
-  'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  'inbox-router': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
   cr: { provider: 'anthropic', family: 'sonnet' },
 };
 
