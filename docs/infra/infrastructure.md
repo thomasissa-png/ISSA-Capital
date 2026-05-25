@@ -293,7 +293,7 @@ La procédure de déploiement complète step-by-step destinée à Thomas (utilis
 **Limites Replit Autoscale connues** :
 - **Cold starts** possibles après inactivité (~1-3s sur le premier hit) — acceptable pour un site institutionnel
 - **Storage éphémère** : aucun fichier persistant côté serveur — non bloquant car le site n'a pas de DB ni d'upload
-- **Pas de cron natif** : non bloquant car aucune tâche planifiée requise
+- **Pas de cron natif** (vitrine Replit) : sans objet. Les tâches planifiées d'Anya tournent sur le **VPS** (crontab `thomas`), pilotées par le dépôt via `deploy/` (voir `deploy/README.md`)
 - **Coût variable** selon trafic : surveiller le dashboard Usage la première semaine
 
 **Documents liés** :

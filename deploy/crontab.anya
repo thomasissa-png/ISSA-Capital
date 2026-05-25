@@ -1,0 +1,23 @@
+# Tâches planifiées d'Anya — SOURCE DE VÉRITÉ pilotée par le dépôt.
+#
+# Éditer ce fichier puis push sur `main` → le VPS l'applique seul sous ~5 min
+# (anya-autoupdate.sh → deploy/sync-crons.sh). Aucun accès SSH nécessaire.
+#
+# Règles :
+#  - NE PAS mettre ici la ligne du cron anya-autoupdate.sh (elle vit hors du
+#    bloc managé, installée à la main sur le VPS — voir deploy/README.md).
+#  - Réplique fidèlement les fréquences des anciens workflows GitHub Actions.
+#  - Chemin absolu vers anya-cron.sh (le cron tourne avec un PATH minimal).
+#  - Logs → /home/thomas/anya-cron.log
+#
+# Format : <schedule cron> /home/thomas/ISSA-Capital/deploy/anya-cron.sh <endpoint>
+
+0 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-email-ingest >> /home/thomas/anya-cron.log 2>&1
+1,16,31,46 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/calendar-ingest/cron >> /home/thomas/anya-cron.log 2>&1
+*/15 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/ticktick/cron-poll >> /home/thomas/anya-cron.log 2>&1
+0 8 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1
+
+# hot-context-scan retiré : bug de résolution de chemin (« Segment "00. Me" non
+# trouvé » à l'application d'un patch hot-context), corrigé séparément.
+# Réintégrer = décommenter la ligne ci-dessous + push :
+# */5 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/hot-context/cron-scan >> /home/thomas/anya-cron.log 2>&1
