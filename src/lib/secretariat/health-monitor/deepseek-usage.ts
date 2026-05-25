@@ -34,6 +34,8 @@ const USD_TO_EUR = 0.92;
  * Clé = préfixe du model ID (match par startsWith).
  */
 const PRICING: Record<string, { promptPerMtok: number; completionPerMtok: number }> = {
+  // V4 Pro : tarif courant post-baisse 75% (mai 2026) — ~$0.435 in / $0.87 out.
+  'deepseek-v4-pro': { promptPerMtok: 0.435, completionPerMtok: 0.87 },
   'deepseek-v4-flash': { promptPerMtok: 0.1, completionPerMtok: 0.3 },
 };
 

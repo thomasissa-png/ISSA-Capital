@@ -49,7 +49,7 @@ import {
   splitSystemPrompt,
   resetAnthropicClient,
 } from '../client';
-import { SONNET_4, HAIKU_4_5 } from '../models';
+import { SONNET_4, SONNET_4_6, HAIKU_4_5 } from '../models';
 import Anthropic from '@anthropic-ai/sdk';
 
 // ============================================================
@@ -366,7 +366,7 @@ describe('callAnthropic — retry JSON', () => {
 // ============================================================
 
 describe('callAnthropic — modèles', () => {
-  it('résout sonnet → SONNET_4 par défaut', async () => {
+  it('résout sonnet → SONNET_4_6 par défaut', async () => {
     mockCreate.mockResolvedValueOnce(makeResponse('ok'));
     await callAnthropic({
       family: 'sonnet',
@@ -374,7 +374,7 @@ describe('callAnthropic — modèles', () => {
       messages: [{ role: 'user', content: 'y' }],
       maxTokens: 100,
     });
-    expect(mockCreate.mock.calls[0]?.[0]?.model).toBe(SONNET_4);
+    expect(mockCreate.mock.calls[0]?.[0]?.model).toBe(SONNET_4_6);
   });
 
   it('résout haiku → HAIKU_4_5 par défaut', async () => {
