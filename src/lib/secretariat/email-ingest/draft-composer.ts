@@ -23,8 +23,7 @@ import type { TriageResult } from '../triage/types';
 import { createDraft } from '../gmail-source/gmail-client';
 import { findContactCached, readVaultFile } from '../vault-reader';
 import { parseObsidianFile } from '../vault-client/frontmatter';
-import { callAnthropic } from '../llm/client';
-import { SONNET_4 } from '../llm/models';
+import { callLLM } from '../llm/client';
 import { loadSkill } from '../skills/skill-loader';
 import type { SkillContext } from '../skills/types';
 
@@ -32,11 +31,11 @@ import type { SkillContext } from '../skills/types';
 // Constantes
 // ============================================================
 
-/** Modèle pour la rédaction de brouillons */
-const SONNET_MODEL = SONNET_4;
+// S22 — rédaction de brouillon routée via `task:'email-draft'` (DeepSeek V4 Flash
+// par défaut, override env LLM_TASK_OVERRIDE_EMAIL_DRAFT possible).
 
-/** Timeout API Anthropic */
-const ANTHROPIC_TIMEOUT_MS = 30_000;
+/** Timeout LLM */
+const LLM_TIMEOUT_MS = 30_000;
 
 /** Catégories qui ne génèrent PAS de brouillon */
 const SKIP_CATEGORIES = new Set(['spam', 'candidat']);
@@ -287,13 +286,13 @@ async function generateDraftBody(
   const userMessage = buildUserMessage(email, triage, tonality);
 
   try {
-    const { text } = await callAnthropic({
-      family: 'sonnet',
-      modelOverride: SONNET_MODEL,
+    // Sortie texte libre (corps d'email), pas de JSON → pas de responseFormat.
+    const { text } = await callLLM({
+      task: 'email-draft',
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       maxTokens: 1024,
-      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+      timeoutMs: LLM_TIMEOUT_MS,
     });
     return text || null;
   } catch (err) {

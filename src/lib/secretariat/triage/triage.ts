@@ -17,15 +17,14 @@ import {
   type TriageResult,
   type KnownContact,
 } from './types';
-import { callAnthropic } from '../llm/client';
-import { HAIKU_4_5 } from '../llm/models';
+import { callLLM } from '../llm/client';
 
 // ============================================================
 // Constantes
 // ============================================================
 
-/** Modèle exact — Haiku 4.5 pour économie (~5x moins cher que Sonnet) */
-const HAIKU_MODEL = HAIKU_4_5;
+// S22 — triage routé via `task:'email-triage'` (DeepSeek V4 Flash par défaut,
+// override env LLM_TASK_OVERRIDE_EMAIL_TRIAGE possible).
 
 const TIMEOUT_MS = 30_000;
 const MAX_BODY_CHARS = 3000;
@@ -171,18 +170,18 @@ async function callHaiku(
   userMessage: string,
 ): Promise<TriageResult | null> {
   try {
-    const { text } = await callAnthropic({
-      family: 'haiku',
-      modelOverride: HAIKU_MODEL,
+    const { text } = await callLLM({
+      task: 'email-triage',
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       maxTokens: 1024,
+      responseFormat: 'json',
       timeoutMs: TIMEOUT_MS,
     });
     return parseTriageResponse(text);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[triage] erreur appel Haiku : ${msg}`);
+    console.warn(`[triage] erreur appel LLM : ${msg}`);
     return null;
   }
 }

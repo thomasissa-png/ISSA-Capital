@@ -1301,3 +1301,31 @@ Voir le guide post-déploiement dans le handoff S15.2.1 (cf. message de commit +
 - `src/app/api/secretariat/ticktick/webhook/route.ts`
 - `src/app/api/secretariat/ticktick/webhook/__tests__/route.test.ts`
 - Section `## Webhook` dans `src/lib/secretariat/ticktick/types.ts` (export `TickTickWebhookEvent` orphelin)
+
+---
+
+## S22 — Routage LLM par tâche (DeepSeek V4 Flash)
+
+> @fullstack — 2026-05-25 — session 22.
+
+### Objectif
+Router une partie des tâches LLM d'Anya vers DeepSeek V4 Flash (API payante compatible OpenAI) au lieu de Claude, avec sélection PAR TÂCHE (fin de la constante de modèle globale par call site).
+
+### Décisions clés
+1. **Registre tâche→modèle** (`llm/models.ts`) : `TASK_MODEL: Record<LLMTask, TaskModelConfig>`. DeepSeek pour inbox-router, email-triage, hot-context-detect/modify, email-draft ; Anthropic Sonnet pour `cr` (web_search exclusif Anthropic). `resolveTaskModel()` applique l'override env `LLM_TASK_OVERRIDE_<TASK>` (format `provider:model` ou `model` seul).
+2. **Client DeepSeek** (`llm/deepseek-client.ts`) : `fetch` pur (zéro dépendance npm), retry exponentiel 3x sur 429/5xx + timeout AbortController, clé lazy rejetant les placeholders, tracking via `recordDeepSeekUsage`.
+3. **Dispatcher `callLLM`** (`llm/client.ts`) : `task` remplace `family`. Délègue à `callAnthropic` (provider anthropic) ou `callDeepSeek` (provider deepseek). Résultat normalisé `{ text, message?, networkRetries, jsonRetryUsed? }` (`message` présent uniquement pour anthropic).
+4. **GARDE-FOU CRITIQUE** : aucun fallback cross-provider. Une erreur DeepSeek est loggée puis PROPAGÉE — jamais de bascule silencieuse vers Claude. `tools` (web_search) + DeepSeek → throw. `system` non-string + DeepSeek → throw.
+5. **email-draft** : sortie texte libre (corps d'email), donc PAS de `responseFormat:'json'` (json_object DeepSeek casserait la sortie texte). Les 4 autres tâches DeepSeek restent en JSON.
+6. **CR webhook** : 3 call sites migrés vers `callLLM({task:'cr'})` (Sonnet). Les 2 avec web_search lisent `.message` (garde test de présence `if (!message)`), le retry Zod lit `.text`. Comportement tools/message préservé. L'ancien override legacy `process.env.ANTHROPIC_MODEL` n'est plus honoré pour le CR (remplacé par `LLM_TASK_OVERRIDE_CR` / `ANTHROPIC_MODEL_OVERRIDE_SONNET`).
+
+### Monitoring
+`deepseek-usage.ts` calqué sur `anthropic-usage.ts` : `deepseek-usage.json`, atomic write, reset mensuel, agrégation EUR + byModel.
+
+### Vérification
+tsc 0 erreur, next lint 0 warning, next build OK, vitest 1951/1951 (1923 baseline + 28 nouveaux, 0 régression).
+
+### Fichiers
+- Créés : `llm/deepseek-client.ts`, `health-monitor/deepseek-usage.ts`, tests `llm/__tests__/deepseek-client.test.ts` + `llm/__tests__/call-llm.test.ts`.
+- Modifiés : `llm/models.ts`, `llm/client.ts`, `workflows/inbox-message-router.ts`, `triage/triage.ts`, `email-ingest/draft-composer.ts`, `hot-context/signal-detector.ts`, `app/api/telegram/webhook/route.ts`, `.env.example`, tests des sites migrés.
+- Hors scope (inchangé) : `handlers/todo-from-telegram.ts` (reste sur `callAnthropic({family:'haiku'})`).

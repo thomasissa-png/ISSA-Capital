@@ -22,7 +22,8 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { recordAnthropicUsage } from '../health-monitor/anthropic-usage';
-import { resolveModelByFamily, type ModelFamily } from './models';
+import { resolveModelByFamily, resolveTaskModel, type LLMTask, type ModelFamily } from './models';
+import { callDeepSeek } from './deepseek-client';
 
 // ============================================================
 // Client singleton lazy
@@ -355,4 +356,139 @@ export async function callAnthropic(
   }
 
   return { message, text, networkRetries, jsonRetryUsed };
+}
+
+// ============================================================
+// Dispatcher unifié — sélection par tâche (S22)
+// ============================================================
+
+export interface CallLLMOptions {
+  /** Tâche LLM — résolue en provider+modèle via `resolveTaskModel`. */
+  task: LLMTask;
+  /** System prompt (string → cache_control auto côté Anthropic). */
+  system: string | Anthropic.Messages.TextBlockParam[];
+  /** Partie dynamique du system (heure, contexte volatile). Requiert system string. */
+  dynamicSystem?: string;
+  /** Messages utilisateur/assistant. */
+  messages: AnthropicMessageParam[];
+  /** Tokens max output. */
+  maxTokens: number;
+  /** Outils Anthropic (web_search). INTERDIT avec un provider DeepSeek. */
+  tools?: AnthropicTool[];
+  /** Timeout par tentative (ms). */
+  timeoutMs?: number;
+  /** AbortSignal externe (Anthropic uniquement). */
+  signal?: AbortSignal;
+  /** Format attendu — 'json' active le retry JSON (Anthropic) / json_object (DeepSeek). */
+  responseFormat?: 'json' | 'text';
+  /** Validateur custom pour le retry JSON Anthropic. */
+  jsonValidator?: (rawText: string) => boolean;
+  /** Nombre max de tentatives sur 429/5xx. */
+  maxRetries?: number;
+}
+
+export interface CallLLMResult {
+  /** Texte concaténé de la réponse. */
+  text: string;
+  /** Message brut Anthropic (présent UNIQUEMENT pour le provider anthropic). */
+  message?: AnthropicMessage;
+  /** Nombre de retries réseau effectués. */
+  networkRetries: number;
+  /** Indique si le retry JSON a été déclenché (anthropic). */
+  jsonRetryUsed?: boolean;
+}
+
+/**
+ * Convertit les messages Anthropic (content string ou blocs) en messages
+ * texte OpenAI pour DeepSeek. Les blocs non-texte (image) ne sont PAS
+ * supportés par les tâches DeepSeek (toutes en texte JSON).
+ */
+function toDeepSeekMessages(
+  messages: AnthropicMessageParam[],
+): { role: 'user' | 'assistant'; content: string }[] {
+  return messages.map((m) => {
+    let content: string;
+    if (typeof m.content === 'string') {
+      content = m.content;
+    } else {
+      // Concatène les blocs texte ; ignore le reste (les tâches DeepSeek
+      // n'envoient que du texte).
+      content = m.content
+        .map((block) => (block.type === 'text' ? block.text : ''))
+        .filter((t) => t.length > 0)
+        .join('\n');
+    }
+    return { role: m.role, content };
+  });
+}
+
+/**
+ * Dispatcher LLM unifié : route une tâche vers Anthropic ou DeepSeek selon
+ * `TASK_MODEL` (override env par tâche supporté).
+ *
+ * GARDE-FOU CRITIQUE : aucun fallback cross-provider. Une erreur DeepSeek est
+ * loggée puis PROPAGÉE — jamais de bascule silencieuse vers Claude.
+ *
+ * @throws {Error} si tools fourni avec un provider DeepSeek
+ * @throws propage toute erreur du provider sous-jacent
+ */
+export async function callLLM(opts: CallLLMOptions): Promise<CallLLMResult> {
+  const { provider, model } = resolveTaskModel(opts.task);
+
+  if (provider === 'anthropic') {
+    const result = await callAnthropic({
+      family: 'sonnet', // ignoré : modelOverride prioritaire ci-dessous.
+      modelOverride: model,
+      system: opts.system,
+      dynamicSystem: opts.dynamicSystem,
+      messages: opts.messages,
+      maxTokens: opts.maxTokens,
+      tools: opts.tools,
+      timeoutMs: opts.timeoutMs,
+      signal: opts.signal,
+      responseFormat: opts.responseFormat,
+      jsonValidator: opts.jsonValidator,
+      maxRetries: opts.maxRetries,
+    });
+    return {
+      text: result.text,
+      message: result.message,
+      networkRetries: result.networkRetries,
+      jsonRetryUsed: result.jsonRetryUsed,
+    };
+  }
+
+  // provider === 'deepseek'
+  if (opts.tools && opts.tools.length > 0) {
+    throw new Error(
+      `[llm] tâche ${opts.task} routée vers DeepSeek mais 'tools' fourni — web_search non supporté côté DeepSeek`,
+    );
+  }
+  if (typeof opts.system !== 'string') {
+    throw new Error(
+      `[llm] tâche ${opts.task} routée vers DeepSeek : 'system' doit être une string (blocs Anthropic non supportés)`,
+    );
+  }
+
+  try {
+    const result = await callDeepSeek({
+      model,
+      system: opts.system,
+      dynamicSystem: opts.dynamicSystem,
+      messages: toDeepSeekMessages(opts.messages),
+      maxTokens: opts.maxTokens,
+      responseFormat: opts.responseFormat,
+      timeoutMs: opts.timeoutMs,
+      maxRetries: opts.maxRetries,
+    });
+    return {
+      text: result.text,
+      networkRetries: result.networkRetries,
+    };
+  } catch (err) {
+    console.error(
+      `[llm] échec DeepSeek tâche ${opts.task} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    throw err; // AUCUN fallback cross-provider.
+  }
 }

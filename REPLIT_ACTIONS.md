@@ -723,4 +723,27 @@ Mode **warn-only** : si le briefing dépasse 500 tokens après merge, la carte T
 
 ---
 
+## S22 — Routage LLM par tâche (DeepSeek V4 Flash)
+
+### Secret Replit OBLIGATOIRE
+
+Ajouter dans Replit Secrets **avant déploiement** :
+- `DEEPSEEK_API_KEY` — clé API DeepSeek (https://platform.deepseek.com). **Sans cette clé, les tâches routées DeepSeek (triage email, router inbox, hot-context detect/modify, brouillon email) échouent de façon VISIBLE** (`Error: DEEPSEEK_API_KEY manquante ou placeholder`) — AUCUN fallback silencieux vers Claude (garde-fou intentionnel).
+
+### Secrets inchangés
+- `ANTHROPIC_API_KEY` — toujours requis (CR avec web_search reste sur Sonnet).
+
+### Override par tâche (optionnel, runtime)
+Pour repasser une tâche sur Claude sans redéploiement de code, ajouter en Secret :
+- `LLM_TASK_OVERRIDE_EMAIL_TRIAGE=anthropic:claude-haiku-4-5-20251001` (exemple)
+- Tâches : `INBOX_ROUTER`, `EMAIL_TRIAGE`, `HOT_CONTEXT_DETECT`, `HOT_CONTEXT_MODIFY`, `EMAIL_DRAFT`, `CR`.
+
+### Rollback complet (tout sur Anthropic)
+Définir les 5 overrides DeepSeek vers Anthropic en Secrets, ou inverser le mapping par défaut dans `src/lib/secretariat/llm/models.ts` (`TASK_MODEL`).
+
+### Monitoring
+Coût DeepSeek tracké dans `/home/runner/issa-data/deepseek-usage.json` (même mécanisme que `anthropic-usage.json`). Aucune action requise — auto-créé au premier appel.
+
+---
+
 
