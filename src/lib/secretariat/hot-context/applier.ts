@@ -36,8 +36,13 @@ import type {
 // Constantes
 // ============================================================
 
-/** Chemin logique vault — résolu live via vault-reader (R7). */
-export const HOT_CONTEXT_FOLDER = '00. Me';
+/**
+ * Dossier logique de `hot-context.md`. Vide car DRIVE_VAULT_ROOT_ID pointe
+ * DÉJÀ sur "00. Me" et le fichier est à la racine du vault. Convention
+ * vault-paths.ts : chemins relatifs à la racine. Préfixer "00. Me" ferait
+ * chercher un sous-dossier "00. Me" dans "00. Me" → introuvable.
+ */
+export const HOT_CONTEXT_FOLDER = '';
 export const HOT_CONTEXT_FILENAME = 'hot-context.md';
 
 // ============================================================
