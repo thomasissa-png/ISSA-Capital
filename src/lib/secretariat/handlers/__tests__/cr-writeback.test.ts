@@ -144,6 +144,7 @@ describe('writeBackCrToFiche — handler complet', () => {
           fileId: ISSA_CAPITAL_FILE_ID,
           ficheName: 'ISSA Capital',
           resolvedFilename: 'ISSA Capital.md',
+          folderPath: '02. Projets/02. Pro',
         };
       }
       return null;
@@ -379,6 +380,7 @@ describe('writeBackCrToFiche — handler complet', () => {
       fileId: GO_FILE_ID,
       ficheName: 'Gradient One',
       resolvedFilename: 'Gradient One.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockGetAccessToken.mockResolvedValue(FAKE_TOKEN);
     mockReadFileById.mockResolvedValue({

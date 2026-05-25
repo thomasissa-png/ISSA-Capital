@@ -71,9 +71,10 @@ export async function GET(req: NextRequest): Promise<Response> {
       dryRun,
     });
 
-    // Carte récap Telegram si actionable
+    // Carte récap Telegram : sendCalendarRecapCard reste silencieuse s'il n'y a
+    // ni event traité ni erreur (pas de spam quand tout est no-change).
     let recapSent = false;
-    if (!dryRun && stats.reunionsCreated + stats.reunionsUpdated > 0) {
+    if (!dryRun) {
       try {
         recapSent = await sendCalendarRecapCard(results);
       } catch (err) {

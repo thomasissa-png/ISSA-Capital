@@ -118,6 +118,11 @@ import {
   handleHotContextPatchCallback,
   handleHotContextEditText,
 } from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
+// S23 — désambiguïsation projet calendar-ingest, callback `calproj:` (R4)
+import {
+  CAL_PROJET_CALLBACK_PREFIX,
+  handleCalProjetCallback,
+} from '@/lib/secretariat/telegram-validation/handlers/cal-projet-confirm';
 // S20 → S20.1 — Telegram → TickTick (PREVIEW flow) + callback `task_*` (R4)
 // Bug 1 fix : carte preview avec 3 boutons (Valider/Modifier/Annuler) AVANT
 //             création (vs création directe + Annuler en S20).
@@ -1894,6 +1899,18 @@ export async function POST(request: Request): Promise<Response> {
       // Confirmation création initiale des 7 projets TickTick (red line spec §8 step 4).
       if (callbackData.startsWith(TICKTICK_PROJECTS_CALLBACK_PREFIX)) {
         await handleTickTickProjectsCallback({
+          callback_query_id: callbackQueryId,
+          data: callbackData,
+          message_id: update.callback_query.message?.message_id ?? 0,
+          chat_id: callbackChatId,
+        });
+        return Response.json({ ok: true });
+      }
+
+      // Calendar-ingest — désambiguïsation projet, préfixe "calproj:" (S23, R4)
+      // Réunion matchant 2+ projets → Thomas choisit le projet à rattacher.
+      if (callbackData.startsWith(CAL_PROJET_CALLBACK_PREFIX)) {
+        await handleCalProjetCallback({
           callback_query_id: callbackQueryId,
           data: callbackData,
           message_id: update.callback_query.message?.message_id ?? 0,

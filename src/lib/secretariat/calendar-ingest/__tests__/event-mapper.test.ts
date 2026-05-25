@@ -1,19 +1,17 @@
 /**
- * Tests event-mapper — mapping CalendarEvent → ReunionVaultEntry.
+ * Tests event-mapper — projection CalendarEvent + détection projet (refonte S23).
  */
 
 import { describe, it, expect } from 'vitest';
 import {
-  mapEventToReunion,
-  serializeReunionMarkdown,
+  mapEventToProjection,
+  detectProjectFromEvent,
+  isEventTodoEligible,
   extractDate,
   extractHeure,
   extractDuree,
   partitionAttendees,
   isSystemEmail,
-  attendeeToName,
-  buildParticipantsForFilename,
-  buildParticipantsFrontmatter,
 } from '../event-mapper';
 import type { CalendarEvent } from '../types';
 
@@ -23,7 +21,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     status: 'confirmed',
     htmlLink: 'https://calendar.google.com/event?eid=evt_test_001',
     updated: '2026-05-19T10:00:00Z',
-    summary: 'Point Versi',
+    summary: 'Point Versi Immobilier',
     description: 'Discussion avancement plateforme',
     startDateTime: '2026-05-22T14:00:00+02:00',
     endDateTime: '2026-05-22T15:00:00+02:00',
@@ -117,176 +115,87 @@ describe('partitionAttendees', () => {
   });
 });
 
-describe('attendeeToName', () => {
-  it('utilise displayName si présent', () => {
-    expect(
-      attendeeToName({ email: 'm@x.com', displayName: 'Marie Dubois' }),
-    ).toBe('Marie Dubois');
+describe('detectProjectFromEvent', () => {
+  it('détecte 1 projet via le titre (Versi Immobilier → VI)', () => {
+    const ev = makeEvent({ summary: 'Point Versi Immobilier', description: '' });
+    expect(detectProjectFromEvent(ev)).toEqual(['VI']);
   });
 
-  it('extrait prénom du local-part sinon', () => {
-    expect(attendeeToName({ email: 'thomas.issa@example.com' })).toBe(
-      'Thomas Issa',
+  it('détecte ISSA Capital (IC) insensible à la casse + accents', () => {
+    const ev = makeEvent({ summary: 'Réunion issa capital Q3', description: '' });
+    expect(detectProjectFromEvent(ev)).toEqual(['IC']);
+  });
+
+  it('détecte Versimo (VM) sans matcher Versi Immobilier', () => {
+    const ev = makeEvent({ summary: 'Démo Versimo', description: '' });
+    expect(detectProjectFromEvent(ev)).toEqual(['VM']);
+  });
+
+  it('retourne 2+ codes triés si ambigu (Versi Immobilier + Gradient)', () => {
+    const ev = makeEvent({
+      summary: 'Sync Versi Immobilier et Gradient One',
+      description: '',
+    });
+    expect(detectProjectFromEvent(ev)).toEqual(['GO', 'VI']);
+  });
+
+  it('retourne [] si aucun match', () => {
+    const ev = makeEvent({ summary: 'Déjeuner équipe', description: 'cantine' });
+    expect(detectProjectFromEvent(ev)).toEqual([]);
+  });
+
+  it('match aussi via la description', () => {
+    const ev = makeEvent({ summary: 'Point hebdo', description: 'sujet : Immocrew' });
+    expect(detectProjectFromEvent(ev)).toEqual(['IM']);
+  });
+});
+
+describe('mapEventToProjection', () => {
+  it('projette date/heure/durée/sujet + projets détectés', () => {
+    const p = mapEventToProjection(makeEvent());
+    expect(p).not.toBeNull();
+    expect(p!.date).toBe('2026-05-22');
+    expect(p!.heure).toBe('14:00');
+    expect(p!.duree).toBe(60);
+    expect(p!.sujet).toBe('Point Versi Immobilier');
+    expect(p!.projectCodes).toEqual(['VI']);
+  });
+
+  it('lieu = Google Meet si hangoutLink', () => {
+    const p = mapEventToProjection(
+      makeEvent({ hangoutLink: 'https://meet.google.com/abc' }),
     );
-    expect(attendeeToName({ email: 'jean-marc@example.com' })).toBe('Jean Marc');
+    expect(p!.lieu).toBe('Online (Google Meet)');
+  });
+
+  it('retourne null si pas de date exploitable', () => {
+    const ev = makeEvent({ startDateTime: undefined, startDate: undefined });
+    expect(mapEventToProjection(ev)).toBeNull();
   });
 });
 
-describe('buildParticipantsForFilename', () => {
-  it('liste les prénoms séparés par virgules', () => {
-    const result = buildParticipantsForFilename([
-      { email: 'maxime@v.com', displayName: 'Maxime Durand' },
-      { email: 'leo@v.com', displayName: 'Léo Martin' },
-    ]);
-    expect(result).toBe('Maxime, Léo');
+describe('isEventTodoEligible', () => {
+  it('event timed avec participant externe → éligible', () => {
+    expect(isEventTodoEligible(makeEvent())).toBe(true);
   });
 
-  it('tronque au-delà de 3 + suffixe +N', () => {
-    const result = buildParticipantsForFilename([
-      { email: 'a@x.com', displayName: 'Alice Aa' },
-      { email: 'b@x.com', displayName: 'Bob Bb' },
-      { email: 'c@x.com', displayName: 'Carol Cc' },
-      { email: 'd@x.com', displayName: 'Dave Dd' },
-      { email: 'e@x.com', displayName: 'Eve Ee' },
-    ]);
-    expect(result).toBe('Alice, Bob, Carol +2');
+  it('event récurrent → exclu', () => {
+    expect(isEventTodoEligible(makeEvent({ recurringEventId: 'rec_1' }))).toBe(false);
   });
 
-  it('retourne chaîne vide si pas de participants', () => {
-    expect(buildParticipantsForFilename([])).toBe('');
-  });
-});
-
-describe('buildParticipantsFrontmatter', () => {
-  it('inclut self en premier en wikilink', () => {
-    const result = buildParticipantsFrontmatter(
-      [{ email: 'maxime@v.com', displayName: 'Maxime Durand' }],
-      { email: 'thomas@i.com', displayName: 'Thomas Issa' },
-    );
-    expect(result).toEqual(['[[Thomas Issa]]', '[[Maxime Durand]]']);
-  });
-});
-
-describe('mapEventToReunion', () => {
-  it('mappe un event standard', () => {
-    const entry = mapEventToReunion(makeEvent());
-    expect(entry).not.toBeNull();
-    expect(entry!.date).toBe('2026-05-22');
-    expect(entry!.heure).toBe('14:00');
-    expect(entry!.duree).toBe(60);
-    expect(entry!.folderPath).toBe('06. Réunions/2026/05');
-    expect(entry!.filename).toContain('2026-05-22');
-    expect(entry!.filename).toContain('Maxime');
-    expect(entry!.filename).toContain('Point Versi');
-    expect(entry!.googleEventId).toBe('evt_test_001');
-    expect(entry!.categorie).toBe('meeting');
-  });
-
-  it('retourne null si pas de date', () => {
-    const ev = makeEvent({
-      startDate: undefined,
-      startDateTime: undefined,
-    });
-    expect(mapEventToReunion(ev)).toBeNull();
-  });
-
-  it('utilise hangoutLink pour lieu Online', () => {
-    const ev = makeEvent({
-      hangoutLink: 'https://meet.google.com/abc-defg-hij',
-    });
-    const entry = mapEventToReunion(ev);
-    expect(entry!.lieu).toBe('Online (Google Meet)');
-  });
-
-  it('utilise location si pas de hangout', () => {
-    const ev = makeEvent({
-      location: '12 rue de la Paix, Paris',
-      hangoutLink: undefined,
-    });
-    const entry = mapEventToReunion(ev);
-    expect(entry!.lieu).toBe('12 rue de la Paix, Paris');
-  });
-
-  it('gère event all-day', () => {
+  it('event all-day → exclu', () => {
     const ev = makeEvent({
       isAllDay: true,
-      startDate: '2026-07-04',
-      endDate: '2026-07-05',
+      startDate: '2026-06-01',
       startDateTime: undefined,
-      endDateTime: undefined,
     });
-    const entry = mapEventToReunion(ev);
-    expect(entry!.date).toBe('2026-07-04');
-    expect(entry!.heure).toBeUndefined();
-    expect(entry!.duree).toBeUndefined();
+    expect(isEventTodoEligible(ev)).toBe(false);
   });
 
-  it('slugifie les accents dans le filename', () => {
+  it('event perso (0 participant externe) → exclu', () => {
     const ev = makeEvent({
-      summary: 'Réunion sécurité confidentielle',
-      attendees: [
-        { email: 'thomas@i.com', self: true },
-        { email: 'helene@i.com', displayName: 'Hélène Müller' },
-      ],
+      attendees: [{ email: 'thomas@issa-capital.com', self: true }],
     });
-    const entry = mapEventToReunion(ev);
-    // Diacritiques retirés (NFD + filtre)
-    expect(entry!.filename).not.toMatch(/[éèêëàâäîïôöûüç]/);
-    expect(entry!.filename).toContain('Helene');
-    expect(entry!.filename).toContain('Reunion securite');
-  });
-
-  it('gère event sans participants (just Thomas)', () => {
-    const ev = makeEvent({
-      attendees: [{ email: 'thomas@i.com', self: true }],
-    });
-    const entry = mapEventToReunion(ev);
-    expect(entry).not.toBeNull();
-    expect(entry!.filename).toContain('Point Versi');
-  });
-});
-
-describe('serializeReunionMarkdown', () => {
-  it('génère un Markdown avec frontmatter YAML valide', () => {
-    const entry = mapEventToReunion(makeEvent())!;
-    const md = serializeReunionMarkdown(entry);
-    expect(md).toContain('---\ntype: reunion\n');
-    expect(md).toContain('date: 2026-05-22');
-    expect(md).toContain('heure: 14:00');
-    expect(md).toContain('duree: 60');
-    expect(md).toContain('participants:');
-    // self n'a pas de displayName dans makeEvent → fallback local-part = "Thomas"
-    expect(md).toContain('[[Thomas]]');
-    expect(md).toContain('[[Maxime Durand]]');
-    expect(md).toContain('categorie: meeting');
-    expect(md).toContain('google_calendar_event_id: evt_test_001');
-    expect(md).toContain('## Notes');
-  });
-
-  it('est idempotent — sérialiser 2x produit le même output', () => {
-    const entry = mapEventToReunion(makeEvent())!;
-    const md1 = serializeReunionMarkdown(entry);
-    const md2 = serializeReunionMarkdown(entry);
-    expect(md1).toBe(md2);
-  });
-
-  it('omet heure et duree pour all-day', () => {
-    const ev = makeEvent({
-      isAllDay: true,
-      startDate: '2026-07-04',
-      startDateTime: undefined,
-      endDateTime: undefined,
-    });
-    const entry = mapEventToReunion(ev)!;
-    const md = serializeReunionMarkdown(entry);
-    expect(md).not.toContain('heure:');
-    expect(md).not.toContain('duree:');
-  });
-
-  it('inclut la description en section dédiée', () => {
-    const entry = mapEventToReunion(makeEvent())!;
-    const md = serializeReunionMarkdown(entry);
-    expect(md).toContain('## Description');
-    expect(md).toContain('Discussion avancement plateforme');
+    expect(isEventTodoEligible(ev)).toBe(false);
   });
 });

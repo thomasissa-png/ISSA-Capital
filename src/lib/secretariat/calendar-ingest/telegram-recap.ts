@@ -1,11 +1,11 @@
 /**
- * Carte Telegram récap calendar-ingest.
+ * Carte Telegram récap calendar-ingest (refonte S23).
  *
- * Envoyée après chaque cron run si reunionsCreated + reunionsUpdated > 0.
- * Silence si 0 (pas de spam).
+ * Envoyée après chaque cron run s'il y a au moins un event traité OU une erreur.
+ * Silence sinon (pas de spam quand tout est `no-change`).
  *
- * Format compact aligné sur les cartes existantes (sendTelegramMessage texte
- * brut, pas de inline_keyboard — pure notification).
+ * Récap : contacts enrichis + historiques projet + todos créés + désambiguïsations
+ * + erreurs détaillées (logging #2). Texte brut, pas d'inline_keyboard.
  */
 
 import { sendTelegramMessage } from '../telegram';
@@ -17,55 +17,56 @@ import type { CalendarIngestResult } from './types';
 
 /**
  * Construit le message texte récap.
- * Affiche : nb total + ligne par réunion (date, sujet, op, contacts).
+ * Affiche : ligne par event traité (date, sujet, ce qui a été fait) + erreurs.
  *
- * Limite Telegram : 4096 chars → tronque à 8 réunions max.
+ * Limite Telegram : 4096 chars → tronque à 8 events + 8 erreurs.
  */
 export function buildRecapMessage(results: CalendarIngestResult[]): string {
-  const actionable = results.filter(
-    (r) =>
-      r.op === 'reunion-created' ||
-      r.op === 'reunion-updated' ||
-      r.op === 'reunion-cancelled',
-  );
+  const actionable = results.filter((r) => r.op === 'processed');
+  const errored = results.filter((r) => r.errors.length > 0);
 
-  if (actionable.length === 0) return '';
+  if (actionable.length === 0 && errored.length === 0) return '';
 
   const lines: string[] = [];
   lines.push('Calendar-ingest');
-  lines.push(`${actionable.length} réunion(s) traitée(s) :`);
 
   const MAX_LINES = 8;
-  for (const r of actionable.slice(0, MAX_LINES)) {
-    const opLabel = labelForOp(r.op);
-    const contactSuffix =
-      r.contactsEnriched > 0
-        ? `, ${r.contactsEnriched} contact(s) enrichi(s)`
-        : '';
-    const summaryShort = r.summary.length > 60
-      ? `${r.summary.slice(0, 57)}...`
-      : r.summary;
-    lines.push(`• ${r.date} — ${summaryShort} → ${opLabel}${contactSuffix}`);
+  if (actionable.length > 0) {
+    lines.push(`${actionable.length} réunion(s) traitée(s) :`);
+    for (const r of actionable.slice(0, MAX_LINES)) {
+      const summaryShort =
+        r.summary.length > 50 ? `${r.summary.slice(0, 47)}...` : r.summary;
+      const parts: string[] = [];
+      if (r.contactsEnriched > 0) {
+        parts.push(`${r.contactsEnriched} contact(s)`);
+      }
+      if (r.projectsEnriched.length > 0) {
+        parts.push(`projet ${r.projectsEnriched.join('/')}`);
+      }
+      if (r.projectAmbiguous) parts.push('projet à confirmer');
+      if (r.todoCreated) parts.push('todo CR');
+      const detail = parts.length > 0 ? ` → ${parts.join(', ')}` : ' → rien';
+      lines.push(`• ${r.date} — ${summaryShort}${detail}`);
+    }
+    if (actionable.length > MAX_LINES) {
+      lines.push(`... et ${actionable.length - MAX_LINES} autre(s)`);
+    }
   }
 
-  if (actionable.length > MAX_LINES) {
-    lines.push(`... et ${actionable.length - MAX_LINES} autre(s)`);
+  if (errored.length > 0) {
+    lines.push('');
+    lines.push(`${errored.length} erreur(s) :`);
+    for (const r of errored.slice(0, MAX_LINES)) {
+      const summaryShort =
+        r.summary.length > 40 ? `${r.summary.slice(0, 37)}...` : r.summary;
+      lines.push(`• ${summaryShort} : ${r.errors.join(' ; ').slice(0, 120)}`);
+    }
+    if (errored.length > MAX_LINES) {
+      lines.push(`... et ${errored.length - MAX_LINES} autre(s) erreur(s)`);
+    }
   }
 
   return lines.join('\n');
-}
-
-function labelForOp(op: CalendarIngestResult['op']): string {
-  switch (op) {
-    case 'reunion-created':
-      return 'fiche créée';
-    case 'reunion-updated':
-      return 'fiche mise à jour';
-    case 'reunion-cancelled':
-      return 'réunion annulée';
-    default:
-      return op;
-  }
 }
 
 /**
