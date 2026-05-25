@@ -99,6 +99,7 @@ export type LLMTask =
   | 'hot-context-detect'
   | 'hot-context-modify'
   | 'email-draft'
+  | 'morning-citation'
   | 'cr';
 
 /**
@@ -132,6 +133,9 @@ export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
   'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  // Brief du matin (S23) : distillation lean d'une citation depuis une fiche de
+  // lecture → Flash (extraction courte, ~0 €, ne tronque pas).
+  'morning-citation': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   cr: { provider: 'anthropic', family: 'sonnet' },
 };
 

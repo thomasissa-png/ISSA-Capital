@@ -126,6 +126,11 @@ describe('models — TASK_MODEL (mapping par défaut)', () => {
     expect(TASK_MODEL['email-draft'].model).toBe(DEEPSEEK_V4_PRO);
   });
 
+  it('route la CITATION du brief (morning-citation) vers DeepSeek V4 Flash (S23)', () => {
+    expect(TASK_MODEL['morning-citation'].provider).toBe('deepseek');
+    expect(TASK_MODEL['morning-citation'].model).toBe(DEEPSEEK_V4_FLASH);
+  });
+
   it('route cr vers Anthropic Sonnet', () => {
     expect(TASK_MODEL.cr.provider).toBe('anthropic');
     expect(TASK_MODEL.cr.family).toBe('sonnet');
@@ -159,6 +164,13 @@ describe('models — resolveTaskModel', () => {
     expect(resolveTaskModel('email-draft')).toEqual({
       provider: 'deepseek',
       model: DEEPSEEK_V4_PRO,
+    });
+  });
+
+  it('morning-citation → deepseek + deepseek-v4-flash par défaut (S23 brief)', () => {
+    expect(resolveTaskModel('morning-citation')).toEqual({
+      provider: 'deepseek',
+      model: DEEPSEEK_V4_FLASH,
     });
   });
 
