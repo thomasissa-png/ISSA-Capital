@@ -49,7 +49,7 @@ Existent mais **discrètes** — posture "nous acceptons quelques dossiers" / "v
 - **TVA** : FR50102356094
 - **Activité déclarée** : Étude, création, exploitation, financement, prise de participation, gestion et contrôle d'entreprises commerciales, industrielles, agricoles ou immobilières + gestion de filiales et prestation de services financiers, administratifs et techniques
 - **Email unique** : contact@issa-capital.com (tout usage)
-- **Hébergeur site** : Replit
+- **Hébergeur site + Anya** : VPS dédié (depuis S21 ; ex-Replit). Détails : section `## Stack technique`.
 
 ---
 
@@ -165,9 +165,11 @@ Thomas Issa : **intrapreneur et conseiller stratégique**, 15+ ans. Co-fondateur
 - **Backend** : Next.js API routes (formulaire uniquement en V1)
 - **Base de données** : aucune en V1
 - **Authentification** : N/A
-- **Hébergement** : Replit
+- **Hébergement** : **VPS dédié** (migration depuis Replit en S21, 2026-05-22). Le VPS sert l'app Next.js complète : site vitrine `issa-capital.com` + bot Anya (`/api/telegram/webhook`).
+- **Git / déploiement** : le VPS suit la branche **`main`** (= tronc stable, branche par défaut GitHub depuis S21). `main` = ce qui est validé et déployé. **Workflow obligatoire** : toute nouvelle session = branche depuis `main` → PR → merge dans `main`. Ne jamais pousser du code non validé directement sur `main`.
 - **Analytics** : Umami (cookieless, open source — décision Thomas S9)
-- **IA** : aucune en V1 (site vitrine)
+- **IA (Anya)** : Anthropic Sonnet 4.6 (CR, qualité) + Haiku 4.5 (routers, économie). Wrapper `llm/client.ts` (cache_control + recordUsage). (Le site vitrine lui-même reste sans IA.)
+- **OAuth Google (Drive/Calendar/Gmail)** : ⚠️ point de vigilance récurrent — si l'app Google Cloud OAuth est en mode "Testing", le `GOOGLE_REFRESH_TOKEN` **expire tous les 7 jours** → Anya casse (upload Drive, lecture contacts vault). Régénération via `https://issa-capital.com/api/drive-auth` puis MAJ Secret VPS. Fix durable = publier l'app OAuth (mais vérification Google lourde pour scopes restreints drive/gmail).
 
 ---
 
@@ -179,7 +181,7 @@ Thomas Issa : **intrapreneur et conseiller stratégique**, 15+ ans. Co-fondateur
 ---
 
 ## Contraintes
-- **Budget infra** : <30 EUR/mois (Replit + domaine + Resend)
+- **Budget infra** : VPS dédié + domaine + Resend (ex-Replit, migration S21)
 - **Budget acquisition** : 0 EUR (institutionnel, pas de funnel commercial)
 - **Budget photo/video** : 0 EUR → premium via TYPO + ESPACE BLANC + ÉDITORIAL + Unsplash/IA
 - **Timeline** : "le plus tôt possible" → mode autopilot complet
@@ -288,57 +290,33 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 21
+## Mémo de reprise — Session 22
 
-- **Date de clôture** : 2026-05-22 ~22h45 Paris
-- **Numéro de session courant clôturé** : 20 (itérations S20 → S20.3 + skill-loader fondation)
-- **Numéro de prochaine session** : 21
-- **Branche active à clôture** : `claude/add-sanity-check-TD0Ao` (HEAD `31f38fa`, 1901 tests verts, tsc/lint/build OK)
-- **Branche default GitHub** : `claude/issa-capital-s14-ttl-audit-ZQcQS` (inchangée — Thomas merge à sa main quand il veut)
+- **Date de clôture S21** : 2026-05-22
+- **Session clôturée** : 21 (migration skills → vault SOT + hotfix CR PDF + création branche `main` + migration Replit → VPS)
+- **Prochaine session** : 22
+- **Branche tronc / déployée** : **`main`** (HEAD = ex-`claude/issa-s21-vault-cleanup-W1Erb`, `cfa290a` + commits doc S21). **Le VPS suit `main`.**
+- **Branche default GitHub** : **`main`** (basculée par Thomas en S21, 2026-05-22 — avant : `claude/issa-capital-s14-ttl-audit-ZQcQS`)
+- **Workflow git** : nouvelle session = brancher depuis `main` → PR → merge dans `main`. `main` = validé + déployé.
 
-### Résumé S20 (5 lignes)
+### Résumé S21 (5 lignes)
 
-Refonte complète flow Telegram → TickTick : démantèlement S18 bidirectionnel (kill switch + suppression S21), nouveau mirror-renderer 15min (TickTick → `Todo.md` read-only), pattern preview Telegram avec 3 boutons [Valider/Modifier/Annuler] AVANT création, modify intelligent (patch partiel via Haiku), vocal branché preview, timezone Paris DST-safe (`isAllDay` + `timeZone: Europe/Paris` envoyés à l'API TickTick). Documentation 13 workflows Anya skills `.md` + module `skill-loader.ts` (fondation migration prompts repo → vault). Copy batch 16 PDF CR vault. @moi a validé GO HAUTE confiance déploiement sous conditions.
+Migration Anya CR + draft-email vers **vault SOT** (`loadSkill` consomme `00. Me/08. Outils/Skills/<nom>/SKILL.md`, legacy `secretariat-system-prompt.md` retiré du runtime). Contacts lus **live** depuis vault `07. Contacts/` (cache 1h). Audit qualité des 7 skills : cr-reunion enrichi par Cowork (§ 6 règles @legal complètes) ; les 6 autres audités, 1 trou bloquant détecté (`baux` = annexes loi 89-462). **Hotfix prod CR PDF** (`cbfbd51`) : Anya générait du markdown au lieu de JSON → réinjection FORMAT DE SORTIE JSON dans `loadCrSystemPrompt`. Migration **Replit → VPS** + création branche **`main`** (tronc). 1904 tests verts.
 
-### Travaux en cours / reportés S21 (6 items)
+### Travaux reportés S22 (par priorité)
 
-1. **PROPAGATION P0 EN ATTENTE** : cleanup vault Drive. Bloqué cette session par OAuth Drive rate-limited.
-   - **Action exacte** : supprimer `08. Outils/Anya/Skills/Workflow TickTick Sync.md` du vault Drive (decribed obsolete depuis le 21 mai dans Workflow Todo.md), mettre à jour `_INDEX.md` vault (retirer ligne TickTick Sync, ajouter Workflow Todo).
-   - **Premier acte session 21**.
-2. **Set Replit Secret AVANT déploiement** : `TICKTICK_SYNC_LEGACY_DISABLED=1` dans Replit Secrets. Documenté dans `REPLIT_ACTIONS.md` section S20. À faire AVANT push code, pas après (fenêtre de doublons sinon).
-3. **Validation E2E manuelle Thomas (24h)** : 3 smoke tests avant suppression S21 du code S18 :
-   - Vocal "appeler Martin demain à 15h projet immo" → preview TickTick + heure correcte 15h Paris
-   - Vocal "faire les courses samedi" → tâche journée entière (`isAllDay: true`)
-   - Modify "plutôt à 9h30" → patch dueDate uniquement, titre/projet inchangés
-4. **Suppression définitive code `ticktick-sync/`** + workflows GH désactivés : reporté S21 après validation E2E OK (24h).
-5. **P4 Plaud côté skill vault** : décision Thomas "skill vault appelle TT directement via MCP". À faire dans Obsidian (modifier `Plaud Skill.md` pour appeler `createTask` au lieu d'écrire `Todo.md`).
-6. **Migration POC skill-loader** : module `src/lib/secretariat/skills/skill-loader.ts` livré (14 tests verts). Bascule sur 1 workflow recommandée S21 : **Email Ingest** (déjà chargé depuis repo via `triage-v1.md` → migration vers `loadSkill('Email Ingest')` simple). Pré-requis : Thomas nettoie les `[À CONFIRMER]` dans les 14 skills vault.
+1. **Statut OAuth Anya** : refresh token Google expire tous les 7j (app OAuth mode Testing). Régénération via `https://issa-capital.com/api/drive-auth` → MAJ Secret VPS. **Décision en attente** : publier l'app OAuth (vérification Google lourde, scopes restreints drive/gmail) VS **cron d'alerte 7j** (proposé, non codé) qui prévient Thomas 1j avant expiration.
+2. **Enrichir les 6 SKILL.md restantes via Cowork** : prompt prêt à copier-coller `docs/prompts/cowork-enrichir-skills-restantes.md`. 🔴 `baux` CRITIQUE (annexes obligatoires loi 89-462 : DPE/ERP/plomb/amiante) + RGPD candidat, threading email, paiement partiel, etc. **Après PATCH vault → resync fallbacks repo** `docs/ia/skills/<nom>/SKILL.md` (orchestrator, MCP Drive — pas délégable sous-agent, R11).
+3. **Mention "format JSON" dans SKILL.md vault cr-reunion** : ajouter un panneau "ne pas toucher" (learning #118) pour éviter régression Cowork future. Prompt Cowork 2 lignes à rédiger.
+4. **Cleanup vault TickTick Sync** (report S21 non traité) : supprimer `08. Outils/Anya/Skills/Workflow TickTick Sync.md` vault + MAJ `_INDEX.md`.
+5. **Suppression définitive code `src/lib/secretariat/ticktick-sync/`** (kill switch `TICKTICK_SYNC_LEGACY_DISABLED` actif, legacy conservé) — après validation Thomas.
+6. **Convention `REPLIT_ACTIONS.md` obsolète** (VPS désormais) : renommer/refondre en actions VPS. CLAUDE.md règle commune 10 à mettre à jour.
 
-### Prochaines actions prioritaires S21 (par ordre)
-
-1. **@orchestrator** (5 min) : reprendre cleanup vault Drive (item 1 ci-dessus) dès MCP Drive reco. Premier acte de la session — gate bloquante propagation P0.
-2. **@fullstack** (1j) : si Thomas a validé 24h E2E S20 → supprimer définitivement `src/lib/secretariat/ticktick-sync/` + workflows GH désactivés (kill switch suffisant n'est plus nécessaire post-validation).
-3. **@fullstack** (4h) : migration POC skill-loader sur Email Ingest (workflow le + utilisé, pattern `triage-v1.md` déjà éprouvé).
-
-### Blockers / décisions en attente
-
-- **Cleanup `[À CONFIRMER]`** dans les 14 skills vault : Thomas doit faire une passe Obsidian (~2h estimé) AVANT migration skill-loader. Sinon polluera les system prompts LLM downstream.
-- **Tags `#xxx`** dans messages Telegram : actuellement Sonnet n'extrait pas `#immo` comme tag TickTick supplémentaire. À confirmer si comportement souhaité.
-- **Validation E2E timezone Paris** : 3 smoke tests à faire par Thomas avant qu'on supprime définitivement le code S18.
-
-### Nom de branche recommandé pour S21
-
-`claude/issa-s21-vault-cleanup-[suffix]` (cleanup vault Drive + suppression définitive ticktick-sync prioritaire). Le suffix alphanum est généré par Claude Code au démarrage.
-
-### Commande de reprise S21
+### Commande de reprise S22
 
 ```
-@orchestrator — Session S21. PREMIER ACTE OBLIGATOIRE : cleanup vault Drive (P0 propagation en attente).
-  1. Supprimer `08. Outils/Anya/Skills/Workflow TickTick Sync.md` du vault Drive via MCP (R5 — soit move vers Archive, soit suppression).
-  2. Mettre à jour `_INDEX.md` côté vault : retirer ligne TickTick Sync, ajouter Workflow Todo (SOT déjà créée par autre instance Claude le 21 mai).
-  Ensuite vérifier statut validation E2E Thomas S20 (24h timezone tests) :
-  - Si OK → @fullstack supprime définitivement `src/lib/secretariat/ticktick-sync/` + workflows GH `cron-ticktick-sync-{pull,push}.yml` (kill switch n'est plus utile).
-  - Si KO ou pas testé → maintenir kill switch et reporter S22.
-  Optionnel S21 (si bande passante) : @fullstack migration POC `skill-loader` sur Email Ingest (`triage-v1.md` → `loadSkill('Email Ingest')`).
-  Lire `project-context.md` Mémo Session 21 + `docs/ia/ticktick-gap-analysis-s20.md` avant tout début de production.
+@orchestrator — Session S22. Brancher depuis `main` (tronc déployé sur VPS).
+  Lire AVANT tout : project-context.md (## Stack technique = infra VPS/main/OAuth) + docs/lessons-learned.md (R10-R12 + leçons #113-118 S21).
+  Priorités : (1) vérifier statut OAuth Anya (token 7j), (2) enrichir les 6 skills via Cowork (prompt prêt docs/prompts/cowork-enrichir-skills-restantes.md), (3) cleanup vault TickTick Sync.
+  Rappel R11 : toute lecture/écriture vault Drive = orchestrator, jamais sous-agent.
 ```
