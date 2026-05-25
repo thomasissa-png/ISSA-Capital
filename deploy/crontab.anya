@@ -22,12 +22,12 @@
 # signal clé (detectSignal → carte hotcontext:). Endpoint cron-scan supprimé.
 
 # ============================================================
-# Brief du matin (S23) — 7h HEURE DE PARIS (DST-aware).
+# Brief du matin (S23) — 7h HEURE DE PARIS, DST-safe SANS dépendre de CRON_TZ.
 #
-# ATTENTION : CRON_TZ ne s'applique qu'aux lignes qui le SUIVENT. Les crons
-# ci-dessus restent donc en UTC (comportement historique inchangé). Cette ligne
-# est volontairement la DERNIÈRE du bloc managé : aucune ligne UTC ne suit, donc
-# pas besoin de remettre CRON_TZ=UTC après. Si tu ajoutes un futur cron UTC,
-# place-le AVANT ce bloc ou remets `CRON_TZ=UTC` après cette ligne.
-CRON_TZ=Europe/Paris
-0 7 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-morning-brief >> /home/thomas/anya-cron.log 2>&1
+# Le cron tire à 05:00 ET 06:00 UTC (= 07:00 Paris en été CEST / en hiver CET).
+# L'endpoint a un GARDE-FOU : il n'envoie QUE si l'heure de Paris == 7h. Une
+# seule des deux occurrences envoie donc réellement (l'autre est skippée) →
+# exactement 1 brief/jour à 7h Paris, été comme hiver, quel que soit le support
+# de CRON_TZ par le démon cron. (Aucune autre ligne ne suit : pas d'effet de
+# bord sur les crons UTC ci-dessus.)
+0 5,6 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-morning-brief >> /home/thomas/anya-cron.log 2>&1

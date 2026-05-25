@@ -1,8 +1,9 @@
 /**
  * Tests endpoint cron-morning-brief.
  *
- * Vérifie l'auth (Bearer / query / 401 / 500) + l'appel build + envoi.
- * buildMorningBrief et sendMorningBrief mockés.
+ * Vérifie l'auth (Bearer / query / 401 / 500), le garde-fou heure de Paris
+ * (envoi uniquement à 7h, bypass dryRun/force) + l'appel build + envoi.
+ * buildMorningBrief, sendMorningBrief et getParisHour mockés.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -13,8 +14,13 @@ vi.mock('@/lib/secretariat/morning-brief', () => ({
   sendMorningBrief: vi.fn(),
 }));
 
+vi.mock('@/lib/secretariat/morning-brief/paris-date', () => ({
+  getParisHour: vi.fn(),
+}));
+
 import { GET } from '../route';
 import { buildMorningBrief, sendMorningBrief } from '@/lib/secretariat/morning-brief';
+import { getParisHour } from '@/lib/secretariat/morning-brief/paris-date';
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -33,6 +39,8 @@ describe('GET /api/secretariat/cron-morning-brief', () => {
       sections: { ticktick: 'ok', calendar: 'ok', citation: 'ok' },
     });
     vi.mocked(sendMorningBrief).mockResolvedValue(true);
+    // Par défaut : il est 7h à Paris (le cron envoie).
+    vi.mocked(getParisHour).mockReturnValue(7);
   });
 
   afterEach(() => {
@@ -55,7 +63,7 @@ describe('GET /api/secretariat/cron-morning-brief', () => {
     expect(res.status).toBe(401);
   });
 
-  it('200 + envoi avec Bearer valide', async () => {
+  it('200 + envoi avec Bearer valide à 7h Paris', async () => {
     const res = await GET(makeReq(BASE, { authorization: 'Bearer topsecret' }));
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -72,12 +80,34 @@ describe('GET /api/secretariat/cron-morning-brief', () => {
     expect(json.ok).toBe(true);
   });
 
-  it('dryRun=1 → ne déclenche pas l’envoi', async () => {
+  it('garde-fou : hors 7h Paris → skipped, pas d’envoi', async () => {
+    vi.mocked(getParisHour).mockReturnValue(9);
+    const res = await GET(makeReq(`${BASE}?token=topsecret`));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.skipped).toBe(true);
+    expect(json.parisHour).toBe(9);
+    expect(buildMorningBrief).not.toHaveBeenCalled();
+    expect(sendMorningBrief).not.toHaveBeenCalled();
+  });
+
+  it('force=1 → bypass le garde-fou même hors 7h', async () => {
+    vi.mocked(getParisHour).mockReturnValue(15);
+    const res = await GET(makeReq(`${BASE}?token=topsecret&force=1`));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.sent).toBe(true);
+    expect(sendMorningBrief).toHaveBeenCalledOnce();
+  });
+
+  it('dryRun=1 → bypass garde-fou, construit sans envoyer', async () => {
+    vi.mocked(getParisHour).mockReturnValue(15);
     const res = await GET(makeReq(`${BASE}?token=topsecret&dryRun=1`));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.dryRun).toBe(true);
     expect(json.sent).toBe(false);
+    expect(buildMorningBrief).toHaveBeenCalledOnce();
     expect(sendMorningBrief).not.toHaveBeenCalled();
   });
 
