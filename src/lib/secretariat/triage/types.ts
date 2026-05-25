@@ -44,6 +44,16 @@ export type SuggestedAction = z.infer<typeof suggestedActionSchema>;
 // TriageResult — schéma Zod complet
 // ============================================================
 
+/**
+ * Codes entité projet connus (alignés sur calendar-ingest/event-mapper
+ * PROJECT_ALIASES + vault-reader ENTITE_TO_FICHE_NAME).
+ *   IC = ISSA Capital, GO = Gradient One, VI = Versi Immobilier,
+ *   VV = Versi Invest, VM = Versimo, IM = Immocrew.
+ */
+export const PROJET_CODES = ['IC', 'GO', 'VI', 'VV', 'VM', 'IM'] as const;
+
+export type ProjetCode = (typeof PROJET_CODES)[number];
+
 export const triageResultSchema = z.object({
   category: z.enum(TRIAGE_CATEGORIES),
   intent: z.string().min(1),
@@ -51,6 +61,21 @@ export const triageResultSchema = z.object({
   matchedContact: z.string().nullable(),
   summary: z.string().min(1),
   suggestedActions: z.array(suggestedActionSchema),
+  /**
+   * S23 — Code entité projet clairement concerné par l'email (match unique
+   * certain). Le LLM le remplit SEULEMENT si un projet connu est explicitement
+   * en jeu, sinon omet le champ. Alimente l'action `append_projet_historique`
+   * (silencieuse). 0 / ambigu → omis.
+   */
+  projet: z.enum(PROJET_CODES).optional(),
+  /**
+   * S23 — Filenames des pièces jointes à conserver (jugement anti-clutter du
+   * LLM). Seulement les PJ qui enrichissent un sujet suivi (facture, contrat,
+   * bail, état des lieux, doc projet…). EXCLUT : signatures inline, pixels de
+   * tracking, images < ~15 Ko, PJ de newsletters/marketing/spam. Dans le doute
+   * → ne pas lister. Alimente l'action `copy_attachment` (proposée, validée).
+   */
+  attachments_to_keep: z.array(z.string()).optional(),
 });
 
 export type TriageResult = z.infer<typeof triageResultSchema>;

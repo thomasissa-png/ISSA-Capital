@@ -23,7 +23,14 @@ export type ActionType =
   | 'add_todo'
   | 'mark_processed'
   | 'skip'
-  | 'prompt_create_contact_choice';
+  | 'prompt_create_contact_choice'
+  // S23 — email-ingest cohérent
+  /** Enrichit l'historique de la fiche Projet (silencieux, match certain). */
+  | 'append_projet_historique'
+  /** Copie une pièce jointe pertinente vers le vault (proposé, validé). */
+  | 'copy_attachment'
+  /** Met à jour le briefing hot-context.md (proposé, validé, carte hotcontext:). */
+  | 'update_hot_context';
 
 export interface ActionProposal {
   /** Type d'action à exécuter via vault-client */

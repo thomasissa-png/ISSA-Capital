@@ -259,6 +259,9 @@ Anti-patterns :
 3. Zéro invention.
 4. Summary factuel.
 
+Détection projet (champ optionnel "projet") : code entité parmi IC/GO/VI/VV/VM/IM SI l'email concerne clairement un projet connu, sinon OMETTRE. « Versi » seul = ambigu → omettre.
+Pièces jointes (champ optionnel "attachments_to_keep") : filenames des PJ à garder (facture, contrat, bail, état des lieux, doc projet). Exclure signatures/pixels/images < 15 Ko/PJ de spam. Dans le doute → ne pas lister.
+
 Retourne UNIQUEMENT un JSON strict :
 {
   "category": "...",
@@ -266,6 +269,8 @@ Retourne UNIQUEMENT un JSON strict :
   "confidence": 0.0-1.0,
   "matchedContact": "..." | null,
   "summary": "...",
-  "suggestedActions": [{ "type": "...", "target": "..." | null, "payload": {} }]
+  "suggestedActions": [{ "type": "...", "target": "..." | null, "payload": {} }],
+  "projet": "VI" | null,
+  "attachments_to_keep": []
 }`;
 }
