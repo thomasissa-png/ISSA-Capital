@@ -7,8 +7,9 @@ import {
   detectSignal,
   passesHeuristicPrefilter,
   buildSignalId,
+  patchHotContextPayloadFromInstruction,
 } from '../signal-detector';
-import type { Signal } from '../types';
+import type { BougePayload, Patch, Signal } from '../types';
 
 vi.mock('../../llm/client', () => ({
   callAnthropic: vi.fn(),
@@ -187,6 +188,80 @@ describe('passesHeuristicPrefilter', () => {
 
   it('bruit sans keyword est filtré', () => {
     expect(passesHeuristicPrefilter(BRUIT_SIGNAL)).toBe(false);
+  });
+});
+
+describe('signal-detector — anti-doublon (défaut 1, existingContent)', () => {
+  it('passe le contenu actuel dans le dynamicSystem du prompt', async () => {
+    vi.mocked(callAnthropic).mockResolvedValueOnce({
+      message: {} as never,
+      text: JSON.stringify({ patch: null, confidence: 0.2, reason_if_null: 'déjà présent' }),
+      networkRetries: 0,
+      jsonRetryUsed: false,
+    });
+    const result = await detectSignal(TG_SIGNAL, {
+      existingContent: '## Je bouge sur\n- Finaliser [[Pacte associés]]',
+    });
+    expect(result.patch).toBeNull();
+    const callArg = vi.mocked(callAnthropic).mock.calls[0]![0];
+    expect(callArg.dynamicSystem).toContain('CONTENU ACTUEL DU BRIEFING');
+    expect(callArg.dynamicSystem).toContain('Pacte associés');
+    // Le contenu dynamique ne doit PAS être dans la partie cachée (system stable).
+    expect(callArg.system).not.toContain('CONTENU ACTUEL DU BRIEFING');
+  });
+});
+
+describe('patchHotContextPayloadFromInstruction — défaut 2', () => {
+  const basePatch: Patch = {
+    patchId: 'p-base',
+    signalId: 'sig-base',
+    section: 'bouge',
+    action: 'add',
+    payload: { text: 'Finaliser [[Pacte associés]]' },
+    source: 'telegram',
+    sourceId: '123',
+    proposedAt: '2026-05-20T10:00:00.000Z',
+    rationale: 'test',
+  };
+
+  it('applique une instruction partielle et recalcule patchId/signalId', async () => {
+    vi.mocked(callAnthropic).mockResolvedValueOnce({
+      message: {} as never,
+      text: JSON.stringify({ text: 'Finaliser [[Pacte associés]] vendredi' }),
+      networkRetries: 0,
+      jsonRetryUsed: false,
+    });
+    const out = await patchHotContextPayloadFromInstruction(basePatch, 'plutôt vendredi');
+    expect((out.payload as BougePayload).text).toBe('Finaliser [[Pacte associés]] vendredi');
+    // payload changé → identité recalculée
+    expect(out.patchId).not.toBe(basePatch.patchId);
+    expect(out.signalId).not.toBe(basePatch.signalId);
+    // champs non payload préservés
+    expect(out.source).toBe('telegram');
+    expect(out.section).toBe('bouge');
+  });
+
+  it('refuse la reformulation qui perd le wikilink (red line) → patch inchangé', async () => {
+    vi.mocked(callAnthropic).mockResolvedValueOnce({
+      message: {} as never,
+      text: JSON.stringify({ text: 'Finaliser pacte associés sans lien' }),
+      networkRetries: 0,
+      jsonRetryUsed: false,
+    });
+    const out = await patchHotContextPayloadFromInstruction(basePatch, 'retire le lien');
+    expect(out).toBe(basePatch); // référence inchangée
+  });
+
+  it('retourne le patch inchangé si LLM crashe', async () => {
+    vi.mocked(callAnthropic).mockRejectedValueOnce(new Error('boom'));
+    const out = await patchHotContextPayloadFromInstruction(basePatch, 'plutôt vendredi');
+    expect(out).toBe(basePatch);
+  });
+
+  it('retourne le patch inchangé sur instruction vide', async () => {
+    const out = await patchHotContextPayloadFromInstruction(basePatch, '   ');
+    expect(out).toBe(basePatch);
+    expect(vi.mocked(callAnthropic)).not.toHaveBeenCalled();
   });
 });
 

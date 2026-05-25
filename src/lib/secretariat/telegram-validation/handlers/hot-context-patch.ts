@@ -14,7 +14,11 @@
  * R5 (P0 #99) : applier utilise PATCH in-place.
  */
 
-import { editMessageText, sendSimpleMessage } from '../telegram-cards';
+import {
+  editMessageText,
+  editMessageTextWithButtons,
+  sendSimpleMessage,
+} from '../telegram-cards';
 import { answerCallbackQuery } from '../../telegram';
 import {
   loadHotContextState,
@@ -22,11 +26,17 @@ import {
 } from '../../hot-context/state-store';
 import {
   applyPatchToDrive,
+  applyPatchOnAst,
   renderPatchLine,
+  HOT_CONTEXT_FOLDER,
+  HOT_CONTEXT_FILENAME,
 } from '../../hot-context/applier';
-import { estimateTokens, formatTokenDelta } from '../../hot-context/token-estimator';
+import { parseHotContext, serializeHotContext } from '../../hot-context/parser';
+import { readFile } from '../../vault-client/obsidian-file';
+import { estimateTokens, formatTokenDelta, TOKEN_CAP_WARN } from '../../hot-context/token-estimator';
 import { writeHotContextAudit } from '../../hot-context/audit';
-import type { Patch } from '../../hot-context/types';
+import { patchHotContextPayloadFromInstruction } from '../../hot-context/signal-detector';
+import type { HotContextState, Patch, PendingPatchRecord } from '../../hot-context/types';
 
 // ============================================================
 // Constantes publiques
@@ -79,8 +89,52 @@ function prettyPayload(patch: Patch): string {
   return escapeHtml(renderPatchLine(patch));
 }
 
-export function buildPatchCardText(patch: Patch, fileTokensEstimate: number): string {
-  const tokens = formatTokenDelta(fileTokensEstimate);
+/**
+ * Calcule la VRAIE projection de tokens post-merge (défaut 3).
+ *
+ * À partir du contenu LIVE du briefing, applique le patch sur l'AST puis
+ * estime les tokens du résultat sérialisé. Si le patch est idempotent / no-op
+ * (applyPatchOnAst retourne l'AST inchangé ou null) → retourne la taille
+ * actuelle du fichier (pas de delta).
+ *
+ * @param liveContent Contenu live de `hot-context.md` ('' si indisponible).
+ * @param patch Patch courant proposé.
+ * @returns Estimation tokens projetée (entier).
+ */
+export function computeProjectedTokens(liveContent: string, patch: Patch): number {
+  const currentTokens = estimateTokens(liveContent);
+  try {
+    const ast = parseHotContext(liveContent);
+    const astAfter = applyPatchOnAst(ast, patch);
+    // null (section invalide) ou idempotent (ast inchangé) → taille actuelle.
+    if (astAfter === null || astAfter === ast) return currentTokens;
+    const projected = serializeHotContext(astAfter);
+    return estimateTokens(projected);
+  } catch {
+    return currentTokens;
+  }
+}
+
+/**
+ * Formate le statut cap explicite AVANT validation (défaut 3).
+ * Ex: « 312 tokens (cap 500 ✅) » ou « 540 tokens (⚠️ cap 500 dépassé) ».
+ */
+export function formatProjectedTokenStatus(projectedTokens: number): string {
+  if (projectedTokens > TOKEN_CAP_WARN) {
+    return `${projectedTokens} tokens (⚠️ cap ${TOKEN_CAP_WARN} dépassé)`;
+  }
+  return `${projectedTokens} tokens (cap ${TOKEN_CAP_WARN} ✅)`;
+}
+
+/**
+ * Construit le texte de la carte de validation.
+ *
+ * @param patch Patch proposé.
+ * @param projectedTokens Projection tokens post-merge (défaut 3 — PAS la taille
+ *   avant patch). Calculée via `computeProjectedTokens`.
+ */
+export function buildPatchCardText(patch: Patch, projectedTokens: number): string {
+  const tokens = formatProjectedTokenStatus(projectedTokens);
   return (
     `<b>Hot context — patch proposé</b>\n\n` +
     `Source : <code>${escapeHtml(patch.source)}</code> ${escapeHtml(patch.sourceId).slice(0, 80)}\n` +
@@ -91,6 +145,20 @@ export function buildPatchCardText(patch: Patch, fileTokensEstimate: number): st
   );
 }
 
+/**
+ * Charge le contenu live du briefing (best-effort) pour calculer la projection.
+ * '' si indisponible (token absent, fichier introuvable).
+ */
+async function loadLiveBriefingContent(): Promise<string> {
+  try {
+    const read = await readFile(HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME);
+    if (!read.success || read.content === undefined) return '';
+    return read.content;
+  } catch {
+    return '';
+  }
+}
+
 export function buildPatchKeyboard(patchId: string): Array<
   Array<{ text: string; callback_data: string }>
 > {
@@ -98,6 +166,22 @@ export function buildPatchKeyboard(patchId: string): Array<
     [
       { text: 'Valider', callback_data: `${HOT_CONTEXT_CALLBACK_PREFIX}valid:${patchId}` },
       { text: 'Modifier', callback_data: `${HOT_CONTEXT_CALLBACK_PREFIX}modify:${patchId}` },
+      { text: 'Skip', callback_data: `${HOT_CONTEXT_CALLBACK_PREFIX}skip:${patchId}` },
+    ],
+  ];
+}
+
+/**
+ * Clavier sans bouton Modifier (défaut 2 — cap de loop atteint). Après
+ * HOT_CONTEXT_MAX_MODIFY_ITERATIONS reformulations, Thomas ne peut plus que
+ * Valider ou Skip.
+ */
+export function buildPatchKeyboardNoModify(patchId: string): Array<
+  Array<{ text: string; callback_data: string }>
+> {
+  return [
+    [
+      { text: 'Valider', callback_data: `${HOT_CONTEXT_CALLBACK_PREFIX}valid:${patchId}` },
       { text: 'Skip', callback_data: `${HOT_CONTEXT_CALLBACK_PREFIX}skip:${patchId}` },
     ],
   ];
@@ -122,7 +206,11 @@ export async function sendHotContextPatchCard(patch: Patch): Promise<number | nu
   }
 
   const state = await loadHotContextState();
-  const cardText = buildPatchCardText(patch, state.lastFileTokensEstimate);
+  // Défaut 3 — projection réelle post-merge depuis le contenu live (pas la
+  // taille périmée `state.lastFileTokensEstimate`).
+  const liveContent = await loadLiveBriefingContent();
+  const projectedTokens = computeProjectedTokens(liveContent, patch);
+  const cardText = buildPatchCardText(patch, projectedTokens);
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   let messageId: number | null = null;
@@ -151,13 +239,15 @@ export async function sendHotContextPatchCard(patch: Patch): Promise<number | nu
     return null;
   }
 
-  // Purge TTL + persiste pending
+  // Purge TTL + persiste pending (phase 'preview' par défaut, modifyCount 0)
   purgeExpiredPendings(state);
   state.pendingPatches[patch.patchId] = {
     patchId: patch.patchId,
     patch,
     proposedAt: new Date().toISOString(),
     telegramMessageId: messageId ?? undefined,
+    phase: 'preview',
+    modifyCount: 0,
   };
   await saveHotContextState(state);
 
@@ -169,6 +259,186 @@ export async function sendHotContextPatchCard(patch: Patch): Promise<number | nu
   });
 
   return messageId;
+}
+
+/**
+ * Re-propose une carte de validation pour un patch reformulé (défaut 2 — loop
+ * Modifier). Édite le message Telegram existant (même message_id que la carte
+ * d'origine), remet la phase à `preview`, et persiste le pending sous le NOUVEAU
+ * patchId (le payload a changé → patchId recalculé par
+ * `patchHotContextPayloadFromInstruction`).
+ *
+ * Si `modifyCount` a atteint le cap, le clavier n'affiche QUE Valider/Skip
+ * (plus de bouton Modifier) — la consigne explicite l'absence de loop restante.
+ *
+ * @param oldPatchId Ancien patchId (pending d'origine) à retirer du state.
+ * @param patch Patch reformulé (nouveau patchId).
+ * @param messageId message_id de la carte Telegram à éditer.
+ * @param chatId chat cible.
+ * @param modifyCount Nombre de reformulations déjà appliquées (post-incrément).
+ */
+export async function repreviewHotContextPatchCard(params: {
+  oldPatchId: string;
+  patch: Patch;
+  messageId: number;
+  chatId: number | string;
+  modifyCount: number;
+}): Promise<void> {
+  const { oldPatchId, patch, messageId, chatId, modifyCount } = params;
+  const capReached = modifyCount >= HOT_CONTEXT_MAX_MODIFY_ITERATIONS;
+
+  const liveContent = await loadLiveBriefingContent();
+  const projectedTokens = computeProjectedTokens(liveContent, patch);
+  const cardText = buildPatchCardText(patch, projectedTokens);
+
+  const keyboard = capReached
+    ? buildPatchKeyboardNoModify(patch.patchId)
+    : buildPatchKeyboard(patch.patchId);
+
+  await editMessageTextWithButtons(chatId, messageId, cardText, keyboard);
+
+  // Persiste le nouveau pending (phase 'preview'), retire l'ancien si le
+  // patchId a changé.
+  const state = await loadHotContextState();
+  purgeExpiredPendings(state);
+  if (oldPatchId !== patch.patchId) {
+    delete state.pendingPatches[oldPatchId];
+  }
+  state.pendingPatches[patch.patchId] = {
+    patchId: patch.patchId,
+    patch,
+    proposedAt: new Date().toISOString(),
+    telegramMessageId: messageId,
+    phase: 'preview',
+    modifyCount,
+  };
+  await saveHotContextState(state);
+
+  void writeHotContextAudit('hot-context-patch-modified', {
+    patchId: patch.patchId,
+    originalPayload: oldPatchId,
+    modifiedPayload: patch.payload,
+  });
+}
+
+/**
+ * Trouve le pending hot-context en phase `awaiting_edit` le plus récent.
+ * Utilisateur unique Thomas → on prend le pending awaiting_edit avec le
+ * `proposedAt` le plus récent (un seul attendu en pratique).
+ *
+ * @returns Le pending ou null si aucun n'est en attente d'édition.
+ */
+export function findAwaitingEditPending(state: HotContextState): PendingPatchRecord | null {
+  let latest: PendingPatchRecord | null = null;
+  for (const pending of Object.values(state.pendingPatches)) {
+    if (pending.phase !== 'awaiting_edit') continue;
+    if (latest === null || pending.proposedAt > latest.proposedAt) {
+      latest = pending;
+    }
+  }
+  return latest;
+}
+
+/**
+ * Traite un texte libre de Thomas comme instruction de reformulation d'un
+ * patch hot-context en phase `awaiting_edit` (défaut 2 — loop Modifier).
+ *
+ * Pipeline :
+ *  1. Charge le state, trouve le pending `awaiting_edit` le plus récent.
+ *     Aucun → retourne `no_awaiting` (le webhook continue son routage normal).
+ *  2. Patche PARTIELLEMENT le payload via `patchHotContextPayloadFromInstruction`.
+ *  3. Si rien n'a changé (instruction non comprise / wikilink perdu) → demande
+ *     une reformulation, conserve le pending `awaiting_edit` (Thomas peut retaper).
+ *  4. Sinon → incrémente modifyCount + re-propose la carte (phase 'preview').
+ *     Si modifyCount atteint le cap → carte sans bouton Modifier.
+ *
+ * IMPORTANT (webhook) : appeler ce handler APRÈS les checks inbox-edit et task
+ * awaiting_edit. Ne JAMAIS shadow ces routages — si aucun pending hot-context
+ * `awaiting_edit`, retourner `no_awaiting` pour que le webhook poursuive.
+ *
+ * @returns code court : 'no_awaiting' | 'unchanged' | 'repreviewed'.
+ */
+export async function handleHotContextEditText(
+  chatId: number | string,
+  text: string,
+): Promise<'no_awaiting' | 'unchanged' | 'repreviewed'> {
+  // Résilience webhook (R-non-régression) : ce handler est appelé sur CHAQUE
+  // texte libre AVANT le fallback note/CR. Toute exception (state-store KO,
+  // Drive down, LLM crash) DOIT dégrader en `no_awaiting` pour que le webhook
+  // poursuive son routage normal — JAMAIS aborter la requête.
+  let state: HotContextState;
+  try {
+    state = await loadHotContextState();
+  } catch (err) {
+    console.warn(
+      `[hot-context-patch] chargement state échoué (routage hot-context skip) : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 'no_awaiting';
+  }
+  purgeExpiredPendings(state);
+  const pending = findAwaitingEditPending(state);
+  if (!pending) return 'no_awaiting';
+
+  // Un pending awaiting_edit existe → le texte EST une instruction de modify.
+  // Tout échec downstream (LLM, re-preview, save) ne doit pas aborter le
+  // webhook : on dégrade en `unchanged` (texte consommé, Thomas peut retaper).
+  try {
+    const messageId = pending.telegramMessageId;
+    const before = pending.patch;
+    const patched = await patchHotContextPayloadFromInstruction(before, text);
+
+    // Comparaison : si le payload n'a pas bougé → instruction non comprise.
+    const unchanged =
+      JSON.stringify(before.payload) === JSON.stringify(patched.payload);
+
+    if (unchanged) {
+      await sendSimpleMessage(
+        chatId,
+        `Je n'ai pas compris la modification (ou elle retirerait le wikilink obligatoire). Reformule, ou clique Skip sur la carte.`,
+      );
+      // On conserve le pending en awaiting_edit pour permettre une nouvelle tentative.
+      void writeHotContextAudit('hot-context-patch-modified', {
+        patchId: before.patchId,
+        originalPayload: before.payload,
+        modifiedPayload: null,
+      });
+      return 'unchanged';
+    }
+
+    const nextModifyCount = (pending.modifyCount ?? 0) + 1;
+
+    if (messageId === undefined) {
+      // Pas de message à éditer (cas dégradé) : on persiste quand même le patch
+      // reformulé en phase preview et on informe Thomas.
+      if (before.patchId !== patched.patchId) {
+        delete state.pendingPatches[before.patchId];
+      }
+      state.pendingPatches[patched.patchId] = {
+        patchId: patched.patchId,
+        patch: patched,
+        proposedAt: new Date().toISOString(),
+        phase: 'preview',
+        modifyCount: nextModifyCount,
+      };
+      await saveHotContextState(state);
+      await sendSimpleMessage(chatId, `Patch reformulé. Renvoie une carte si besoin.`);
+      return 'repreviewed';
+    }
+
+    await repreviewHotContextPatchCard({
+      oldPatchId: before.patchId,
+      patch: patched,
+      messageId,
+      chatId,
+      modifyCount: nextModifyCount,
+    });
+    return 'repreviewed';
+  } catch (err) {
+    console.warn(
+      `[hot-context-patch] reformulation échouée : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 'unchanged';
+  }
 }
 
 /** Purge in-memory des pendings expirés (≥ 7j). Modifie state directement. */
@@ -260,23 +530,42 @@ export async function handleHotContextPatchCallback(
     return 'skipped';
   }
 
-  // MODIFY (loop max 2)
+  // MODIFY (loop max 2) — défaut 2 : passe le pending en `awaiting_edit`. Le
+  // prochain texte libre de Thomas sera capté par le webhook (route.ts) et
+  // traité comme instruction de reformulation via
+  // `patchHotContextPayloadFromInstruction`.
   if (parsed.action === 'modify') {
-    // V1 : on stocke un flag dans le pending (proposedAt sert d'ancre).
-    // L'implémentation full loop (réception du texte libre, re-propose Haiku
-    // sur reformulation) sera dans une session ultérieure. Pour V1, on
-    // informe Thomas que le mode modify est noté et on garde le pending.
+    const alreadyModified = pending.modifyCount ?? 0;
+    if (alreadyModified >= HOT_CONTEXT_MAX_MODIFY_ITERATIONS) {
+      // Cap atteint : on refuse une nouvelle entrée en mode modify.
+      await editMessageTextWithButtons(
+        params.chat_id,
+        params.message_id,
+        buildPatchCardText(
+          pending.patch,
+          computeProjectedTokens(await loadLiveBriefingContent(), pending.patch),
+        ) + `\n\n(Limite de ${HOT_CONTEXT_MAX_MODIFY_ITERATIONS} reformulations atteinte — Valider ou Skip.)`,
+        buildPatchKeyboardNoModify(pending.patch.patchId),
+      );
+      return 'modify_cap_reached';
+    }
+
+    pending.phase = 'awaiting_edit';
+    pending.telegramMessageId = params.message_id;
+    state.pendingPatches[parsed.patchId] = pending;
+    await saveHotContextState(state);
+
     await editMessageText(
       params.chat_id,
       params.message_id,
-      `Mode Modifier - envoie ta reformulation en texte libre (loop max ${HOT_CONTEXT_MAX_MODIFY_ITERATIONS}). En attendant, le patch reste pending.`,
+      `✏️ Envoie ta reformulation en texte libre (ex: « plutôt vendredi », « ajoute [[X]] »). Loop max ${HOT_CONTEXT_MAX_MODIFY_ITERATIONS}.`,
     );
     void writeHotContextAudit('hot-context-patch-modified', {
       patchId: parsed.patchId,
       originalPayload: pending.patch.payload,
       modifiedPayload: null,
     });
-    return 'modify_pending';
+    return 'modify_awaiting_edit';
   }
 
   // VALID — applique

@@ -9,14 +9,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   parseHotContextCallback,
   handleHotContextPatchCallback,
+  handleHotContextEditText,
+  findAwaitingEditPending,
   purgeExpiredPendings,
   HOT_CONTEXT_CALLBACK_PREFIX,
   HOT_CONTEXT_PENDING_TTL_MS,
+  HOT_CONTEXT_MAX_MODIFY_ITERATIONS,
 } from '../hot-context-patch';
 import { emptyHotContextState } from '../../../hot-context/types';
 
 vi.mock('../../telegram-cards', () => ({
   editMessageText: vi.fn(async () => true),
+  editMessageTextWithButtons: vi.fn(async () => true),
   sendSimpleMessage: vi.fn(async () => undefined),
 }));
 
@@ -29,9 +33,25 @@ vi.mock('../../../hot-context/state-store', () => ({
   saveHotContextState: vi.fn(async () => true),
 }));
 
-vi.mock('../../../hot-context/applier', () => ({
-  applyPatchToDrive: vi.fn(),
-  renderPatchLine: vi.fn(() => '- [[X]]'),
+// On garde le vrai applier pour computeProjectedTokens (parse/serialize/apply
+// purs), mais on mocke applyPatchToDrive (effet Drive réel).
+vi.mock('../../../hot-context/applier', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../hot-context/applier')>();
+  return {
+    ...actual,
+    applyPatchToDrive: vi.fn(),
+  };
+});
+
+// Lecture du briefing live (loadLiveBriefingContent) — '' par défaut.
+vi.mock('../../../vault-client/obsidian-file', () => ({
+  readFile: vi.fn(async () => ({ success: true, content: '' })),
+  writeFileById: vi.fn(async () => ({ success: true })),
+}));
+
+// Reformulation LLM partielle (défaut 2) — mockée par test.
+vi.mock('../../../hot-context/signal-detector', () => ({
+  patchHotContextPayloadFromInstruction: vi.fn(),
 }));
 
 vi.mock('../../../hot-context/audit', () => ({
@@ -40,16 +60,32 @@ vi.mock('../../../hot-context/audit', () => ({
 
 import { loadHotContextState, saveHotContextState } from '../../../hot-context/state-store';
 import { applyPatchToDrive } from '../../../hot-context/applier';
+import { patchHotContextPayloadFromInstruction } from '../../../hot-context/signal-detector';
+import { editMessageTextWithButtons, sendSimpleMessage } from '../../telegram-cards';
 import type { Patch } from '../../../hot-context/types';
 
-function makePending(patchId: string, proposedAt: string): {
+function makePending(
+  patchId: string,
+  proposedAt: string,
+  extra: {
+    phase?: 'preview' | 'awaiting_edit';
+    modifyCount?: number;
+    telegramMessageId?: number;
+  } = {},
+): {
   patchId: string;
   patch: Patch;
   proposedAt: string;
+  phase?: 'preview' | 'awaiting_edit';
+  modifyCount?: number;
+  telegramMessageId?: number;
 } {
   return {
     patchId,
     proposedAt,
+    phase: extra.phase,
+    modifyCount: extra.modifyCount,
+    telegramMessageId: extra.telegramMessageId,
     patch: {
       patchId,
       signalId: `sig-${patchId}`,
@@ -134,8 +170,8 @@ describe('handleHotContextPatchCallback — valid', () => {
   });
 });
 
-describe('handleHotContextPatchCallback — modify (V1 loop pending)', () => {
-  it('garde le pending et informe Thomas', async () => {
+describe('handleHotContextPatchCallback — modify (défaut 2 — awaiting_edit)', () => {
+  it('passe le pending en awaiting_edit et garde le pending', async () => {
     const state = emptyHotContextState();
     state.pendingPatches['p2'] = makePending('p2', new Date().toISOString());
     vi.mocked(loadHotContextState).mockResolvedValue(state);
@@ -147,8 +183,141 @@ describe('handleHotContextPatchCallback — modify (V1 loop pending)', () => {
       chat_id: 555,
     });
 
-    expect(result).toBe('modify_pending');
+    expect(result).toBe('modify_awaiting_edit');
     expect(state.pendingPatches['p2']).toBeDefined(); // toujours présent
+    expect(state.pendingPatches['p2']?.phase).toBe('awaiting_edit');
+    expect(state.pendingPatches['p2']?.telegramMessageId).toBe(43);
+  });
+
+  it('refuse le modify si le cap de reformulations est atteint', async () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['pcap'] = makePending('pcap', new Date().toISOString(), {
+      modifyCount: HOT_CONTEXT_MAX_MODIFY_ITERATIONS,
+    });
+    vi.mocked(loadHotContextState).mockResolvedValue(state);
+
+    const result = await handleHotContextPatchCallback({
+      callback_query_id: 'cbcap',
+      data: `${HOT_CONTEXT_CALLBACK_PREFIX}modify:pcap`,
+      message_id: 99,
+      chat_id: 555,
+    });
+
+    expect(result).toBe('modify_cap_reached');
+    // pending non passé en awaiting_edit
+    expect(state.pendingPatches['pcap']?.phase).not.toBe('awaiting_edit');
+  });
+});
+
+describe('findAwaitingEditPending', () => {
+  it('retourne le pending awaiting_edit le plus récent', () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['a'] = makePending('a', '2026-05-20T10:00:00.000Z', {
+      phase: 'preview',
+    });
+    state.pendingPatches['b'] = makePending('b', '2026-05-20T11:00:00.000Z', {
+      phase: 'awaiting_edit',
+    });
+    state.pendingPatches['c'] = makePending('c', '2026-05-20T12:00:00.000Z', {
+      phase: 'awaiting_edit',
+    });
+    expect(findAwaitingEditPending(state)?.patchId).toBe('c');
+  });
+
+  it('retourne null si aucun pending awaiting_edit', () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['a'] = makePending('a', new Date().toISOString(), {
+      phase: 'preview',
+    });
+    expect(findAwaitingEditPending(state)).toBeNull();
+  });
+});
+
+describe('handleHotContextEditText — défaut 2 loop modify', () => {
+  it('retourne no_awaiting si aucun pending awaiting_edit (ne shadow rien)', async () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['p'] = makePending('p', new Date().toISOString(), {
+      phase: 'preview',
+    });
+    vi.mocked(loadHotContextState).mockResolvedValue(state);
+
+    const result = await handleHotContextEditText(555, 'un texte libre normal');
+    expect(result).toBe('no_awaiting');
+    // patchHotContextPayloadFromInstruction PAS appelé (pas d'awaiting)
+    expect(vi.mocked(patchHotContextPayloadFromInstruction)).not.toHaveBeenCalled();
+  });
+
+  it('patche le payload (partiel) et re-propose la carte (phase preview)', async () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['pm'] = makePending('pm', new Date().toISOString(), {
+      phase: 'awaiting_edit',
+      modifyCount: 0,
+      telegramMessageId: 77,
+    });
+    vi.mocked(loadHotContextState).mockResolvedValue(state);
+    // Le LLM renvoie un patch reformulé (payload changé → nouveau patchId).
+    vi.mocked(patchHotContextPayloadFromInstruction).mockResolvedValue({
+      ...state.pendingPatches['pm']!.patch,
+      patchId: 'pm-v2',
+      payload: { text: 'Finaliser [[X]] vendredi' },
+    });
+
+    const result = await handleHotContextEditText(555, 'plutôt vendredi');
+    expect(result).toBe('repreviewed');
+    // L'ancien pending est retiré, le nouveau (pm-v2) en phase preview avec
+    // modifyCount incrémenté.
+    expect(state.pendingPatches['pm']).toBeUndefined();
+    expect(state.pendingPatches['pm-v2']?.phase).toBe('preview');
+    expect(state.pendingPatches['pm-v2']?.modifyCount).toBe(1);
+    expect(vi.mocked(editMessageTextWithButtons)).toHaveBeenCalled();
+  });
+
+  it('demande une reformulation si le payload est inchangé (instruction non comprise)', async () => {
+    const state = emptyHotContextState();
+    state.pendingPatches['pu'] = makePending('pu', new Date().toISOString(), {
+      phase: 'awaiting_edit',
+      modifyCount: 0,
+      telegramMessageId: 88,
+    });
+    vi.mocked(loadHotContextState).mockResolvedValue(state);
+    // LLM renvoie le MÊME payload → instruction non comprise.
+    vi.mocked(patchHotContextPayloadFromInstruction).mockResolvedValue(
+      state.pendingPatches['pu']!.patch,
+    );
+
+    const result = await handleHotContextEditText(555, 'blabla incompréhensible');
+    expect(result).toBe('unchanged');
+    // Le pending reste en awaiting_edit (Thomas peut retaper).
+    expect(state.pendingPatches['pu']?.phase).toBe('awaiting_edit');
+    expect(vi.mocked(sendSimpleMessage)).toHaveBeenCalled();
+  });
+
+  it("cap la loop à HOT_CONTEXT_MAX_MODIFY_ITERATIONS (carte sans bouton Modifier)", async () => {
+    const state = emptyHotContextState();
+    // modifyCount = cap - 1 → après cette reformulation, on atteint le cap.
+    state.pendingPatches['pcap2'] = makePending('pcap2', new Date().toISOString(), {
+      phase: 'awaiting_edit',
+      modifyCount: HOT_CONTEXT_MAX_MODIFY_ITERATIONS - 1,
+      telegramMessageId: 66,
+    });
+    vi.mocked(loadHotContextState).mockResolvedValue(state);
+    vi.mocked(patchHotContextPayloadFromInstruction).mockResolvedValue({
+      ...state.pendingPatches['pcap2']!.patch,
+      patchId: 'pcap2-v2',
+      payload: { text: 'Finaliser [[X]] lundi' },
+    });
+
+    const result = await handleHotContextEditText(555, 'plutôt lundi');
+    expect(result).toBe('repreviewed');
+    expect(state.pendingPatches['pcap2-v2']?.modifyCount).toBe(
+      HOT_CONTEXT_MAX_MODIFY_ITERATIONS,
+    );
+    // Le clavier ne doit plus contenir de bouton "modify".
+    const lastCall = vi.mocked(editMessageTextWithButtons).mock.calls.at(-1);
+    const keyboard = lastCall?.[3] ?? [];
+    const flat = keyboard.flat();
+    expect(flat.some((b) => b.callback_data.includes('modify:'))).toBe(false);
+    expect(flat.some((b) => b.callback_data.includes('valid:'))).toBe(true);
   });
 });
 

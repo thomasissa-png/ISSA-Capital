@@ -117,6 +117,7 @@ import {
 import {
   HOT_CONTEXT_CALLBACK_PREFIX,
   handleHotContextPatchCallback,
+  handleHotContextEditText,
 } from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
 // S20 → S20.1 — Telegram → TickTick (PREVIEW flow) + callback `task_*` (R4)
 // Bug 1 fix : carte preview avec 3 boutons (Valider/Modifier/Annuler) AVANT
@@ -1352,6 +1353,22 @@ export async function POST(request: Request): Promise<Response> {
           pending: awaitingTaskEdit,
           instruction: text,
         });
+        return Response.json({ ok: true });
+      }
+
+      // ── Niveau 2e : reformulation d'un patch hot-context (S22 — défaut 2) ──
+      // Thomas a cliqué « Modifier » sur une carte patch hot-context → le
+      // pending est en phase `awaiting_edit`. Le prochain texte libre est
+      // traité comme INSTRUCTION PARTIELLE (ex: « plutôt vendredi »,
+      // « ajoute [[X]] ») via `patchHotContextPayloadFromInstruction`.
+      //
+      // ORDRE CRITIQUE : ce check vient APRÈS inbox-edit (2c) et task
+      // awaiting_edit (2d) pour ne JAMAIS shadow ces routages. Il ne capte le
+      // texte QUE si un pending hot-context `awaiting_edit` existe — sinon
+      // `handleHotContextEditText` retourne `no_awaiting` et le webhook poursuit
+      // son routage normal (auto-CR / preview TickTick / note Drive).
+      const hotContextEditResult = await handleHotContextEditText(chatId, text);
+      if (hotContextEditResult !== 'no_awaiting') {
         return Response.json({ ok: true });
       }
 
