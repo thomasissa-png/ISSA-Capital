@@ -18,7 +18,7 @@ vi.mock('../../vault-client', () => ({
   appendToHistorique: (...args: unknown[]) => mockAppendToHistorique(...args),
 }));
 
-import { enrichProjetHistorique } from '../projet-enricher';
+import { enrichProjetHistorique, appendProjetHistoriqueLine } from '../projet-enricher';
 import type { EventProjection } from '../types';
 
 function makeProjection(over: Partial<EventProjection> = {}): EventProjection {
@@ -107,5 +107,58 @@ describe('enrichProjetHistorique', () => {
     const res = await enrichProjetHistorique('VI', makeProjection(), 'evt_5');
     expect(res.status).toBe('error');
     expect(res.error).toContain('Drive down');
+  });
+});
+
+describe('appendProjetHistoriqueLine (S23 — email-ingest)', () => {
+  it('fiche trouvée → append avec title/content custom + updateLastInteraction false', async () => {
+    mockFindProjetFiche.mockResolvedValue({
+      fileId: 'f1',
+      ficheName: 'Versi Immobilier',
+      resolvedFilename: 'Versi Immobilier.md',
+      folderPath: '02. Projets/02. Pro',
+    });
+    mockAppendToHistorique.mockResolvedValue(true);
+
+    const res = await appendProjetHistoriqueLine('VI', {
+      title: '2026-05-25 — Email : Facture travaux (de Cabinet Dupont)',
+      content: 'Facture reçue.',
+      trigger: 'email_ingest:auto:msg_1',
+    });
+
+    expect(res.status).toBe('enriched');
+    expect(mockAppendToHistorique).toHaveBeenCalledWith(
+      '02. Projets/02. Pro',
+      'Versi Immobilier.md',
+      expect.objectContaining({
+        title: '2026-05-25 — Email : Facture travaux (de Cabinet Dupont)',
+        content: 'Facture reçue.',
+        trigger: 'email_ingest:auto:msg_1',
+        updateLastInteraction: false,
+      }),
+    );
+  });
+
+  it('fiche introuvable → no-fiche, jamais de création (red line)', async () => {
+    mockFindProjetFiche.mockResolvedValue(null);
+    const res = await appendProjetHistoriqueLine('VM', {
+      title: 't',
+      content: 'c',
+      trigger: 'tr',
+    });
+    expect(res.status).toBe('no-fiche');
+    expect(mockAppendToHistorique).not.toHaveBeenCalled();
+  });
+
+  it('append false → error', async () => {
+    mockFindProjetFiche.mockResolvedValue({
+      fileId: 'f1',
+      ficheName: 'Versimo',
+      resolvedFilename: 'Versimo.md',
+      folderPath: '02. Projets/02. Pro',
+    });
+    mockAppendToHistorique.mockResolvedValue(false);
+    const res = await appendProjetHistoriqueLine('VM', { title: 't', content: 'c', trigger: 'tr' });
+    expect(res.status).toBe('error');
   });
 });

@@ -104,3 +104,76 @@ export async function enrichProjetHistorique(
 
   return { code, status: 'enriched', ficheName: fiche.ficheName };
 }
+
+// ============================================================
+// Ligne d'historique projet générique (S23 — email-ingest cohérent)
+// ============================================================
+
+export interface AppendProjetLineOptions {
+  /** Titre de la section H3 (ex: « 2026-05-25 — Email : ... »). */
+  title: string;
+  /** Contenu de la section. */
+  content: string;
+  /** Trigger d'audit. */
+  trigger: string;
+}
+
+/**
+ * Append une ligne d'historique arbitraire sur la fiche Projet d'un code entité.
+ *
+ * Variante générique d'`enrichProjetHistorique` (qui formate une ligne
+ * « Réunion » spécifique au calendar-ingest). Ici l'appelant fournit son propre
+ * title/content — utilisé par email-ingest pour la ligne « Email : <objet> ».
+ *
+ * Pipeline identique : findProjetFicheByEntite (résolution dynamique R7) +
+ * appendToHistorique PATCH in-place (R5). Red line : jamais de création de fiche.
+ *
+ * @param code Code entité (IC | GO | VI | VV | VM | IM).
+ * @param opts Title / content / trigger.
+ */
+export async function appendProjetHistoriqueLine(
+  code: string,
+  opts: AppendProjetLineOptions,
+): Promise<ProjetEnrichResult> {
+  let fiche;
+  try {
+    fiche = await findProjetFicheByEntite(code);
+  } catch (err) {
+    return { code, status: 'error', error: err instanceof Error ? err.message : String(err) };
+  }
+
+  if (!fiche) {
+    console.warn(
+      `[projet-enricher] fiche Projet introuvable pour entité ${code} (${opts.trigger}) — skip`,
+    );
+    return { code, status: 'no-fiche' };
+  }
+
+  let ok = false;
+  try {
+    ok = await appendToHistorique(fiche.folderPath, fiche.resolvedFilename, {
+      title: opts.title,
+      content: opts.content,
+      trigger: opts.trigger,
+      updateLastInteraction: false,
+    });
+  } catch (err) {
+    return {
+      code,
+      status: 'error',
+      ficheName: fiche.ficheName,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  if (!ok) {
+    return {
+      code,
+      status: 'error',
+      ficheName: fiche.ficheName,
+      error: 'appendToHistorique a retourné false',
+    };
+  }
+
+  return { code, status: 'enriched', ficheName: fiche.ficheName };
+}

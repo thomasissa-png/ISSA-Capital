@@ -113,6 +113,26 @@ vi.mock('../ticktick-integration', () => ({
   createTickTickTaskForEmail: (...args: unknown[]) => mockCreateTickTickTaskForEmail(...args),
 }));
 
+// S23 — actions de cohérence (mock par défaut : aucune action, comportement
+// existant inchangé). Les tests S23 surchargent mockBuildCoherenceActions.
+const mockBuildCoherenceActions = vi.fn().mockResolvedValue([]);
+
+vi.mock('../coherence-actions', () => ({
+  buildCoherenceActions: (...args: unknown[]) => mockBuildCoherenceActions(...args),
+}));
+
+const mockAppendProjetHistoriqueLine = vi.fn().mockResolvedValue({ code: 'VI', status: 'enriched' });
+
+vi.mock('../../calendar-ingest/projet-enricher', () => ({
+  appendProjetHistoriqueLine: (...args: unknown[]) => mockAppendProjetHistoriqueLine(...args),
+}));
+
+const mockSendHotContextPatchCard = vi.fn().mockResolvedValue(123);
+
+vi.mock('../../telegram-validation/handlers/hot-context-patch', () => ({
+  sendHotContextPatchCard: (...args: unknown[]) => mockSendHotContextPatchCard(...args),
+}));
+
 // Mock crypto.randomUUID pour des IDs déterministes (incremental)
 let uuidCounter = 0;
 vi.mock('crypto', () => ({
@@ -173,6 +193,9 @@ beforeEach(() => {
   mockSaveNoMatch.mockResolvedValue(undefined);
   mockSendNoMatchCard.mockResolvedValue({ messageId: 456 });
   mockCreateTickTickTaskForEmail.mockResolvedValue(undefined);
+  mockBuildCoherenceActions.mockResolvedValue([]);
+  mockAppendProjetHistoriqueLine.mockResolvedValue({ code: 'VI', status: 'enriched' });
+  mockSendHotContextPatchCard.mockResolvedValue(123);
   mockHandleAClassifier.mockResolvedValue([
     { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Test' },
   ]);
@@ -894,5 +917,105 @@ describe('runEmailIngest', () => {
     const firstAutoCall = autoCalls[0]![0] as { payload: { auto: boolean; reason: string } };
     expect(firstAutoCall.payload.auto).toBe(true);
     expect(['system-email', 'contact-existing']).toContain(firstAutoCall.payload.reason);
+  });
+});
+
+// ============================================================
+// S23 — actions de cohérence (historique projet, copie PJ, hot-context)
+// ============================================================
+
+describe('runEmailIngest — actions de cohérence S23', () => {
+  it('hot-context → carte hotcontext: dédiée, JAMAIS dans la carte email principale', async () => {
+    const email = makeEmail({ id: 'msg_hc', from: { email: 'avocat@cabinet.fr' } });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_hc' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: '05. Notes/x.md', payload: {}, description: 'note' },
+    ]);
+    const patch = { patchId: 'p1', section: 'attends', action: 'add', payload: {}, source: 'email', sourceId: 'msg_hc', proposedAt: 'x', rationale: 'r', signalId: 's1' };
+    mockBuildCoherenceActions.mockResolvedValue([
+      { type: 'update_hot_context', target: null, payload: { patch }, description: 'hc', autoExecute: false },
+    ]);
+
+    await runEmailIngest();
+
+    // La carte hot-context dédiée a été envoyée avec le patch.
+    expect(mockSendHotContextPatchCard).toHaveBeenCalledWith(patch);
+    // La carte email principale NE contient PAS d'action update_hot_context.
+    const pendingCall = mockSavePending.mock.calls[0]?.[0] as { actions: Array<{ type: string }> } | undefined;
+    expect(pendingCall).toBeDefined();
+    expect(pendingCall!.actions.some((a) => a.type === 'update_hot_context')).toBe(false);
+  });
+
+  it('copie PJ proposée → dans la carte email principale (autoExecute false)', async () => {
+    const email = makeEmail({ id: 'msg_pj', from: { email: 'compta@cabinet.fr' } });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_pj' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'create_file', target: '05. Notes/x.md', payload: {}, description: 'note' },
+    ]);
+    mockBuildCoherenceActions.mockResolvedValue([
+      {
+        type: 'copy_attachment',
+        target: '02. Projets/02. Pro/Documents/facture.pdf',
+        payload: { messageId: 'msg_pj', attachmentId: 'att1' },
+        description: 'Copier facture.pdf',
+        autoExecute: false,
+      },
+    ]);
+
+    await runEmailIngest();
+
+    const pendingCall = mockSavePending.mock.calls[0]?.[0] as { actions: Array<{ type: string }> };
+    expect(pendingCall.actions.some((a) => a.type === 'copy_attachment')).toBe(true);
+  });
+
+  it('histo projet auto + email contact connu → auto-exécution silencieuse (pas de carte)', async () => {
+    const email = makeEmail({ id: 'msg_auto', from: { email: 'martin@example.com' } });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_auto' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro', projet: 'VI' }));
+    // Handler contact connu → action auto silencieuse
+    mockHandleContactPro.mockResolvedValue([
+      { type: 'append_historique', target: '07. Contacts/01. Pro/Martin.md', payload: {}, description: 'histo', autoExecute: true },
+    ]);
+    // Coherence : histo projet (auto)
+    mockBuildCoherenceActions.mockResolvedValue([
+      {
+        type: 'append_projet_historique',
+        target: null,
+        payload: { projetCode: 'VI', title: '2026-05-25 — Email : Test', content: 'résumé' },
+        description: 'histo projet VI',
+        autoExecute: true,
+      },
+    ]);
+
+    const stats = await runEmailIngest();
+
+    // Toutes auto → aucune carte email principale
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    // L'historique projet a été appliqué silencieusement
+    expect(mockAppendProjetHistoriqueLine).toHaveBeenCalledWith(
+      'VI',
+      expect.objectContaining({ title: expect.stringContaining('Email :') }),
+    );
+    expect(stats.autoExecuted).toBe(1);
+  });
+
+  it('coherence-actions throw → ne bloque pas le traitement de l email', async () => {
+    const email = makeEmail({ id: 'msg_err' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_err' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'a-classifier' }));
+    mockBuildCoherenceActions.mockRejectedValue(new Error('coherence down'));
+
+    const stats = await runEmailIngest();
+
+    // Le handler a quand même produit une carte (a-classifier)
+    expect(stats.errors).toBe(0);
+    expect(mockSavePending).toHaveBeenCalled();
   });
 });

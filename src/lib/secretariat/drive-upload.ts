@@ -525,6 +525,81 @@ export async function updateFileContent(
   }
 }
 
+/**
+ * Upload un binaire dans un dossier Drive arbitraire (S23 — copie de PJ email).
+ *
+ * Variante générique d'`uploadToInbox` : le dossier cible est passé en clair
+ * (folderId résolu par l'appelant — typiquement le sous-dossier `Documents/`
+ * d'une fiche projet ou contact). PAS `createVaultFile` (text/markdown) ni
+ * `uploadToInbox` (dossier `_Inbox` figé). Pattern multipart identique.
+ *
+ * @param buffer Contenu binaire de la PJ
+ * @param filename Nom du fichier dans Drive
+ * @param mimeType Content-Type de la PJ
+ * @param parentFolderId Dossier Drive cible (déjà résolu)
+ */
+export async function uploadBinaryToFolder(
+  buffer: Buffer,
+  filename: string,
+  mimeType: string,
+  parentFolderId: string,
+): Promise<DriveUploadResult> {
+  if (!parentFolderId) {
+    return { success: false, error: 'parentFolderId manquant' };
+  }
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return { success: false, error: 'Upload Drive désactivé — credentials OAuth2 manquants' };
+  }
+
+  try {
+    const metadata = JSON.stringify({
+      name: filename,
+      parents: [parentFolderId],
+      mimeType,
+    });
+
+    const boundary = '===issa_binary_boundary===';
+    const body =
+      `--${boundary}\r\n` +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      metadata + '\r\n' +
+      `--${boundary}\r\n` +
+      `Content-Type: ${mimeType}\r\n\r\n`;
+    const footer = `\r\n--${boundary}--`;
+
+    const bodyBuffer = Buffer.concat([
+      Buffer.from(body, 'utf-8'),
+      buffer,
+      Buffer.from(footer, 'utf-8'),
+    ]);
+
+    const response = await fetch(`${DRIVE_API}?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Length': String(bodyBuffer.length),
+      },
+      body: bodyBuffer,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      return { success: false, error: `Drive API ${response.status}: ${errorText.slice(0, 200)}` };
+    }
+
+    const data = (await response.json()) as { id?: string; webViewLink?: string };
+    return { success: true, fileId: data.id, webViewLink: data.webViewLink };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Erreur Drive upload binaire : ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 export async function uploadToInbox(
   buffer: Buffer,
   filename: string,

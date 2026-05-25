@@ -52,6 +52,19 @@ vi.mock('../../gmail-source/gmail-source', () => ({
   markProcessed: (...args: unknown[]) => mockMarkProcessed(...args),
 }));
 
+// S23 — exécuteurs cohérence (validés)
+const mockAppendProjetHistoriqueLine = vi.fn().mockResolvedValue({ code: 'VI', status: 'enriched' });
+
+vi.mock('../../calendar-ingest/projet-enricher', () => ({
+  appendProjetHistoriqueLine: (...args: unknown[]) => mockAppendProjetHistoriqueLine(...args),
+}));
+
+const mockExecuteCopyAttachment = vi.fn().mockResolvedValue({ ok: true, fileId: 'new-id' });
+
+vi.mock('../../email-ingest/attachment-handler', () => ({
+  executeCopyAttachment: (...args: unknown[]) => mockExecuteCopyAttachment(...args),
+}));
+
 const mockAnswerCallbackQuery = vi.fn().mockResolvedValue({ success: true });
 
 vi.mock('../../telegram', () => ({
@@ -469,6 +482,80 @@ describe('handleTelegramCallback — validation principale', () => {
     // Le body brut dans le <pre> devrait être tronqué (pas les 2000 A complets)
     const aCount = (msgText.match(/A/g) ?? []).length;
     expect(aCount).toBeLessThanOrEqual(1500);
+  });
+});
+
+// ============================================================
+// Tests — actions de cohérence S23 (validées)
+// ============================================================
+
+describe('handleTelegramCallback — actions cohérence S23', () => {
+  it('valider copy_attachment → executeCopyAttachment avec payload', async () => {
+    mockGetPending.mockResolvedValue(
+      makePending({
+        actions: [
+          {
+            type: 'copy_attachment',
+            target: '02. Projets/02. Pro/Documents/facture.pdf',
+            payload: {
+              messageId: 'msg-12345',
+              attachmentId: 'att1',
+              attachmentName: 'facture.pdf',
+              attachmentMimeType: 'application/pdf',
+              baseFolderPath: '02. Projets/02. Pro',
+              subfolder: 'Documents',
+            },
+            description: 'Copier facture.pdf',
+          },
+        ],
+      }),
+    );
+
+    await handleTelegramCallback(makeCallback('valider'));
+
+    expect(mockExecuteCopyAttachment).toHaveBeenCalledWith(
+      'msg-12345',
+      expect.objectContaining({ name: 'facture.pdf', id: 'att1', mimeType: 'application/pdf' }),
+      { baseFolderPath: '02. Projets/02. Pro', subfolder: 'Documents' },
+    );
+  });
+
+  it('valider append_projet_historique → appendProjetHistoriqueLine avec code entité', async () => {
+    mockGetPending.mockResolvedValue(
+      makePending({
+        actions: [
+          {
+            type: 'append_projet_historique',
+            target: null,
+            payload: { projetCode: 'VI', title: '2026-05-25 — Email : X', content: 'résumé' },
+            description: 'histo projet VI',
+          },
+        ],
+      }),
+    );
+
+    await handleTelegramCallback(makeCallback('valider'));
+
+    expect(mockAppendProjetHistoriqueLine).toHaveBeenCalledWith(
+      'VI',
+      expect.objectContaining({ title: '2026-05-25 — Email : X', content: 'résumé' }),
+    );
+  });
+
+  it('copy_attachment payload incomplet → action en erreur, pas de crash', async () => {
+    mockGetPending.mockResolvedValue(
+      makePending({
+        actions: [
+          { type: 'copy_attachment', target: null, payload: { messageId: 'msg-12345' }, description: 'incomplet' },
+        ],
+      }),
+    );
+
+    await handleTelegramCallback(makeCallback('valider'));
+
+    expect(mockExecuteCopyAttachment).not.toHaveBeenCalled();
+    // markProcessed reste appelé (l'email est traité malgré l'erreur d'action)
+    expect(mockMarkProcessed).toHaveBeenCalled();
   });
 });
 
