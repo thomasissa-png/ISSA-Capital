@@ -51,13 +51,17 @@ const PROJET_FICHE_FOLDER_PATH = '02. Projets/02. Pro';
  * via `searchByName`. Si le nom canonique change, c'est ici qu'il faut le mettre à jour
  * (1 ligne).
  *
- * Extensible : ajouter Versimo (VM), Immocrew (IM) si fiches Projet créées dans le vault.
+ * Extensible : Versimo (VM), Immocrew (IM) ajoutés S23 (détection projet
+ * calendar-ingest). Si la fiche n'existe pas dans le vault, `findProjetFicheByEntite`
+ * dégrade gracieusement (return null + warn).
  */
 const ENTITE_TO_FICHE_NAME: Record<string, string> = {
   IC: 'ISSA Capital',
   GO: 'Gradient One',
   VI: 'Versi Immobilier',
   VV: 'Versi Invest',
+  VM: 'Versimo',
+  IM: 'Immocrew',
 };
 
 // ============================================================
@@ -88,6 +92,16 @@ export interface ProjetFicheResult {
   ficheName: string;
   /** Nom de fichier réel trouvé dans le vault (peut différer si renommé en .md) */
   resolvedFilename: string;
+  /**
+   * Chemin logique du dossier contenant la fiche (S23).
+   *
+   * Soit `02. Projets/02. Pro` (fiche à plat), soit
+   * `02. Projets/02. Pro/<FicheName>` (sous-dossier par entité). Nécessaire pour
+   * `appendToHistorique(folderPath, filename, …)` qui lit/écrit par chemin (pas
+   * par fileId). Additif : les appelants existants (cr-writeback, qui écrit par
+   * fileId) ignorent ce champ — rétro-compat préservée.
+   */
+  folderPath: string;
 }
 
 // ============================================================
@@ -392,6 +406,9 @@ export async function findProjetFicheByEntite(
 
     // Tentative 1 — Fiche à plat dans `02. Pro/<FicheName>.md` (structure historique)
     let found: VaultFolderEntry | undefined = entries.find(matchFiche);
+    // folderPath où la fiche est effectivement résolue (S23) — `appendToHistorique`
+    // lit/écrit par chemin, donc on doit savoir si on est à plat ou en sous-dossier.
+    let foundFolderPath = PROJET_FICHE_FOLDER_PATH;
 
     // Tentative 2 (S20.D) — Fiche dans sous-dossier `02. Pro/<FicheName>/<FicheName>.md`
     // (structure cible refactor Thomas : un sous-dossier par entité).
@@ -405,6 +422,7 @@ export async function findProjetFicheByEntite(
       const subfolderPath = `${PROJET_FICHE_FOLDER_PATH}/${ficheName}`;
       const subEntries = await listVaultFolder(subfolderPath);
       found = subEntries.find(matchFiche);
+      if (found) foundFolderPath = subfolderPath;
     }
 
     if (!found) {
@@ -419,6 +437,7 @@ export async function findProjetFicheByEntite(
       fileId: found.id,
       ficheName,
       resolvedFilename: found.name,
+      folderPath: foundFolderPath,
     };
 
     __issa_projet_fiche_cache__.set(code, { data: result, ts: Date.now() });

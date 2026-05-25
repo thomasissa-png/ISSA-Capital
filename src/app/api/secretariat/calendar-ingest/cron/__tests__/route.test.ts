@@ -32,9 +32,10 @@ describe('GET /api/secretariat/calendar-ingest/cron', () => {
       stats: {
         eventsFetched: 0,
         eventsProcessed: 0,
-        reunionsCreated: 0,
-        reunionsUpdated: 0,
         contactsEnriched: 0,
+        projectsEnriched: 0,
+        projectsAmbiguous: 0,
+        todosCreated: 0,
         skipped: 0,
         errors: 0,
         durationMs: 100,
@@ -90,14 +91,15 @@ describe('GET /api/secretariat/calendar-ingest/cron', () => {
     expect(json.ok).toBe(true);
   });
 
-  it('appelle sendCalendarRecapCard si reunions traitées', async () => {
+  it('appelle sendCalendarRecapCard (qui reste silencieuse en interne si rien à dire)', async () => {
     vi.mocked(runCalendarIngest).mockResolvedValue({
       stats: {
         eventsFetched: 1,
         eventsProcessed: 1,
-        reunionsCreated: 1,
-        reunionsUpdated: 0,
         contactsEnriched: 0,
+        projectsEnriched: 0,
+        projectsAmbiguous: 0,
+        todosCreated: 1,
         skipped: 0,
         errors: 0,
         durationMs: 100,
@@ -112,11 +114,11 @@ describe('GET /api/secretariat/calendar-ingest/cron', () => {
     expect(sendCalendarRecapCard).toHaveBeenCalledOnce();
   });
 
-  it('n\'appelle PAS sendCalendarRecapCard si 0 réunion', async () => {
+  it('appelle toujours sendCalendarRecapCard hors dryRun (silence géré côté recap)', async () => {
     await GET(
       makeReq('http://x.test/api/secretariat/calendar-ingest/cron?token=topsecret'),
     );
-    expect(sendCalendarRecapCard).not.toHaveBeenCalled();
+    expect(sendCalendarRecapCard).toHaveBeenCalledOnce();
   });
 
   it('dryRun → ne déclenche pas la carte', async () => {
@@ -124,9 +126,10 @@ describe('GET /api/secretariat/calendar-ingest/cron', () => {
       stats: {
         eventsFetched: 1,
         eventsProcessed: 1,
-        reunionsCreated: 1,
-        reunionsUpdated: 0,
         contactsEnriched: 0,
+        projectsEnriched: 0,
+        projectsAmbiguous: 0,
+        todosCreated: 1,
         skipped: 0,
         errors: 0,
         durationMs: 100,

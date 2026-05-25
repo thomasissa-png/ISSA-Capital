@@ -1,12 +1,13 @@
 /**
- * Tests runner — E2E avec mocks complets.
+ * Tests runner — E2E avec mocks complets (refonte S23).
  *
  * Vérifie :
- *   - Stats correctes (created / updated / skipped / errors)
- *   - Idempotence (event.updated inchangé → no-change)
- *   - State persistence (processedEvents mis à jour)
- *   - Audit JSONL appelé
- *   - Events cancelled → reunion-cancelled
+ *   - Orchestration contacts + projet + todo
+ *   - Idempotence (event.updated inchangé → no-change ; replan → update todo)
+ *   - Fix racine : event marqué traité même sans fiche (plus de boucle infinie)
+ *   - Ambiguïté projet → carte Telegram, historique NON écrit
+ *   - Exclusions todo (récurrent / all-day / perso)
+ *   - Erreurs loggées par event (logging #2), pas avalées
  *   - dryRun ne sauve pas state
  */
 
@@ -24,52 +25,82 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     summary: 'Réunion test',
     startDateTime: '2026-05-22T14:00:00+02:00',
     endDateTime: '2026-05-22T15:00:00+02:00',
-    attendees: [{ email: 'thomas@i.com', self: true }],
+    attendees: [
+      { email: 'thomas@i.com', self: true },
+      { email: 'max@v.com', displayName: 'Maxime' },
+    ],
     isAllDay: false,
     ...overrides,
   };
 }
 
-describe('runCalendarIngest — E2E mocké', () => {
-  it('traite 3 events nouveaux → 3 created + audit appelé 3x', async () => {
-    const events = [
-      makeEvent({ id: 'evt_001', summary: 'Point A' }),
-      makeEvent({ id: 'evt_002', summary: 'Point B' }),
-      makeEvent({ id: 'evt_003', summary: 'Point C' }),
-    ];
+/** Deps par défaut (tous mockés, zéro réseau). */
+function deps(over: Record<string, unknown> = {}) {
+  return {
+    _enrichContacts: vi.fn().mockResolvedValue([]),
+    _enrichProjet: vi.fn().mockResolvedValue({ code: 'VI', status: 'enriched', ficheName: 'Versi Immobilier' }),
+    _createTodo: vi.fn().mockResolvedValue({ status: 'created', todoId: 'tt_1' }),
+    _findProjetFiche: vi.fn().mockResolvedValue({
+      fileId: 'f1',
+      ficheName: 'Versi Immobilier',
+      resolvedFilename: 'Versi Immobilier.md',
+      folderPath: '02. Projets/02. Pro',
+    }),
+    _sendCalProjetCard: vi.fn().mockResolvedValue(true),
+    _appendAudit: vi.fn().mockResolvedValue(true),
+    _loadState: vi.fn().mockResolvedValue(emptyCalendarIngestState()),
+    _saveState: vi.fn().mockResolvedValue(true),
+    ...over,
+  };
+}
 
-    const state: CalendarIngestState = emptyCalendarIngestState();
-
-    const writer = vi.fn().mockResolvedValue({
-      success: true,
-      op: 'created',
-      vaultPath: '06. Réunions/2026/05/test.md',
+describe('runCalendarIngest — E2E mocké (S23)', () => {
+  it('event 2 contacts pro + titre projet VI → contacts + historique VI + todo', async () => {
+    const event = makeEvent({
+      id: 'evt_full',
+      summary: 'Point Versi Immobilier',
+      attendees: [
+        { email: 'thomas@i.com', self: true },
+        { email: 'max@v.com', displayName: 'Maxime' },
+        { email: 'leo@v.com', displayName: 'Léo' },
+      ],
     });
-    const enricher = vi.fn().mockResolvedValue([]);
-    const audit = vi.fn().mockResolvedValue(true);
+    const state = emptyCalendarIngestState();
+    const enrichContacts = vi.fn().mockResolvedValue([
+      { email: 'max@v.com', status: 'enriched', contactPath: 'a.md' },
+      { email: 'leo@v.com', status: 'enriched', contactPath: 'b.md' },
+    ]);
+    const enrichProjet = vi
+      .fn()
+      .mockResolvedValue({ code: 'VI', status: 'enriched', ficheName: 'Versi Immobilier' });
+    const createTodo = vi.fn().mockResolvedValue({ status: 'created', todoId: 'tt_42' });
 
     const { stats, results } = await runCalendarIngest({
-      _calendarClient: vi.fn().mockResolvedValue(events),
-      _writeReunion: writer,
-      _enrichContacts: enricher,
-      _appendAudit: audit,
-      _loadState: vi.fn().mockResolvedValue(state),
-      _saveState: vi.fn().mockResolvedValue(true),
+      _calendarClient: vi.fn().mockResolvedValue([event]),
+      ...deps({
+        _enrichContacts: enrichContacts,
+        _enrichProjet: enrichProjet,
+        _createTodo: createTodo,
+        _loadState: vi.fn().mockResolvedValue(state),
+      }),
     });
 
-    expect(stats.eventsFetched).toBe(3);
-    expect(stats.eventsProcessed).toBe(3);
-    expect(stats.reunionsCreated).toBe(3);
+    expect(stats.eventsProcessed).toBe(1);
+    expect(stats.contactsEnriched).toBe(2);
+    expect(stats.projectsEnriched).toBe(1);
+    expect(stats.todosCreated).toBe(1);
     expect(stats.errors).toBe(0);
-    expect(writer).toHaveBeenCalledTimes(3);
-    expect(audit).toHaveBeenCalledTimes(3);
-    expect(results).toHaveLength(3);
-    expect(state.processedEvents['evt_001']).toBeDefined();
-    expect(state.processedEvents['evt_002']).toBeDefined();
-    expect(state.processedEvents['evt_003']).toBeDefined();
+    expect(enrichProjet).toHaveBeenCalledWith('VI', expect.any(Object), 'evt_full');
+    expect(results[0]!.op).toBe('processed');
+    expect(results[0]!.projectsEnriched).toEqual(['VI']);
+    expect(results[0]!.todoCreated).toBe(true);
+    // Fix racine : event marqué traité avec todoId.
+    expect(state.processedEvents['evt_full']).toBeDefined();
+    expect(state.processedEvents['evt_full']!.todoId).toBe('tt_42');
+    expect(state.processedEvents['evt_full']!.projectsEnriched).toEqual(['VI']);
   });
 
-  it('idempotence : event avec updated identique → no-change, pas de writer', async () => {
+  it('idempotence : event.updated identique → no-change, aucun travail', async () => {
     const event = makeEvent({ id: 'evt_idem', updated: '2026-05-19T10:00:00Z' });
     const state: CalendarIngestState = {
       version: 1,
@@ -77,192 +108,196 @@ describe('runCalendarIngest — E2E mocké', () => {
       processedEvents: {
         evt_idem: {
           lastSeenUpdated: '2026-05-19T10:00:00Z',
-          vaultPath: '06. Réunions/2026/05/Test.md',
+          processedAt: '2026-05-19T10:01:00Z',
           date: '2026-05-22',
+          contactsEnriched: [],
+          projectsEnriched: [],
+          todoId: 'tt_old',
         },
       },
     };
+    const enrichContacts = vi.fn();
+    const createTodo = vi.fn();
 
-    const writer = vi.fn();
     const { stats, results } = await runCalendarIngest({
       _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: writer,
-      _enrichContacts: vi.fn().mockResolvedValue([]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(state),
-      _saveState: vi.fn().mockResolvedValue(true),
+      ...deps({
+        _enrichContacts: enrichContacts,
+        _createTodo: createTodo,
+        _loadState: vi.fn().mockResolvedValue(state),
+      }),
     });
 
-    expect(stats.reunionsCreated).toBe(0);
     expect(stats.skipped).toBe(1);
-    expect(writer).not.toHaveBeenCalled();
     expect(results[0]!.op).toBe('no-change');
+    expect(enrichContacts).not.toHaveBeenCalled();
+    expect(createTodo).not.toHaveBeenCalled();
   });
 
-  it('event modifié (updated different) → reunion-updated', async () => {
-    const event = makeEvent({ id: 'evt_mod', updated: '2026-05-19T15:00:00Z' });
-    const state: CalendarIngestState = {
-      version: 1,
-      lastSync: '2026-05-19T09:00:00Z',
-      processedEvents: {
-        evt_mod: {
-          lastSeenUpdated: '2026-05-19T10:00:00Z', // ancien
-          vaultPath: '06. Réunions/2026/05/Test.md',
-          date: '2026-05-22',
-        },
-      },
-    };
-
-    const writer = vi.fn().mockResolvedValue({
-      success: true,
-      op: 'updated',
-      vaultPath: '06. Réunions/2026/05/Test.md',
-    });
-
-    const { stats } = await runCalendarIngest({
-      _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: writer,
-      _enrichContacts: vi.fn().mockResolvedValue([]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(state),
-      _saveState: vi.fn().mockResolvedValue(true),
-    });
-
-    expect(stats.reunionsUpdated).toBe(1);
-    expect(writer).toHaveBeenCalledOnce();
-  });
-
-  it('event cancelled connu → reunion-cancelled', async () => {
-    const event = makeEvent({
-      id: 'evt_cancel',
-      status: 'cancelled',
-      summary: 'Annulée',
-    });
+  it('event replanifié (updated différent) → todo réutilisé en update', async () => {
+    const event = makeEvent({ id: 'evt_replan', updated: '2026-05-20T11:00:00Z' });
     const state: CalendarIngestState = {
       version: 1,
       lastSync: null,
       processedEvents: {
-        evt_cancel: {
-          lastSeenUpdated: '2026-05-18T10:00:00Z',
-          vaultPath: '06. Réunions/2026/05/Annulee.md',
+        evt_replan: {
+          lastSeenUpdated: '2026-05-19T10:00:00Z',
+          processedAt: '2026-05-19T10:01:00Z',
           date: '2026-05-22',
+          contactsEnriched: [],
+          projectsEnriched: [],
+          todoId: 'tt_existing',
+        },
+      },
+    };
+    const createTodo = vi.fn().mockResolvedValue({ status: 'updated', todoId: 'tt_existing' });
+
+    const { stats } = await runCalendarIngest({
+      _calendarClient: vi.fn().mockResolvedValue([event]),
+      ...deps({
+        _createTodo: createTodo,
+        _loadState: vi.fn().mockResolvedValue(state),
+      }),
+    });
+
+    expect(stats.todosCreated).toBe(1);
+    // 3e argument = existingTodoId réutilisé (event sans projet → projectName undefined).
+    expect(createTodo).toHaveBeenCalledWith(expect.any(Object), undefined, 'tt_existing');
+  });
+
+  it('projet ambigu (2 matchs) → carte Telegram, historique NON écrit', async () => {
+    const event = makeEvent({
+      id: 'evt_ambig',
+      summary: 'Sync Versi Immobilier et Gradient One',
+    });
+    const enrichProjet = vi.fn();
+    const sendCard = vi.fn().mockResolvedValue(true);
+
+    const { stats, results } = await runCalendarIngest({
+      _calendarClient: vi.fn().mockResolvedValue([event]),
+      ...deps({
+        _enrichProjet: enrichProjet,
+        _sendCalProjetCard: sendCard,
+      }),
+    });
+
+    expect(stats.projectsAmbiguous).toBe(1);
+    expect(stats.projectsEnriched).toBe(0);
+    expect(enrichProjet).not.toHaveBeenCalled();
+    expect(sendCard).toHaveBeenCalledOnce();
+    expect(results[0]!.projectAmbiguous).toBe(true);
+    // todo créé quand même (event éligible).
+    expect(results[0]!.todoCreated).toBe(true);
+  });
+
+  it('event récurrent → contacts oui, todo NON', async () => {
+    const event = makeEvent({ id: 'evt_rec', recurringEventId: 'rec_root' });
+    const createTodo = vi.fn();
+    const enrichContacts = vi
+      .fn()
+      .mockResolvedValue([{ email: 'max@v.com', status: 'enriched' }]);
+
+    const { stats, results } = await runCalendarIngest({
+      _calendarClient: vi.fn().mockResolvedValue([event]),
+      ...deps({ _createTodo: createTodo, _enrichContacts: enrichContacts }),
+    });
+
+    expect(createTodo).not.toHaveBeenCalled();
+    expect(stats.todosCreated).toBe(0);
+    expect(stats.contactsEnriched).toBe(1);
+    expect(results[0]!.op).toBe('processed');
+  });
+
+  it('event perso (0 participant externe) → pas de todo', async () => {
+    const event = makeEvent({
+      id: 'evt_perso',
+      attendees: [{ email: 'thomas@i.com', self: true }],
+    });
+    const createTodo = vi.fn();
+
+    const { stats } = await runCalendarIngest({
+      _calendarClient: vi.fn().mockResolvedValue([event]),
+      ...deps({ _createTodo: createTodo }),
+    });
+
+    expect(createTodo).not.toHaveBeenCalled();
+    expect(stats.todosCreated).toBe(0);
+  });
+
+  it('event cancelled connu → cancelled, jamais vu → skipped', async () => {
+    const known = makeEvent({ id: 'evt_c_known', status: 'cancelled' });
+    const unknown = makeEvent({ id: 'evt_c_unknown', status: 'cancelled' });
+    const state: CalendarIngestState = {
+      version: 1,
+      lastSync: null,
+      processedEvents: {
+        evt_c_known: {
+          lastSeenUpdated: '2026-05-18T10:00:00Z',
+          processedAt: '2026-05-18T10:01:00Z',
+          date: '2026-05-22',
+          contactsEnriched: [],
+          projectsEnriched: [],
         },
       },
     };
 
-    const writer = vi.fn();
-    const { stats, results } = await runCalendarIngest({
-      _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: writer,
-      _enrichContacts: vi.fn().mockResolvedValue([]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(state),
-      _saveState: vi.fn().mockResolvedValue(true),
+    const { results } = await runCalendarIngest({
+      _calendarClient: vi.fn().mockResolvedValue([known, unknown]),
+      ...deps({ _loadState: vi.fn().mockResolvedValue(state) }),
     });
 
-    // reunion-cancelled compte dans reunionsUpdated (cf. updateStatsFromResult)
-    expect(stats.reunionsUpdated).toBe(1);
-    expect(writer).not.toHaveBeenCalled();
-    expect(results[0]!.op).toBe('reunion-cancelled');
+    expect(results.find((r) => r.eventId === 'evt_c_known')!.op).toBe('cancelled');
+    expect(results.find((r) => r.eventId === 'evt_c_unknown')!.op).toBe('skipped');
   });
 
-  it('event cancelled inconnu → skipped (rien à faire)', async () => {
-    const event = makeEvent({
-      id: 'evt_cancel_unknown',
-      status: 'cancelled',
-    });
+  it('fix racine : enrichProjet échoue → event quand même marqué traité + erreur loggée', async () => {
+    const event = makeEvent({ id: 'evt_fail', summary: 'Point Versi Immobilier' });
     const state = emptyCalendarIngestState();
+    const enrichProjet = vi
+      .fn()
+      .mockResolvedValue({ code: 'VI', status: 'error', error: 'Drive timeout' });
 
     const { stats, results } = await runCalendarIngest({
       _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: vi.fn(),
-      _enrichContacts: vi.fn().mockResolvedValue([]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(state),
-      _saveState: vi.fn().mockResolvedValue(true),
-    });
-
-    expect(stats.skipped).toBe(1);
-    expect(results[0]!.op).toBe('skipped');
-  });
-
-  it('contacts enrichis comptés dans stats', async () => {
-    const event = makeEvent({
-      id: 'evt_enrich',
-      attendees: [
-        { email: 'thomas@i.com', self: true },
-        { email: 'max@v.com', displayName: 'Maxime' },
-        { email: 'leo@v.com', displayName: 'Léo' },
-      ],
-    });
-
-    const { stats } = await runCalendarIngest({
-      _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: vi.fn().mockResolvedValue({
-        success: true,
-        op: 'created',
-        vaultPath: 'x.md',
+      ...deps({
+        _enrichProjet: enrichProjet,
+        _loadState: vi.fn().mockResolvedValue(state),
       }),
-      _enrichContacts: vi.fn().mockResolvedValue([
-        { email: 'max@v.com', status: 'enriched', contactPath: 'a.md' },
-        { email: 'leo@v.com', status: 'enriched', contactPath: 'b.md' },
-      ]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(emptyCalendarIngestState()),
-      _saveState: vi.fn().mockResolvedValue(true),
     });
 
-    expect(stats.contactsEnriched).toBe(2);
+    // Erreur remontée (logging #2) mais event marqué traité → pas de re-tentative infinie.
+    expect(results[0]!.errors.some((e) => e.includes('Drive timeout'))).toBe(true);
+    expect(stats.errors).toBeGreaterThan(0);
+    expect(state.processedEvents['evt_fail']).toBeDefined();
+    expect(state.processedEvents['evt_fail']!.lastSeenUpdated).toBe(event.updated);
   });
 
-  it('writer error → stats.errors incrémenté', async () => {
-    const event = makeEvent({ id: 'evt_err' });
-    const writer = vi.fn().mockResolvedValue({
-      success: false,
-      op: 'error',
-      error: 'Drive timeout',
-    });
-
-    const { stats, results } = await runCalendarIngest({
-      _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: writer,
-      _enrichContacts: vi.fn().mockResolvedValue([]),
-      _appendAudit: vi.fn().mockResolvedValue(true),
-      _loadState: vi.fn().mockResolvedValue(emptyCalendarIngestState()),
-      _saveState: vi.fn().mockResolvedValue(true),
-    });
-
-    expect(stats.errors).toBe(1);
-    expect(results[0]!.op).toBe('error');
-    expect(results[0]!.errors).toContain('Drive timeout');
-  });
-
-  it('dryRun ne sauve pas state', async () => {
-    const event = makeEvent({ id: 'evt_dry' });
+  it('dryRun ne sauve pas state + n\'écrit rien', async () => {
+    const event = makeEvent({ id: 'evt_dry', summary: 'Point Versi Immobilier' });
     const saveState = vi.fn().mockResolvedValue(true);
+    const createTodo = vi.fn();
+    const enrichProjet = vi.fn();
 
     const { stateSaved } = await runCalendarIngest({
       dryRun: true,
       _calendarClient: vi.fn().mockResolvedValue([event]),
-      _writeReunion: vi.fn(),
-      _enrichContacts: vi.fn(),
-      _appendAudit: vi.fn(),
-      _loadState: vi.fn().mockResolvedValue(emptyCalendarIngestState()),
-      _saveState: saveState,
+      ...deps({
+        _saveState: saveState,
+        _createTodo: createTodo,
+        _enrichProjet: enrichProjet,
+      }),
     });
 
     expect(saveState).not.toHaveBeenCalled();
     expect(stateSaved).toBe(false);
+    expect(createTodo).not.toHaveBeenCalled();
+    expect(enrichProjet).not.toHaveBeenCalled();
   });
 
   it('fetch erreur → stats.errors = 1, retour gracieux', async () => {
     const { stats } = await runCalendarIngest({
       _calendarClient: vi.fn().mockRejectedValue(new Error('Network down')),
-      _writeReunion: vi.fn(),
-      _enrichContacts: vi.fn(),
-      _appendAudit: vi.fn(),
-      _loadState: vi.fn().mockResolvedValue(emptyCalendarIngestState()),
-      _saveState: vi.fn().mockResolvedValue(true),
+      ...deps(),
     });
 
     expect(stats.errors).toBe(1);

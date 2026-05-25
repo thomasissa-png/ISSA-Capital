@@ -10,9 +10,12 @@
  *   - 1 fichier par jour UTC
  *   - Mutex en mémoire
  *
- * Schéma de ligne (CalendarIngestResult enrichi) :
- *   { ts, eventId, summary, date, op, vaultPath?, participantsTotal,
- *     contactsEnriched, errors }
+ * Schéma de ligne (CalendarIngestResult enrichi, refonte S23) :
+ *   { ts, eventId, summary, date, op, participantsTotal, contactsEnriched,
+ *     projectsEnriched, projectAmbiguous, todoCreated, errors }
+ *
+ * Ops S23 : 'processed' | 'cancelled' | 'skipped' | 'no-change' | 'error'.
+ * (Plus de 'reunion-*' — fiches réunion abandonnées.)
  */
 
 import type { CalendarIngestResult } from './types';
@@ -79,8 +82,10 @@ export function serializeCalendarAuditEntry(
     op: entry.op,
     participantsTotal: entry.participantsTotal,
     contactsEnriched: entry.contactsEnriched,
+    projectsEnriched: entry.projectsEnriched ?? [],
+    projectAmbiguous: entry.projectAmbiguous ?? false,
+    todoCreated: entry.todoCreated ?? false,
     errors: entry.errors ?? [],
-    ...(entry.vaultPath ? { vaultPath: entry.vaultPath } : {}),
   };
   return JSON.stringify(enriched);
 }

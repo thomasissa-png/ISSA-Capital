@@ -1,42 +1,18 @@
 /**
- * Mapper CalendarEvent → ReunionVaultEntry.
+ * Mapper CalendarEvent → EventProjection (refonte S23).
  *
- * Génère la projection vault d'un event Google Calendar :
- *   - filename : `YYYY-MM-DD - [Participants] - [Sujet].md`
- *   - folderPath : `06. Réunions/YYYY/MM` (via vault-paths R7)
- *   - frontmatter : type, date, heure, duree, participants (wikilinks),
- *                   lieu, categorie, google_calendar_event_id, google_calendar_html_link
- *   - body : description Google event + section ## Notes vide
+ * Plus de fiche réunion (`06. Réunions` abandonné). Ce module :
+ *   - extrait date/heure/durée/participants d'un event Google Calendar
+ *   - détecte le(s) projet(s) concerné(s) via match du titre + description
+ *     contre les noms canoniques + alias (`detectProjectFromEvent`)
+ *   - produit une `EventProjection` consommée par le runner pour enrichir
+ *     contacts/projet et créer le todo TickTick.
  *
- * Convention nommage : alignée avec `second-cerveau/CLAUDE.md` et fiches
- * Reunions/ existantes (S18.3a iCal feed lit le même format).
- *
- * Slugify ASCII : utilise slugifyVaultFilename (handlers/vault-paths) pour
- * éliminer accents + caractères interdits Drive (` / \ : * ? " < > | '`).
+ * Conservés depuis l'ancien mapper : extraction date/heure/durée, partition des
+ * participants, détection des emails système.
  */
 
-import type { CalendarEvent, ReunionVaultEntry } from './types';
-import {
-  reunionsPath,
-  slugifyVaultFilename,
-} from '../handlers/vault-paths';
-
-// ============================================================
-// Constantes
-// ============================================================
-
-/**
- * Longueur max du sujet dans le filename (avant slugify final).
- * Le slugify global tronque à 80 chars (cap dur). On garde un peu de marge
- * pour le préfixe date + participants.
- */
-const MAX_SUBJECT_LEN = 50;
-
-/**
- * Nombre max de participants nommés dans le filename
- * (le reste : suffixe " +N").
- */
-const MAX_PARTICIPANTS_IN_FILENAME = 3;
+import type { CalendarEvent, EventProjection } from './types';
 
 // ============================================================
 // Helpers — extraction date/heure
@@ -147,112 +123,86 @@ export function isSystemEmail(email: string): boolean {
 }
 
 // ============================================================
-// Helpers — formatage filename + wikilinks participants
+// Détection projet — match titre/description contre noms canoniques + alias
 // ============================================================
 
 /**
- * Extrait le prénom + nom depuis un attendee.
- * - Si displayName présent : utilise "Prénom Nom"
- * - Sinon : extrait le local-part de l'email + capitalize
+ * Alias par code entité. Chaque pattern est testé (insensible à la casse,
+ * sur frontières de mots) contre `summary + description`.
+ *
+ * Codes : IC (ISSA Capital), GO (Gradient One), VI (Versi Immobilier),
+ * VV (Versi Invest), VM (Versimo), IM (Immocrew).
+ *
+ * Règle d'ambiguïté volontaire : « Versi » seul N'EST PAS un alias (il matcherait
+ * 3 entités VI/VV/VM → toujours ambigu). On exige le nom complet ou un alias
+ * discriminant. Si Thomas constate des trous, ajuster ici (1 ligne par alias).
  */
-export function attendeeToName(a: {
-  email: string;
-  displayName?: string;
-}): string {
-  if (a.displayName && a.displayName.trim()) {
-    return a.displayName.trim();
-  }
-  // Fallback : extraire prénom du local-part
-  const localPart = a.email.split('@')[0] ?? a.email;
-  // "thomas.issa" → "Thomas Issa"
-  const cleaned = localPart
-    .replace(/[._-]+/g, ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-  return cleaned || localPart;
+const PROJECT_ALIASES: Record<string, string[]> = {
+  IC: ['ISSA Capital', 'ISSA'],
+  GO: ['Gradient One', 'Gradient'],
+  VI: ['Versi Immobilier', 'Versi Immo'],
+  VV: ['Versi Invest', 'Versi Investissement'],
+  VM: ['Versimo'],
+  IM: ['Immocrew', 'Immo Crew'],
+};
+
+/** Normalise une chaîne pour le match : minuscules + accents retirés. */
+function normalizeForMatch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
 }
 
 /**
- * Construit le bloc participants pour le filename.
- * Limite à MAX_PARTICIPANTS_IN_FILENAME, suffixe " +N" si plus.
+ * Détecte les codes entité projet concernés par un event, via match du
+ * `summary + description` contre les alias canoniques.
+ *
+ * Match sur frontière de mot (`\b`) pour éviter les faux positifs (« Versimo »
+ * ne doit pas matcher « Versi Immobilier »). Le plus long alias d'une entité
+ * suffit — on déduplique par code.
+ *
+ * @returns Liste triée et dédupliquée de codes entité (0, 1 ou 2+).
  */
-export function buildParticipantsForFilename(
-  attendees: Array<{ email: string; displayName?: string }>,
-): string {
-  if (attendees.length === 0) return '';
-  const names = attendees.slice(0, MAX_PARTICIPANTS_IN_FILENAME).map(
-    (a) => attendeeToName(a).split(' ')[0] ?? attendeeToName(a),
+export function detectProjectFromEvent(event: CalendarEvent): string[] {
+  const haystack = normalizeForMatch(
+    `${event.summary ?? ''} ${event.description ?? ''}`,
   );
-  const suffix =
-    attendees.length > MAX_PARTICIPANTS_IN_FILENAME
-      ? ` +${attendees.length - MAX_PARTICIPANTS_IN_FILENAME}`
-      : '';
-  return names.join(', ') + suffix;
-}
+  if (!haystack.trim()) return [];
 
-/**
- * Construit la liste participants pour le frontmatter YAML.
- * Inclut Thomas (self) en premier s'il est attendee.
- * Format wikilink si nom propre détecté.
- */
-export function buildParticipantsFrontmatter(
-  attendees: Array<{ email: string; displayName?: string }>,
-  self?: { email: string; displayName?: string },
-): string[] {
-  const items: string[] = [];
-  if (self) {
-    const name = attendeeToName(self);
-    items.push(`[[${name}]]`);
+  const matched = new Set<string>();
+  for (const [code, aliases] of Object.entries(PROJECT_ALIASES)) {
+    for (const alias of aliases) {
+      const normAlias = normalizeForMatch(alias);
+      // Frontière de mot : le terme entouré de non-alphanumériques ou bords.
+      const escaped = normAlias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i');
+      if (re.test(haystack)) {
+        matched.add(code);
+        break; // un alias suffit pour cette entité
+      }
+    }
   }
-  for (const a of attendees) {
-    const name = attendeeToName(a);
-    items.push(`[[${name}]]`);
-  }
-  return items;
+  return Array.from(matched).sort();
 }
 
 // ============================================================
-// API publique — mapEventToReunion
+// API publique — mapEventToProjection
 // ============================================================
 
 /**
- * Mappe un CalendarEvent en ReunionVaultEntry prêt à écrire.
+ * Projette un CalendarEvent vers une `EventProjection` (refonte S23).
  *
- * Retourne null si :
- *   - event sans date exploitable
- *   - event cancelled (le runner gère séparément la suppression/notification)
- *
- * Le filename est slugifié ASCII (slugifyVaultFilename) — pas d'accents,
- * pas de caractères interdits Drive.
+ * Retourne null si l'event n'a pas de date exploitable (le runner le marque
+ * `skipped`). N'écrit RIEN — l'orchestration (contacts/projet/todo) est faite
+ * par le runner.
  */
-export function mapEventToReunion(event: CalendarEvent): ReunionVaultEntry | null {
+export function mapEventToProjection(event: CalendarEvent): EventProjection | null {
   const date = extractDate(event);
   if (!date) return null;
 
-  const { others, self } = partitionAttendees(event);
-
-  const [year, month] = date.split('-');
-  const folderPath = reunionsPath(Number(year), Number(month));
-
   const heure = extractHeure(event);
   const duree = extractDuree(event);
-
-  // Sujet tronqué pour le filename
-  const subjectShort = event.summary.slice(0, MAX_SUBJECT_LEN).trim();
-
-  // Bloc participants pour filename
-  const participantsBlock = buildParticipantsForFilename(others);
-
-  // Filename brut : "YYYY-MM-DD - Participants - Sujet"
-  let filenameRaw: string;
-  if (participantsBlock) {
-    filenameRaw = `${date} - ${participantsBlock} - ${subjectShort}`;
-  } else {
-    filenameRaw = `${date} - ${subjectShort}`;
-  }
-  const filename = slugifyVaultFilename(filenameRaw);
 
   // Lieu : préférer hangoutLink → location
   let lieu: string | undefined;
@@ -262,84 +212,38 @@ export function mapEventToReunion(event: CalendarEvent): ReunionVaultEntry | nul
     lieu = event.location.trim();
   }
 
-  const participants = buildParticipantsFrontmatter(others, self);
-
-  const entry: ReunionVaultEntry = {
-    filename,
-    folderPath,
+  return {
     date,
     heure,
     duree,
-    participants,
-    lieu,
     sujet: event.summary,
     description: event.description?.trim() || undefined,
-    googleEventId: event.id,
+    lieu,
     googleHtmlLink: event.htmlLink,
-    categorie: 'meeting',
+    projectCodes: detectProjectFromEvent(event),
   };
-
-  return entry;
 }
 
 // ============================================================
-// API publique — sérialisation Markdown
+// Éligibilité todo — exclusions (récurrent / all-day / perso)
 // ============================================================
 
 /**
- * Sérialise un ReunionVaultEntry en contenu Markdown complet (frontmatter + body).
+ * Détermine si un event est éligible à la création d'un todo « CR à faire ».
  *
- * Convention :
- *   - frontmatter YAML : ordre fixe (type, date, heure, duree, participants,
- *     lieu, categorie, google_calendar_event_id, google_calendar_html_link)
- *   - body : description Google event + section `## Notes` vide
+ * Exclusions (décision verrouillée S23 §7) :
+ *   - event récurrent (`recurringEventId` présent)
+ *   - event all-day (`isAllDay`)
+ *   - event perso : 0 participant externe (non-self, non-système)
  *
- * Le contenu est idempotent : sérialiser le même entry produit le même output
- * (important pour PATCH in-place R5 — pas de diff parasite).
+ * @returns true si un todo doit être créé.
  */
-export function serializeReunionMarkdown(entry: ReunionVaultEntry): string {
-  const lines: string[] = ['---'];
-  lines.push(`type: reunion`);
-  lines.push(`date: ${entry.date}`);
-  if (entry.heure) lines.push(`heure: ${entry.heure}`);
-  if (entry.duree !== undefined) lines.push(`duree: ${entry.duree}`);
-
-  if (entry.participants.length > 0) {
-    lines.push(`participants:`);
-    for (const p of entry.participants) {
-      // Échapper double-quotes dans la valeur
-      const safe = p.replace(/"/g, '\\"');
-      lines.push(`  - "${safe}"`);
-    }
-  } else {
-    lines.push(`participants: []`);
-  }
-
-  if (entry.lieu) {
-    const safeLieu = entry.lieu.replace(/"/g, '\\"');
-    lines.push(`lieu: "${safeLieu}"`);
-  }
-  lines.push(`categorie: ${entry.categorie}`);
-  lines.push(`google_calendar_event_id: ${entry.googleEventId}`);
-  if (entry.googleHtmlLink) {
-    lines.push(`google_calendar_html_link: ${entry.googleHtmlLink}`);
-  }
-  lines.push('---');
-  lines.push('');
-
-  // Body
-  lines.push(`# ${entry.sujet}`);
-  lines.push('');
-  if (entry.description) {
-    lines.push('## Description');
-    lines.push('');
-    lines.push(entry.description);
-    lines.push('');
-  }
-  lines.push('## Notes');
-  lines.push('');
-
-  return lines.join('\n');
+export function isEventTodoEligible(event: CalendarEvent): boolean {
+  if (event.recurringEventId) return false;
+  if (event.isAllDay) return false;
+  const { others } = partitionAttendees(event);
+  if (others.length === 0) return false;
+  return true;
 }
 
 // ============================================================
@@ -347,6 +251,6 @@ export function serializeReunionMarkdown(entry: ReunionVaultEntry): string {
 // ============================================================
 
 export const _internals = {
-  MAX_SUBJECT_LEN,
-  MAX_PARTICIPANTS_IN_FILENAME,
+  PROJECT_ALIASES,
+  normalizeForMatch,
 };

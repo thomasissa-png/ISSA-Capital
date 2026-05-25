@@ -1,13 +1,17 @@
 /**
- * Types — calendar-ingest Google Calendar → vault Reunions.
+ * Types — calendar-ingest Google Calendar → vault + TickTick.
  *
- * V1 one-way : Google Calendar = source des invitations reçues,
- * vault Reunions = miroir (canonique pour TickTick via iCal feed S18.3a).
+ * Refonte S23 : les réunions ne créent PLUS de fiche `06. Réunions`. Pour chaque
+ * event confirmé (fenêtre ±14j) :
+ *   - enrichissement des historiques CONTACTS (fiches vault existantes)
+ *   - enrichissement de l'historique PROJET (détecté via titre/description)
+ *   - création d'UN todo « CR à faire » dans TickTick (hub unique S20)
  *
- * Hors scope V1 : bidirectionnel (vault → Google Calendar), conflits, reschedule.
+ * Hors scope : bidirectionnel (vault → Google Calendar), conflits, reschedule,
+ * fiches réunion (abandonnées S23, Thomas verbatim : « 06. Réunions ABANDONNÉ »).
  *
- * Spec : mission S18.6 (Thomas verbatim : "mon google calendar n'est pas sync
- * avec ticktick et le vault ? C'est tres important.").
+ * Origine : mission S18.6 (« mon google calendar n'est pas sync avec ticktick et
+ * le vault ? C'est tres important. ») — pivot S23.
  */
 
 // ============================================================
@@ -65,56 +69,63 @@ export interface CalendarEvent {
 }
 
 // ============================================================
-// ReunionVaultEntry — projection vers une fiche vault
+// EventProjection — données extraites d'un event (refonte S23)
 // ============================================================
 
-export interface ReunionVaultEntry {
-  /** Filename sans extension (ex: "2026-05-22 - Maxime - Point Versi") */
-  filename: string;
-  /** Dossier vault (ex: "06. Réunions/2026/05") */
-  folderPath: string;
-  /** Date YYYY-MM-DD */
+/**
+ * Projection minimale d'un CalendarEvent : date/heure/durée/sujet/participants
+ * + codes entité projet détectés. Remplace `ReunionVaultEntry` (plus de fiche
+ * réunion). Sert d'entrée à l'enrichissement contacts/projet + à la création du
+ * todo TickTick.
+ */
+export interface EventProjection {
+  /** Date YYYY-MM-DD (locale Paris, pas de conversion UTC) */
   date: string;
   /** Heure de début HH:MM si event timed (sinon undefined) */
   heure?: string;
   /** Durée en minutes */
   duree?: number;
-  /** Liste des participants formatés (wikilink ou texte) */
-  participants: string[];
-  /** Lieu */
-  lieu?: string;
-  /** Sujet pour le filename + frontmatter `sujet` éventuel */
+  /** Sujet de l'event (event.summary) */
   sujet: string;
   /** Description Google event */
   description?: string;
-  /** ID Google Calendar event (frontmatter pour matching) */
-  googleEventId: string;
+  /** Lieu (location ou visio) */
+  lieu?: string;
   /** Lien HTML Google Calendar */
   googleHtmlLink: string;
-  /** Catégorie (toujours "meeting" pour calendar-ingest) */
-  categorie: 'meeting';
+  /**
+   * Codes entité projet détectés (IC | GO | VI | VV | VM | IM).
+   * 0 → pas de projet ; 1 → enrichissement direct ; 2+ → désambiguïsation Telegram.
+   */
+  projectCodes: string[];
 }
 
 // ============================================================
 // State store — _Inbox/AnyaState/calendar-ingest-state.json
 // ============================================================
 
+/** Payload d'un event traité (refonte S23). */
+export interface ProcessedEventRecord {
+  /** event.updated du dernier traitement (idempotence) */
+  lastSeenUpdated: string;
+  /** Timestamp ISO 8601 du traitement */
+  processedAt: string;
+  /** Date de la réunion YYYY-MM-DD */
+  date: string;
+  /** Emails des contacts enrichis (historiques mis à jour) */
+  contactsEnriched: string[];
+  /** Codes entité dont l'historique projet a été enrichi */
+  projectsEnriched: string[];
+  /** ID du todo TickTick créé (réutilisé en update si l'event est replanifié) */
+  todoId?: string;
+}
+
 export interface CalendarIngestState {
   version: 1;
   /** Timestamp ISO 8601 du dernier sync réussi */
   lastSync: string | null;
-  /** Map eventId → { lastSeenUpdated, vaultPath } pour idempotence */
-  processedEvents: Record<
-    string,
-    {
-      /** event.updated du dernier traitement */
-      lastSeenUpdated: string;
-      /** Chemin vault de la fiche réunion créée */
-      vaultPath: string;
-      /** Date de la réunion YYYY-MM-DD */
-      date: string;
-    }
-  >;
+  /** Map eventId → ProcessedEventRecord pour idempotence */
+  processedEvents: Record<string, ProcessedEventRecord>;
 }
 
 export function emptyCalendarIngestState(): CalendarIngestState {
@@ -132,9 +143,14 @@ export function emptyCalendarIngestState(): CalendarIngestState {
 export interface CalendarIngestStats {
   eventsFetched: number;
   eventsProcessed: number;
-  reunionsCreated: number;
-  reunionsUpdated: number;
+  /** Nb total de contacts enrichis (somme sur tous les events) */
   contactsEnriched: number;
+  /** Nb d'historiques projet enrichis (match direct, hors pending Telegram) */
+  projectsEnriched: number;
+  /** Nb d'events ayant déclenché une carte de désambiguïsation projet */
+  projectsAmbiguous: number;
+  /** Nb de todos TickTick créés */
+  todosCreated: number;
   skipped: number;
   errors: number;
   durationMs: number;
@@ -144,9 +160,10 @@ export function emptyStats(): CalendarIngestStats {
   return {
     eventsFetched: 0,
     eventsProcessed: 0,
-    reunionsCreated: 0,
-    reunionsUpdated: 0,
     contactsEnriched: 0,
+    projectsEnriched: 0,
+    projectsAmbiguous: 0,
+    todosCreated: 0,
     skipped: 0,
     errors: 0,
     durationMs: 0,
@@ -158,20 +175,25 @@ export function emptyStats(): CalendarIngestStats {
 // ============================================================
 
 export type CalendarIngestOp =
-  | 'reunion-created'
-  | 'reunion-updated'
-  | 'reunion-cancelled'
-  | 'skipped'
-  | 'no-change'
+  | 'processed' // event traité (contacts/projet/todo selon éligibilité)
+  | 'cancelled' // event annulé (déjà connu)
+  | 'skipped' // hors scope (pas de date, annulé jamais vu)
+  | 'no-change' // déjà traité, event.updated identique
   | 'error';
 
 export interface CalendarIngestResult {
   eventId: string;
   summary: string;
   date: string;
-  vaultPath?: string;
   op: CalendarIngestOp;
   participantsTotal: number;
+  /** Nb de contacts enrichis sur cet event */
   contactsEnriched: number;
+  /** Codes entité dont l'historique projet a été enrichi (match direct) */
+  projectsEnriched: string[];
+  /** True si une carte de désambiguïsation projet a été envoyée */
+  projectAmbiguous: boolean;
+  /** True si un todo TickTick a été créé (ou mis à jour) */
+  todoCreated: boolean;
   errors: string[];
 }

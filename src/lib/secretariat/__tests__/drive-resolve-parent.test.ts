@@ -103,6 +103,7 @@ describe('resolveParentFolderForEntite', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       .mockResolvedValueOnce(tokenSuccessResponse())
@@ -133,6 +134,7 @@ describe('resolveParentFolderForEntite', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       .mockResolvedValueOnce(tokenSuccessResponse())
@@ -148,6 +150,7 @@ describe('resolveParentFolderForEntite', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       .mockResolvedValueOnce(tokenSuccessResponse())
@@ -163,6 +166,7 @@ describe('resolveParentFolderForEntite', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       .mockResolvedValueOnce(tokenSuccessResponse())
@@ -184,6 +188,7 @@ describe('resolveParentFolderForEntite', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       .mockResolvedValueOnce(tokenSuccessResponse())
@@ -206,6 +211,7 @@ describe('uploadToDrive — branchement vault > fallback', () => {
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
     });
     mockFetch
       // 1er getAccessToken (uploadToDrive)
