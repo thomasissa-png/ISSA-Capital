@@ -3,6 +3,12 @@
 > Format v2 (11 colonnes). P0/P1 propagés avant clôture. Entrées terminées archivées dans docs/lessons-learned-archive.md.
 > Sessions Cadrage, 4-11 : toutes les entrées sont terminées et archivées (audit TTL session 14).
 
+## Session 22 — 2026-05-25 — crons dépôt + hot-context + DeepSeek + MCP debug
+
+| Session | Date | Catégorie | Sévérité | Description | Correction appliquée | Recommandation framework | Cible propagation | Fichiers impactés | Statut correction | Statut propagation |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Session 22 | 2026-05-25 | problème | P1 | **#119 Connecteur MCP Cowork ≠ session Claude Code web** — Thomas a branché le serveur MCP debug VPS dans Cowork (« connecté pour Claude Code ») mais les outils n'apparaissaient pas dans ma session. Cause : (a) Cowork et Claude Code web = 2 surfaces, listes de connecteurs distinctes ; (b) les serveurs MCP se chargent au DÉMARRAGE de session → un ajout en cours de session n'apparaît pas. | Diagnostic : ToolSearch ×3 (vide) + WebFetch du domaine (HTTP 404 = serveur up + réseau OK) → « non enregistré côté env Claude Code, tester en session fraîche ». | **Un connecteur MCP doit être enregistré dans l'env Claude Code on the web (≠ Cowork) ET la session (re)démarrée pour le charger. Avant de conclure « indisponible » : ToolSearch les outils + WebFetch le domaine pour distinguer réseau/whitelist vs non-enregistré.** | règle-globale + base-protocol | docs/lessons-learned.md (#119) | fait | n/a (mémoire orga) |
+
 ## Session 21 — 2026-05-22 — S21 vault SOT + audit qualité skills + hotfix CR PDF
 
 | Session | Date | Catégorie | Sévérité | Description | Correction appliquée | Recommandation framework | Cible propagation | Fichiers impactés | Statut correction | Statut propagation |
