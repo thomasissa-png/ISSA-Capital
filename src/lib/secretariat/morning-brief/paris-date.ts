@@ -113,6 +113,18 @@ export function getParisDayBounds(now: Date = new Date()): ParisDayBounds {
 }
 
 /**
+ * Heure de Paris (0-23) pour un instant donné — DST-safe.
+ *
+ * Utilisé par le garde-fou du cron : le brief n'est envoyé QUE si l'heure de
+ * Paris vaut 7. Le cron tire à 05:00 ET 06:00 UTC (couvre été CEST et hiver
+ * CET) ; seule l'occurrence qui correspond à 7h Paris passe le garde-fou →
+ * exactement 1 envoi/jour, sans dépendre du support `CRON_TZ` du démon cron.
+ */
+export function getParisHour(now: Date = new Date()): number {
+  return parisParts(now).hour;
+}
+
+/**
  * Formate un instant ISO en heure Paris « HH:mm » (pour l'agenda du brief).
  */
 export function formatParisTime(iso: string): string {

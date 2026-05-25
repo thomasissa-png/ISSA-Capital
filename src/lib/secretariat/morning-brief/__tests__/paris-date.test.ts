@@ -3,7 +3,22 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getParisDayBounds, formatParisTime } from '../paris-date';
+import { getParisDayBounds, formatParisTime, getParisHour } from '../paris-date';
+
+describe('getParisHour — DST-safe (garde-fou 7h du brief)', () => {
+  it('été (CEST) : 05:00 UTC = 7h Paris', () => {
+    expect(getParisHour(new Date('2026-07-15T05:00:00Z'))).toBe(7);
+  });
+  it('été (CEST) : 06:00 UTC = 8h Paris (occurrence skippée)', () => {
+    expect(getParisHour(new Date('2026-07-15T06:00:00Z'))).toBe(8);
+  });
+  it('hiver (CET) : 06:00 UTC = 7h Paris', () => {
+    expect(getParisHour(new Date('2026-01-15T06:00:00Z'))).toBe(7);
+  });
+  it('hiver (CET) : 05:00 UTC = 6h Paris (occurrence skippée)', () => {
+    expect(getParisHour(new Date('2026-01-15T05:00:00Z'))).toBe(6);
+  });
+});
 
 describe('getParisDayBounds — hiver (UTC+1)', () => {
   // 15 janvier 2026, 06:00 UTC = 07:00 Paris (hiver).

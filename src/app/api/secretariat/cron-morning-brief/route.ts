@@ -14,6 +14,10 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { buildMorningBrief, sendMorningBrief } from '@/lib/secretariat/morning-brief';
+import { getParisHour } from '@/lib/secretariat/morning-brief/paris-date';
+
+/** Heure d'envoi du brief, en heure de Paris (garde-fou DST-safe). */
+const BRIEF_PARIS_HOUR = 7;
 
 export async function GET(req: NextRequest): Promise<Response> {
   const authHeader = req.headers.get('authorization');
@@ -36,8 +40,22 @@ export async function GET(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: false, error: 'Non autorisé' }, { status: 401 });
   }
 
-  // dryRun : construit le brief sans l'envoyer (debug).
+  // dryRun : construit le brief sans l'envoyer (debug). force : bypass garde 7h.
   const dryRun = req.nextUrl.searchParams.get('dryRun') === '1';
+  const force = req.nextUrl.searchParams.get('force') === '1';
+
+  // Garde-fou heure française (DST-safe). Le cron tire à 05:00 ET 06:00 UTC
+  // (été + hiver) ; seule l'occurrence à 7h Paris passe → 1 envoi/jour, sans
+  // dépendre du support CRON_TZ du démon cron. dryRun/force bypassent (tests).
+  const parisHour = getParisHour();
+  if (!dryRun && !force && parisHour !== BRIEF_PARIS_HOUR) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: `hors 7h Paris (il est ${parisHour}h à Paris)`,
+      parisHour,
+    });
+  }
 
   try {
     const { message, sections } = await buildMorningBrief();
