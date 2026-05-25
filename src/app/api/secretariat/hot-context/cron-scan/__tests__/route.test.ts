@@ -31,6 +31,8 @@ vi.mock('@/lib/secretariat/telegram-validation/handlers/hot-context-patch', () =
 }));
 
 import { GET } from '../route';
+import { scanForPatches } from '@/lib/secretariat/hot-context/scanner';
+import { sendHotContextPatchCard } from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,5 +63,38 @@ describe('cron-scan route auth', () => {
     const req = new NextRequest('http://localhost/api/secretariat/hot-context/cron-scan');
     const res = await GET(req);
     expect(res.status).toBe(500);
+  });
+});
+
+describe('cron-scan kill switch S22', () => {
+  it('early return { ok:true, disabled:true } si HOT_CONTEXT_SCAN_DISABLED=1', async () => {
+    process.env.HOT_CONTEXT_SCAN_DISABLED = '1';
+    try {
+      const req = new NextRequest(
+        'http://localhost/api/secretariat/hot-context/cron-scan',
+        { headers: { Authorization: 'Bearer test-secret-456' } },
+      );
+      const res = await GET(req);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { ok: boolean; disabled?: boolean };
+      expect(body).toMatchObject({ ok: true, disabled: true });
+      expect(scanForPatches).not.toHaveBeenCalled();
+      expect(sendHotContextPatchCard).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.HOT_CONTEXT_SCAN_DISABLED;
+    }
+  });
+
+  it('pas activé si HOT_CONTEXT_SCAN_DISABLED absent (scan normal)', async () => {
+    delete process.env.HOT_CONTEXT_SCAN_DISABLED;
+    const req = new NextRequest(
+      'http://localhost/api/secretariat/hot-context/cron-scan',
+      { headers: { Authorization: 'Bearer test-secret-456' } },
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; disabled?: boolean };
+    expect(body.disabled).toBeUndefined();
+    expect(scanForPatches).toHaveBeenCalled();
   });
 });

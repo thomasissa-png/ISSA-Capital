@@ -1,12 +1,19 @@
-name: Cron Hot Context Scan (Anya S19.B, every 5 min)
+# DISABLED S22 — le scan hot-context envoyait des cartes de validation Telegram
+# qui faisaient DOUBLON avec le traitement de l'inbox (le hot-context y est déjà
+# géré). Plus aucun déclenchement automatique.
+#
+# Endpoint correspondant : retourne { ok: true, disabled: true } si la variable
+# d'env HOT_CONTEXT_SCAN_DISABLED=1 est positionnée (garde-fou déclenchement
+# manuel). Le seul appelant des cartes (sendHotContextPatchCard) est ce cron.
+#
+# Réactivation : décommenter le bloc schedule ci-dessous + retirer
+# HOT_CONTEXT_SCAN_DISABLED côté VPS. Code applicatif conservé pour rollback.
+
+name: Cron Hot Context Scan (DISABLED S22)
 
 on:
-  schedule:
-    # Toutes les 5 minutes, décalé via offset interne pour éviter la
-    # concurrence parfaite avec cron-ticktick-sync-pull (lui aussi en */5).
-    # cron-ticktick-sync-pull a un sleep 30s ; ici on dort 90s pour garantir
-    # au moins 1 min de décalage entre les deux workflows.
-    - cron: '*/5 * * * *'
+  # schedule: DISABLED S22 — voir en-tête
+  #   - cron: '*/5 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -14,11 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Wait offset to avoid TickTick cron collision
-        # 90s : garantit >= 1min de décalage vs cron-ticktick-sync-pull (30s).
-        run: sleep 90
-      - name: Trigger hot-context scan
+      - name: Noop disabled S22
         run: |
-          curl -fsS -X GET \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_BASE_URL }}/api/secretariat/hot-context/cron-scan"
+          echo "Workflow désactivé S22 — doublon avec le traitement inbox."
+          echo "Réactiver : décommenter le bloc schedule + retirer HOT_CONTEXT_SCAN_DISABLED=1."

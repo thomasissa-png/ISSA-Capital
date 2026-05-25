@@ -31,6 +31,16 @@ import { sendHotContextPatchCard } from '@/lib/secretariat/telegram-validation/h
 // ============================================================
 
 export async function GET(req: NextRequest): Promise<Response> {
+  // Kill switch S22 — scan hot-context débranché : redondant avec le traitement
+  // de l'inbox qui gère déjà le hot-context (les cartes de validation faisaient
+  // doublon). Le schedule GitHub Actions est commenté (plus aucun déclenchement
+  // automatique) ; ce garde-fou couvre les déclenchements manuels résiduels
+  // (workflow_dispatch / curl). Réactivation : décommenter le schedule du
+  // workflow + retirer HOT_CONTEXT_SCAN_DISABLED. Code conservé pour rollback.
+  if (process.env.HOT_CONTEXT_SCAN_DISABLED === '1') {
+    return NextResponse.json({ ok: true, disabled: true });
+  }
+
   const authHeader = req.headers.get('authorization');
   const queryToken = req.nextUrl.searchParams.get('token');
   const expectedSecret = process.env.CRON_SECRET;
