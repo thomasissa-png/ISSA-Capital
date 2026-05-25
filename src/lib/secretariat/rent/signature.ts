@@ -1,12 +1,12 @@
 /**
  * Chargement de la signature PNG pour les quittances.
  *
- * La signature est stockée dans second-cerveau/signature-thomas-issa.png (11 Ko).
+ * La signature est stockée dans assets/signature-thomas-issa.png (11 Ko).
  * Au runtime, on la charge et on la convertit en base64 pour l'insérer dans le PDF.
  *
  * Chemin de résolution :
  * 1. Variable d'env SIGNATURE_PNG_PATH (override explicite)
- * 2. second-cerveau/signature-thomas-issa.png (chemin relatif au projet)
+ * 2. assets/signature-thomas-issa.png (chemin relatif au projet)
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -26,7 +26,7 @@ function resolveSignaturePath(): string {
   }
 
   // 2. Chemin relatif au CWD (racine du projet)
-  return resolve(process.cwd(), 'second-cerveau', 'signature-thomas-issa.png');
+  return resolve(process.cwd(), 'assets', 'signature-thomas-issa.png');
 }
 
 /**
