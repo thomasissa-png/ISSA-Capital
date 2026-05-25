@@ -136,10 +136,15 @@ export function isSystemEmail(email: string): boolean {
  * Règle d'ambiguïté volontaire : « Versi » seul N'EST PAS un alias (il matcherait
  * 3 entités VI/VV/VM → toujours ambigu). On exige le nom complet ou un alias
  * discriminant. Si Thomas constate des trous, ajuster ici (1 ligne par alias).
+ *
+ * Choix conservateur S23 : on n'inclut PAS les alias mono-mot trop courants dans
+ * ce contexte familial (« ISSA » = nom de famille omniprésent, « Gradient » seul).
+ * Ils déclencheraient des faux positifs silencieux (historique projet + todo) sur
+ * des events sans lien réel. On exige le nom complet. À élargir si trous constatés.
  */
 const PROJECT_ALIASES: Record<string, string[]> = {
-  IC: ['ISSA Capital', 'ISSA'],
-  GO: ['Gradient One', 'Gradient'],
+  IC: ['ISSA Capital'],
+  GO: ['Gradient One'],
   VI: ['Versi Immobilier', 'Versi Immo'],
   VV: ['Versi Invest', 'Versi Investissement'],
   VM: ['Versimo'],
