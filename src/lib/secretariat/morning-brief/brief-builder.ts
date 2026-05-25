@@ -12,6 +12,9 @@
 
 import { getParisDayBounds } from './paris-date';
 import { collectTickTick, type TickTickSection } from './collect-ticktick';
+
+/** Nombre de jours de la fenêtre « à venir » (décision Thomas S23). */
+const UPCOMING_DAYS = 7;
 import { collectCalendar, type CalendarSection } from './collect-calendar';
 import { pickDailyCitation, type DailyCitation } from './citation';
 
@@ -42,6 +45,31 @@ function formatTickTick(section: TickTickSection): string {
     for (const t of group.tasks) {
       const flag = t.overdue ? '⚠️ ' : '• ';
       lines.push(`${flag}${t.title}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+/** Formate une échéance ISO en JJ/MM (Europe/Paris) pour la section « à venir ». */
+function frDay(dueIso?: string): string {
+  if (!dueIso) return '';
+  const d = new Date(dueIso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Europe/Paris',
+  }).format(d);
+}
+
+function formatUpcoming(section: TickTickSection): string {
+  if (section.total === 0) return '';
+  const lines: string[] = [`🔜 À venir (${UPCOMING_DAYS} j)`];
+  for (const group of section.groups) {
+    lines.push(`\n${group.projectName}`);
+    for (const t of group.tasks) {
+      const day = frDay(t.dueIso);
+      lines.push(`• ${t.title}${day ? ` — ${day}` : ''}`);
     }
   }
   return lines.join('\n');
@@ -87,10 +115,19 @@ export async function buildMorningBrief(
   // En-tête (date lisible).
   blocks.push(`Bonjour Thomas 👋 — ${bounds.date}`);
 
-  // Section TickTick.
+  // Section TickTick (aujourd'hui+retard, puis « à venir 7 j »).
   try {
-    const tt = await collectTickTick(bounds.endUtcIso, bounds.startUtcIso);
-    blocks.push(formatTickTick(tt));
+    const endUpcomingUtcIso = new Date(
+      new Date(bounds.endUtcIso).getTime() + UPCOMING_DAYS * 86400_000,
+    ).toISOString();
+    const tt = await collectTickTick(
+      bounds.startUtcIso,
+      bounds.endUtcIso,
+      endUpcomingUtcIso,
+    );
+    blocks.push(formatTickTick(tt.today));
+    const upcoming = formatUpcoming(tt.upcoming);
+    if (upcoming) blocks.push(upcoming);
   } catch (err) {
     sections.ticktick = 'error';
     console.warn(

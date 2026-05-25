@@ -1,11 +1,13 @@
 /**
  * Collecteur TickTick du brief du matin.
  *
- * Tâches dues aujourd'hui + en retard (dueDate <= fin de journée Paris).
- * Groupées par projet, triées par échéance. 100% déterministe (0 LLM).
+ * Deux buckets (décision Thomas S23) :
+ *   - `today`    : en retard + dues aujourd'hui (dueDate <= fin de journée Paris).
+ *   - `upcoming` : échéances des 7 prochains jours (fin de journée < dueDate <= +7j).
+ * Groupés par projet, triés par échéance. 100% déterministe (0 LLM).
  *
  * Réutilise `ticktick-client` (listTasks / listProjects) déjà câblé pour le
- * poll/mirror. R8 : la borne « fin de journée » est calculée en Paris (DST-safe).
+ * poll/mirror. R8 : les bornes sont calculées en Paris (DST-safe) par l'appelant.
  */
 
 import { listTasks, listProjects } from '../ticktick/ticktick-client';
@@ -22,36 +24,21 @@ export interface TickTickSection {
   total: number;
 }
 
-/**
- * Récupère les tâches actives dues aujourd'hui + en retard, groupées par projet.
- *
- * @param endUtcIso Fin de journée Paris (ISO UTC) — seuil dueDate <= endUtcIso.
- * @param startUtcIso Début de journée Paris (ISO UTC) — pour distinguer le retard.
- */
-export async function collectTickTick(
-  endUtcIso: string,
-  startUtcIso: string,
-): Promise<TickTickSection> {
-  const endMs = new Date(endUtcIso).getTime();
-  const startMs = new Date(startUtcIso).getTime();
+export interface TickTickResult {
+  /** En retard + dues aujourd'hui. */
+  today: TickTickSection;
+  /** Échéances des 7 prochains jours (après aujourd'hui). */
+  upcoming: TickTickSection;
+}
 
-  const [tasks, projects] = await Promise.all([listTasks(), listProjects()]);
-
-  const projectName = new Map<string, string>();
-  for (const p of projects) projectName.set(p.id, p.name);
-
-  // Filtre : tâche active (status 0) avec dueDate <= fin de journée Paris.
-  const due = tasks.filter((t: TickTickTask) => {
-    if (t.status !== 0) return false;
-    if (!t.dueDate) return false;
-    const dueMs = new Date(t.dueDate).getTime();
-    if (Number.isNaN(dueMs)) return false;
-    return dueMs <= endMs;
-  });
-
-  // Groupement par projet.
+/** Groupe une liste de tâches par projet + trie (échéance puis projet). */
+function groupByProject(
+  tasks: TickTickTask[],
+  projectName: Map<string, string>,
+  startMs: number,
+): TickTickSection {
   const byProject = new Map<string, BriefTaskGroup>();
-  for (const t of due) {
+  for (const t of tasks) {
     const name = projectName.get(t.projectId) ?? 'Sans projet';
     let group = byProject.get(t.projectId);
     if (!group) {
@@ -65,8 +52,6 @@ export async function collectTickTick(
       overdue: dueMs < startMs,
     });
   }
-
-  // Tri intra-projet par échéance croissante.
   for (const group of byProject.values()) {
     group.tasks.sort((a, b) => {
       const am = a.dueIso ? new Date(a.dueIso).getTime() : 0;
@@ -74,11 +59,50 @@ export async function collectTickTick(
       return am - bm;
     });
   }
-
-  // Tri des groupes par nom de projet (stable, lisible).
   const groups = [...byProject.values()].sort((a, b) =>
     a.projectName.localeCompare(b.projectName, 'fr'),
   );
+  return { groups, total: tasks.length };
+}
 
-  return { groups, total: due.length };
+/**
+ * Récupère les tâches actives, réparties en deux buckets (aujourd'hui+retard,
+ * à venir 7 jours), groupées par projet.
+ *
+ * @param startUtcIso       Début de journée Paris (ISO UTC) — seuil de retard.
+ * @param endTodayUtcIso    Fin de journée Paris (ISO UTC) — borne « aujourd'hui ».
+ * @param endUpcomingUtcIso Fin de journée Paris + 7j (ISO UTC) — borne « à venir ».
+ */
+export async function collectTickTick(
+  startUtcIso: string,
+  endTodayUtcIso: string,
+  endUpcomingUtcIso: string,
+): Promise<TickTickResult> {
+  const startMs = new Date(startUtcIso).getTime();
+  const endTodayMs = new Date(endTodayUtcIso).getTime();
+  const endUpcomingMs = new Date(endUpcomingUtcIso).getTime();
+
+  const [tasks, projects] = await Promise.all([listTasks(), listProjects()]);
+
+  const projectName = new Map<string, string>();
+  for (const p of projects) projectName.set(p.id, p.name);
+
+  const active = tasks.filter((t: TickTickTask) => {
+    if (t.status !== 0) return false;
+    if (!t.dueDate) return false;
+    return !Number.isNaN(new Date(t.dueDate).getTime());
+  });
+
+  const todayTasks = active.filter(
+    (t) => new Date(t.dueDate as string).getTime() <= endTodayMs,
+  );
+  const upcomingTasks = active.filter((t) => {
+    const dueMs = new Date(t.dueDate as string).getTime();
+    return dueMs > endTodayMs && dueMs <= endUpcomingMs;
+  });
+
+  return {
+    today: groupByProject(todayTasks, projectName, startMs),
+    upcoming: groupByProject(upcomingTasks, projectName, startMs),
+  };
 }

@@ -24,16 +24,27 @@ describe('buildMorningBrief', () => {
 
   it('scénario A : 2 tâches + 1 réunion + citation → 3 sections complètes', async () => {
     mocks.collectTickTick.mockResolvedValue({
-      total: 2,
-      groups: [
-        {
-          projectName: 'Pro',
-          tasks: [
-            { title: 'Relire le contrat', overdue: false },
-            { title: 'Rappeler Martin', overdue: true },
-          ],
-        },
-      ],
+      today: {
+        total: 2,
+        groups: [
+          {
+            projectName: 'Pro',
+            tasks: [
+              { title: 'Relire le contrat', overdue: false },
+              { title: 'Rappeler Martin', overdue: true },
+            ],
+          },
+        ],
+      },
+      upcoming: {
+        total: 1,
+        groups: [
+          {
+            projectName: 'Pro',
+            tasks: [{ title: 'RDV Jennifer', dueIso: '2026-07-17T07:30:00.000Z', overdue: false }],
+          },
+        ],
+      },
     });
     mocks.collectCalendar.mockResolvedValue({
       events: [{ time: '10:00', title: 'Point équipe', attendees: ['Alice'], allDay: false }],
@@ -48,6 +59,8 @@ describe('buildMorningBrief', () => {
     expect(sections).toEqual({ ticktick: 'ok', calendar: 'ok', citation: 'ok' });
     expect(message).toContain('📋 Tâches du jour (2)');
     expect(message).toContain('⚠️ Rappeler Martin');
+    expect(message).toContain('🔜 À venir (7 j)');
+    expect(message).toContain('RDV Jennifer');
     expect(message).toContain('🗓️ Agenda du jour');
     expect(message).toContain('10:00 — Point équipe (Alice)');
     expect(message).toContain('💬 Citation du jour');
@@ -75,7 +88,10 @@ describe('buildMorningBrief', () => {
   });
 
   it('scénario C : aucune fiche → brief sans section citation', async () => {
-    mocks.collectTickTick.mockResolvedValue({ total: 0, groups: [] });
+    mocks.collectTickTick.mockResolvedValue({
+      today: { total: 0, groups: [] },
+      upcoming: { total: 0, groups: [] },
+    });
     mocks.collectCalendar.mockResolvedValue({ events: [] });
     mocks.pickDailyCitation.mockResolvedValue(null);
 
@@ -88,7 +104,10 @@ describe('buildMorningBrief', () => {
   });
 
   it('citation qui throw → section error, reste du brief intact', async () => {
-    mocks.collectTickTick.mockResolvedValue({ total: 0, groups: [] });
+    mocks.collectTickTick.mockResolvedValue({
+      today: { total: 0, groups: [] },
+      upcoming: { total: 0, groups: [] },
+    });
     mocks.collectCalendar.mockResolvedValue({ events: [] });
     mocks.pickDailyCitation.mockRejectedValue(new Error('boom'));
 
@@ -99,7 +118,10 @@ describe('buildMorningBrief', () => {
   });
 
   it('en-tête contient la date Paris', async () => {
-    mocks.collectTickTick.mockResolvedValue({ total: 0, groups: [] });
+    mocks.collectTickTick.mockResolvedValue({
+      today: { total: 0, groups: [] },
+      upcoming: { total: 0, groups: [] },
+    });
     mocks.collectCalendar.mockResolvedValue({ events: [] });
     mocks.pickDailyCitation.mockResolvedValue(null);
     const { message } = await buildMorningBrief(NOW);
