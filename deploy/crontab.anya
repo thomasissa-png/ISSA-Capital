@@ -17,7 +17,6 @@
 */15 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/ticktick/cron-poll >> /home/thomas/anya-cron.log 2>&1
 0 8 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1
 
-# hot-context-scan retiré : bug de résolution de chemin (« Segment "00. Me" non
-# trouvé » à l'application d'un patch hot-context), corrigé séparément.
-# Réintégrer = décommenter la ligne ci-dessous + push :
-# */5 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/hot-context/cron-scan >> /home/thomas/anya-cron.log 2>&1
+# hot-context : plus de cron (S23). La mise à jour du briefing est désormais
+# ÉVÉNEMENTIELLE — déclenchée inline depuis email-ingest quand un email porte un
+# signal clé (detectSignal → carte hotcontext:). Endpoint cron-scan supprimé.
