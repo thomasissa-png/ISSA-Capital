@@ -6,9 +6,12 @@ import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   HAIKU_4_5,
   SONNET_4,
+  DEEPSEEK_V4_FLASH,
+  TASK_MODEL,
   resolveSonnetModel,
   resolveHaikuModel,
   resolveModelByFamily,
+  resolveTaskModel,
 } from '../models';
 
 describe('models — constantes', () => {
@@ -82,5 +85,114 @@ describe('models — resolveModelByFamily', () => {
 
   it('haiku → Haiku 4.5 par défaut', () => {
     expect(resolveModelByFamily('haiku')).toBe(HAIKU_4_5);
+  });
+});
+
+// ============================================================
+// Registre tâche → modèle (S22)
+// ============================================================
+
+describe('models — DEEPSEEK_V4_FLASH', () => {
+  it('vaut deepseek-v4-flash', () => {
+    expect(DEEPSEEK_V4_FLASH).toBe('deepseek-v4-flash');
+  });
+});
+
+describe('models — TASK_MODEL (mapping par défaut)', () => {
+  it('route les 5 tâches volume vers DeepSeek', () => {
+    for (const task of [
+      'inbox-router',
+      'email-triage',
+      'hot-context-detect',
+      'hot-context-modify',
+      'email-draft',
+    ] as const) {
+      expect(TASK_MODEL[task].provider).toBe('deepseek');
+      expect(TASK_MODEL[task].model).toBe(DEEPSEEK_V4_FLASH);
+    }
+  });
+
+  it('route cr vers Anthropic Sonnet', () => {
+    expect(TASK_MODEL.cr.provider).toBe('anthropic');
+    expect(TASK_MODEL.cr.family).toBe('sonnet');
+  });
+});
+
+describe('models — resolveTaskModel', () => {
+  const envKeys = [
+    'LLM_TASK_OVERRIDE_EMAIL_TRIAGE',
+    'LLM_TASK_OVERRIDE_CR',
+    'LLM_TASK_OVERRIDE_INBOX_ROUTER',
+    'ANTHROPIC_MODEL_OVERRIDE_SONNET',
+  ];
+
+  beforeEach(() => {
+    for (const k of envKeys) delete process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of envKeys) delete process.env[k];
+  });
+
+  it('email-triage → deepseek + deepseek-v4-flash par défaut', () => {
+    expect(resolveTaskModel('email-triage')).toEqual({
+      provider: 'deepseek',
+      model: DEEPSEEK_V4_FLASH,
+    });
+  });
+
+  it('cr → anthropic + Sonnet 4 résolu par défaut', () => {
+    expect(resolveTaskModel('cr')).toEqual({
+      provider: 'anthropic',
+      model: SONNET_4,
+    });
+  });
+
+  it('cr respecte ANTHROPIC_MODEL_OVERRIDE_SONNET via family', () => {
+    process.env.ANTHROPIC_MODEL_OVERRIDE_SONNET = 'claude-sonnet-4-6';
+    expect(resolveTaskModel('cr')).toEqual({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+    });
+  });
+
+  it('override env format provider:model (anthropic)', () => {
+    process.env.LLM_TASK_OVERRIDE_EMAIL_TRIAGE = 'anthropic:claude-haiku-4-5-20251001';
+    expect(resolveTaskModel('email-triage')).toEqual({
+      provider: 'anthropic',
+      model: 'claude-haiku-4-5-20251001',
+    });
+  });
+
+  it('override env format provider:model (deepseek)', () => {
+    process.env.LLM_TASK_OVERRIDE_CR = 'deepseek:deepseek-v4-flash';
+    expect(resolveTaskModel('cr')).toEqual({
+      provider: 'deepseek',
+      model: DEEPSEEK_V4_FLASH,
+    });
+  });
+
+  it('override env modèle seul claude-... → provider anthropic déduit', () => {
+    process.env.LLM_TASK_OVERRIDE_EMAIL_TRIAGE = 'claude-sonnet-4-20250514';
+    expect(resolveTaskModel('email-triage')).toEqual({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+    });
+  });
+
+  it('override env modèle seul deepseek-... → provider deepseek déduit', () => {
+    process.env.LLM_TASK_OVERRIDE_CR = 'deepseek-v4-flash';
+    expect(resolveTaskModel('cr')).toEqual({
+      provider: 'deepseek',
+      model: 'deepseek-v4-flash',
+    });
+  });
+
+  it('ignore un override vide/whitespace', () => {
+    process.env.LLM_TASK_OVERRIDE_EMAIL_TRIAGE = '   ';
+    expect(resolveTaskModel('email-triage')).toEqual({
+      provider: 'deepseek',
+      model: DEEPSEEK_V4_FLASH,
+    });
   });
 });

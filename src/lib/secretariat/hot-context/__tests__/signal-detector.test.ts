@@ -12,10 +12,10 @@ import {
 import type { BougePayload, Patch, Signal } from '../types';
 
 vi.mock('../../llm/client', () => ({
-  callAnthropic: vi.fn(),
+  callLLM: vi.fn(),
 }));
 
-import { callAnthropic } from '../../llm/client';
+import { callLLM } from '../../llm/client';
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -52,7 +52,7 @@ const BRUIT_SIGNAL: Signal = {
 
 describe('signal-detector — email pertinent', () => {
   it('renvoie un patch attends quand Haiku détecte une attente', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({
         patch: {
@@ -85,7 +85,7 @@ describe('signal-detector — email pertinent', () => {
 
 describe('signal-detector — email bruit', () => {
   it('renvoie null quand Haiku indique pas pertinent', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({
         patch: null,
@@ -103,7 +103,7 @@ describe('signal-detector — email bruit', () => {
 
 describe('signal-detector — Telegram #hotcontext', () => {
   it('renvoie un patch bouge quand Thomas signale une priorité', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({
         patch: {
@@ -126,7 +126,7 @@ describe('signal-detector — Telegram #hotcontext', () => {
   });
 
   it('rejette payload sans wikilink (red line 2)', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({
         patch: {
@@ -150,7 +150,7 @@ describe('signal-detector — Telegram #hotcontext', () => {
 
 describe('signal-detector — CR réunion', () => {
   it('renvoie un patch arbitrage quand CR mentionne décision à trancher', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({
         patch: {
@@ -193,7 +193,7 @@ describe('passesHeuristicPrefilter', () => {
 
 describe('signal-detector — anti-doublon (défaut 1, existingContent)', () => {
   it('passe le contenu actuel dans le dynamicSystem du prompt', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({ patch: null, confidence: 0.2, reason_if_null: 'déjà présent' }),
       networkRetries: 0,
@@ -203,7 +203,7 @@ describe('signal-detector — anti-doublon (défaut 1, existingContent)', () => 
       existingContent: '## Je bouge sur\n- Finaliser [[Pacte associés]]',
     });
     expect(result.patch).toBeNull();
-    const callArg = vi.mocked(callAnthropic).mock.calls[0]![0];
+    const callArg = vi.mocked(callLLM).mock.calls[0]![0];
     expect(callArg.dynamicSystem).toContain('CONTENU ACTUEL DU BRIEFING');
     expect(callArg.dynamicSystem).toContain('Pacte associés');
     // Le contenu dynamique ne doit PAS être dans la partie cachée (system stable).
@@ -225,7 +225,7 @@ describe('patchHotContextPayloadFromInstruction — défaut 2', () => {
   };
 
   it('applique une instruction partielle et recalcule patchId/signalId', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({ text: 'Finaliser [[Pacte associés]] vendredi' }),
       networkRetries: 0,
@@ -242,7 +242,7 @@ describe('patchHotContextPayloadFromInstruction — défaut 2', () => {
   });
 
   it('refuse la reformulation qui perd le wikilink (red line) → patch inchangé', async () => {
-    vi.mocked(callAnthropic).mockResolvedValueOnce({
+    vi.mocked(callLLM).mockResolvedValueOnce({
       message: {} as never,
       text: JSON.stringify({ text: 'Finaliser pacte associés sans lien' }),
       networkRetries: 0,
@@ -253,7 +253,7 @@ describe('patchHotContextPayloadFromInstruction — défaut 2', () => {
   });
 
   it('retourne le patch inchangé si LLM crashe', async () => {
-    vi.mocked(callAnthropic).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(callLLM).mockRejectedValueOnce(new Error('boom'));
     const out = await patchHotContextPayloadFromInstruction(basePatch, 'plutôt vendredi');
     expect(out).toBe(basePatch);
   });
@@ -261,7 +261,7 @@ describe('patchHotContextPayloadFromInstruction — défaut 2', () => {
   it('retourne le patch inchangé sur instruction vide', async () => {
     const out = await patchHotContextPayloadFromInstruction(basePatch, '   ');
     expect(out).toBe(basePatch);
-    expect(vi.mocked(callAnthropic)).not.toHaveBeenCalled();
+    expect(vi.mocked(callLLM)).not.toHaveBeenCalled();
   });
 });
 

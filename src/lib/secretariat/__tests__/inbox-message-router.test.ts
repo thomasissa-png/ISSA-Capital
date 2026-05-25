@@ -27,17 +27,17 @@ const mocks = vi.hoisted(() => ({
     htmlLink: 'https://calendar.google.com/event/evt_xyz',
   }),
   appendToTodoInbox: vi.fn().mockResolvedValue({ success: true }),
-  messagesCreate: vi.fn().mockResolvedValue({
-    content: [{
-      type: 'text',
-      text: JSON.stringify({
-        titre: 'Sortie enfants Aquaboulevard',
-        date: '2026-05-12',
-        heure: null,
-        lieu: 'Aquaboulevard',
-        description: null,
-      }),
-    }],
+  // S22 — extraction inbox routée via callLLM (DeepSeek). Mock du dispatcher
+  // directement : retourne { text } comme le site migré le consomme.
+  callLLM: vi.fn().mockResolvedValue({
+    text: JSON.stringify({
+      titre: 'Sortie enfants Aquaboulevard',
+      date: '2026-05-12',
+      heure: null,
+      lieu: 'Aquaboulevard',
+      description: null,
+    }),
+    networkRetries: 0,
   }),
 }));
 
@@ -54,13 +54,8 @@ vi.mock('@/lib/secretariat/drive-todo', () => ({
   appendToTodoInbox: mocks.appendToTodoInbox,
 }));
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mocks.messagesCreate };
-    constructor() {
-      // no-op
-    }
-  },
+vi.mock('@/lib/secretariat/llm/client', () => ({
+  callLLM: mocks.callLLM,
 }));
 
 // ============================================================
@@ -197,7 +192,7 @@ describe('handleInboxMessage', () => {
 
     expect(handled).toBe(true);
     expect(mocks.sendTypingAction).toHaveBeenCalledWith(CHAT_ID);
-    expect(mocks.messagesCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.callLLM).toHaveBeenCalledTimes(1);
     expect(mocks.sendTelegramMessageWithButtons).toHaveBeenCalledTimes(1);
 
     // Vérifier le contenu du message
@@ -216,9 +211,10 @@ describe('handleInboxMessage', () => {
     expect(buttons[1][0].callback_data).toMatch(/^inbox_router:cancel:/);
   });
 
-  it('retourne false si Claude retourne un JSON invalide', async () => {
-    mocks.messagesCreate.mockResolvedValueOnce({
-      content: [{ type: 'text', text: 'Je ne comprends pas ce message.' }],
+  it('retourne false si le LLM retourne un JSON invalide', async () => {
+    mocks.callLLM.mockResolvedValueOnce({
+      text: 'Je ne comprends pas ce message.',
+      networkRetries: 0,
     });
 
     const handled = await handleInboxMessage(CHAT_ID, 'blabla');
@@ -226,8 +222,8 @@ describe('handleInboxMessage', () => {
     expect(mocks.sendTelegramMessageWithButtons).not.toHaveBeenCalled();
   });
 
-  it('retourne false si Claude échoue (erreur réseau)', async () => {
-    mocks.messagesCreate.mockRejectedValueOnce(new Error('Network error'));
+  it('retourne false si le LLM échoue (erreur réseau)', async () => {
+    mocks.callLLM.mockRejectedValueOnce(new Error('Network error'));
 
     const handled = await handleInboxMessage(CHAT_ID, 'test');
     expect(handled).toBe(false);
@@ -263,8 +259,8 @@ describe('handleInboxVoiceMessage', () => {
     expect(mocks.sendTypingAction).toHaveBeenCalledWith(CHAT_ID);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toContain('api.openai.com/v1/audio/transcriptions');
-    // Haiku appelé sur le texte transcrit
-    expect(mocks.messagesCreate).toHaveBeenCalledTimes(1);
+    // LLM appelé sur le texte transcrit
+    expect(mocks.callLLM).toHaveBeenCalledTimes(1);
     expect(mocks.sendTelegramMessageWithButtons).toHaveBeenCalledTimes(1);
   });
 
@@ -373,17 +369,15 @@ describe('handleRouterCallback', () => {
   });
 
   it('texte sans date → Calendar utilise la date du jour', async () => {
-    mocks.messagesCreate.mockResolvedValueOnce({
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          titre: 'Acheter du pain',
-          date: null,
-          heure: null,
-          lieu: null,
-          description: null,
-        }),
-      }],
+    mocks.callLLM.mockResolvedValueOnce({
+      text: JSON.stringify({
+        titre: 'Acheter du pain',
+        date: null,
+        heure: null,
+        lieu: null,
+        description: null,
+      }),
+      networkRetries: 0,
     });
 
     await handleInboxMessage(CHAT_ID, 'acheter du pain');
@@ -463,9 +457,7 @@ async function setupEntry(data: {
   lieu: string | null;
   description: string | null;
 }): Promise<string> {
-  mocks.messagesCreate.mockResolvedValueOnce({
-    content: [{ type: 'text', text: JSON.stringify(data) }],
-  });
+  mocks.callLLM.mockResolvedValueOnce({ text: JSON.stringify(data), networkRetries: 0 });
 
   await handleInboxMessage(CHAT_ID, 'mock input');
   const callbackData = mocks.sendTelegramMessageWithButtons.mock.calls.at(-1)![2][0][0].callback_data as string;

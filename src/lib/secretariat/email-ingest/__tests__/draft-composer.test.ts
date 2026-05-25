@@ -30,15 +30,15 @@ vi.mock('../../gmail-source/gmail-client', () => ({
   createDraft: (...args: unknown[]) => mockCreateDraft(...args),
 }));
 
-// Mock Anthropic SDK
-const mockMessagesCreate = vi.fn().mockResolvedValue({
-  content: [{ type: 'text', text: 'Bonjour, merci pour votre message.\n\nCordialement,\nThomas Issa' }],
+// S22 — rédaction de brouillon routée via callLLM (task:'email-draft', DeepSeek).
+// Mock du dispatcher : retourne { text } comme le site migré le consomme.
+const mockCallLLM = vi.fn().mockResolvedValue({
+  text: 'Bonjour, merci pour votre message.\n\nCordialement,\nThomas Issa',
+  networkRetries: 0,
 });
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: (...args: unknown[]) => mockMessagesCreate(...args) };
-  },
+vi.mock('../../llm/client', () => ({
+  callLLM: (...args: unknown[]) => mockCallLLM(...args),
 }));
 
 // S21.2 — skill-loader vault SOT (draft-email). Stub SkillContext minimal.
@@ -106,8 +106,9 @@ beforeEach(() => {
   mockFindContactCached.mockResolvedValue(null);
   mockReadVaultFile.mockResolvedValue({ success: false });
   mockCreateDraft.mockResolvedValue({ success: false, error: 'mock' });
-  mockMessagesCreate.mockResolvedValue({
-    content: [{ type: 'text', text: 'Bonjour, merci pour votre message.\n\nCordialement,\nThomas Issa' }],
+  mockCallLLM.mockResolvedValue({
+    text: 'Bonjour, merci pour votre message.\n\nCordialement,\nThomas Issa',
+    networkRetries: 0,
   });
   // Env par défaut
   process.env['ANTHROPIC_API_KEY'] = 'test-api-key';
@@ -153,7 +154,7 @@ describe('composeDraft', () => {
 
     expect(result.success).toBe(false);
     expect(result.skipReason).toContain('spam');
-    expect(mockMessagesCreate).not.toHaveBeenCalled();
+    expect(mockCallLLM).not.toHaveBeenCalled();
     expect(mockCreateDraft).not.toHaveBeenCalled();
   });
 
@@ -181,10 +182,10 @@ describe('composeDraft', () => {
     expect(result.gmailUrl).toContain('drafts');
     expect(result.preview).toBeTruthy();
 
-    // Sonnet a été appelé
-    expect(mockMessagesCreate).toHaveBeenCalledTimes(1);
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    expect(createArgs.model).toContain('sonnet');
+    // Le LLM a été appelé pour la tâche email-draft
+    expect(mockCallLLM).toHaveBeenCalledTimes(1);
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    expect(createArgs.task).toBe('email-draft');
 
     // createDraft a été appelé avec le bon destinataire et sujet
     expect(mockCreateDraft).toHaveBeenCalledTimes(1);
@@ -236,8 +237,8 @@ describe('composeDraft', () => {
     await composeDraft(makeEmail(), makeTriage());
 
     // Vérifier que le system prompt contient "Vouvoiement"
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    const systemText = createArgs.system[0].text;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    const systemText = createArgs.system as string;
     expect(systemText).toContain('Vouvoiement');
   });
 
@@ -257,8 +258,8 @@ describe('composeDraft', () => {
 
     await composeDraft(makeEmail(), makeTriage());
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    const systemText = createArgs.system[0].text;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    const systemText = createArgs.system as string;
     expect(systemText).toContain('Tutoiement');
   });
 
@@ -275,8 +276,8 @@ describe('composeDraft', () => {
 
     await composeDraft(makeEmail(), makeTriage());
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    const systemText = createArgs.system[0].text;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    const systemText = createArgs.system as string;
     expect(systemText).toContain('Ton direct et bienveillant');
   });
 
@@ -290,16 +291,14 @@ describe('composeDraft', () => {
 
     await composeDraft(makeEmail(), makeTriage());
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    const systemText = createArgs.system[0].text;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    const systemText = createArgs.system as string;
     expect(systemText).toContain('Vouvoiement systématique');
     expect(systemText).toContain('Thomas Issa');
   });
 
-  it('retourne erreur si Sonnet ne retourne rien', async () => {
-    mockMessagesCreate.mockResolvedValue({
-      content: [{ type: 'text', text: '' }],
-    });
+  it('retourne erreur si le LLM ne retourne rien', async () => {
+    mockCallLLM.mockResolvedValue({ text: '', networkRetries: 0 });
 
     const result = await composeDraft(makeEmail(), makeTriage());
 
@@ -332,14 +331,14 @@ describe('composeDraft', () => {
       makeTriage(),
     );
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
     const userMsg = createArgs.messages[0].content;
     expect(userMsg).toContain('[... tronqué]');
     // Le message ne devrait pas contenir les 3000 caractères complets
     expect(userMsg.length).toBeLessThan(3000);
   });
 
-  it('utilise cache_control ephemeral sur le system prompt', async () => {
+  it('passe un system prompt string au dispatcher (route DeepSeek)', async () => {
     mockCreateDraft.mockResolvedValue({
       success: true,
       draftId: 'draft-cache',
@@ -348,8 +347,11 @@ describe('composeDraft', () => {
 
     await composeDraft(makeEmail(), makeTriage());
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
-    expect(createArgs.system[0].cache_control).toEqual({ type: 'ephemeral' });
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    // S22 — le cache_control est géré côté wrapper Anthropic uniquement ;
+    // la tâche email-draft route vers DeepSeek avec un system prompt string.
+    expect(typeof createArgs.system).toBe('string');
+    expect(createArgs.task).toBe('email-draft');
   });
 
   it('ne crashe pas si findContactCached throw', async () => {
@@ -378,7 +380,7 @@ describe('composeDraft', () => {
       makeTriage({ matchedContact: 'Martin Dupont' }),
     );
 
-    const [createArgs] = mockMessagesCreate.mock.calls[0]!;
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
     const userMsg = createArgs.messages[0].content;
     expect(userMsg).toContain('Martin Dupont');
   });

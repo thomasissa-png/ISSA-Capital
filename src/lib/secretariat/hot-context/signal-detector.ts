@@ -14,11 +14,11 @@
  * Pré-filtre heuristique : appelé AVANT cette fonction par scanner.ts.
  *
  * Anti-pattern : ne JAMAIS appeler directement `client.messages.create()`.
- * Toujours passer par `callAnthropic` (wrapper avec cache_control + usage tracking).
+ * Toujours passer par `callLLM` (dispatcher tâche→provider + tracking usage).
  */
 
 import { createHash } from 'crypto';
-import { callAnthropic } from '../llm/client';
+import { callLLM } from '../llm/client';
 import type {
   ArbitragePayload,
   AttendsPayload,
@@ -257,8 +257,8 @@ export async function detectSignal(
 
   let rawText: string;
   try {
-    const result = await callAnthropic({
-      family: 'haiku',
+    const result = await callLLM({
+      task: 'hot-context-detect',
       system: SYSTEM_PROMPT,
       dynamicSystem: dynamicSystem.length > 0 ? dynamicSystem : undefined,
       messages: [{ role: 'user', content: userMessage }],
@@ -269,7 +269,7 @@ export async function detectSignal(
     rawText = result.text;
   } catch (err) {
     console.warn(
-      `[signal-detector] appel Haiku échoué : ${err instanceof Error ? err.message : String(err)}`,
+      `[signal-detector] appel LLM échoué : ${err instanceof Error ? err.message : String(err)}`,
     );
     return { patch: null, confidence: 0, reasonIfNull: 'llm_call_failed' };
   }
@@ -375,8 +375,8 @@ export async function patchHotContextPayloadFromInstruction(
 
   let rawText: string;
   try {
-    const result = await callAnthropic({
-      family: 'haiku',
+    const result = await callLLM({
+      task: 'hot-context-modify',
       system: PATCH_PAYLOAD_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
       maxTokens: 400,

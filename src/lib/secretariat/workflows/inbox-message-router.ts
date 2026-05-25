@@ -20,8 +20,7 @@
 import { sendTelegramMessageWithButtons, sendTypingAction } from '../telegram';
 import { createCalendarEvent } from '@/lib/google/calendar';
 import { appendToTodoInbox } from '../drive-todo';
-import { callAnthropic } from '../llm/client';
-import { HAIKU_4_5 } from '../llm/models';
+import { callLLM } from '../llm/client';
 // NOTE S20.A : `savePreview`/`getPreview`/`deletePreview`/`generatePendingId`
 // sont importés directement par `handlers/inbox-edit.ts`. Ici on garde le
 // router minimal (cache existant), le store inbox-preview est utilisé dès
@@ -50,10 +49,9 @@ interface CachedEntry {
 // ============================================================
 
 const CACHE_TTL_MS = 10 * 60 * 1_000; // 10 minutes
-const ANTHROPIC_TIMEOUT_MS = 30_000;
-// Haiku 4.5 : suffisant pour extraction JSON simple + résolution date FR
-// + transcription audio native. ~5x moins cher et ~2x plus rapide que Sonnet.
-const ANTHROPIC_MODEL = HAIKU_4_5;
+const LLM_TIMEOUT_MS = 30_000;
+// S22 — extraction JSON simple routée via `task:'inbox-router'` (DeepSeek V4 Flash
+// par défaut, override env LLM_TASK_OVERRIDE_INBOX_ROUTER possible).
 
 /** Préfixe callback_data pour les boutons du router */
 export const ROUTER_CALLBACK_PREFIX = 'inbox_router:';
@@ -147,13 +145,13 @@ async function extractFromText(text: string): Promise<{
     const today = new Date().toISOString().split('T')[0]!;
     const systemPrompt = buildExtractionPrompt(today);
 
-    const { text: rawText } = await callAnthropic({
-      family: 'haiku',
-      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+    const { text: rawText } = await callLLM({
+      task: 'inbox-router',
       system: systemPrompt,
       messages: [{ role: 'user', content: text }],
       maxTokens: 512,
-      timeoutMs: ANTHROPIC_TIMEOUT_MS,
+      responseFormat: 'json',
+      timeoutMs: LLM_TIMEOUT_MS,
     });
 
     return parseExtractionResult(rawText);

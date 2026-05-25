@@ -20,8 +20,7 @@
 
 import { timingSafeEqual } from 'node:crypto';
 import type Anthropic from '@anthropic-ai/sdk';
-import { callAnthropic } from '@/lib/secretariat/llm/client';
-import { SONNET_4 } from '@/lib/secretariat/llm/models';
+import { callLLM } from '@/lib/secretariat/llm/client';
 import { loadSkill } from '@/lib/secretariat/skills/skill-loader';
 import { TelegramUpdateSchema, ClaudeResponseSchema } from '@/lib/secretariat/types';
 import type { CRDraft } from '@/lib/secretariat/types';
@@ -329,7 +328,8 @@ function isAllowedChatId(chatId: number): boolean {
 // ============================================================
 
 const ANTHROPIC_TIMEOUT_MS = 60_000;
-const ANTHROPIC_MODEL = SONNET_4;
+// S22 — CR routé via `task:'cr'` (Anthropic Sonnet, web_search). Override env :
+// LLM_TASK_OVERRIDE_CR ou ANTHROPIC_MODEL_OVERRIDE_SONNET.
 
 /**
  * Génère l'instruction temporelle dynamique pour le system prompt.
@@ -467,9 +467,8 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
     // Wrapper LLM unifié : cache_control auto sur la partie stable
     // (systemPrompt + searchInstruction), partie dynamique (timeInstruction)
     // concaténée sans cache pour préserver la variabilité de l'heure.
-    const { message } = await callAnthropic({
-      family: 'sonnet',
-      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+    const { message } = await callLLM({
+      task: 'cr',
       system: systemPrompt + searchInstruction,
       dynamicSystem: timeInstruction,
       maxTokens: 4096,
@@ -486,6 +485,10 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
       ],
       timeoutMs: ANTHROPIC_TIMEOUT_MS,
     });
+
+    if (!message) {
+      return { success: false, error: 'Réponse Claude absente (provider inattendu)' };
+    }
 
     // Extraire le texte de la réponse (ignore les blocs tool_use/web_search_result)
     const textParts: string[] = [];
@@ -566,9 +569,9 @@ Tu n'as PAS besoin de demander la permission pour chercher. Si un nom de lieu ou
 
       try {
         // Retry Zod via wrapper unifié : cache_control auto + tracking usage.
-        const { text: retryRawText } = await callAnthropic({
-          family: 'sonnet',
-          modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+        // Retry Zod du CR → reste sur Anthropic Sonnet (task:'cr'), sans tools.
+        const { text: retryRawText } = await callLLM({
+          task: 'cr',
           system: systemPrompt + searchInstruction,
           dynamicSystem: timeInstruction,
           maxTokens: 4096,
@@ -768,9 +771,8 @@ async function generateCRFromVoice(
 
     // Wrapper LLM unifié pour message vocal : cache_control auto sur
     // (systemPrompt + searchInstruction), timeInstruction en dynamique.
-    const { message } = await callAnthropic({
-      family: 'sonnet',
-      modelOverride: process.env.ANTHROPIC_MODEL ?? ANTHROPIC_MODEL,
+    const { message } = await callLLM({
+      task: 'cr',
       system: systemPrompt + searchInstruction,
       dynamicSystem: timeInstruction,
       maxTokens: 4096,
@@ -787,6 +789,10 @@ async function generateCRFromVoice(
       ],
       timeoutMs: ANTHROPIC_TIMEOUT_MS,
     });
+
+    if (!message) {
+      return { success: false, error: 'Réponse Claude absente pour le message vocal (provider inattendu)' };
+    }
 
     // Extraire le texte de la réponse
     const textParts: string[] = [];
