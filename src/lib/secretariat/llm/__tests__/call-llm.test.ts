@@ -80,7 +80,7 @@ describe('callLLM — routage par défaut', () => {
     expect(mockCallDeepSeek).toHaveBeenCalledTimes(1);
     expect(mockCreate).not.toHaveBeenCalled();
     const arg = mockCallDeepSeek.mock.calls[0]![0];
-    expect(arg.model).toBe('deepseek-v4-pro');
+    expect(arg.model).toBe('deepseek-v4-flash');
     expect(arg.system).toBe('sys triage');
     expect(result.text).toBe('{"category":"spam"}');
     expect(result.message).toBeUndefined();

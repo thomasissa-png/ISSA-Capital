@@ -115,19 +115,22 @@ export interface TaskModelConfig {
 /**
  * Mapping par défaut tâche → modèle.
  *
- * Stratégie S23 (maj modèles, décision Thomas) :
- *  - DeepSeek V4 Pro : tâches JSON/génération sans web_search (routage inbox,
- *    triage email, détection/modif hot-context, brouillon email) — qualité > coût.
+ * Stratégie S23 (décision Thomas, affinée après observation prod) :
+ *  - DeepSeek V4 **Flash** : tâches de CLASSEMENT/EXTRACTION JSON lean (routage
+ *    inbox, triage email, détection/modif hot-context). Flash est lean, rapide,
+ *    ~4x moins cher et ne tronque pas — V4 Pro était trop verbeux (JSON triage
+ *    tronqué en prod run 19:00).
+ *  - DeepSeek V4 **Pro** : RÉDACTION (brouillon email) — qualité de prose.
  *  - Anthropic Sonnet 4.6 : CR (utilise web_search — exclusivité Anthropic).
  *
  * Override par tâche via env `LLM_TASK_OVERRIDE_<TASK_UPPER_SNAKE>`
- * (voir `resolveTaskModel`). Rollback vers Flash : `=deepseek-v4-flash`.
+ * (voir `resolveTaskModel`). Ex bascule draft sur Flash : `=deepseek-v4-flash`.
  */
 export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
-  'inbox-router': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
-  'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
-  'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
-  'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
+  'inbox-router': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
   cr: { provider: 'anthropic', family: 'sonnet' },
 };
