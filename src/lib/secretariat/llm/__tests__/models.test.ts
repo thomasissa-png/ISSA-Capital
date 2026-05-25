@@ -109,17 +109,21 @@ describe('models — constantes DeepSeek', () => {
 });
 
 describe('models — TASK_MODEL (mapping par défaut)', () => {
-  it('route les 5 tâches volume vers DeepSeek V4 Pro (S23)', () => {
+  it('route le CLASSEMENT/EXTRACTION vers DeepSeek V4 Flash (S23)', () => {
     for (const task of [
       'inbox-router',
       'email-triage',
       'hot-context-detect',
       'hot-context-modify',
-      'email-draft',
     ] as const) {
       expect(TASK_MODEL[task].provider).toBe('deepseek');
-      expect(TASK_MODEL[task].model).toBe(DEEPSEEK_V4_PRO);
+      expect(TASK_MODEL[task].model).toBe(DEEPSEEK_V4_FLASH);
     }
+  });
+
+  it('route la RÉDACTION (email-draft) vers DeepSeek V4 Pro (S23)', () => {
+    expect(TASK_MODEL['email-draft'].provider).toBe('deepseek');
+    expect(TASK_MODEL['email-draft'].model).toBe(DEEPSEEK_V4_PRO);
   });
 
   it('route cr vers Anthropic Sonnet', () => {
@@ -144,8 +148,15 @@ describe('models — resolveTaskModel', () => {
     for (const k of envKeys) delete process.env[k];
   });
 
-  it('email-triage → deepseek + deepseek-v4-pro par défaut (S23)', () => {
+  it('email-triage → deepseek + deepseek-v4-flash par défaut (S23 classement)', () => {
     expect(resolveTaskModel('email-triage')).toEqual({
+      provider: 'deepseek',
+      model: DEEPSEEK_V4_FLASH,
+    });
+  });
+
+  it('email-draft → deepseek + deepseek-v4-pro par défaut (S23 rédaction)', () => {
+    expect(resolveTaskModel('email-draft')).toEqual({
       provider: 'deepseek',
       model: DEEPSEEK_V4_PRO,
     });
@@ -202,7 +213,7 @@ describe('models — resolveTaskModel', () => {
     process.env.LLM_TASK_OVERRIDE_EMAIL_TRIAGE = '   ';
     expect(resolveTaskModel('email-triage')).toEqual({
       provider: 'deepseek',
-      model: DEEPSEEK_V4_PRO,
+      model: DEEPSEEK_V4_FLASH,
     });
   });
 });
