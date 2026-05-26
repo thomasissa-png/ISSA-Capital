@@ -306,6 +306,71 @@ describe('composeDraft', () => {
     expect(result.error).toContain('contenu');
   });
 
+  it('S23 : garde corps-vide — corps trop court → PAS de brouillon', async () => {
+    // « Bonjour » seul (< 40 caractères) = échec de génération.
+    mockCallLLM.mockResolvedValue({ text: 'Bonjour', networkRetries: 0 });
+
+    const result = await composeDraft(makeEmail(), makeTriage());
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('trop court');
+    // Aucun brouillon n'est créé dans Gmail.
+    expect(mockCreateDraft).not.toHaveBeenCalled();
+  });
+
+  it('S23 : garde corps-vide — corps de whitespace → PAS de brouillon', async () => {
+    mockCallLLM.mockResolvedValue({ text: '   \n\n   ', networkRetries: 0 });
+
+    const result = await composeDraft(makeEmail(), makeTriage());
+
+    expect(result.success).toBe(false);
+    expect(mockCreateDraft).not.toHaveBeenCalled();
+  });
+
+  it('S23 : maxTokens porté à 2048 pour ne pas tronquer le brouillon', async () => {
+    mockCreateDraft.mockResolvedValue({
+      success: true,
+      draftId: 'draft-tok',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#drafts',
+    });
+
+    await composeDraft(makeEmail(), makeTriage());
+
+    const [createArgs] = mockCallLLM.mock.calls[0]!;
+    expect(createArgs.maxTokens).toBe(2048);
+  });
+
+  it('S23 : rattache le brouillon au fil (threadId + In-Reply-To)', async () => {
+    mockCreateDraft.mockResolvedValue({
+      success: true,
+      draftId: 'draft-thread',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#drafts',
+    });
+
+    await composeDraft(
+      makeEmail({ threadId: 'thread-42', messageIdHeader: '<orig@mail.gmail.com>' }),
+      makeTriage(),
+    );
+
+    const draftArgs = mockCreateDraft.mock.calls[0]![0];
+    expect(draftArgs.threadId).toBe('thread-42');
+    expect(draftArgs.inReplyTo).toBe('<orig@mail.gmail.com>');
+  });
+
+  it('S23 : sans threadId/Message-ID, le brouillon est créé sans threading (undefined)', async () => {
+    mockCreateDraft.mockResolvedValue({
+      success: true,
+      draftId: 'draft-nothread',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#drafts',
+    });
+
+    await composeDraft(makeEmail(), makeTriage());
+
+    const draftArgs = mockCreateDraft.mock.calls[0]![0];
+    expect(draftArgs.threadId).toBeUndefined();
+    expect(draftArgs.inReplyTo).toBeUndefined();
+  });
+
   it('retourne erreur si Gmail API échoue', async () => {
     mockCreateDraft.mockResolvedValue({
       success: false,

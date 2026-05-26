@@ -11,6 +11,7 @@ import {
   fetchDetail,
   markProcessed,
   markFailed,
+  hasReplyFromMe,
 } from '../gmail-source';
 
 // ============================================================
@@ -22,6 +23,7 @@ vi.mock('../gmail-client', () => ({
   getMessage: vi.fn(),
   modifyLabels: vi.fn(),
   getHeader: vi.fn(),
+  getThreadMessages: vi.fn(),
   parseEmailAddress: vi.fn(),
   parseEmailAddresses: vi.fn(),
   extractBodyPlain: vi.fn(),
@@ -37,6 +39,7 @@ import {
   listMessages,
   getMessage,
   modifyLabels,
+  getThreadMessages,
   getHeader as mockGetHeader,
   parseEmailAddress as mockParseEmailAddress,
   parseEmailAddresses as mockParseEmailAddresses,
@@ -52,6 +55,7 @@ import {
 const mockListMessages = vi.mocked(listMessages);
 const mockGetMessage = vi.mocked(getMessage);
 const mockModifyLabels = vi.mocked(modifyLabels);
+const mockGetThreadMessages = vi.mocked(getThreadMessages);
 const mockResolveTraiteLabel = vi.mocked(resolveTraiteLabel);
 const mockResolveARevoir = vi.mocked(resolveARevoir);
 
@@ -149,6 +153,7 @@ describe('gmail-source', () => {
     it('normalise un message en EmailMessage', async () => {
       const rawMsg = {
         id: 'msg-123',
+        threadId: 'thread-789',
         internalDate: '1715500800000', // 2024-05-12T12:00:00Z
         payload: {
           headers: [
@@ -156,6 +161,7 @@ describe('gmail-source', () => {
             { name: 'To', value: 'thomas.issa@gmail.com' },
             { name: 'Subject', value: 'Quittance avril' },
             { name: 'Date', value: 'Mon, 12 May 2025 10:00:00 +0200' },
+            { name: 'Message-ID', value: '<msgid-abc@mail.gmail.com>' },
           ],
           mimeType: 'text/plain',
           body: { data: Buffer.from('Bonjour, la quittance svp').toString('base64').replace(/\+/g, '-').replace(/\//g, '_') },
@@ -193,6 +199,49 @@ describe('gmail-source', () => {
       expect(result!.bodyPlain).toBe('Bonjour, la quittance svp');
       expect(result!.attachments).toEqual([]);
       expect(result!.rawRef).toContain('msg-123');
+      // S23 — threadId + Message-ID exposés pour le threading du brouillon
+      expect(result!.threadId).toBe('thread-789');
+      expect(result!.messageIdHeader).toBe('<msgid-abc@mail.gmail.com>');
+    });
+  });
+
+  // ============================================================
+  // hasReplyFromMe (S23)
+  // ============================================================
+
+  describe('hasReplyFromMe', () => {
+    it('retourne false si threadId absent (pas d\'appel API)', async () => {
+      const result = await hasReplyFromMe(undefined);
+      expect(result).toBe(false);
+      expect(mockGetThreadMessages).not.toHaveBeenCalled();
+    });
+
+    it('retourne true si un message du thread porte le label SENT', async () => {
+      mockGetThreadMessages.mockResolvedValue([
+        { id: 'm1', labelIds: ['INBOX'] },
+        { id: 'm2', labelIds: ['SENT'] },
+      ]);
+
+      const result = await hasReplyFromMe('thread-1');
+      expect(result).toBe(true);
+      expect(mockGetThreadMessages).toHaveBeenCalledWith('thread-1');
+    });
+
+    it('retourne false si aucun message SENT dans le thread', async () => {
+      mockGetThreadMessages.mockResolvedValue([
+        { id: 'm1', labelIds: ['INBOX'] },
+        { id: 'm2', labelIds: ['INBOX', 'IMPORTANT'] },
+      ]);
+
+      const result = await hasReplyFromMe('thread-2');
+      expect(result).toBe(false);
+    });
+
+    it('retourne false (fail-open) si l\'API renvoie un thread vide', async () => {
+      mockGetThreadMessages.mockResolvedValue([]);
+
+      const result = await hasReplyFromMe('thread-3');
+      expect(result).toBe(false);
     });
   });
 
