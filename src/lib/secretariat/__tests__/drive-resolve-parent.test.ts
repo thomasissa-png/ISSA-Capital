@@ -75,6 +75,33 @@ function uploadSuccessResponse(id = 'uploaded-pdf-id') {
   );
 }
 
+/** Réponse files.list pour getOrCreateChildFolder : dossier trouvé. */
+function folderFoundResponse(id: string, name: string) {
+  return new Response(JSON.stringify({ files: [{ id, name }] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** Réponse files.list : aucun dossier (déclenche la création). */
+function folderNotFoundResponse() {
+  return new Response(JSON.stringify({ files: [] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** Réponse files.create : dossier créé. */
+function folderCreatedResponse(id: string) {
+  return new Response(JSON.stringify({ id }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+const FAKE_DOCS_ID = '1DOCUMENTS-FOLDER-ID';
+const FAKE_CR_ID = '1COMPTES-RENDUS-FOLDER-ID';
+
 // ============================================================
 // Setup
 // ============================================================
@@ -82,6 +109,7 @@ function uploadSuccessResponse(id = 'uploaded-pdf-id') {
 beforeEach(() => {
   vi.clearAllMocks();
   _driveUploadInternals.clearParentFolderCache();
+  _driveUploadInternals.clearChildFolderCache();
   process.env.GOOGLE_CLIENT_ID = 'fake-client-id';
   process.env.GOOGLE_CLIENT_SECRET = 'fake-client-secret';
   process.env.GOOGLE_REFRESH_TOKEN = 'fake-refresh-token';
@@ -206,22 +234,48 @@ describe('resolveParentFolderForEntite', () => {
 // ============================================================
 
 describe('uploadToDrive — branchement vault > fallback', () => {
-  it('vault OK → upload vers parent vault (pas le legacy)', async () => {
+  /**
+   * Dispatch fetch par URL pour le flux complet vault (S23) :
+   *   token → token(resolve) → GET parents → search Documents → search CR → POST upload.
+   * Search folder : `Documents` trouvé (FAKE_DOCS_ID), `Comptes Rendus` trouvé (FAKE_CR_ID).
+   */
+  function installVaultDispatch(uploadId: string) {
+    mockFetch.mockImplementation((url: string) => {
+      const u = String(url);
+      // Token endpoint
+      if (u.includes('oauth2.googleapis.com/token')) {
+        return Promise.resolve(tokenSuccessResponse());
+      }
+      // GET parents de la fiche (resolveParentFolderForEntite)
+      if (u.includes('?fields=parents')) {
+        return Promise.resolve(parentsSuccessResponse());
+      }
+      // POST upload multipart
+      if (u.includes('uploadType=multipart')) {
+        return Promise.resolve(uploadSuccessResponse(uploadId));
+      }
+      // files.list (search folder) — distingue Documents vs Comptes Rendus via le `q`
+      if (u.includes('/drive/v3/files?q=')) {
+        if (u.includes('Comptes')) return Promise.resolve(folderFoundResponse(FAKE_CR_ID, 'Comptes Rendus'));
+        if (u.includes('Documents')) return Promise.resolve(folderFoundResponse(FAKE_DOCS_ID, 'Documents'));
+        return Promise.resolve(folderNotFoundResponse());
+      }
+      // files.create (fallback si search non matché)
+      if (u.includes('/drive/v3/files?supportsAllDrives')) {
+        return Promise.resolve(folderCreatedResponse('created-folder'));
+      }
+      return Promise.resolve(driveErrorResponse(500, `URL non mockée : ${u}`));
+    });
+  }
+
+  it('vault OK → upload dans Documents/Comptes Rendus (pas la racine projet, pas le legacy)', async () => {
     mockFindFiche.mockResolvedValueOnce({
       fileId: FAKE_FICHE_FILE_ID,
       ficheName: 'ISSA Capital',
       resolvedFilename: 'ISSA Capital.md',
       folderPath: '02. Projets/02. Pro',
     });
-    mockFetch
-      // 1er getAccessToken (uploadToDrive)
-      .mockResolvedValueOnce(tokenSuccessResponse())
-      // 2e getAccessToken (resolveParentFolderForEntite)
-      .mockResolvedValueOnce(tokenSuccessResponse())
-      // GET parents
-      .mockResolvedValueOnce(parentsSuccessResponse())
-      // POST upload
-      .mockResolvedValueOnce(uploadSuccessResponse('pdf-uploaded-vault'));
+    installVaultDispatch('pdf-uploaded-vault');
 
     const result = await uploadToDrive(
       Buffer.from('fake-pdf'),
@@ -233,16 +287,47 @@ describe('uploadToDrive — branchement vault > fallback', () => {
     expect(result.success).toBe(true);
     expect(result.fileId).toBe('pdf-uploaded-vault');
 
-    // Vérifie que le upload utilise bien FAKE_PARENT_ID dans metadata
+    // Le PDF doit cibler le folderId de "Comptes Rendus", PAS la racine projet ni le legacy.
     const uploadCall = mockFetch.mock.calls.find(([url]) =>
       String(url).includes('uploadType=multipart'),
     );
     expect(uploadCall).toBeDefined();
-    const body = uploadCall![1].body as Buffer;
-    expect(body.toString('utf-8')).toContain(FAKE_PARENT_ID);
-    expect(body.toString('utf-8')).not.toContain(
-      _driveUploadInternals.LEGACY_DRIVE_FOLDERS.IC,
+    const body = (uploadCall![1].body as Buffer).toString('utf-8');
+    expect(body).toContain(FAKE_CR_ID);
+    expect(body).not.toContain(FAKE_PARENT_ID);
+    expect(body).not.toContain(_driveUploadInternals.LEGACY_DRIVE_FOLDERS.IC);
+
+    // On a bien navigué Documents puis Comptes Rendus (2 search folder distincts).
+    const searchCalls = mockFetch.mock.calls.filter(([url]) =>
+      String(url).includes('/drive/v3/files?q='),
     );
+    expect(searchCalls.some(([u]) => String(u).includes('Documents'))).toBe(true);
+    expect(searchCalls.some(([u]) => String(u).includes('Comptes'))).toBe(true);
+  });
+
+  it('vault OK mais env-map NON consultée : le PDF n atterrit pas dans l inbox Documents', async () => {
+    // Piège env-map : si le code appelait getOrCreateSubfolder('Documents'),
+    // il renverrait DRIVE_INBOX_DOCUMENTS_FOLDER_ID. On vérifie que ce n'est PAS le cas.
+    process.env.DRIVE_INBOX_DOCUMENTS_FOLDER_ID = 'INBOX-DOCS-DO-NOT-USE';
+    mockFindFiche.mockResolvedValueOnce({
+      fileId: FAKE_FICHE_FILE_ID,
+      ficheName: 'ISSA Capital',
+      resolvedFilename: 'ISSA Capital.md',
+      folderPath: '02. Projets/02. Pro',
+    });
+    installVaultDispatch('pdf-no-inbox');
+
+    const result = await uploadToDrive(Buffer.from('fake-pdf'), 'CR.pdf', 'IC', 'CR');
+
+    expect(result.success).toBe(true);
+    const uploadCall = mockFetch.mock.calls.find(([url]) =>
+      String(url).includes('uploadType=multipart'),
+    );
+    const body = (uploadCall![1].body as Buffer).toString('utf-8');
+    expect(body).toContain(FAKE_CR_ID);
+    expect(body).not.toContain('INBOX-DOCS-DO-NOT-USE');
+
+    delete process.env.DRIVE_INBOX_DOCUMENTS_FOLDER_ID;
   });
 
   it('vault KO (null) → fallback LEGACY_DRIVE_FOLDERS[entiteCode]', async () => {
@@ -273,8 +358,9 @@ describe('uploadToDrive — branchement vault > fallback', () => {
       _driveUploadInternals.LEGACY_DRIVE_FOLDERS.IC,
     );
 
+    // S23 : warning explicite « HORS vault » pour diagnostiquer les fallback legacy.
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('fallback hardcoded'),
+      expect.stringContaining('HORS vault'),
     );
 
     warnSpy.mockRestore();

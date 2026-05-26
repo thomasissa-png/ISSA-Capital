@@ -163,6 +163,11 @@ export const _driveUploadInternals = {
   clearParentFolderCache(): void {
     getParentFolderCache().clear();
   },
+  clearChildFolderCache(): void {
+    const key = '__issa_inbox_folder_cache__';
+    const map = (globalThis as Record<string, unknown>)[key];
+    if (map instanceof Map) map.clear();
+  },
 };
 
 export interface DriveUploadResult {
@@ -227,22 +232,57 @@ export async function uploadToDrive(
     };
   }
 
-  // S20.C — R7 : tenter résolution dynamique via vault (parent de la fiche
-  // projet entité) AVANT fallback hardcoded. Les PDF CR doivent atterrir
-  // dans le même dossier Drive que la fiche projet (02. Projets/02. Pro/),
-  // pas dans le legacy 02. Comptes Rendus/.
+  // S20.C — R7 : résolution dynamique via vault (dossier de la fiche projet
+  // entité) AVANT fallback hardcoded.
+  //
+  // S23 (bug prod) : le PDF CR doit atterrir dans le sous-dossier
+  // `<Projet>/Documents/Comptes Rendus/`, PAS à la racine du dossier projet,
+  // et SURTOUT pas dans le legacy `02. Comptes Rendus/` hors vault.
+  // On navigue projet → Documents → Comptes Rendus via getOrCreateChildFolder
+  // (jamais getOrCreateSubfolder : son env-map renverrait l'inbox pour 'Documents').
   let folderId: string | null = null;
+  let routedToVault = false;
+
   if (entiteCode) {
-    folderId = await resolveParentFolderForEntite(entiteCode);
-  }
-  if (!folderId) {
-    // Fallback legacy — sera retirable S21 après validation prod des 4 entités.
-    folderId = (entiteCode && LEGACY_DRIVE_FOLDERS[entiteCode]) ?? DEFAULT_FOLDER_ID;
-    if (entiteCode) {
-      console.warn(
-        `[drive-upload] entité ${entiteCode} non résolue via vault, fallback hardcoded ${folderId}`,
+    const projetFolder = await resolveParentFolderForEntite(entiteCode);
+    if (projetFolder) {
+      console.log(
+        `[drive-upload] entité ${entiteCode} → dossier projet vault ${projetFolder}`,
       );
+      const docsFolder = await getOrCreateChildFolder(accessToken, projetFolder, 'Documents');
+      if (docsFolder) {
+        console.log(`[drive-upload] entité ${entiteCode} → Documents/ ${docsFolder}`);
+      } else {
+        console.warn(
+          `[drive-upload] entité ${entiteCode} : sous-dossier 'Documents' irrésolu, dégradation vers racine projet`,
+        );
+      }
+      const crFolder = docsFolder
+        ? await getOrCreateChildFolder(accessToken, docsFolder, 'Comptes Rendus')
+        : null;
+      if (crFolder) {
+        console.log(
+          `[drive-upload] entité ${entiteCode} → Documents/Comptes Rendus/ ${crFolder}`,
+        );
+      } else if (docsFolder) {
+        console.warn(
+          `[drive-upload] entité ${entiteCode} : sous-dossier 'Comptes Rendus' irrésolu, dégradation vers Documents/`,
+        );
+      }
+      // Dégrade proprement DANS le vault : CR → Documents → projet. Jamais hors vault.
+      folderId = crFolder ?? docsFolder ?? projetFolder;
+      routedToVault = true;
     }
+  }
+
+  if (!routedToVault) {
+    // Fallback legacy HORS vault — uniquement si resolveParentFolderForEntite a
+    // renvoyé null (entité inconnue, vault indisponible). Warning explicite pour
+    // diagnostiquer les cas « hors vault » en prod (R10).
+    folderId = (entiteCode && LEGACY_DRIVE_FOLDERS[entiteCode]) ?? DEFAULT_FOLDER_ID;
+    console.warn(
+      `[drive-upload] ATTENTION résolution vault échouée pour entité ${entiteCode ?? '(absente)'} — upload HORS vault vers fallback legacy ${folderId}`,
+    );
   }
 
   try {
@@ -331,22 +371,124 @@ function getInboxFolderCache(): Map<string, string> {
 }
 
 /**
+ * Cherche (sinon crée) un sous-dossier par (parent RÉEL, name), SANS env-map.
+ *
+ * Contrairement à `getOrCreateSubfolder`, cette fonction ne consulte JAMAIS
+ * `SUBFOLDER_ENV_MAP` : elle résout toujours par le parent réel passé en
+ * argument. C'est le helper à utiliser pour naviguer une arborescence vault
+ * (ex. `<Projet>/Documents/Comptes Rendus`), où le nom `Documents` désigne le
+ * sous-dossier du projet — surtout PAS le dossier inbox de
+ * `DRIVE_INBOX_DOCUMENTS_FOLDER_ID`.
+ *
+ * Pipeline :
+ *   1. Cache globalThis (clé `${parent}/${name}`, survit dans l'instance)
+ *   2. Recherche via files.list (scope drive.file)
+ *   3. Création via files.create si non trouvé
+ *
+ * @returns folderId du sous-dossier, ou null si search+create échouent.
+ */
+export async function getOrCreateChildFolder(
+  accessToken: string,
+  parentFolderId: string,
+  name: string,
+): Promise<string | null> {
+  // 1. Cache globalThis (clé parent réel + name)
+  const cache = getInboxFolderCache();
+  const cacheKey = `${parentFolderId}/${name}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    console.log(`[drive] dossier enfant ${name} : ID trouvé en cache (${cached})`);
+    return cached;
+  }
+
+  try {
+    // 2. Chercher si le dossier existe déjà via files.list
+    const escapedName = name.replace(/'/g, "\\'");
+    const query = encodeURIComponent(
+      `name='${escapedName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    );
+    const searchUrl = `${DRIVE_FILES_API}?q=${query}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+
+    console.log(`[drive] recherche dossier enfant ${name} dans parent ${parentFolderId}`);
+
+    const searchResponse = await fetch(searchUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!searchResponse.ok) {
+      const errorBody = await searchResponse.text().catch(() => '(lecture body impossible)');
+      console.error(
+        `[drive] search dossier enfant ${name} ECHOUEE : HTTP ${searchResponse.status} — ${errorBody.slice(0, 300)}`,
+      );
+      // Ne pas abandonner — tenter la création quand même (dossier potentiellement
+      // dupliqué, mais mieux que de refuser l'upload).
+    } else {
+      const searchData = (await searchResponse.json()) as { files?: Array<{ id: string; name: string }> };
+      const filesCount = searchData.files?.length ?? 0;
+      console.log(`[drive] search dossier enfant ${name} : ${filesCount} résultat(s)`);
+
+      if (searchData.files && searchData.files.length > 0 && searchData.files[0]) {
+        const folderId = searchData.files[0].id;
+        console.log(`[drive] dossier enfant ${name} trouvé : ${folderId}`);
+        cache.set(cacheKey, folderId);
+        return folderId;
+      }
+    }
+
+    // 3. Créer le dossier
+    console.log(`[drive] création dossier enfant ${name} dans parent ${parentFolderId}`);
+
+    const createResponse = await fetch(`${DRIVE_FILES_API}?supportsAllDrives=true`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentFolderId],
+      }),
+    });
+
+    if (createResponse.ok) {
+      const createData = (await createResponse.json()) as { id?: string };
+      if (createData.id) {
+        console.log(`[drive] dossier enfant ${name} créé : ${createData.id}`);
+        cache.set(cacheKey, createData.id);
+        return createData.id;
+      }
+    }
+
+    const errorText = await createResponse.text().catch(() => '');
+    console.error(`[drive] erreur création dossier enfant ${name} : HTTP ${createResponse.status} — ${errorText.slice(0, 200)}`);
+    return null;
+  } catch (err) {
+    console.error('[drive] erreur getOrCreateChildFolder :', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
  * Récupère ou crée un sous-dossier dans le dossier Inbox Drive.
  *
  * Ordre de résolution :
  *   1. Env var pré-configurée (DRIVE_INBOX_PHOTOS_FOLDER_ID, etc.) → skip search/create
- *   2. Cache globalThis (survit dans la même instance serverless)
- *   3. Recherche via files.list (scope drive.file — ne voit que les fichiers créés par l'app)
- *   4. Création via files.create si non trouvé
+ *   2. Délégation à `getOrCreateChildFolder` (cache → search → create par parent réel)
  *
- * Fix session 11 : ajout logs explicites sur search, supportsAllDrives, escape quotes.
+ * ⚠️ Court-circuit env-map : ne JAMAIS utiliser cette fonction pour naviguer un
+ * sous-dossier de fiche vault. `Documents` est mappé à l'INBOX ici. Pour le
+ * vault, utiliser directement `getOrCreateChildFolder`.
+ *
+ * Fix session 11 : logs explicites search/create. S23 : délégation au helper
+ * sans env-map (le code search/create vit désormais dans getOrCreateChildFolder).
  */
 export async function getOrCreateSubfolder(
   accessToken: string,
   parentFolderId: string,
   subfolderName: string,
 ): Promise<string | null> {
-  // 1. Vérifier si une env var pré-configurée existe pour ce sous-dossier
+  // 1. Vérifier si une env var pré-configurée existe pour ce sous-dossier (inbox)
   const envKey = SUBFOLDER_ENV_MAP[subfolderName];
   if (envKey) {
     const envValue = process.env[envKey];
@@ -356,81 +498,8 @@ export async function getOrCreateSubfolder(
     }
   }
 
-  // 2. Vérifier le cache globalThis
-  const cache = getInboxFolderCache();
-  const cacheKey = `${parentFolderId}/${subfolderName}`;
-  const cached = cache.get(cacheKey);
-  if (cached) {
-    console.log(`[drive] sous-dossier ${subfolderName} : ID trouvé en cache (${cached})`);
-    return cached;
-  }
-
-  try {
-    // 3. Chercher si le sous-dossier existe déjà via files.list
-    const escapedName = subfolderName.replace(/'/g, "\\'");
-    const query = encodeURIComponent(
-      `name='${escapedName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    );
-    const searchUrl = `${DRIVE_FILES_API}?q=${query}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
-
-    console.log(`[drive] recherche sous-dossier ${subfolderName} dans parent ${parentFolderId}`);
-
-    const searchResponse = await fetch(searchUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!searchResponse.ok) {
-      const errorBody = await searchResponse.text().catch(() => '(lecture body impossible)');
-      console.error(
-        `[drive] search sous-dossier ${subfolderName} ECHOUEE : HTTP ${searchResponse.status} — ${errorBody.slice(0, 300)}`,
-      );
-      // Ne pas abandonner — tenter la création quand même (le dossier sera peut-être dupliqué,
-      // mais c'est mieux que de refuser l'upload)
-    } else {
-      const searchData = (await searchResponse.json()) as { files?: Array<{ id: string; name: string }> };
-      const filesCount = searchData.files?.length ?? 0;
-      console.log(`[drive] search sous-dossier ${subfolderName} : ${filesCount} résultat(s)`);
-
-      if (searchData.files && searchData.files.length > 0 && searchData.files[0]) {
-        const folderId = searchData.files[0].id;
-        console.log(`[drive] sous-dossier ${subfolderName} trouvé : ${folderId}`);
-        cache.set(cacheKey, folderId);
-        return folderId;
-      }
-    }
-
-    // 4. Créer le sous-dossier
-    console.log(`[drive] création sous-dossier ${subfolderName} dans parent ${parentFolderId}`);
-
-    const createResponse = await fetch(`${DRIVE_FILES_API}?supportsAllDrives=true`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: subfolderName,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [parentFolderId],
-      }),
-    });
-
-    if (createResponse.ok) {
-      const createData = (await createResponse.json()) as { id?: string };
-      if (createData.id) {
-        console.log(`[drive] sous-dossier ${subfolderName} créé : ${createData.id}`);
-        cache.set(cacheKey, createData.id);
-        return createData.id;
-      }
-    }
-
-    const errorText = await createResponse.text().catch(() => '');
-    console.error(`[drive] erreur création sous-dossier ${subfolderName} : HTTP ${createResponse.status} — ${errorText.slice(0, 200)}`);
-    return null;
-  } catch (err) {
-    console.error('[drive] erreur getOrCreateSubfolder :', err instanceof Error ? err.message : err);
-    return null;
-  }
+  // 2. Sinon résolution par parent réel (search → create)
+  return getOrCreateChildFolder(accessToken, parentFolderId, subfolderName);
 }
 
 /**

@@ -13,7 +13,7 @@ const mockFindProjetFiche = vi.fn();
 const mockFindContact = vi.fn();
 const mockResolvePath = vi.fn();
 const mockGetAccessToken = vi.fn();
-const mockGetOrCreateSubfolder = vi.fn();
+const mockGetOrCreateChildFolder = vi.fn();
 const mockUploadBinary = vi.fn();
 
 vi.mock('../../gmail-source/gmail-client', () => ({
@@ -30,7 +30,7 @@ vi.mock('../../vault-client/drive-resolver', () => ({
 }));
 vi.mock('../../drive-upload', () => ({
   getAccessToken: (...a: unknown[]) => mockGetAccessToken(...a),
-  getOrCreateSubfolder: (...a: unknown[]) => mockGetOrCreateSubfolder(...a),
+  getOrCreateChildFolder: (...a: unknown[]) => mockGetOrCreateChildFolder(...a),
   uploadBinaryToFolder: (...a: unknown[]) => mockUploadBinary(...a),
 }));
 
@@ -123,7 +123,7 @@ describe('executeCopyAttachment', () => {
     mockDownloadAttachment.mockResolvedValue(Buffer.from('PDFDATA'));
     mockGetAccessToken.mockResolvedValue('tok');
     mockResolvePath.mockResolvedValue({ success: true, fileId: 'base-folder-id' });
-    mockGetOrCreateSubfolder.mockResolvedValue('sub-folder-id');
+    mockGetOrCreateChildFolder.mockResolvedValue('sub-folder-id');
     mockUploadBinary.mockResolvedValue({ success: true, fileId: 'new-file-id' });
 
     const res = await executeCopyAttachment(
@@ -134,7 +134,8 @@ describe('executeCopyAttachment', () => {
 
     expect(res.ok).toBe(true);
     expect(res.fileId).toBe('new-file-id');
-    expect(mockGetOrCreateSubfolder).toHaveBeenCalledWith('tok', 'base-folder-id', 'Documents');
+    // S23 : getOrCreateChildFolder (PAS getOrCreateSubfolder) — évite l'env-map inbox
+    expect(mockGetOrCreateChildFolder).toHaveBeenCalledWith('tok', 'base-folder-id', 'Documents');
     expect(mockUploadBinary).toHaveBeenCalledWith(
       expect.any(Buffer),
       'facture.pdf',
@@ -171,7 +172,7 @@ describe('executeCopyAttachment', () => {
     mockDownloadAttachment.mockResolvedValue(Buffer.from('x'));
     mockGetAccessToken.mockResolvedValue('tok');
     mockResolvePath.mockResolvedValue({ success: true, fileId: 'base' });
-    mockGetOrCreateSubfolder.mockResolvedValue('sub');
+    mockGetOrCreateChildFolder.mockResolvedValue('sub');
     mockUploadBinary.mockResolvedValue({ success: false, error: 'Drive 503' });
     const res = await executeCopyAttachment(
       'msg1',

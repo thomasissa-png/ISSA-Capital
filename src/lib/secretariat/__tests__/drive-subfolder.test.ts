@@ -208,9 +208,9 @@ describe('getOrCreateSubfolder', () => {
       expect(result).toBe(CREATED_FOLDER_ID);
       expect(mockFetch).toHaveBeenCalledTimes(2);
 
-      // Vérifier que l'erreur est logguée
+      // Vérifier que l'erreur est logguée (S23 : log porté par getOrCreateChildFolder)
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('search sous-dossier Photos ECHOUEE'),
+        expect.stringContaining('search dossier enfant Photos ECHOUEE'),
       );
 
       consoleSpy.mockRestore();
