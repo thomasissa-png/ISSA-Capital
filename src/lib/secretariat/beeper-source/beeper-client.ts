@@ -1,17 +1,19 @@
 /**
- * Client Beeper Server (WhatsApp via bridge) — Phase 2 ingestion.
+ * Client Beeper — lecture de la DB SQLite du bridge WhatsApp (Phase 2).
  *
- * Le Beeper Server tourne sur le VPS (127.0.0.1:23374), lien WhatsApp établi
- * (Phase 1, cf. vault `08. Outils/Anya/À développer/beeper-server/`). Anya
- * (même VPS) interroge son API REST locale avec un Bearer token.
+ * L'API HTTP du Beeper Server est cassée (bug nightly `CloudBackup nil` →
+ * stuck `initializing` → endpoints vides). Décision actée S24 : lire la DB
+ * SQLite locale du bridge en READ-ONLY.
  *
- * Token : `BEEPER_ACCESS_TOKEN` dans .env.local (valeur = auth.accessToken de
- * /root/.beeper/targets/server.json, recopiée côté compte `thomas`).
+ * On n'ajoute AUCUNE dépendance npm (un module SQLite natif casserait le build
+ * Replit qui partage ce package.json). On shelle vers la CLI `sqlite3`
+ * (installée sur le VPS) en `-readonly -json`. Ce code ne tourne que sur le VPS.
  *
- * 🔒 LECTURE SEULE. Ce module ne fait QUE lire (chats/messages). Aucun envoi
- * (pas de `send`), aucune écriture WhatsApp — cohérent avec l'invariant règle 11.
+ * 🔒 LECTURE SEULE STRICTE : jamais d'INSERT/UPDATE/DELETE (c'est le bridge qui
+ * écrit). Ouverture `-readonly`. Aucune capacité d'envoi WhatsApp (règle 11).
  */
 
+import { execFile } from 'node:child_process';
 import { loadEnvConfig } from '@next/env';
 
 let envLoaded = false;
@@ -25,79 +27,81 @@ function ensureEnv(): void {
   envLoaded = true;
 }
 
-const BEEPER_TIMEOUT_MS = 20_000;
+const DEFAULT_DB = '/root/.beeper/profiles/server/server/local-whatsapp/megabridge.db';
+const SQLITE_TIMEOUT_MS = 15_000;
 
-function baseUrl(): string {
+export function beeperDbPath(): string {
   ensureEnv();
-  return process.env.BEEPER_API_URL ?? 'http://127.0.0.1:23374';
+  return process.env.BEEPER_DB_PATH ?? DEFAULT_DB;
 }
 
-function token(): string | undefined {
+/** Liste blanche pro (chat_id ou numéro), CSV dans BEEPER_WHITELIST. */
+export function beeperWhitelist(): string[] {
   ensureEnv();
-  return process.env.BEEPER_ACCESS_TOKEN;
+  return (process.env.BEEPER_WHITELIST ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
-export function isBeeperConfigured(): boolean {
-  return Boolean(token());
+export interface SqliteResult {
+  ok: boolean;
+  rows?: Array<Record<string, unknown>>;
+  error?: string;
 }
 
 /**
- * Sonde de découverte d'API : essaie plusieurs endpoints candidats avec le
- * Bearer token et logue le statut + un extrait de réponse. Sert à identifier
- * les bons chemins REST du Beeper Server (la doc runbook ne couvre que la CLI).
- * Lecture seule.
+ * Exécute une requête SQLite en READ-ONLY via la CLI `sqlite3`, sortie JSON.
+ * Ne JAMAIS passer une requête d'écriture : `-readonly` la rejetterait, mais
+ * l'invariant est qu'on ne lit que des SELECT.
  */
-async function getJson(path: string): Promise<{ status: number; text: string }> {
-  const res = await fetch(`${baseUrl()}${path}`, {
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(BEEPER_TIMEOUT_MS),
+export function runSqliteJson(query: string): Promise<SqliteResult> {
+  return new Promise((resolve) => {
+    execFile(
+      'sqlite3',
+      ['-readonly', '-json', beeperDbPath(), query],
+      { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        if (err) {
+          resolve({ ok: false, error: (stderr || err.message).slice(0, 400).trim() });
+          return;
+        }
+        const out = stdout.trim();
+        if (!out) {
+          resolve({ ok: true, rows: [] });
+          return;
+        }
+        try {
+          resolve({ ok: true, rows: JSON.parse(out) as Array<Record<string, unknown>> });
+        } catch {
+          resolve({ ok: false, error: `JSON parse impossible : ${out.slice(0, 200)}` });
+        }
+      },
+    );
   });
-  return { status: res.status, text: await res.text().catch(() => '') };
 }
 
-export async function probeBeeperApi(): Promise<void> {
-  // L'API interne /api/v1/* est accessible en localhost sans Bearer (le token
-  // server.json est un token Matrix, refusé par /v1/*). On explore /api/v1/.
-  const chatPaths = ['/api/v1/chats?limit=3', '/api/v1/chats', '/api/v1/accounts'];
-  let firstChatId: string | undefined;
-  for (const p of chatPaths) {
-    try {
-      const { status, text } = await getJson(p);
-      console.warn(`[beeper-probe] GET ${p} → ${status} :: ${text.slice(0, 700).replace(/\s+/g, ' ')}`);
-      if (!firstChatId && status === 200 && text.trim()) {
-        try {
-          const data = JSON.parse(text) as unknown;
-          const items = Array.isArray(data)
-            ? data
-            : ((data as Record<string, unknown>).items as unknown[]) ??
-              ((data as Record<string, unknown>).chats as unknown[]) ??
-              [];
-          const first = items[0] as Record<string, unknown> | undefined;
-          firstChatId = (first?.id ?? first?.chatID ?? first?.guid) as string | undefined;
-        } catch {
-          /* pas du JSON parseable */
-        }
-      }
-    } catch (err) {
-      console.warn(`[beeper-probe] GET ${p} → ERREUR ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-  // Découverte de l'endpoint messages à partir d'un chat id réel.
-  if (firstChatId) {
-    const enc = encodeURIComponent(firstChatId);
-    for (const p of [
-      `/api/v1/chats/${enc}/messages?limit=2`,
-      `/api/v1/messages?chatID=${enc}&limit=2`,
-      `/api/v1/messages?chat_id=${enc}&limit=2`,
-    ]) {
-      try {
-        const { status, text } = await getJson(p);
-        console.warn(`[beeper-probe] GET ${p} → ${status} :: ${text.slice(0, 500).replace(/\s+/g, ' ')}`);
-      } catch (err) {
-        console.warn(`[beeper-probe] GET ${p} → ERREUR ${err instanceof Error ? err.message : String(err)}`);
-      }
-    }
-  } else {
-    console.warn('[beeper-probe] aucun chat id extrait — schéma /api/v1/chats à inspecter');
-  }
+export interface BeeperDbCheck {
+  ok: boolean;
+  portals?: number;
+  ghosts?: number;
+  error?: string;
+}
+
+/**
+ * Vérifie l'accès à la DB du bridge (lecture seule) : compte portals + ghosts.
+ * Révèle d'un coup : accès fichier (permissions cross-user), DB lisible (WAL),
+ * et volumétrie. Lecture seule.
+ */
+export async function checkBeeperDb(): Promise<BeeperDbCheck> {
+  const r = await runSqliteJson(
+    "SELECT (SELECT COUNT(*) FROM portal) AS portals, (SELECT COUNT(*) FROM ghost) AS ghosts;",
+  );
+  if (!r.ok) return { ok: false, error: r.error };
+  const row = r.rows?.[0] ?? {};
+  return {
+    ok: true,
+    portals: Number(row.portals ?? 0),
+    ghosts: Number(row.ghosts ?? 0),
+  };
 }
