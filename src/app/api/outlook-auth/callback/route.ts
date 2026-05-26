@@ -22,7 +22,15 @@ function html(body: string): Response {
   return new Response(
     `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Outlook — autorisation</title></head>` +
       `<body style="font-family: sans-serif; max-width: 720px; margin: 40px auto; padding: 20px;">${body}</body></html>`,
-    { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+    {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        // Page du refresh token — JAMAIS de cache CDN.
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store',
+        'Cloudflare-CDN-Cache-Control': 'no-store',
+      },
+    },
   );
 }
 
