@@ -26,12 +26,15 @@ const mockListUnprocessed = vi.fn().mockResolvedValue([]);
 const mockFetchDetail = vi.fn().mockResolvedValue(null);
 const mockMarkProcessed = vi.fn().mockResolvedValue(true);
 const mockMarkFailed = vi.fn().mockResolvedValue(true);
+// S23 — détection « déjà répondu ». Défaut : pas répondu (brouillon créé).
+const mockHasReplyFromMe = vi.fn().mockResolvedValue(false);
 
 vi.mock('../../gmail-source/gmail-source', () => ({
   listUnprocessed: (...args: unknown[]) => mockListUnprocessed(...args),
   fetchDetail: (...args: unknown[]) => mockFetchDetail(...args),
   markProcessed: (...args: unknown[]) => mockMarkProcessed(...args),
   markFailed: (...args: unknown[]) => mockMarkFailed(...args),
+  hasReplyFromMe: (...args: unknown[]) => mockHasReplyFromMe(...args),
 }));
 
 const mockTriageEmail = vi.fn().mockResolvedValue(null);
@@ -189,6 +192,7 @@ beforeEach(() => {
   mockTriageEmail.mockResolvedValue(null);
   mockIsLikelySpamByHeuristic.mockReturnValue(false);
   mockLoadKnownContacts.mockResolvedValue([]);
+  mockHasReplyFromMe.mockResolvedValue(false);
   mockComposeDraft.mockResolvedValue({ success: false, skipReason: 'mock skip' });
   mockSaveNoMatch.mockResolvedValue(undefined);
   mockSendNoMatchCard.mockResolvedValue({ messageId: 456 });
@@ -370,36 +374,37 @@ describe('runEmailIngest', () => {
     expect(stats.haikuSpam).toBe(0);
   });
 
-  it('appelle savePending + sendValidationCard pour un email catégorisé', async () => {
+  it('S23 : traite un email catégorisé en silence — AUCUNE carte de validation', async () => {
     const email = makeEmail({ id: 'msg_valid' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_valid' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'a-classifier' }));
 
-    await runEmailIngest();
-
-    expect(mockSavePending).toHaveBeenCalledTimes(1);
-    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
-
-    const pendingArg = mockSavePending.mock.calls[0]![0];
-    expect(pendingArg.id).toMatch(/^test-uuid-\d{4}$/);
-    expect(pendingArg.triage.category).toBe('a-classifier');
-    expect(pendingArg.email.id).toBe('msg_valid');
-  });
-
-  it('ne crashe pas si sendValidationCard échoue', async () => {
-    const email = makeEmail({ id: 'msg_tg_fail' });
-    mockListUnprocessed.mockResolvedValue([{ id: 'msg_tg_fail' }]);
-    mockFetchDetail.mockResolvedValue(email);
-    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'a-classifier' }));
-    mockSendValidationCard.mockRejectedValue(new Error('Telegram 502'));
-
     const stats = await runEmailIngest();
 
-    // Le pending est créé même si Telegram échoue
+    // Plus de carte de validation générique (décision verrouillée S23).
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    // Le traitement (documentation + tentative brouillon) a bien eu lieu.
     expect(stats.pendingCreated).toBe(1);
-    expect(stats.errors).toBe(0);
-    expect(mockSavePending).toHaveBeenCalledTimes(1);
+    expect(mockComposeDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('S23 : la documentation (actions du handler) s\'exécute en silence', async () => {
+    const email = makeEmail({ id: 'msg_doc' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_doc' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'a-classifier' }));
+    mockHandleAClassifier.mockResolvedValue([
+      { type: 'create_file', target: '05. Notes/A classifier/doc.md', payload: { content: 'x' }, description: 'Dépôt' },
+    ]);
+
+    await runEmailIngest();
+
+    // L'action de documentation est exécutée directement (createVaultFile),
+    // sans passer par une carte de validation.
+    expect(mockCreateVaultFile).toHaveBeenCalledTimes(1);
+    expect(mockSavePending).not.toHaveBeenCalled();
   });
 
   it('traite plusieurs emails en séquence avec stats correctes', async () => {
@@ -479,7 +484,7 @@ describe('runEmailIngest', () => {
 
   // --- No-match flow (Jalon 4D-2) ---
 
-  it('envoie 2 cartes Telegram quand le handler retourne prompt_create_contact_choice', async () => {
+  it('S23 : contact inconnu → SEULE la carte de création de contact (pas de carte de validation)', async () => {
     const email = makeEmail({ id: 'msg_nomatch' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_nomatch' }]);
     mockFetchDetail.mockResolvedValue(email);
@@ -487,7 +492,7 @@ describe('runEmailIngest', () => {
 
     // Handler retourne 3 actions dont une prompt_create_contact_choice
     mockHandleContactPro.mockResolvedValue([
-      { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: {}, description: 'Dépôt A classifier' },
+      { type: 'create_file', target: '05. Notes/A classifier/test.md', payload: { content: 'x' }, description: 'Dépôt A classifier' },
       {
         type: 'prompt_create_contact_choice',
         target: null,
@@ -503,38 +508,38 @@ describe('runEmailIngest', () => {
       { type: 'mark_processed', target: null, payload: { messageId: 'msg_nomatch' }, description: 'Mark processed' },
     ]);
 
-    await runEmailIngest();
+    const stats = await runEmailIngest();
 
-    // Carte principale envoyée
-    expect(mockSavePending).toHaveBeenCalledTimes(1);
-    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
+    // Plus AUCUNE carte de validation générique
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
 
-    // Le pending principal ne contient PAS l'action prompt_create_contact_choice
-    const pendingArg = mockSavePending.mock.calls[0]![0];
-    const actionTypes = pendingArg.actions.map((a: { type: string }) => a.type);
-    expect(actionTypes).not.toContain('prompt_create_contact_choice');
-    expect(actionTypes).toContain('create_file');
-    expect(actionTypes).toContain('mark_processed');
-
-    // Carte no-match envoyée
+    // SEULE la carte no-match (création de contact) est envoyée
     expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
     expect(mockSendNoMatchCard).toHaveBeenCalledTimes(1);
+    expect(stats.contactCardsSent).toBe(1);
 
     // Le NoMatchPending a les bonnes données
     const noMatchArg = mockSaveNoMatch.mock.calls[0]![0];
     expect(noMatchArg.emailFrom).toBe('francois@example.com');
     expect(noMatchArg.nameFrom).toBe('François');
     expect(noMatchArg.defaultType).toBe('pro');
-    expect(noMatchArg.parentPendingId).toBe(pendingArg.id);
+    // Plus de pending parent : on référence directement le message.
+    expect(noMatchArg.parentPendingId).toBe('msg_nomatch');
+
+    // La documentation (create_file) a été exécutée en silence
+    expect(mockCreateVaultFile).toHaveBeenCalledTimes(1);
+    // Un brouillon est tenté (contact inconnu, pas répondu)
+    expect(mockComposeDraft).toHaveBeenCalledTimes(1);
   });
 
-  it('ne crée PAS de NoMatchPending si le handler ne retourne pas prompt_create_contact_choice', async () => {
+  it('S23 : ne crée PAS de carte de contact si le handler ne retourne pas prompt_create_contact_choice', async () => {
     const email = makeEmail({ id: 'msg_normal' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_normal' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
 
-    // Handler retourne des actions normales (fiche existante)
+    // Handler retourne des actions normales (fiche existante, non-auto pour ce test)
     mockHandleContactPro.mockResolvedValue([
       { type: 'append_historique', target: 'test', payload: {}, description: 'Append' },
       { type: 'mark_processed', target: null, payload: {}, description: 'Mark' },
@@ -542,11 +547,9 @@ describe('runEmailIngest', () => {
 
     await runEmailIngest();
 
-    // Carte principale envoyée
-    expect(mockSavePending).toHaveBeenCalledTimes(1);
-    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
-
-    // PAS de carte no-match
+    // Plus aucune carte
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
     expect(mockSaveNoMatch).not.toHaveBeenCalled();
     expect(mockSendNoMatchCard).not.toHaveBeenCalled();
   });
@@ -578,20 +581,22 @@ describe('runEmailIngest', () => {
 
     const stats = await runEmailIngest();
 
-    // Le pending et le noMatch sont créés même si Telegram échoue
+    // Le noMatch est sauvegardé même si l'envoi de la carte échoue
     expect(stats.pendingCreated).toBe(1);
     expect(stats.errors).toBe(0);
     expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
+    // L'envoi a échoué → la carte n'est pas comptée comme envoyée
+    expect(stats.contactCardsSent).toBe(0);
   });
 
-  it('NoMatchPending a un ID différent du PendingValidation', async () => {
+  it('S23 : le NoMatchPending référence le messageId (plus de pending parent)', async () => {
     const email = makeEmail({ id: 'msg_uuid_diff' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_uuid_diff' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
 
     mockHandleContactPro.mockResolvedValue([
-      { type: 'create_file', target: 'test', payload: {}, description: 'Test' },
+      { type: 'create_file', target: 'test', payload: { content: 'x' }, description: 'Test' },
       {
         type: 'prompt_create_contact_choice',
         target: null,
@@ -609,9 +614,10 @@ describe('runEmailIngest', () => {
 
     await runEmailIngest();
 
-    const pendingId = mockSavePending.mock.calls[0]![0].id;
-    const noMatchId = mockSaveNoMatch.mock.calls[0]![0].id;
-    expect(pendingId).not.toBe(noMatchId);
+    const noMatchArg = mockSaveNoMatch.mock.calls[0]![0];
+    // ID propre généré, parent = messageId (plus de carte de validation parente)
+    expect(noMatchArg.id).toMatch(/^test-uuid-\d{4}$/);
+    expect(noMatchArg.parentPendingId).toBe('msg_uuid_diff');
   });
 
   // --- Draft composer integration (Jalon 5B) ---
@@ -674,13 +680,13 @@ describe('runEmailIngest', () => {
     expect(stats.pendingCreated).toBe(1); // le pending est quand même créé
   });
 
-  it('inclut draftGmailUrl dans le pending quand le draft réussit', async () => {
-    const email = makeEmail({ id: 'msg_draft_url' });
+  it('S23 : le brouillon est créé en silence (pas de carte) à partir de l\'email complet', async () => {
+    const email = makeEmail({ id: 'msg_draft_url', threadId: 'thread_xyz', messageIdHeader: '<abc@mail>' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_draft_url' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'locataire' }));
     mockHandleLocataire.mockResolvedValue([
-      { type: 'append_historique', target: 'test', payload: {}, description: 'Test' },
+      { type: 'append_historique', target: '07. Contacts/Loc/x.md', payload: { title: 't', content: 'c' }, description: 'Test' },
     ]);
     mockComposeDraft.mockResolvedValue({
       success: true,
@@ -689,11 +695,16 @@ describe('runEmailIngest', () => {
       preview: 'Bonjour Martin,',
     });
 
-    await runEmailIngest();
+    const stats = await runEmailIngest();
 
-    const pendingArg = mockSavePending.mock.calls[0]![0];
-    expect(pendingArg.draftGmailUrl).toBe('https://mail.google.com/mail/u/0/#drafts?compose=xyz');
-    expect(pendingArg.draftPreview).toBe('Bonjour Martin,');
+    // Brouillon créé sans carte (le threading est géré dans draft-composer
+    // à partir de email.threadId / email.messageIdHeader exposés par gmail-source).
+    expect(stats.draftsCreated).toBe(1);
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockComposeDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'msg_draft_url', threadId: 'thread_xyz', messageIdHeader: '<abc@mail>' }),
+      expect.objectContaining({ category: 'locataire' }),
+    );
   });
 
   it('ne crashe pas si composeDraft throw une exception', async () => {
@@ -779,7 +790,7 @@ describe('runEmailIngest', () => {
 
   // --- S18.5 : auto-execute pour contact existant + filtre emails système ---
 
-  it('S18.5 : actions autoExecute → PAS de carte Telegram (pending/savePending non appelé)', async () => {
+  it('S23 : contact existant (actions auto) → documentation silencieuse + brouillon, aucune carte', async () => {
     const email = makeEmail({ id: 'msg_auto_existing' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_auto_existing' }]);
     mockFetchDetail.mockResolvedValue(email);
@@ -812,22 +823,55 @@ describe('runEmailIngest', () => {
         autoExecute: true,
       },
     ]);
+    mockComposeDraft.mockResolvedValue({ success: true, draftId: 'd1', gmailUrl: 'url', preview: 'Bonjour Martin,' });
 
     const stats = await runEmailIngest();
 
-    // Pas de carte Telegram
+    // Aucune carte (ni validation, ni no-match)
     expect(mockSavePending).not.toHaveBeenCalled();
     expect(mockSendValidationCard).not.toHaveBeenCalled();
     expect(mockSaveNoMatch).not.toHaveBeenCalled();
     expect(mockSendNoMatchCard).not.toHaveBeenCalled();
 
-    // Pas de draft (Anya silencieuse)
-    expect(mockComposeDraft).not.toHaveBeenCalled();
+    // Documentation appliquée en silence (le bug #1a est corrigé : plus de return anticipé)
+    expect(mockAppendToHistorique).toHaveBeenCalledTimes(1);
+    expect(mockUpdateFrontmatter).toHaveBeenCalledTimes(1);
 
-    // Stats : autoExecuted incrémenté, pendingCreated non
-    expect(stats.autoExecuted).toBe(1);
-    expect(stats.pendingCreated).toBe(0);
+    // BROUILLON désormais créé (correction du bug : un contact connu non répondu
+    // doit avoir un brouillon, ce qui n'arrivait jamais avant S23)
+    expect(mockComposeDraft).toHaveBeenCalledTimes(1);
+    expect(stats.draftsCreated).toBe(1);
+
+    // C'est un email intéressant traité → pendingCreated, pas autoExecuted (système)
+    expect(stats.pendingCreated).toBe(1);
     expect(stats.systemEmailsFiltered).toBe(0);
+  });
+
+  it('S23 : contact existant DÉJÀ répondu → documentation seule, PAS de brouillon', async () => {
+    const email = makeEmail({ id: 'msg_replied' });
+    mockListUnprocessed.mockResolvedValue([{ id: 'msg_replied' }]);
+    mockFetchDetail.mockResolvedValue(email);
+    mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
+    mockHasReplyFromMe.mockResolvedValue(true);
+    mockHandleContactPro.mockResolvedValue([
+      {
+        type: 'append_historique',
+        target: '07. Contacts/03. Pro/Martin Yhuel.md',
+        payload: { title: 't', content: 'Résumé.' },
+        description: 'Append histo',
+        autoExecute: true,
+      },
+    ]);
+
+    const stats = await runEmailIngest();
+
+    // Documentation faite
+    expect(mockAppendToHistorique).toHaveBeenCalledTimes(1);
+    // Pas de brouillon (déjà répondu)
+    expect(mockComposeDraft).not.toHaveBeenCalled();
+    expect(stats.draftsSkippedAlreadyReplied).toBe(1);
+    expect(stats.draftsCreated).toBe(0);
+    expect(stats.pendingCreated).toBe(1);
   });
 
   it('S18.5 : email système (noreply) → autoExecuted + systemEmailsFiltered incrémentés', async () => {
@@ -859,34 +903,37 @@ describe('runEmailIngest', () => {
     expect(stats.pendingCreated).toBe(0);
   });
 
-  it('S18.5 : si au moins une action n\'a PAS autoExecute → flux normal (carte Telegram)', async () => {
+  it('S23 : actions mixtes (auto + non-auto) → toutes exécutées en silence, aucune carte', async () => {
     const email = makeEmail({ id: 'msg_mixed' });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_mixed' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
 
-    // 1 action auto + 1 non-auto → flux normal
+    // 1 action auto + 1 non-auto → les DEUX sont exécutées (documentation),
+    // plus de distinction « flux carte » vs « auto » (S23).
     mockHandleContactPro.mockResolvedValue([
       {
         type: 'append_historique',
-        target: 'test',
-        payload: {},
+        target: '07. Contacts/03. Pro/Martin.md',
+        payload: { title: 't', content: 'c' },
         description: 'Auto',
         autoExecute: true,
       },
       {
         type: 'create_file',
-        target: 'test',
-        payload: {},
+        target: '05. Notes/A classifier/note.md',
+        payload: { content: 'x' },
         description: 'Pas auto',
       },
     ]);
 
     const stats = await runEmailIngest();
 
-    expect(mockSavePending).toHaveBeenCalledTimes(1);
-    expect(mockSendValidationCard).toHaveBeenCalledTimes(1);
-    expect(stats.autoExecuted).toBe(0);
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    // Les deux actions de documentation ont été exécutées directement
+    expect(mockAppendToHistorique).toHaveBeenCalledTimes(1);
+    expect(mockCreateVaultFile).toHaveBeenCalledTimes(1);
     expect(stats.pendingCreated).toBe(1);
   });
 
@@ -940,21 +987,21 @@ describe('runEmailIngest — actions de cohérence S23', () => {
 
     await runEmailIngest();
 
-    // La carte hot-context dédiée a été envoyée avec le patch.
+    // La carte hot-context dédiée a été envoyée avec le patch (flux distinct conservé).
     expect(mockSendHotContextPatchCard).toHaveBeenCalledWith(patch);
-    // La carte email principale NE contient PAS d'action update_hot_context.
-    const pendingCall = mockSavePending.mock.calls[0]?.[0] as { actions: Array<{ type: string }> } | undefined;
-    expect(pendingCall).toBeDefined();
-    expect(pendingCall!.actions.some((a) => a.type === 'update_hot_context')).toBe(false);
+    // Plus de carte de validation générique : update_hot_context n'est jamais
+    // exécuté comme une action de documentation.
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
   });
 
-  it('copie PJ proposée → dans la carte email principale (autoExecute false)', async () => {
+  it('S23 : copie PJ → exclue de la documentation auto (à traiter séparément), aucune carte', async () => {
     const email = makeEmail({ id: 'msg_pj', from: { email: 'compta@cabinet.fr' } });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_pj' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro' }));
     mockHandleContactPro.mockResolvedValue([
-      { type: 'create_file', target: '05. Notes/x.md', payload: {}, description: 'note' },
+      { type: 'create_file', target: '05. Notes/x.md', payload: { content: 'x' }, description: 'note' },
     ]);
     mockBuildCoherenceActions.mockResolvedValue([
       {
@@ -966,20 +1013,24 @@ describe('runEmailIngest — actions de cohérence S23', () => {
       },
     ]);
 
-    await runEmailIngest();
+    const stats = await runEmailIngest();
 
-    const pendingCall = mockSavePending.mock.calls[0]?.[0] as { actions: Array<{ type: string }> };
-    expect(pendingCall.actions.some((a) => a.type === 'copy_attachment')).toBe(true);
+    // Plus de carte de validation : la copie PJ n'est pas exécutée en auto.
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendValidationCard).not.toHaveBeenCalled();
+    // La documentation (create_file) reste exécutée
+    expect(mockCreateVaultFile).toHaveBeenCalledTimes(1);
+    expect(stats.errors).toBe(0);
   });
 
-  it('histo projet auto + email contact connu → auto-exécution silencieuse (pas de carte)', async () => {
+  it('histo projet auto + email contact connu → documentation silencieuse + brouillon, pas de carte', async () => {
     const email = makeEmail({ id: 'msg_auto', from: { email: 'martin@example.com' } });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_auto' }]);
     mockFetchDetail.mockResolvedValue(email);
     mockTriageEmail.mockResolvedValue(makeTriage({ category: 'contact-pro', projet: 'VI' }));
     // Handler contact connu → action auto silencieuse
     mockHandleContactPro.mockResolvedValue([
-      { type: 'append_historique', target: '07. Contacts/01. Pro/Martin.md', payload: {}, description: 'histo', autoExecute: true },
+      { type: 'append_historique', target: '07. Contacts/01. Pro/Martin.md', payload: { title: 't', content: 'c' }, description: 'histo', autoExecute: true },
     ]);
     // Coherence : histo projet (auto)
     mockBuildCoherenceActions.mockResolvedValue([
@@ -994,7 +1045,7 @@ describe('runEmailIngest — actions de cohérence S23', () => {
 
     const stats = await runEmailIngest();
 
-    // Toutes auto → aucune carte email principale
+    // Aucune carte email
     expect(mockSavePending).not.toHaveBeenCalled();
     expect(mockSendValidationCard).not.toHaveBeenCalled();
     // L'historique projet a été appliqué silencieusement
@@ -1002,7 +1053,9 @@ describe('runEmailIngest — actions de cohérence S23', () => {
       'VI',
       expect.objectContaining({ title: expect.stringContaining('Email :') }),
     );
-    expect(stats.autoExecuted).toBe(1);
+    // Brouillon tenté (pas répondu)
+    expect(mockComposeDraft).toHaveBeenCalledTimes(1);
+    expect(stats.pendingCreated).toBe(1);
   });
 
   it('coherence-actions throw → ne bloque pas le traitement de l email', async () => {
@@ -1014,8 +1067,9 @@ describe('runEmailIngest — actions de cohérence S23', () => {
 
     const stats = await runEmailIngest();
 
-    // Le handler a quand même produit une carte (a-classifier)
+    // Le traitement continue malgré l'échec coherence (pas de crash, pas de carte)
     expect(stats.errors).toBe(0);
-    expect(mockSavePending).toHaveBeenCalled();
+    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(stats.pendingCreated).toBe(1);
   });
 });
