@@ -19,10 +19,23 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Marqueur de build — sert à détecter si une réponse provient du cache (CDN)
+// ou de l'app live. À bumper si on reteste le cache.
+const BUILD_MARKER = 'nostore-v3';
+
 function html(body: string): Response {
   return new Response(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:20px;">${body}</body></html>`,
-    { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:20px;">${body}<hr><small>build ${BUILD_MARKER}</small></body></html>`,
+    {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        // Ces pages (config, choix de boîte, et SURTOUT la callback qui affiche
+        // le refresh token) ne doivent JAMAIS être mises en cache par un CDN.
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store',
+        'Cloudflare-CDN-Cache-Control': 'no-store',
+      },
+    },
   );
 }
 
