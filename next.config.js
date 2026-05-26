@@ -37,6 +37,11 @@ const nextConfig = {
   // le bundler Next.js ne les copie pas. On exclut pdfkit du bundle.
   experimental: {
     serverComponentsExternalPackages: ['pdfkit'],
+    // Active instrumentation.ts (hook de démarrage serveur) — utilisé pour
+    // charger .env.local au runtime : le service systemd ne fournit pas
+    // l'environnement pour les accès DYNAMIQUES à process.env (seuls les
+    // accès statiques sont inlinés au build). Voir src/instrumentation.ts.
+    instrumentationHook: true,
   },
   async headers() {
     return [
