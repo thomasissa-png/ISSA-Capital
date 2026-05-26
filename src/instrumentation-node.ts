@@ -46,19 +46,16 @@ void (async () => {
     );
   }
 
-  // Sonde Beeper (Phase 2 — découverte API + validation token). Best-effort.
+  // Check Beeper (Phase 2 — accès DB SQLite read-only). Best-effort.
   try {
-    const { probeBeeperApi, isBeeperConfigured } = await import(
-      './lib/secretariat/beeper-source/beeper-client'
+    const { checkBeeperDb } = await import('./lib/secretariat/beeper-source/beeper-client');
+    const r = await checkBeeperDb();
+    console.warn(
+      `[startup-beeper] DB — ${r.ok ? `OK (${r.portals} chats, ${r.ghosts} contacts)` : `ÉCHEC : ${r.error}`}`,
     );
-    if (isBeeperConfigured()) {
-      await probeBeeperApi();
-    } else {
-      console.warn('[startup-beeper] BEEPER_ACCESS_TOKEN absent — sonde ignorée');
-    }
   } catch (err) {
     console.warn(
-      `[startup-beeper] sonde échouée : ${err instanceof Error ? err.message : String(err)}`,
+      `[startup-beeper] check DB échoué : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 })();

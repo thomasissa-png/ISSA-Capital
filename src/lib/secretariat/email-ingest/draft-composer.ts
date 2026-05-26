@@ -51,8 +51,19 @@ const SKIP_CATEGORIES = new Set(['spam', 'candidat']);
 const THOMAS_FICHE_FOLDER = '07. Contacts/02. Famille';
 const THOMAS_FICHE_FILENAME = 'Thomas Issa.md';
 
-/** Fallback tonalité si fiche Thomas indisponible */
-const DEFAULT_TONALITY = `Vouvoiement systématique. Ton professionnel et chaleureux. Phrases courtes et directes. Pas de formules creuses. Signature courte : "Thomas Issa".`;
+/**
+ * Fallback tonalité si fiche Thomas indisponible.
+ * ⚠️ La fiche `07. Contacts/02. Famille/Thomas Issa.md` n'existe pas → ce
+ * fallback EST la tonalité réelle d'Anya en prod. Aligné sur la skill vault
+ * `draft-email` v6 (red line 3 — signature).
+ */
+const DEFAULT_TONALITY = `Vouvoiement par défaut (sauf tutoiement connu). Ton direct, phrases courtes. Pas de formules creuses ("j'espère que vous allez bien", "je me permets de", "n'hésitez pas à").
+
+## Signature (règle stricte)
+Une ligne vide précède TOUJOURS la signature.
+- **Contact NON professionnel** (famille, amis, locataires, autres — ~90 % des cas) : AUCUNE formule de clôture. Signer du seul prénom « Thomas ».
+- **Contact professionnel** (fiche dans 07. Contacts/03. Pro/) : « Très cordialement, » puis « Thomas Issa » puis « 06 64 85 06 31 » à la ligne.
+- **BANNI** : « Bien cordialement, » et toute variante (« Cordialement, », « Bien à vous, »…). Seule « Très cordialement, » est admise, et uniquement pour un contact professionnel.`;
 
 // ============================================================
 // Types
@@ -401,7 +412,7 @@ Tu rédiges des brouillons de réponse email que Thomas relira et enverra manuel
 - Phrases courtes et directes. Pas de formules creuses ("j'espère que vous allez bien", "je me permets de", "n'hésitez pas à").
 - Répondre précisément à la demande. Si tu ne sais pas, propose à Thomas de compléter avec un marqueur [À COMPLÉTER].
 - Ne JAMAIS inventer de dates, montants, noms de biens, ou informations factuelles non présentes dans l'email source.
-- Signature : "Thomas Issa" (pas de titre, pas de numéro de téléphone, pas de formule de politesse longue).
+- Signature (une ligne vide AVANT) : contact NON professionnel (famille/amis/locataires/autres) → aucune formule de clôture, signer "Thomas" (prénom seul) ; contact professionnel → "Très cordialement," / "Thomas Issa" / "06 64 85 06 31". JAMAIS "Bien cordialement," ni variante ("Cordialement,", "Bien à vous,") — seule "Très cordialement," est admise, en formel uniquement.
 - Format : texte brut, pas de HTML, pas de markdown.
 - Longueur : 3 à 10 lignes maximum. Plus court = mieux.
 - Si l'email source contient une question à laquelle seul Thomas peut répondre (montant, date, décision), écrire le brouillon avec un marqueur [À COMPLÉTER : question] pour que Thomas sache quoi remplir.` + dynamicSuffix;
