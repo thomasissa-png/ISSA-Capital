@@ -102,6 +102,11 @@ export async function pickDailyCitation(
   // Tronquer le corps pour rester lean côté prompt (les fiches peuvent être longues).
   const body = parseObsidianFile(read.content).body.slice(0, 6000);
 
+  // Distillation LLM (Flash). Si elle renvoie vide / échoue, on NE laisse PAS
+  // tomber la citation : on extrait une ligne marquante directement de la fiche
+  // (fallback déterministe) → une citation apparaît toujours quand la fiche a du
+  // contenu.
+  let llmText = '';
   try {
     const result = await callLLM({
       task: 'morning-citation',
@@ -116,20 +121,46 @@ export async function pickDailyCitation(
           content: `Fiche de lecture du livre « ${book} » :\n\n${body}`,
         },
       ],
-      maxTokens: 400,
+      // 1200 (et non 400) : DeepSeek V4 peut consommer du budget en "réflexion"
+      // → `content` vide à 400 (observé en prod run 7h du 26/05). Marge de sécurité.
+      maxTokens: 1200,
       responseFormat: 'text',
     });
-
-    const text = result.text.trim();
-    if (!text) {
-      console.warn('[morning-citation] LLM a renvoyé une citation vide — pas de citation');
-      return null;
-    }
-    return { text, book };
+    llmText = result.text.trim();
   } catch (err) {
     console.warn(
-      `[morning-citation] LLM échec : ${err instanceof Error ? err.message : String(err)}`,
+      `[morning-citation] LLM échec : ${err instanceof Error ? err.message : String(err)} — fallback fiche`,
     );
-    return null;
   }
+
+  if (llmText) return { text: llmText, book };
+
+  // Fallback : première ligne marquante de la fiche.
+  const fallback = extractFallbackLine(body);
+  if (fallback) {
+    console.warn('[morning-citation] LLM vide → fallback extraction fiche');
+    return { text: fallback, book };
+  }
+
+  console.warn('[morning-citation] ni LLM ni fallback exploitable — pas de citation');
+  return null;
+}
+
+/**
+ * Extrait une ligne « citation » exploitable d'un corps de fiche markdown :
+ * première ligne de prose substantielle (hors titres, puces vides, wikilinks
+ * seuls, frontmatter déjà retiré). Nettoie les marqueurs markdown de début.
+ */
+export function extractFallbackLine(body: string): string | null {
+  for (const raw of body.split('\n')) {
+    let line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('#')) continue; // titre
+    line = line.replace(/^[-*+]\s+/, '').replace(/^\d+\.\s+/, '').replace(/^>\s*/, '');
+    line = line.replace(/\*\*/g, '').replace(/^["'«»\s]+|["'«»\s]+$/g, '').trim();
+    if (line.length < 15) continue; // trop court (puce vide, mot isolé)
+    if (/^\[\[[^\]]+\]\]$/.test(line)) continue; // wikilink seul
+    return line.length > 220 ? `${line.slice(0, 217).trimEnd()}…` : line;
+  }
+  return null;
 }

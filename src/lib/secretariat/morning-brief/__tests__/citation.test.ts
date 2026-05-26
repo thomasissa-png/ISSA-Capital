@@ -98,18 +98,29 @@ describe('pickDailyCitation', () => {
     expect(mocks.callLLM).not.toHaveBeenCalled();
   });
 
-  it('LLM échoue → null (pas de crash)', async () => {
+  it('LLM échoue → fallback ligne de la fiche (pas de crash, citation présente)', async () => {
     mocks.searchDriveFiles.mockResolvedValue([{ id: 'a', name: '[Livre] Alpha.md' }]);
     mocks.readFileById.mockResolvedValue({ success: true, content: REAL_FICHE });
     mocks.callLLM.mockRejectedValue(new Error('LLM down'));
     const res = await pickDailyCitation(1);
-    expect(res).toBeNull();
+    expect(res).not.toBeNull();
+    expect(res!.book).toBe('Alpha');
+    expect(res!.text).toBe('Les habitudes composées font la différence.');
   });
 
-  it('LLM renvoie vide → null', async () => {
+  it('LLM renvoie vide → fallback ligne de la fiche', async () => {
     mocks.searchDriveFiles.mockResolvedValue([{ id: 'a', name: '[Livre] Alpha.md' }]);
     mocks.readFileById.mockResolvedValue({ success: true, content: REAL_FICHE });
     mocks.callLLM.mockResolvedValue({ text: '   ' });
+    const res = await pickDailyCitation(1);
+    expect(res).not.toBeNull();
+    expect(res!.text).toBe('Les habitudes composées font la différence.');
+  });
+
+  it('LLM vide ET fiche sans ligne exploitable → null', async () => {
+    mocks.searchDriveFiles.mockResolvedValue([{ id: 'a', name: '[Livre] Alpha.md' }]);
+    mocks.readFileById.mockResolvedValue({ success: true, content: '# Titre\n\n- \n## Autre' });
+    mocks.callLLM.mockResolvedValue({ text: '' });
     const res = await pickDailyCitation(1);
     expect(res).toBeNull();
   });
