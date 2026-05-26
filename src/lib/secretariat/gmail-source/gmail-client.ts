@@ -274,6 +274,12 @@ export interface CreateDraftResult {
  * Le brouillon est pré-rempli avec le corps et les headers fournis.
  * Thomas peut ensuite le modifier et l'envoyer manuellement depuis Gmail.
  *
+ * 🔒 INVARIANT SÉCURITÉ (règle 11) — Anya ne DOIT JAMAIS envoyer d'email.
+ * Cette fonction crée un BROUILLON (`POST /drafts`), jamais un envoi. Ne JAMAIS
+ * ajouter ici (ni ailleurs) d'appel `messages/send` ni `drafts/send` : seul
+ * Thomas envoie, manuellement, depuis Gmail. Verrouillé par le test
+ * `__tests__/no-send-invariant.test.ts`.
+ *
  * Scope requis : gmail.compose (déjà inclus dans le flow OAuth).
  * Jalon 5B — Session 15.
  *
