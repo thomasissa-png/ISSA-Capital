@@ -24,6 +24,11 @@ export interface EmailAttachment {
  */
 export interface EmailMessage {
   source: 'gmail' | 'outlook';
+  /**
+   * Identifiant du compte source (multi-boîtes S23) : 'gmail-thomas',
+   * 'outlook-sarani', 'outlook-versi'. Optionnel (défaut Gmail historique).
+   */
+  account?: string;
   /** Message ID Gmail (users.messages.get) */
   id: string;
   /**

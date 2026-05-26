@@ -2,7 +2,7 @@
  * Handler email-ingest : a-classifier.
  *
  * Cas de fallback — l'email n'a pas été identifié comme locataire,
- * pro ou apporteur. On crée un fichier .md dans 05. Notes/A classifier/
+ * pro ou apporteur. On crée un fichier .md dans _Inbox/A classifier/
  * avec la date, le sujet et le résumé du triage.
  *
  * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4 §1.
