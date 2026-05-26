@@ -1,89 +1,130 @@
-# Phase 1 — Beeper Server headless sur le VPS (ingestion WhatsApp d'Anya)
+# Beeper Server sur le VPS — installation pas à pas (copier-coller)
 
-> Objectif : faire tourner un **Beeper Server headless** sur le VPS (daemon, pas
-> d'app GUI) qui tient le lien WhatsApp et expose l'API locale `127.0.0.1:23373`.
-> Anya (même VPS) l'interrogera ensuite 4×/jour (Phase 2). Aucune dépendance à
-> ton PC ni à une machine maison ; ton iPhone reste ton WhatsApp normal.
+> Pour Thomas. Tout se fait **en SSH sur le VPS**, sauf l'étape 0 (depuis TON
+> Mac/PC). Copie-colle chaque bloc **dans l'ordre**, attends le résultat indiqué
+> avant de passer au suivant. Commandes vérifiées contre la doc Beeper CLI.
 >
-> ⚠️ À exécuter en SSH sur le VPS (Cowork ou Thomas). Le runtime Anya ne peut pas
-> faire cette install (pas de shell via le MCP debug). Commandes vérifiées contre
-> la doc Beeper CLI (developers.beeper.com/desktop-api-reference/cli).
+> But : faire tourner un Beeper Server (daemon) sur le VPS qui tient le lien
+> WhatsApp et expose son API en local. Anya s'en servira ensuite (Phase 2).
 
-## Pré-requis
-- Accès SSH au VPS (user `thomas`).
-- Node/npm déjà présents (le service `anya` est un Next.js → OK).
-- WhatsApp sur l'iPhone (pour scanner le QR une fois).
+---
 
-## Étapes
+## ÉTAPE 0 — Se connecter au VPS (depuis TON Mac/PC)
 
-### 1. Installer le CLI Beeper
+Ouvre un terminal sur ton ordinateur et colle (le `-L` ouvre un tunnel qd'on
+utilisera à l'étape 3 pour le navigateur) :
+
+```sh
+ssh -L 23373:127.0.0.1:23373 thomas@VPS_IP
+```
+> Remplace `VPS_IP` par l'adresse de ton VPS. Tu es maintenant **sur le VPS** :
+> toutes les étapes suivantes se collent dans CE terminal.
+
+---
+
+## ÉTAPE 1 — Installer le CLI Beeper
+
 ```sh
 npm install -g beeper-cli
-beeper --version   # vérifier
 ```
+```sh
+beeper --version
+```
+→ tu dois voir un numéro de version (ex. `1.x.x`).
 
-### 2. Installer + démarrer le serveur headless
+---
+
+## ÉTAPE 2 — Installer et démarrer le serveur
+
 ```sh
 beeper setup --server --install
-# → "Installed Beeper Server (stable)"
-# → "Started server on http://127.0.0.1:23373"
 ```
-Cette commande tente d'ouvrir un navigateur pour autoriser le **compte Beeper**
-(OAuth). Sur un VPS headless, **pas de navigateur** → 2 options :
-- **a)** copier l'URL OAuth affichée dans le terminal et l'ouvrir dans TON
-  navigateur local, OU
-- **b)** tunnel SSH puis ouvrir en local :
-  ```sh
-  # depuis TA machine :
-  ssh -L 23373:127.0.0.1:23373 thomas@<VPS>
-  # puis ouvrir http://127.0.0.1:23373 dans ton navigateur local
-  ```
+→ tu dois voir : `Installed Beeper Server (stable)` puis
+`Started server on http://127.0.0.1:23373`.
 
-### 3. Lier WhatsApp (QR — une seule fois)
+Il va te demander d'**autoriser ton compte Beeper** et afficher une **URL**
+(`https://...`). Garde-la pour l'étape 3.
+
+---
+
+## ÉTAPE 3 — Autoriser ton compte Beeper (navigateur)
+
+Grâce au tunnel de l'étape 0, ouvre sur **TON** ordinateur l'URL affichée à
+l'étape 2 (ou, si on te donne une adresse locale, ouvre directement) :
+
+```
+http://127.0.0.1:23373
+```
+→ connecte-toi à ton compte Beeper et valide l'autorisation. Reviens au terminal.
+
+---
+
+## ÉTAPE 4 — Lier WhatsApp (QR, une seule fois)
+
 ```sh
 beeper accounts add
-# choisir WhatsApp → "Scan this QR code with WhatsApp on your phone"
 ```
-Sur iPhone : **WhatsApp → Réglages → Appareils connectés → Connecter un appareil**
-→ scanner le QR affiché dans le terminal SSH.
-> Si le QR ne s'affiche pas en ASCII scannable dans le terminal, utiliser le
-> tunnel SSH (étape 2b) et faire le lien via l'UI web `127.0.0.1:23373`.
+→ choisis **WhatsApp** dans la liste. Un **QR code** s'affiche dans le terminal.
 
-### 4. Rendre le daemon persistant (survit aux reboots)
+Sur ton **iPhone** : **WhatsApp → Réglages → Appareils connectés → Connecter un
+appareil** → scanne le QR du terminal.
+
+→ tu dois voir une confirmation type `WhatsApp connected` / le compte listé.
+> Si le QR ne s'affiche pas correctement dans le terminal, dis-le moi : on passe
+> par l'interface web `http://127.0.0.1:23373` (via le tunnel de l'étape 0).
+
+---
+
+## ÉTAPE 5 — Rendre le serveur permanent (survit aux reboots)
+
 ```sh
-beeper targets enable     # auto-start
+beeper targets enable
+```
+```sh
 beeper targets restart
-beeper targets logs        # vérifier qu'il tourne
 ```
-
-### 5. Vérifier l'API + récupérer le token
 ```sh
-beeper api get /v1/info    # doit répondre OK
-# Le token d'accès API est requis par Anya (Phase 2). Le récupérer :
-#   variable BEEPER_ACCESS_TOKEN (cf. doc CLI `beeper api`).
+beeper targets logs
 ```
-➡️ **Noter le `BEEPER_ACCESS_TOKEN`** : il sera posé en Secret VPS pour qu'Anya
-appelle l'API (comme `GOOGLE_REFRESH_TOKEN` / `TICKTICK_ACCESS_TOKEN`).
+→ les logs doivent montrer le serveur qui tourne, sans erreur.
 
-## Maintenance
-- **Re-lien WhatsApp** : WhatsApp délie parfois les appareils liés (souvent si le
-  téléphone reste longtemps offline). Si l'API renvoie « non connecté » → refaire
-  l'étape 3 (`beeper accounts add`). Anya le signalera via le health-monitor
-  (item à ajouter Phase 2).
-- **Logs** : `beeper targets logs`.
-- **Statut** : `beeper targets restart` si l'API ne répond plus.
+---
 
-## Ce qui suit (Phase 2 — côté Anya, par l'orchestrator)
-1. Adaptateur `beeper-source` (jumeau de `gmail-source`) : lit les nouveaux
-   messages via `GET 127.0.0.1:23373/v1/...` (Bearer `BEEPER_ACCESS_TOKEN`),
-   curseur « dernier message traité ».
-2. Endpoint `cron-whatsapp-ingest` + ligne `deploy/crontab.anya` (4×/jour).
-3. Branchement sur le pipeline cohérence existant (triage → historiques
-   projets/contacts + TickTick + médias/vocaux + validation Telegram).
-4. **Liste blanche de contacts/chats pro** (Phase 3 — « tri une fois la
-   connexion établie »).
+## ÉTAPE 6 — Vérifier que l'API répond
 
-## Coût / risque
-- **Gratuit** (Beeper l'est ; self-host inclus).
-- **Risque de ban** : appareil lié non-officiel (bridge Beeper) — faible en
-  pratique (même classe que ton Beeper actuel), non nul.
+```sh
+beeper api get /v1/info
+```
+→ tu dois recevoir une réponse JSON (infos du serveur). **Si oui : c'est gagné.**
+
+---
+
+## ÉTAPE 7 — Récupérer le token pour Anya
+
+```sh
+beeper api get /v1/info
+```
+> Le **token d'accès API** (`BEEPER_ACCESS_TOKEN`) sert à Anya pour lire WhatsApp.
+> Récupère-le (cf. `beeper api` / variable `BEEPER_ACCESS_TOKEN`) et **pose-le en
+> Secret VPS** sous le nom `BEEPER_ACCESS_TOKEN` (comme `GOOGLE_REFRESH_TOKEN`).
+> Si tu n'es pas sûr de comment l'obtenir, copie-moi la sortie de
+> `beeper api get /v1/info` et je te dis exactement quoi récupérer.
+
+---
+
+## C'est fini pour toi 🎉
+Dis-moi simplement :
+1. ✅ `beeper api get /v1/info` répond,
+2. ✅ `BEEPER_ACCESS_TOKEN` posé en Secret VPS.
+
+→ J'enchaîne la **Phase 2** côté Anya (lecture WhatsApp 4×/jour → historiques +
+TickTick + médias/vocaux + validation Telegram), puis **Phase 3** (tri des
+contacts pro).
+
+---
+
+## En cas de souci plus tard
+- **WhatsApp s'est délié** (Anya ne lit plus) → refaire l'**ÉTAPE 4**
+  (`beeper accounts add`). C'est la seule maintenance récurrente (rare).
+- **Voir les logs** : `beeper targets logs`.
+- **Redémarrer** : `beeper targets restart`.
