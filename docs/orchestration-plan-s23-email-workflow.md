@@ -35,10 +35,21 @@ Dans `email-ingest-runner`, pour chaque email retenu (hors spam/newsletter), apr
 - Si `alreadyReplied` → **pas** de brouillon.
 - Sinon → `composeDraft` (corrigé §2), brouillon laissé dans Gmail, preview dans la carte Telegram. Le contexte inclut la fiche contact (déjà le cas) — enrichie si on vient de la créer.
 
-## 4. Anti-bruit / validation
-- Une carte Telegram par email regroupant : doc auto (silencieux pour contact connu), proposition contact (si inconnu), preview brouillon (si créé). Jamais N cartes.
-- Rien si l'email n'est pas actionnable (spam/newsletter) — inchangé.
-- Tout écrit vault = via validation (sauf historique contact auto, déjà le cas).
+## 4. UX — décisions VERROUILLÉES (Thomas, S23)
+
+- **PLUS de carte de validation générique** pour les emails. Le traitement est **autonome et silencieux** : documentation (historiques) + brouillon créés sans rien demander.
+- **Seule interaction Telegram conservée : la proposition de création de contact** quand l'expéditeur est inconnu (avec ses infos clés). Tout le reste = silencieux.
+- **Brouillon** : créé **directement dans Gmail**, **rattaché au fil de l'email** (threadId + In-Reply-To), **aucune notification Telegram**. Thomas le retrouve dans Gmail, en réponse au mail.
+- Rien si l'email n'est pas actionnable (spam / newsletter / notification auto / remerciement court) — cf. SKILL.md draft-email.
+
+## 2bis. Bug CONFIRMÉ : aucun brouillon créé
+
+Vérifié dans le journal prod (runs email 11h/12h/13h) : **aucun `[gmail-client] brouillon créé`**. Causes dans le code :
+1. `email-ingest-runner` fait un **`return` anticipé** sur la branche `allAutoExecute` (ligne 328-339, contact connu → historique auto) **AVANT** d'appeler `composeDraft` → ces emails n'ont jamais de brouillon.
+2. Quand `composeDraft` est atteint, `extractThreadId`/`extractMessageId` renvoient **`undefined`** → le brouillon (s'il était créé) ne serait **pas rattaché au fil** → invisible « en réponse » à l'email.
+3. À vérifier : le **scope OAuth Gmail** autorise-t-il la création de brouillon (`gmail.compose`/`gmail.modify`) ? Sinon `createDraft` échoue (403). → l'orchestrator surveillera `brouillon créé` vs 403 après déploiement.
+
+→ La refonte fait de la **création de brouillon un passage de premier ordre** (déclenché dès que : email intéressant ET pas déjà répondu), hors de la logique auto/carte, **rattaché au fil**.
 
 ## 5. Modèles
 - `email-draft` → **Sonnet 4.6** (fix fiabilité/qualité).
