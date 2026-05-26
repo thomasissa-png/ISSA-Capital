@@ -73,6 +73,28 @@ export interface DraftResult {
   error?: string;
 }
 
+/**
+ * Fonction de création de brouillon, injectée par la source (Gmail ou Outlook).
+ * Permet au composer de rester agnostique du fournisseur (multi-boîtes S23).
+ */
+export type DraftFn = (
+  email: EmailMessage,
+  subject: string,
+  body: string,
+) => Promise<{ success: boolean; draftId?: string; url?: string; error?: string }>;
+
+/** Brouillon Gmail par défaut (compat + tests) — utilisé si aucune source injectée. */
+const defaultGmailDraftFn: DraftFn = async (email, subject, body) => {
+  const r = await createDraft({
+    to: email.from.email,
+    subject,
+    body,
+    threadId: email.threadId,
+    inReplyTo: email.messageIdHeader,
+  });
+  return { success: r.success, draftId: r.draftId, url: r.gmailUrl, error: r.error };
+};
+
 interface TonalityContext {
   /** Tu ou vous */
   register: 'tu' | 'vous';
@@ -101,6 +123,7 @@ interface TonalityContext {
 export async function composeDraft(
   email: EmailMessage,
   triage: TriageResult,
+  draftFn: DraftFn = defaultGmailDraftFn,
 ): Promise<DraftResult> {
   // 1. Skip si catégorie non éligible
   if (SKIP_CATEGORIES.has(triage.category)) {
@@ -135,20 +158,15 @@ export async function composeDraft(
       };
     }
 
-    // 4. Créer le brouillon Gmail, rattaché au fil (threadId + In-Reply-To)
+    // 4. Créer le brouillon de réponse via la source (Gmail threadId+In-Reply-To,
+    //    ou Outlook createReply). Rattaché au fil dans les deux cas.
     const subject = buildReplySubject(email.subject);
-    const gmailResult = await createDraft({
-      to: email.from.email,
-      subject,
-      body: draftBody,
-      threadId: extractThreadId(email),
-      inReplyTo: extractMessageId(email),
-    });
+    const draftRes = await draftFn(email, subject, draftBody);
 
-    if (!gmailResult.success) {
+    if (!draftRes.success) {
       return {
         success: false,
-        error: `Gmail API : ${gmailResult.error ?? 'erreur inconnue'}`,
+        error: `Création brouillon : ${draftRes.error ?? 'erreur inconnue'}`,
       };
     }
 
@@ -157,8 +175,8 @@ export async function composeDraft(
 
     return {
       success: true,
-      draftId: gmailResult.draftId,
-      gmailUrl: gmailResult.gmailUrl,
+      draftId: draftRes.draftId,
+      gmailUrl: draftRes.url,
       preview: preview.slice(0, 100),
     };
   } catch (err) {
@@ -440,25 +458,4 @@ function buildReplySubject(originalSubject: string): string {
     return trimmed;
   }
   return `Re: ${trimmed}`;
-}
-
-/**
- * Extrait le threadId depuis un EmailMessage (S23 — fix threading).
- *
- * gmail-source expose désormais `threadId` (raw.threadId). On le passe à
- * createDraft pour que le brouillon soit rattaché au fil de l'email entrant
- * et donc visible « en réponse » dans Gmail.
- */
-function extractThreadId(email: EmailMessage): string | undefined {
-  return email.threadId;
-}
-
-/**
- * Extrait le Message-ID (header RFC 2822) depuis un EmailMessage (S23 — fix).
- *
- * gmail-source expose désormais `messageIdHeader` (header `Message-ID` du mail
- * entrant). Utilisé comme In-Reply-To / References pour un threading correct.
- */
-function extractMessageId(email: EmailMessage): string | undefined {
-  return email.messageIdHeader;
 }

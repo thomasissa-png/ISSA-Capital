@@ -25,13 +25,7 @@ import { randomUUID } from 'crypto';
 import type { EmailMessage } from '../gmail-source/types';
 import type { TriageResult, KnownContact } from '../triage/types';
 import type { ActionProposal } from '../handlers/types';
-import {
-  listUnprocessed,
-  fetchDetail,
-  markProcessed,
-  markFailed,
-  hasReplyFromMe,
-} from '../gmail-source/gmail-source';
+import { getActiveSources, type EmailSourceAdapter } from './email-sources';
 import { triageEmail } from '../triage/triage';
 import { isLikelySpamByHeuristic } from './pre-filter';
 import { loadKnownContacts } from './contacts-cache';
@@ -55,7 +49,6 @@ import {
   createVaultFile,
 } from '../vault-client';
 import { appendToTodoInbox } from '../drive-todo';
-import { markProcessed as markEmailProcessed } from '../gmail-source/gmail-source';
 import { createTickTickTaskForEmail } from './ticktick-integration';
 import { buildCoherenceActions } from './coherence-actions';
 import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
@@ -164,36 +157,37 @@ export async function runEmailIngest(): Promise<IngestStats> {
     contacts = [];
   }
 
-  // 2. Lister les emails non traités
-  let messages: Array<{ id: string; threadId?: string }>;
-  try {
-    messages = await listUnprocessed();
-  } catch (err) {
-    console.warn(
-      `[email-ingest] erreur listUnprocessed : ${err instanceof Error ? err.message : String(err)}`,
-    );
-    stats.errors = 1;
-    stats.durationMs = Date.now() - startMs;
-    return stats;
-  }
+  // 2. Pour chaque source active (Gmail + boîtes Outlook configurées), lister
+  //    les emails non traités et les traiter avec le même pipeline.
+  const sources = getActiveSources();
+  console.warn(
+    `[email-ingest] ${sources.length} source(s) active(s) : ${sources.map((s) => s.label).join(', ')}`,
+  );
 
-  stats.totalListed = messages.length;
-  console.warn(`[email-ingest] ${messages.length} email(s) non traité(s) trouvé(s)`);
-
-  if (messages.length === 0) {
-    stats.durationMs = Date.now() - startMs;
-    return stats;
-  }
-
-  // 3. Traiter chaque message
-  for (const msg of messages) {
+  for (const source of sources) {
+    let messages: Array<{ id: string; threadId?: string }>;
     try {
-      await processOneEmail(msg.id, contacts, stats);
+      messages = await source.listUnprocessed();
     } catch (err) {
       console.warn(
-        `[email-ingest] erreur inattendue sur message ${msg.id} : ${err instanceof Error ? err.message : String(err)}`,
+        `[email-ingest] erreur listUnprocessed (${source.label}) : ${err instanceof Error ? err.message : String(err)}`,
       );
       stats.errors++;
+      continue;
+    }
+
+    stats.totalListed += messages.length;
+    console.warn(`[email-ingest] ${source.label} : ${messages.length} email(s) non traité(s)`);
+
+    for (const msg of messages) {
+      try {
+        await processOneEmail(source, msg.id, contacts, stats);
+      } catch (err) {
+        console.warn(
+          `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${err instanceof Error ? err.message : String(err)}`,
+        );
+        stats.errors++;
+      }
     }
   }
 
@@ -227,21 +221,22 @@ export async function runEmailIngest(): Promise<IngestStats> {
 // ============================================================
 
 async function processOneEmail(
+  source: EmailSourceAdapter,
   messageId: string,
   contacts: KnownContact[],
   stats: IngestStats,
 ): Promise<void> {
   // Fetch detail
-  const detail = await fetchDetail(messageId);
+  const detail = await source.fetchDetail(messageId);
   if (!detail) {
-    console.warn(`[email-ingest] fetchDetail null pour message ${messageId}`);
+    console.warn(`[email-ingest] fetchDetail null pour ${source.label} message ${messageId}`);
     stats.errors++;
     return;
   }
 
   // Pré-filtre heuristique
   if (isLikelySpamByHeuristic(detail)) {
-    await markProcessed(messageId);
+    await source.markProcessed(messageId);
     await writeAuditLog({
       ts: new Date().toISOString(),
       op: 'classify_note',
@@ -261,7 +256,7 @@ async function processOneEmail(
   // Triage Haiku
   const triage = await triageEmail(detail, contacts);
   if (!triage) {
-    await markFailed(messageId);
+    await source.markFailed(messageId);
     await writeAuditLog({
       ts: new Date().toISOString(),
       op: 'classify_note',
@@ -280,7 +275,7 @@ async function processOneEmail(
 
   // Auto-spam Haiku (confidence > 0.9)
   if (triage.category === 'spam' && triage.confidence > AUTO_SPAM_CONFIDENCE_THRESHOLD) {
-    await markProcessed(messageId);
+    await source.markProcessed(messageId);
     await writeAuditLog({
       ts: new Date().toISOString(),
       op: 'classify_note',
@@ -356,7 +351,7 @@ async function processOneEmail(
   );
 
   if (docActions.length > 0) {
-    await executeAutoActions(docActions, detail, triage, isSystemEmailAction);
+    await executeAutoActions(source, docActions, detail, triage, isSystemEmailAction);
   }
 
   // Email système (noreply@, contact@…) : marqué traité, aucun brouillon, aucune carte.
@@ -370,7 +365,7 @@ async function processOneEmail(
   // documente (déjà fait ci-dessus) mais on ne prépare PAS de brouillon.
   let alreadyReplied = false;
   try {
-    alreadyReplied = await hasReplyFromMe(detail.threadId);
+    alreadyReplied = await source.hasReplyFromMe(detail);
   } catch (err) {
     // Fail-open : en cas de doute on tente le brouillon (mieux qu'un email orphelin).
     console.warn(
@@ -387,7 +382,7 @@ async function processOneEmail(
     );
   } else {
     try {
-      const draftResult = await composeDraft(detail, triage);
+      const draftResult = await composeDraft(detail, triage, source.createReplyDraft);
       if (draftResult.success) {
         stats.draftsCreated++;
       } else if (draftResult.skipReason) {
@@ -464,6 +459,7 @@ async function processOneEmail(
  * sera re-traité au prochain cycle).
  */
 async function executeAutoActions(
+  source: EmailSourceAdapter,
   actions: ActionProposal[],
   email: EmailMessage,
   triage: TriageResult,
@@ -472,7 +468,7 @@ async function executeAutoActions(
   const trigger = `email_ingest:auto:${email.id}`;
 
   for (const action of actions) {
-    const result = await executeAutoAction(action, email, triage, trigger);
+    const result = await executeAutoAction(source, action, email, triage, trigger);
 
     await writeAuditLog({
       ts: new Date().toISOString(),
@@ -511,6 +507,7 @@ async function executeAutoActions(
  * callback-handler qui touche le critical path validation Telegram.
  */
 async function executeAutoAction(
+  source: EmailSourceAdapter,
   action: ActionProposal,
   email: EmailMessage,
   triage: TriageResult,
@@ -614,7 +611,7 @@ async function executeAutoAction(
       }
 
       case 'mark_processed': {
-        const success = await markEmailProcessed(email.id);
+        const success = await source.markProcessed(email.id);
         return success ? { ok: true } : { ok: false, error: 'markProcessed échoué' };
       }
 

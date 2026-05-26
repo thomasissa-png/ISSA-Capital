@@ -371,7 +371,7 @@ describe('composeDraft', () => {
     expect(draftArgs.inReplyTo).toBeUndefined();
   });
 
-  it('retourne erreur si Gmail API échoue', async () => {
+  it('retourne erreur si la création du brouillon échoue', async () => {
     mockCreateDraft.mockResolvedValue({
       success: false,
       error: 'HTTP 403: Insufficient permissions',
@@ -380,7 +380,8 @@ describe('composeDraft', () => {
     const result = await composeDraft(makeEmail(), makeTriage());
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Gmail API');
+    expect(result.error).toContain('Création brouillon');
+    expect(result.error).toContain('403');
   });
 
   it('tronque le body email à 2000 caractères dans le prompt', async () => {

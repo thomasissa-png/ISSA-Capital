@@ -212,7 +212,7 @@ describe('handleLocataire', () => {
     const actions = await handleLocataire(makeTriage(), makeEmail());
 
     expect(actions[0]!.target).toContain(VAULT_PATHS.notesAClassifier);
-    expect(actions[0]!.target).toContain('05. Notes/A classifier');
+    expect(actions[0]!.target).toContain('_Inbox/A classifier');
   });
 
   it('locataire inconnu : defaultType est "autres" (pas "locataire")', async () => {

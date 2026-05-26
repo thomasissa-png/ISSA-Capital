@@ -642,7 +642,11 @@ describe('runEmailIngest', () => {
     expect(stats.draftsCreated).toBe(1);
     expect(stats.draftsSkipped).toBe(0);
     expect(stats.draftsFailed).toBe(0);
-    expect(mockComposeDraft).toHaveBeenCalledWith(email, expect.objectContaining({ category: 'locataire' }));
+    expect(mockComposeDraft).toHaveBeenCalledWith(
+      email,
+      expect.objectContaining({ category: 'locataire' }),
+      expect.any(Function),
+    );
   });
 
   it('incrémente draftsSkipped quand composeDraft retourne skipReason', async () => {
@@ -704,6 +708,7 @@ describe('runEmailIngest', () => {
     expect(mockComposeDraft).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'msg_draft_url', threadId: 'thread_xyz', messageIdHeader: '<abc@mail>' }),
       expect.objectContaining({ category: 'locataire' }),
+      expect.any(Function),
     );
   });
 

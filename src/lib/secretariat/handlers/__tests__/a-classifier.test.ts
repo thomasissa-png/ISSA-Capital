@@ -70,7 +70,7 @@ describe('handleAClassifier', () => {
     const target = actions[0]!.target as string;
 
     expect(target).toContain(VAULT_PATHS.notesAClassifier);
-    expect(target).toContain('05. Notes/A classifier');
+    expect(target).toContain('_Inbox/A classifier');
     expect(target).toContain(`2026-05-13 ${EM_DASH} Proposition de service.md`);
   });
 

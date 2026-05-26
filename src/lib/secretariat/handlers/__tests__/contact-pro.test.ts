@@ -152,7 +152,7 @@ describe('handleContactPro', () => {
     const actions = await handleContactPro(makeTriage(), makeEmail());
 
     expect(actions[0]!.target).toContain(VAULT_PATHS.notesAClassifier);
-    expect(actions[0]!.target).toContain('05. Notes/A classifier');
+    expect(actions[0]!.target).toContain('_Inbox/A classifier');
     expect(actions[0]!.target).not.toContain('03. Pro');
   });
 
