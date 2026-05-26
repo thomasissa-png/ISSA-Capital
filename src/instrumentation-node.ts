@@ -26,3 +26,24 @@ const keys = [
 ];
 const status = keys.map((k) => `${k}=${process.env[k] ? 'OK' : 'X'}`).join(' ');
 console.warn(`[startup-env] après loadEnvConfig — ${status}`);
+
+// Test de connectivité Outlook (S23) — valide refresh token + lecture identité
+// de chaque boîte. Lecture seule, best-effort, non bloquant.
+void (async () => {
+  try {
+    const { OUTLOOK_BOXES, checkConnectivity } = await import(
+      './lib/secretariat/outlook-source/outlook-client'
+    );
+    for (const box of OUTLOOK_BOXES) {
+      const r = await checkConnectivity(box);
+      console.warn(
+        `[startup-outlook] ${box} — ${r.ok ? `OK (${r.email})` : `ÉCHEC : ${r.error}`}`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[startup-outlook] test connectivité échoué : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+})();
+
