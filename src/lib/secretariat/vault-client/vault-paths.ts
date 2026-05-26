@@ -23,14 +23,15 @@
  *       Biens/                (biens en gestion)
  *       Opportunités/         (apporteurs — à créer)
  *   03. Tâches/Todo.md
- *   05. Notes/
- *     A classifier/     (à créer au premier handler)
- *   06. Réunions/YYYY/MM/
  *   _Inbox/
+ *     A classifier/     (notes email no-match — scan Drive S23)
  *     AnyaLogs/         (audit trail JSONL)
- *     AnyaState/        (state JSON Anya — à créer)
- *     Photos/, Voice/, Plaud/, _Traité/
+ *     AnyaState/        (state JSON Anya)
+ *     Notes/, Documents/, Photos/, Voice/, Plaud/
  *   Templates/
+ *
+ * Note S23 : `05. Notes/` et `06. Réunions/` n'existent PAS à la racine réelle
+ * `00. Me` (vérifié scan Drive). `06. Réunions` abandonné (refonte calendar).
  */
 
 // ============================================================
@@ -67,11 +68,9 @@ export const LOCATAIRES_CANDIDATS = '07. Contacts/05. Locataires/_Candidats';
 /** Projets */
 export const PROJETS_ROOT = '02. Projets';
 
-/** Notes */
-export const NOTES_ROOT = '05. Notes';
-
-/** Notes à classifier (no-match email) */
-export const NOTES_A_CLASSIFIER = '05. Notes/A classifier';
+/** Notes à classifier (email no-match) — dossier réel `_Inbox/A classifier`
+ *  (scan Drive S23 : seul `A classifier` du vault, sous `_Inbox`). */
+export const NOTES_A_CLASSIFIER = '_Inbox/A classifier';
 
 /** Todo central */
 export const TODO_PATH = '03. Tâches/Todo.md';
