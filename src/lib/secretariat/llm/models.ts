@@ -100,6 +100,7 @@ export type LLMTask =
   | 'hot-context-modify'
   | 'email-draft'
   | 'morning-citation'
+  | 'contact-fiche'
   | 'cr';
 
 /**
@@ -136,6 +137,10 @@ export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
   // Brief du matin (S23) : distillation lean d'une citation depuis une fiche de
   // lecture → Flash (extraction courte, ~0 €, ne tronque pas).
   'morning-citation': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  // Synthèse fiche contact (S23) : extraction lean des infos clés (rôle, société,
+  // sujets, coordonnées) à partir de N emails de l'expéditeur → Flash (extraction
+  // structurée, zéro invention, ne tronque pas).
+  'contact-fiche': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   cr: { provider: 'anthropic', family: 'sonnet' },
 };
 
