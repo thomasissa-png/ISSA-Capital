@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# deploy/anya-cron.sh <endpoint-path>
+# deploy/anya-cron.sh <endpoint-path> [timeout-seconds]
 #
 # Appelle un endpoint cron d'Anya en local, authentifié par CRON_SECRET lu dans
 # .env.local. Invoqué par les lignes de deploy/crontab.anya.
 #
 # Le cron tourne avec un environnement minimal → tous les chemins sont ABSOLUS.
+#
+# timeout-seconds (optionnel, défaut 120) : plafond curl -m. À allonger pour les
+# endpoints à run long (ex email-ingest : N emails × brouillon V4 Pro ~60s →
+# 900s). Si curl coupe trop tôt, Next.js finit par abandonner le contexte de
+# requête et la boucle serveur est tuée en plein milieu (run partiel, pas de
+# récap). Garder la connexion ouverte le temps du run laisse celui-ci finir.
 
 set -euo pipefail
 
-ENDPOINT="${1:?usage: anya-cron.sh <endpoint-path>}"
+ENDPOINT="${1:?usage: anya-cron.sh <endpoint-path> [timeout-seconds]}"
+TIMEOUT="${2:-120}"
 ENV_FILE="/home/thomas/ISSA-Capital/.env.local"
 BASE_URL="http://localhost:3000"
 
@@ -31,8 +38,8 @@ if [[ -z "${CRON_SECRET:-}" ]]; then
   exit 1
 fi
 
-echo "[anya-cron $(stamp)] GET ${ENDPOINT}"
-curl -fsS -m 120 -X GET \
+echo "[anya-cron $(stamp)] GET ${ENDPOINT} (timeout ${TIMEOUT}s)"
+curl -fsS -m "${TIMEOUT}" -X GET \
   -H "Authorization: Bearer ${CRON_SECRET}" \
   "${BASE_URL}${ENDPOINT}"
 echo
