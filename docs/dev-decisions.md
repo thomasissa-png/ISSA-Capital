@@ -1329,3 +1329,33 @@ tsc 0 erreur, next lint 0 warning, next build OK, vitest 1951/1951 (1923 baselin
 - Créés : `llm/deepseek-client.ts`, `health-monitor/deepseek-usage.ts`, tests `llm/__tests__/deepseek-client.test.ts` + `llm/__tests__/call-llm.test.ts`.
 - Modifiés : `llm/models.ts`, `llm/client.ts`, `workflows/inbox-message-router.ts`, `triage/triage.ts`, `email-ingest/draft-composer.ts`, `hot-context/signal-detector.ts`, `app/api/telegram/webhook/route.ts`, `.env.example`, tests des sites migrés.
 - Hors scope (inchangé) : `handlers/todo-from-telegram.ts` (reste sur `callAnthropic({family:'haiku'})`).
+
+---
+
+## Session 23 — Refonte UX workflow email d'Anya (traitement autonome + fix brouillon)
+
+> @fullstack — 2026-05-26 — S23. Spec : `docs/orchestration-plan-s23-email-workflow.md`.
+
+### Problèmes prod corrigés
+1. **Aucun brouillon créé**. Cause #1a : `email-ingest-runner` faisait un `return` anticipé sur la branche `allAutoExecute` (contact connu → historique auto) AVANT `composeDraft` → ces emails n'avaient jamais de brouillon. Cause #1b : `extractThreadId`/`extractMessageId` renvoyaient toujours `undefined` → brouillon non rattaché au fil (invisible « en réponse »).
+2. **Plus de carte de validation générique**. Décision Thomas verrouillée : traitement autonome/silencieux. Seule carte conservée = création de contact (no-match).
+
+### Décisions
+- **Runner restructuré** (`processOneEmail`) : ordre = documentation (auto, silencieuse, que l'email soit répondu ou non) → détection « déjà répondu » → brouillon si pas répondu → carte contact si inconnu. La création de brouillon est désormais un **passage de premier ordre**, hors de la logique auto/carte. Suppression de `savePending` + `sendValidationCard` du flux email-ingest (la machinerie pending/carte reste pour les autres flux : hot-context, callbacks).
+- **Toutes les actions de documentation exécutées en silence** (auto + non-auto, hors `prompt_create_contact_choice` et `update_hot_context`). Append-only / faible risque.
+- **`copy_attachment` exclu** de la doc auto : nécessitait validation Thomas (carte supprimée) + résolution sous-dossier. À réintégrer séparément (build #2). Filtré pour éviter un log d'erreur trompeur.
+- **Threading brouillon** : `EmailMessage` porte désormais `threadId` (raw.threadId exposé par gmail-source) + `messageIdHeader` (header `Message-ID` RFC). `draft-composer` les passe à `createDraft` (qui gérait déjà `threadId` + `inReplyTo`).
+- **Détection « déjà répondu »** : `hasReplyFromMe(threadId)` dans gmail-source → `getThreadMessages` (users.threads.get, format minimal) → vrai si un message du thread porte le label `SENT`. **Fail-open** : threadId absent / API KO → `false` (mieux vaut un brouillon en trop qu'un email orphelin).
+- **Garde corps-vide** (draft-composer) : si le LLM rend < 40 caractères → échec, pas de brouillon « Bonjour » seul. `maxTokens` 1024 → 2048.
+- **Modèle `email-draft` : DeepSeek V4 Pro CONSERVÉ** (consigne directe de la tâche fullstack), avec la garde corps-vide comme filet. La spec d'orchestration §6 recommandait Sonnet 4.6 mais c'était une décision ouverte non tranchée → laissée à l'orchestrator/Thomas (one-liner dans `llm/models.ts` + test si bascule).
+- **Scope OAuth Gmail** : `gmail.compose` ET `gmail.modify` déjà demandés dans le flow (`drive-auth/route.ts:22-23`). `createDraft` peut donc fonctionner — pas de risque 403 lié au scope (à confirmer en réel : que le refresh token en prod a bien consenti ces scopes).
+
+### Stats runner
+Ajout de `draftsSkippedAlreadyReplied` et `contactCardsSent` à `IngestStats`. `pendingCreated` conservé (= emails intéressants traités en silence) pour compat.
+
+### Vérification
+tsc 0 erreur, next lint 0 warning, next build OK, vitest 2016/2016 (0 régression).
+
+### Fichiers
+- Modifiés : `gmail-source/types.ts`, `gmail-source/gmail-source.ts` (`hasReplyFromMe`, expose threadId/messageIdHeader), `gmail-source/gmail-client.ts` (`getThreadMessages`), `email-ingest/draft-composer.ts` (threading + garde corps-vide + maxTokens), `email-ingest/email-ingest-runner.ts` (restructuration). Tests adaptés : `email-ingest-runner.test.ts`, `draft-composer.test.ts`, `gmail-source.test.ts`, routes email-ingest.
+- Créés : `gmail-source/__tests__/get-thread-messages.test.ts`.

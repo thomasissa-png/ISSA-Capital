@@ -1,34 +1,41 @@
 /**
- * Pipeline runner email-ingest — Anya V1.
+ * Pipeline runner email-ingest — Anya.
  *
  * Orchestre le cycle complet :
  *   1. Charger contacts depuis cache
  *   2. Lister les emails non traités
- *   3. Pour chaque email : pré-filtre → triage Haiku → handler → Telegram
+ *   3. Pour chaque email intéressant (hors spam/système) :
+ *      a. Documenter en silence (historique contact/projet — actions du handler
+ *         + coherence-actions, append-only, faible risque)
+ *      b. Détecter si Thomas a déjà répondu (hasReplyFromMe sur le thread)
+ *      c. Si PAS répondu → créer un brouillon Gmail rattaché au fil, silencieusement
+ *      d. Si expéditeur inconnu → carte Telegram de création de contact (no-match)
  *   4. Retourner les stats
  *
- * Aucune modification vault directe — les handlers génèrent des ActionProposal[],
- * stockées en pending, exécutées uniquement après validation Telegram par Thomas.
+ * S23 — refonte UX (décisions verrouillées, docs/orchestration-plan-s23-email-workflow.md) :
+ *   - Traitement AUTONOME et SILENCIEUX : plus de carte de validation générique.
+ *   - SEULE interaction conservée : la carte de création de contact (no-match).
+ *   - La création de brouillon est un passage de premier ordre (plus de return
+ *     anticipé sur la branche auto-execute qui empêchait tout brouillon).
  *
- * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4C §A.
+ * Spec: second-cerveau/Anya - Plan email-ingest.md Jalon 4C §A + plan S23.
  */
 
 import { randomUUID } from 'crypto';
 import type { EmailMessage } from '../gmail-source/types';
 import type { TriageResult, KnownContact } from '../triage/types';
 import type { ActionProposal } from '../handlers/types';
-import type { PendingValidation } from '../telegram-validation/telegram-cards';
 import {
   listUnprocessed,
   fetchDetail,
   markProcessed,
   markFailed,
+  hasReplyFromMe,
 } from '../gmail-source/gmail-source';
 import { triageEmail } from '../triage/triage';
 import { isLikelySpamByHeuristic } from './pre-filter';
 import { loadKnownContacts } from './contacts-cache';
 import { composeDraft } from './draft-composer';
-import type { DraftResult } from './draft-composer';
 import {
   handleLocataire,
   handleAClassifier,
@@ -37,8 +44,6 @@ import {
   handleCandidat,
 } from '../handlers';
 import {
-  savePending,
-  sendValidationCard,
   saveNoMatch,
   sendNoMatchCard,
 } from '../telegram-validation';
@@ -65,6 +70,11 @@ export interface IngestStats {
   totalListed: number;
   preFilteredSpam: number;
   haikuSpam: number;
+  /**
+   * S23 — emails intéressants traités en silence (documentation + éventuel
+   * brouillon, sans carte de validation). Remplace l'ancien `pendingCreated`
+   * (plus de pending de validation générique). Conservé pour compat stats.
+   */
   pendingCreated: number;
   /** S18.5 : emails traités automatiquement (contact existant ou email système) */
   autoExecuted: number;
@@ -72,7 +82,11 @@ export interface IngestStats {
   systemEmailsFiltered: number;
   draftsCreated: number;
   draftsSkipped: number;
+  /** S23 — brouillons non créés car Thomas a déjà répondu dans le fil */
+  draftsSkippedAlreadyReplied: number;
   draftsFailed: number;
+  /** S23 — cartes de création de contact envoyées (no-match, seule carte conservée) */
+  contactCardsSent: number;
   errors: number;
   durationMs: number;
 }
@@ -134,7 +148,9 @@ export async function runEmailIngest(): Promise<IngestStats> {
     systemEmailsFiltered: 0,
     draftsCreated: 0,
     draftsSkipped: 0,
+    draftsSkippedAlreadyReplied: 0,
     draftsFailed: 0,
+    contactCardsSent: 0,
     errors: 0,
     durationMs: 0,
   };
@@ -196,10 +212,11 @@ export async function runEmailIngest(): Promise<IngestStats> {
   console.warn(
     `[email-ingest] terminé en ${stats.durationMs}ms — ` +
     `total=${stats.totalListed}, pré-filtrés=${stats.preFilteredSpam}, ` +
-    `haiku-spam=${stats.haikuSpam}, pendings=${stats.pendingCreated}, ` +
+    `haiku-spam=${stats.haikuSpam}, traités=${stats.pendingCreated}, ` +
     `auto=${stats.autoExecuted}, sys=${stats.systemEmailsFiltered}, ` +
-    `drafts=${stats.draftsCreated}/${stats.draftsSkipped}skip/${stats.draftsFailed}err, ` +
-    `erreurs=${stats.errors}`,
+    `drafts=${stats.draftsCreated}créés/${stats.draftsSkipped}skip/` +
+    `${stats.draftsSkippedAlreadyReplied}déjà-répondu/${stats.draftsFailed}err, ` +
+    `cartes-contact=${stats.contactCardsSent}, erreurs=${stats.errors}`,
   );
 
   return stats;
@@ -295,8 +312,9 @@ async function processOneEmail(
     );
   }
 
-  // (e) Hot-context → carte dédiée `hotcontext:` (PAS la carte email principale,
-  // anti-bruit : c'est un flux de validation distinct avec sa propre machinerie).
+  // Hot-context → carte dédiée `hotcontext:` (flux de validation distinct, conservé).
+  // C'est la seule exception à l'autonomie : un patch hot-context reste validé
+  // par Thomas via sa propre machinerie (pas la carte email générique supprimée).
   const hotContextActions = coherenceActions.filter((a) => a.type === 'update_hot_context');
   for (const hcAction of hotContextActions) {
     const patch = hcAction.payload['patch'] as Patch | undefined;
@@ -310,89 +328,90 @@ async function processOneEmail(
     }
   }
 
-  // Les actions restantes (projet histo auto + copie PJ proposée) rejoignent le
-  // flux carte email principale / auto-execute classique.
-  const actions = [
+  // Toutes les actions (handler + cohérence), hors hot-context déjà traité.
+  const allActions = [
     ...handlerActions,
     ...coherenceActions.filter((a) => a.type !== 'update_hot_context'),
   ];
 
-  // S18.5 : si TOUTES les actions sont auto-exécutables, court-circuiter
-  // la validation Telegram. Cas typiques :
-  //   - contact existant (handleContactPro buildExistingContactActions)
-  //   - email système (noreply@, contact@) filtré par contact-pro
-  // Pas de carte Telegram, pas de pending, pas de draft (Anya silencieuse).
-  const allAutoExecute =
-    actions.length > 0 && actions.every((a) => a.autoExecute === true);
+  // Séparer la proposition de création de contact (no-match) : c'est la SEULE
+  // interaction Telegram conservée (S23). Tout le reste est documentation auto.
+  const noMatchAction = allActions.find((a) => a.type === 'prompt_create_contact_choice');
+  // copy_attachment nécessitait une validation Thomas (carte supprimée S23) et
+  // une résolution de sous-dossier — hors périmètre de la documentation auto
+  // append-only. Exclu pour éviter un échec/log trompeur à chaque PJ. À traiter
+  // séparément (build #2 / réintégration dédiée).
+  const docActions = allActions.filter(
+    (a) => a.type !== 'prompt_create_contact_choice' && a.type !== 'copy_attachment',
+  );
 
-  if (allAutoExecute) {
-    const isSystemEmailAction = actions.some(
-      (a) =>
-        a.type === 'mark_processed' &&
-        (a.payload as Record<string, unknown>)['reason'] === 'system-email',
-    );
+  // (a) DOCUMENTATION — silencieuse, automatique, que l'email soit répondu ou non.
+  // S23 : plus de carte de validation. Les actions de documentation (historique
+  // contact/projet, dépôt A classifier) sont append-only / faible risque →
+  // exécutées directement, qu'elles soient marquées autoExecute ou non.
+  const isSystemEmailAction = docActions.some(
+    (a) =>
+      a.type === 'mark_processed' &&
+      (a.payload as Record<string, unknown>)['reason'] === 'system-email',
+  );
 
-    await executeAutoActions(actions, detail, triage, isSystemEmailAction);
+  if (docActions.length > 0) {
+    await executeAutoActions(docActions, detail, triage, isSystemEmailAction);
+  }
 
+  // Email système (noreply@, contact@…) : marqué traité, aucun brouillon, aucune carte.
+  if (isSystemEmailAction) {
     stats.autoExecuted++;
-    if (isSystemEmailAction) stats.systemEmailsFiltered++;
+    stats.systemEmailsFiltered++;
     return;
   }
 
-  // Composer un brouillon de réponse Gmail (Jalon 5B)
-  let draftResult: DraftResult | null = null;
+  // (b) DÉTECTION « déjà répondu » — si Thomas a déjà répondu dans le fil, on
+  // documente (déjà fait ci-dessus) mais on ne prépare PAS de brouillon.
+  let alreadyReplied = false;
   try {
-    draftResult = await composeDraft(detail, triage);
-    if (draftResult.success) {
-      stats.draftsCreated++;
-    } else if (draftResult.skipReason) {
-      stats.draftsSkipped++;
-    } else {
+    alreadyReplied = await hasReplyFromMe(detail.threadId);
+  } catch (err) {
+    // Fail-open : en cas de doute on tente le brouillon (mieux qu'un email orphelin).
+    console.warn(
+      `[email-ingest] hasReplyFromMe échoué pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // (c) BROUILLON — seulement si pas déjà répondu. Création silencieuse, rattachée
+  // au fil (threadId + In-Reply-To via draft-composer). Aucune carte, aucune notif.
+  if (alreadyReplied) {
+    stats.draftsSkippedAlreadyReplied++;
+    console.warn(
+      `[email-ingest] ${messageId} : Thomas a déjà répondu dans le fil — pas de brouillon`,
+    );
+  } else {
+    try {
+      const draftResult = await composeDraft(detail, triage);
+      if (draftResult.success) {
+        stats.draftsCreated++;
+      } else if (draftResult.skipReason) {
+        stats.draftsSkipped++;
+      } else {
+        stats.draftsFailed++;
+        console.warn(
+          `[email-ingest] draft échoué pour ${messageId} : ${draftResult.error ?? 'erreur inconnue'}`,
+        );
+      }
+    } catch (err) {
       stats.draftsFailed++;
       console.warn(
-        `[email-ingest] draft échoué pour ${messageId} : ${draftResult.error ?? 'erreur inconnue'}`,
+        `[email-ingest] erreur inattendue draft pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-  } catch (err) {
-    stats.draftsFailed++;
-    console.warn(
-      `[email-ingest] erreur inattendue draft pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
-    );
   }
 
-  // Séparer les actions : filtrer prompt_create_contact_choice (traitée séparément)
-  const noMatchAction = actions.find((a) => a.type === 'prompt_create_contact_choice');
-  const cardActions = actions.filter((a) => a.type !== 'prompt_create_contact_choice');
-
-  // Créer le pending + envoyer la carte Telegram principale
-  const pendingId = randomUUID();
-  const pending: PendingValidation = {
-    id: pendingId,
-    triage,
-    actions: cardActions,
-    email: serializeEmail(detail),
-    createdAt: new Date().toISOString(),
-    draftGmailUrl: draftResult?.gmailUrl ?? undefined,
-    draftPreview: draftResult?.preview ?? undefined,
-  };
-
-  await savePending(pending);
-
-  try {
-    await sendValidationCard(pending);
-  } catch (err) {
-    console.warn(
-      `[email-ingest] erreur envoi carte Telegram pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
-    );
-    // Le pending est sauvegardé, Thomas pourra valider si Telegram revient
-  }
-
-  // Si action no-match → créer un NoMatchPending et envoyer carte secondaire
+  // (d) CONTACT INCONNU → carte de création de contact (la SEULE carte conservée).
   if (noMatchAction) {
-    const noMatchId = randomUUID();
     const noMatch: NoMatchPending = {
-      id: noMatchId,
-      parentPendingId: pendingId,
+      id: randomUUID(),
+      // Plus de pending de validation parent : la carte no-match est autonome.
+      parentPendingId: noMatchAction.payload['emailMessageId'] as string,
       emailFrom: noMatchAction.payload['emailFrom'] as string,
       nameFrom: (noMatchAction.payload['nameFrom'] as string | null) ?? null,
       defaultType: (noMatchAction.payload['defaultType'] as NoMatchPending['defaultType']) ?? 'autres',
@@ -405,6 +424,7 @@ async function processOneEmail(
 
     try {
       await sendNoMatchCard(noMatch);
+      stats.contactCardsSent++;
     } catch (err) {
       console.warn(
         `[email-ingest] erreur envoi carte no-match pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
@@ -412,8 +432,7 @@ async function processOneEmail(
     }
   }
 
-  // Créer une tâche TickTick pour les emails nécessitant une action
-  // (toutes les catégories sauf spam auto-filtré — ceux qui arrivent ici sont actionnables)
+  // Créer une tâche TickTick pour les emails nécessitant une action.
   try {
     await createTickTickTaskForEmail(detail, triage);
   } catch (err) {
@@ -631,21 +650,4 @@ async function executeAutoAction(
     const msg = err instanceof Error ? err.message : String(err);
     return { ok: false, error: msg };
   }
-}
-
-// ============================================================
-// Utilitaires
-// ============================================================
-
-/**
- * Sérialise un EmailMessage pour le stockage dans le pending.
- * La Date est convertie en string ISO pour la sérialisation JSON.
- */
-function serializeEmail(email: EmailMessage): EmailMessage {
-  return {
-    ...email,
-    receivedAt: email.receivedAt instanceof Date
-      ? email.receivedAt
-      : new Date(email.receivedAt),
-  };
 }
