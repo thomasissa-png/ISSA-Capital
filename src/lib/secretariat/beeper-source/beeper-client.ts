@@ -47,37 +47,57 @@ export function isBeeperConfigured(): boolean {
  * les bons chemins REST du Beeper Server (la doc runbook ne couvre que la CLI).
  * Lecture seule.
  */
+async function getJson(path: string): Promise<{ status: number; text: string }> {
+  const res = await fetch(`${baseUrl()}${path}`, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(BEEPER_TIMEOUT_MS),
+  });
+  return { status: res.status, text: await res.text().catch(() => '') };
+}
+
 export async function probeBeeperApi(): Promise<void> {
-  const tok = token();
-  if (!tok) {
-    console.warn('[beeper-probe] BEEPER_ACCESS_TOKEN absent du .env.local — rien à sonder');
-    return;
-  }
-  const base = baseUrl();
-  const candidates = [
-    '/v1/chats',
-    '/api/v1/chats',
-    '/v1/accounts',
-    '/api/v1/accounts',
-    '/v1/get-chats',
-    '/v0/get-chats',
-    '/v1/me',
-    '/',
-  ];
-  for (const path of candidates) {
+  // L'API interne /api/v1/* est accessible en localhost sans Bearer (le token
+  // server.json est un token Matrix, refusé par /v1/*). On explore /api/v1/.
+  const chatPaths = ['/api/v1/chats?limit=3', '/api/v1/chats', '/api/v1/accounts'];
+  let firstChatId: string | undefined;
+  for (const p of chatPaths) {
     try {
-      const res = await fetch(`${base}${path}`, {
-        headers: { Authorization: `Bearer ${tok}`, Accept: 'application/json' },
-        signal: AbortSignal.timeout(BEEPER_TIMEOUT_MS),
-      });
-      const body = await res.text().catch(() => '');
-      console.warn(
-        `[beeper-probe] GET ${path} → ${res.status} ${res.statusText} :: ${body.slice(0, 180).replace(/\s+/g, ' ')}`,
-      );
+      const { status, text } = await getJson(p);
+      console.warn(`[beeper-probe] GET ${p} → ${status} :: ${text.slice(0, 700).replace(/\s+/g, ' ')}`);
+      if (!firstChatId && status === 200 && text.trim()) {
+        try {
+          const data = JSON.parse(text) as unknown;
+          const items = Array.isArray(data)
+            ? data
+            : ((data as Record<string, unknown>).items as unknown[]) ??
+              ((data as Record<string, unknown>).chats as unknown[]) ??
+              [];
+          const first = items[0] as Record<string, unknown> | undefined;
+          firstChatId = (first?.id ?? first?.chatID ?? first?.guid) as string | undefined;
+        } catch {
+          /* pas du JSON parseable */
+        }
+      }
     } catch (err) {
-      console.warn(
-        `[beeper-probe] GET ${path} → ERREUR ${err instanceof Error ? err.message : String(err)}`,
-      );
+      console.warn(`[beeper-probe] GET ${p} → ERREUR ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+  // Découverte de l'endpoint messages à partir d'un chat id réel.
+  if (firstChatId) {
+    const enc = encodeURIComponent(firstChatId);
+    for (const p of [
+      `/api/v1/chats/${enc}/messages?limit=2`,
+      `/api/v1/messages?chatID=${enc}&limit=2`,
+      `/api/v1/messages?chat_id=${enc}&limit=2`,
+    ]) {
+      try {
+        const { status, text } = await getJson(p);
+        console.warn(`[beeper-probe] GET ${p} → ${status} :: ${text.slice(0, 500).replace(/\s+/g, ' ')}`);
+      } catch (err) {
+        console.warn(`[beeper-probe] GET ${p} → ERREUR ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  } else {
+    console.warn('[beeper-probe] aucun chat id extrait — schéma /api/v1/chats à inspecter');
   }
 }
