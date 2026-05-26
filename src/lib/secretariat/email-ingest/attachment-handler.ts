@@ -27,7 +27,7 @@ import { findContactByEmail } from '../vault-client';
 import { resolvePath } from '../vault-client/drive-resolver';
 import {
   getAccessToken,
-  getOrCreateSubfolder,
+  getOrCreateChildFolder,
   uploadBinaryToFolder,
 } from '../drive-upload';
 
@@ -154,7 +154,8 @@ export interface CopyAttachmentResult {
  * Pipeline :
  *   1. Download binaire via Gmail attachments.get
  *   2. Résolution folderId Drive du dossier de base (resolvePath)
- *   3. getOrCreateSubfolder(ATTACHMENT_SUBFOLDER)
+ *   3. getOrCreateChildFolder(ATTACHMENT_SUBFOLDER) — PAS getOrCreateSubfolder
+ *      (son env-map mappe 'Documents' à l'inbox, hors fiche).
  *   4. uploadBinaryToFolder
  *
  * Tout échec → { ok:false, error } (jamais throw). Replit autoscale : tout est
@@ -189,8 +190,11 @@ export async function executeCopyAttachment(
     };
   }
 
-  // 3. Sous-dossier (créé à la volée si absent)
-  const subfolderId = await getOrCreateSubfolder(
+  // 3. Sous-dossier (créé à la volée si absent).
+  // S23 : getOrCreateChildFolder (PAS getOrCreateSubfolder) — l'env-map de ce
+  // dernier mappe 'Documents' à l'INBOX, les PJ atterriraient au mauvais endroit.
+  // On veut le sous-dossier Documents/ de la fiche projet/contact résolue.
+  const subfolderId = await getOrCreateChildFolder(
     accessToken,
     baseResolved.fileId,
     destination.subfolder,
