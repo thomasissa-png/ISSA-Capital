@@ -36,6 +36,11 @@ import {
   slugifyVaultFilename,
   buildHistoriqueTitle,
 } from '../handlers/vault-paths';
+import { gatherContactEmails } from '../gmail-source/contact-emails-gatherer';
+import {
+  synthesizeContactFiche,
+  renderEnrichedFiche,
+} from './contact-fiche-synth';
 
 // ============================================================
 // Types
@@ -424,22 +429,19 @@ function extractLocalPart(email: string): string {
 }
 
 /**
- * Traite un callback no-match : crée la fiche contact dans le vault.
+ * Construit le contenu de la fiche stub (mono-email) — fallback historique.
+ * Utilisé si l'enrichissement (scan boîte + synthèse LLM) échoue ou ne trouve
+ * rien : on ne bloque JAMAIS la création de fiche.
  */
-async function handleNoMatchCallback(
+function buildStubFiche(
   noMatch: NoMatchPending,
   type: ContactType,
-  callback: TelegramCallback,
-): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
-  const targetFolder = contactTypeToVaultPath(type);
+  today: string,
+): { displayName: string; content: string } {
   const displayName = noMatch.nameFrom
     ? noMatch.nameFrom
     : extractLocalPart(noMatch.emailFrom);
-  const filename = `${slugifyVaultFilename(displayName)}.md`;
-  const target = `${targetFolder}/${filename}`;
 
-  // Construire le contenu de la fiche
   const content = [
     '---',
     'type: contact',
@@ -466,6 +468,81 @@ async function handleNoMatchCallback(
     '',
   ].join('\n');
 
+  return { displayName, content };
+}
+
+/**
+ * Tente de construire une fiche ENRICHIE : scanne la boîte de l'expéditeur,
+ * synthétise les infos clés via le LLM `contact-fiche`, rend la fiche markdown.
+ *
+ * Robustesse : retourne `null` à la moindre défaillance (scan vide, synthèse
+ * KO) — l'appelant retombe alors sur le stub. Ne throw jamais.
+ */
+async function buildEnrichedFiche(
+  noMatch: NoMatchPending,
+  type: ContactType,
+  today: string,
+): Promise<{ displayName: string; content: string } | null> {
+  try {
+    const { emails, scanned } = await gatherContactEmails(noMatch.emailFrom);
+    if (emails.length === 0) {
+      return null;
+    }
+
+    const data = await synthesizeContactFiche({
+      senderEmail: noMatch.emailFrom,
+      nameFrom: noMatch.nameFrom,
+      type,
+      emails,
+      emailThreadRef: noMatch.emailThreadRef,
+    });
+    if (!data) {
+      return null;
+    }
+
+    return renderEnrichedFiche(
+      data,
+      {
+        senderEmail: noMatch.emailFrom,
+        nameFrom: noMatch.nameFrom,
+        type,
+        today,
+        emailThreadRef: noMatch.emailThreadRef,
+      },
+      scanned,
+    );
+  } catch (err) {
+    console.warn(
+      `[callback-handler] enrichissement fiche échoué pour ${noMatch.emailFrom} : ${err instanceof Error ? err.message : String(err)} — fallback stub`,
+    );
+    return null;
+  }
+}
+
+/**
+ * Traite un callback no-match : crée la fiche contact dans le vault.
+ *
+ * S23 : avant d'écrire la fiche, tente un enrichissement (scan boîte mail de
+ * l'expéditeur + synthèse LLM). Si l'enrichissement échoue → fallback sur le
+ * stub mono-email (la création n'est jamais bloquée).
+ */
+async function handleNoMatchCallback(
+  noMatch: NoMatchPending,
+  type: ContactType,
+  callback: TelegramCallback,
+): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  const targetFolder = contactTypeToVaultPath(type);
+
+  // Enrichissement (await complet — pas de fire-and-forget) avec fallback stub.
+  const enriched = await buildEnrichedFiche(noMatch, type, today);
+  const fiche = enriched ?? buildStubFiche(noMatch, type, today);
+  const enrichedUsed = enriched !== null;
+
+  const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
+  const target = `${targetFolder}/${filename}`;
+  const content = fiche.content;
+
   const trigger = `email_nomatch:${type}:${noMatch.id}`;
 
   // Créer le fichier via vault-client
@@ -482,7 +559,7 @@ async function handleNoMatchCallback(
 
   // Audit JSONL
   await auditAction(
-    'nomatch_create',
+    enrichedUsed ? 'nomatch_create_enriched' : 'nomatch_create',
     type,
     noMatch.id,
     target,
@@ -495,10 +572,11 @@ async function handleNoMatchCallback(
   // Edit le message Telegram
   const { text: originalText } = buildNoMatchCard(noMatch);
   const time = currentTimeHHMM();
+  const ficheLabel = enrichedUsed ? 'Fiche enrichie créée' : 'Fiche créée';
   await editMessageText(
     callback.chat_id,
     callback.message_id,
-    originalText + `\n\n\u{2705} Fiche créée : ${target} à ${time}`,
+    originalText + `\n\n\u{2705} ${ficheLabel} : ${target} à ${time}`,
   );
 }
 
