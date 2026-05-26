@@ -200,6 +200,58 @@ export async function listLabels(): Promise<Array<{ id: string; name: string }>>
   return labels;
 }
 
+/**
+ * Récupère les messages d'un thread Gmail (avec leurs labelIds).
+ *
+ * Endpoint : users.threads.get (format=minimal pour rester léger — on ne veut
+ * que les labelIds, pas le payload complet). Réutilise getAccessToken().
+ *
+ * @param threadId ID du thread Gmail
+ * @returns Liste des messages { id, labelIds }, ou tableau vide en cas d'échec.
+ *   Ne throw jamais — l'appelant traite le vide comme « indéterminé ».
+ */
+export async function getThreadMessages(
+  threadId: string,
+): Promise<Array<{ id: string; labelIds: string[] }>> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    console.warn('[gmail-client] getThreadMessages : pas de token OAuth2');
+    return [];
+  }
+
+  const userId = process.env.GMAIL_USER_EMAIL ?? 'me';
+  const url = `${GMAIL_API}/users/${encodeURIComponent(userId)}/threads/${encodeURIComponent(threadId)}?format=minimal`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(
+        `[gmail-client] getThreadMessages(${threadId}) HTTP ${response.status} — ${errText.slice(0, 200)}`,
+      );
+      return [];
+    }
+
+    const data = (await response.json()) as {
+      messages?: Array<{ id?: string; labelIds?: string[] }>;
+    };
+
+    return (data.messages ?? []).map((m) => ({
+      id: m.id ?? '',
+      labelIds: m.labelIds ?? [],
+    }));
+  } catch (err) {
+    console.warn(
+      `[gmail-client] getThreadMessages(${threadId}) erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return [];
+  }
+}
+
 // ============================================================
 // Création de brouillon Gmail
 // ============================================================

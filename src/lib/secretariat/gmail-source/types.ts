@@ -26,6 +26,19 @@ export interface EmailMessage {
   source: 'gmail' | 'outlook';
   /** Message ID Gmail (users.messages.get) */
   id: string;
+  /**
+   * Thread ID Gmail — identifie le fil de conversation.
+   * Sert à rattacher un brouillon de réponse au bon fil (createDraft.threadId)
+   * et à détecter si Thomas a déjà répondu (hasReplyFromMe).
+   * Optionnel : undefined si la source ne l'expose pas (ex: anciens fixtures).
+   */
+  threadId?: string;
+  /**
+   * Header `Message-ID` RFC 2822 du mail entrant (ex: <abc@mail.example.com>).
+   * Sert d'`In-Reply-To` / `References` pour que le brouillon s'affiche
+   * correctement « en réponse » dans le fil. Optionnel.
+   */
+  messageIdHeader?: string;
   from: EmailAddress;
   to: EmailAddress[];
   cc: EmailAddress[];

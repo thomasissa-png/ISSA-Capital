@@ -16,6 +16,7 @@ import {
   getMessage,
   modifyLabels,
   getHeader,
+  getThreadMessages,
   parseEmailAddress,
   parseEmailAddresses,
   extractBodyPlain,
@@ -68,6 +69,8 @@ export async function fetchDetail(messageId: string): Promise<EmailMessage | nul
   const cc = getHeader(raw, 'Cc');
   const subject = getHeader(raw, 'Subject') ?? '(sans objet)';
   const date = getHeader(raw, 'Date');
+  // Header RFC 2822 — sert d'In-Reply-To / References pour rattacher le brouillon au fil.
+  const messageIdHeader = getHeader(raw, 'Message-ID') ?? getHeader(raw, 'Message-Id') ?? undefined;
 
   const parsedFrom = from ? parseEmailAddress(from) : { email: 'unknown@unknown.com' };
   const parsedTo = parseEmailAddresses(to);
@@ -95,6 +98,10 @@ export async function fetchDetail(messageId: string): Promise<EmailMessage | nul
   return {
     source: 'gmail',
     id: messageId,
+    // gmail-source connaît déjà le threadId (raw.threadId) — on l'expose pour
+    // le threading du brouillon et la détection « déjà répondu ».
+    threadId: raw.threadId ?? undefined,
+    messageIdHeader,
     from: parsedFrom,
     to: parsedTo,
     cc: parsedCc,
@@ -104,6 +111,32 @@ export async function fetchDetail(messageId: string): Promise<EmailMessage | nul
     attachments,
     rawRef,
   };
+}
+
+/**
+ * Détermine si un message du thread a été envoyé par le compte (label SENT).
+ *
+ * Sert au runner email-ingest : si Thomas a déjà répondu dans le fil, on
+ * documente l'email mais on ne crée PAS de brouillon (S23).
+ *
+ * Stratégie : `users.threads.get` (format minimal) → vrai si AU MOINS un message
+ * du thread porte le label `SENT`. En cas d'échec API ou de threadId absent,
+ * retourne `false` (ne bloque pas la création de brouillon — fail-open : mieux
+ * vaut un brouillon en trop qu'un email sans réponse préparée).
+ *
+ * @param threadId ID du thread Gmail (EmailMessage.threadId)
+ * @returns true si un message SENT existe dans le thread
+ */
+export async function hasReplyFromMe(threadId: string | undefined): Promise<boolean> {
+  if (!threadId) return false;
+
+  const messages = await getThreadMessages(threadId);
+  if (messages.length === 0) {
+    // Thread vide / API KO → indéterminé → fail-open (pas « déjà répondu »).
+    return false;
+  }
+
+  return messages.some((m) => m.labelIds.includes('SENT'));
 }
 
 /**

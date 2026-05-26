@@ -7,15 +7,15 @@
  * Pipeline :
  *   1. Lire la fiche contact (vault-reader TTL 1h) → tu/vous + registre
  *   2. Charger la tonalité Thomas (fiche Thomas Issa.md → section Tonalité)
- *   3. Appeler Sonnet 4 pour rédiger le brouillon
- *   4. Créer le draft via Gmail API (drafts.create)
- *   5. Retourner l'URL Gmail pour le bouton Telegram
+ *   3. Appeler le LLM (task email-draft) pour rédiger le brouillon
+ *   4. Garde « corps non vide » : si le LLM rend < 40 caractères → échec, pas de brouillon
+ *   5. Créer le draft via Gmail API (drafts.create), rattaché au fil (threadId + In-Reply-To)
  *
- * Modèle LLM : Sonnet 4 (rédaction texte, pas extraction JSON).
+ * Modèle LLM : routé via task 'email-draft' (rédaction texte, pas extraction JSON).
  * Fallback tonalité : vouvoiement, ton professionnel chaleureux,
  *   courte signature « Thomas Issa ».
  *
- * Spec: docs/session-memo-s15.md §5B.
+ * Spec: docs/session-memo-s15.md §5B + docs/orchestration-plan-s23-email-workflow.md.
  */
 
 import type { EmailMessage } from '../gmail-source/types';
@@ -36,6 +36,13 @@ import type { SkillContext } from '../skills/types';
 
 /** Timeout LLM */
 const LLM_TIMEOUT_MS = 30_000;
+
+/**
+ * Longueur minimale du corps généré pour qu'un brouillon soit créé (S23).
+ * En dessous, on considère que le LLM a échoué (corps vide ou « Bonjour » seul)
+ * et on N'ENVOIE PAS le brouillon — pas de brouillon vide dans Gmail.
+ */
+const MIN_DRAFT_BODY_LENGTH = 40;
 
 /** Catégories qui ne génèrent PAS de brouillon */
 const SKIP_CATEGORIES = new Set(['spam', 'candidat']);
@@ -107,16 +114,28 @@ export async function composeDraft(
     // 2. Charger le contexte tonalité
     const tonality = await loadTonalityContext(email.from.email, triage);
 
-    // 3. Générer le corps du brouillon via Sonnet
+    // 3. Générer le corps du brouillon via le LLM
     const draftBody = await generateDraftBody(email, triage, tonality);
     if (!draftBody) {
       return {
         success: false,
-        error: 'Sonnet n\'a pas retourné de contenu pour le brouillon',
+        error: 'Le LLM n\'a pas retourné de contenu pour le brouillon',
       };
     }
 
-    // 4. Créer le brouillon Gmail
+    // Garde « corps non vide » (S23) — un corps trop court (LLM qui a mangé son
+    // budget en réflexion, ou « Bonjour » seul) = échec, PAS de brouillon vide.
+    if (draftBody.trim().length < MIN_DRAFT_BODY_LENGTH) {
+      console.warn(
+        `[draft-composer] corps vide/trop court (${draftBody.trim().length} car.) — brouillon non créé`,
+      );
+      return {
+        success: false,
+        error: `Corps généré trop court (${draftBody.trim().length} < ${MIN_DRAFT_BODY_LENGTH} car.)`,
+      };
+    }
+
+    // 4. Créer le brouillon Gmail, rattaché au fil (threadId + In-Reply-To)
     const subject = buildReplySubject(email.subject);
     const gmailResult = await createDraft({
       to: email.from.email,
@@ -291,7 +310,8 @@ async function generateDraftBody(
       task: 'email-draft',
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
-      maxTokens: 1024,
+      // S23 — 2048 : marge pour que le modèle ne tronque pas un brouillon complet.
+      maxTokens: 2048,
       timeoutMs: LLM_TIMEOUT_MS,
     });
     return text || null;
@@ -423,26 +443,22 @@ function buildReplySubject(originalSubject: string): string {
 }
 
 /**
- * Extrait le threadId depuis un EmailMessage.
- * Le rawRef contient l'URL Gmail qui inclut le messageId,
- * mais le threadId n'est pas directement dans EmailMessage.
- * On retourne undefined — le threadId sera résolu par Gmail API
- * via le header In-Reply-To.
+ * Extrait le threadId depuis un EmailMessage (S23 — fix threading).
+ *
+ * gmail-source expose désormais `threadId` (raw.threadId). On le passe à
+ * createDraft pour que le brouillon soit rattaché au fil de l'email entrant
+ * et donc visible « en réponse » dans Gmail.
  */
-function extractThreadId(_email: EmailMessage): string | undefined {
-  // EmailMessage ne contient pas le threadId directement.
-  // Gmail API résoudra le fil via In-Reply-To.
-  return undefined;
+function extractThreadId(email: EmailMessage): string | undefined {
+  return email.threadId;
 }
 
 /**
- * Extrait le Message-ID (header RFC 2822) depuis le rawRef.
- * Le rawRef est l'URL Gmail, pas le Message-ID.
- * On retourne undefined — les drafts sans In-Reply-To
- * seront des réponses autonomes.
+ * Extrait le Message-ID (header RFC 2822) depuis un EmailMessage (S23 — fix).
+ *
+ * gmail-source expose désormais `messageIdHeader` (header `Message-ID` du mail
+ * entrant). Utilisé comme In-Reply-To / References pour un threading correct.
  */
-function extractMessageId(_email: EmailMessage): string | undefined {
-  // EmailMessage ne contient pas le header Message-ID.
-  // Le draft sera créé sans In-Reply-To.
-  return undefined;
+function extractMessageId(email: EmailMessage): string | undefined {
+  return email.messageIdHeader;
 }
