@@ -11,6 +11,24 @@
  * 🔒 Scopes EN LECTURE/BROUILLON UNIQUEMENT — JAMAIS `Mail.Send` (règle 11).
  */
 
+import { loadEnvConfig } from '@next/env';
+
+// `next start` ne peuple PAS process.env depuis .env.local pour les accès
+// dynamiques (process.env[clé]), et l'instrumentation de démarrage ne couvre
+// pas forcément le contexte d'exécution de la route. On charge donc .env.local
+// ICI, dans le module importé par les handlers — garanti dans le bon contexte.
+// Idempotent (cache @next/env), best-effort.
+let envLoaded = false;
+function ensureEnvLoaded(): void {
+  if (envLoaded) return;
+  try {
+    loadEnvConfig(process.cwd());
+  } catch {
+    /* best-effort */
+  }
+  envLoaded = true;
+}
+
 export const OUTLOOK_REDIRECT_URI = 'https://issa-capital.com/api/outlook-auth/callback';
 
 /** Scopes délégués Microsoft Graph — lecture + brouillon, JAMAIS d'envoi. */
@@ -37,12 +55,17 @@ export interface OutlookAppConfig {
  * OUTLOOK_CLIENT_ID_<BOX> / OUTLOOK_TENANT_ID_<BOX> / OUTLOOK_CLIENT_SECRET_<BOX>.
  */
 export function resolveOutlookApp(rawBox: string): OutlookAppConfig | null {
+  ensureEnvLoaded();
   const box = rawBox.trim().toLowerCase();
   if (!OUTLOOK_BOXES.includes(box as OutlookBox)) return null;
   const suffix = box.toUpperCase();
+  const clientId = process.env[`OUTLOOK_CLIENT_ID_${suffix}`];
+  console.warn(
+    `[outlook-auth] resolveOutlookApp box=${box} — clientId=${clientId ? 'OK' : 'X'} (contexte route)`,
+  );
   return {
     box: box as OutlookBox,
-    clientId: process.env[`OUTLOOK_CLIENT_ID_${suffix}`],
+    clientId,
     tenant: process.env[`OUTLOOK_TENANT_ID_${suffix}`] ?? 'organizations',
     clientSecret: process.env[`OUTLOOK_CLIENT_SECRET_${suffix}`],
   };
