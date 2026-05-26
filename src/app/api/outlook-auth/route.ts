@@ -1,45 +1,58 @@
 /**
- * GET /api/outlook-auth — Autorisation OAuth2 Microsoft Graph (one-time setup).
+ * GET /api/outlook-auth?box=sarani|versi — Autorisation OAuth2 Microsoft.
  *
- * Calqué sur /api/drive-auth (Google), pour brancher une boîte Outlook 365.
- * Thomas visite cette URL UNE FOIS PAR BOÎTE (Sarani, Versi) :
- *  1. Redirigé vers Microsoft pour choisir le compte + autoriser
- *  2. Microsoft redirige vers /api/outlook-auth/callback?code=XXX
- *  3. La callback échange le code et affiche le refresh token + l'email détecté
- *  4. Thomas copie le refresh token dans les secrets VPS (clé par boîte)
+ * UNE app Entra PAR boîte (orgas différentes). On choisit la boîte via ?box=…,
+ * on redirige vers Microsoft, et on transporte la boîte dans `state` pour que
+ * la callback sache quelle app utiliser à l'échange du code.
  *
- * 🔒 INVARIANT SÉCURITÉ (règle 11) — scopes EN LECTURE/BROUILLON UNIQUEMENT
- * (voir oauth-shared.ts). JAMAIS `Mail.Send`.
+ * 🔒 Scopes lecture/brouillon uniquement — JAMAIS `Mail.Send` (règle 11).
  */
 
 import {
+  OUTLOOK_BOXES,
   OUTLOOK_REDIRECT_URI,
   OUTLOOK_SCOPES,
   outlookAuthorizeUrl,
+  resolveOutlookApp,
 } from './oauth-shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<Response> {
-  const clientId = process.env.OUTLOOK_CLIENT_ID;
-  const tenant = process.env.OUTLOOK_TENANT_ID ?? 'common';
+function html(body: string): Response {
+  return new Response(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:680px;margin:40px auto;padding:20px;">${body}</body></html>`,
+    { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+  );
+}
 
-  if (!clientId) {
-    return new Response(
-      '<h1>Configuration manquante</h1><p>Ajoute <code>OUTLOOK_CLIENT_ID</code> (et <code>OUTLOOK_TENANT_ID</code>, <code>OUTLOOK_CLIENT_SECRET</code>) dans les secrets VPS (.env.local), puis redéploie.</p>',
-      { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+export async function GET(request: Request): Promise<Response> {
+  const box = new URL(request.url).searchParams.get('box') ?? '';
+  const app = resolveOutlookApp(box);
+
+  if (!app) {
+    const links = OUTLOOK_BOXES.map(
+      (b) => `<li><a href="/api/outlook-auth?box=${b}">Autoriser la boîte ${b}</a></li>`,
+    ).join('');
+    return html(`<h1>Choisis la boîte à autoriser</h1><ul>${links}</ul>`);
+  }
+
+  if (!app.clientId) {
+    const s = app.box.toUpperCase();
+    return html(
+      `<h1>Configuration manquante (${app.box})</h1><p>Ajoute dans le <code>.env.local</code> du VPS : <code>OUTLOOK_CLIENT_ID_${s}</code>, <code>OUTLOOK_TENANT_ID_${s}</code>, <code>OUTLOOK_CLIENT_SECRET_${s}</code>, puis redémarre Anya.</p>`,
     );
   }
 
-  const url = new URL(outlookAuthorizeUrl(tenant));
-  url.searchParams.set('client_id', clientId);
+  const url = new URL(outlookAuthorizeUrl(app.tenant));
+  url.searchParams.set('client_id', app.clientId);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('redirect_uri', OUTLOOK_REDIRECT_URI);
   url.searchParams.set('response_mode', 'query');
   url.searchParams.set('scope', OUTLOOK_SCOPES);
-  // select_account : permet de choisir la boîte (Sarani puis Versi) à chaque passage.
   url.searchParams.set('prompt', 'select_account');
+  // Transporte la boîte jusqu'à la callback (échange avec la bonne app).
+  url.searchParams.set('state', app.box);
 
   return Response.redirect(url.toString());
 }
