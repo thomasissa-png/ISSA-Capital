@@ -77,6 +77,26 @@ vi.mock('../../vault-client/audit-log', () => ({
   writeAuditLog: (...args: unknown[]) => mockWriteAuditLog(...args),
 }));
 
+// S23 — enrichissement fiche contact (scan boîte + synthèse LLM).
+// Par défaut : scan vide → null synthèse → fallback stub (préserve les tests
+// no-match historiques). Les tests d'enrichissement surchargent ces mocks.
+const mockGatherContactEmails = vi.fn().mockResolvedValue({ emails: [], scanned: 0 });
+
+vi.mock('../../gmail-source/contact-emails-gatherer', () => ({
+  gatherContactEmails: (...args: unknown[]) => mockGatherContactEmails(...args),
+}));
+
+const mockSynthesizeContactFiche = vi.fn().mockResolvedValue(null);
+// renderEnrichedFiche reste la vraie implémentation (fonction pure) — on veut
+// vérifier le markdown réellement produit.
+vi.mock('../contact-fiche-synth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../contact-fiche-synth')>();
+  return {
+    ...actual,
+    synthesizeContactFiche: (...args: unknown[]) => mockSynthesizeContactFiche(...args),
+  };
+});
+
 // ============================================================
 // Mock fetch for Telegram API (editMessageText, sendSimpleMessage)
 // ============================================================
@@ -203,6 +223,8 @@ beforeEach(() => {
   mockCreateVaultFile.mockResolvedValue(true);
   mockAppendToTodoInbox.mockResolvedValue({ success: true });
   mockMarkProcessed.mockResolvedValue(true);
+  mockGatherContactEmails.mockResolvedValue({ emails: [], scanned: 0 });
+  mockSynthesizeContactFiche.mockResolvedValue(null);
   setupFetchMock();
 });
 
@@ -678,5 +700,124 @@ describe('handleTelegramCallback — no-match dispatch', () => {
     await handleTelegramCallback(makeNoMatchCallback('pro'));
 
     expect(mockAnswerCallbackQuery).toHaveBeenCalledWith('cq-nm-001');
+  });
+});
+
+// ============================================================
+// Tests — Enrichissement fiche contact (S23 §3.C)
+// ============================================================
+
+describe('handleTelegramCallback — no-match enrichissement (S23)', () => {
+  it('scan trouve des emails + synthèse OK → fiche Pro enrichie (rôle/société/sujets)', async () => {
+    mockGatherContactEmails.mockResolvedValue({
+      emails: [
+        { date: '2026-05-20', subject: 'Dossier club deal', excerpt: 'Bonjour, ...', direction: 'from' },
+        { date: '2026-05-18', subject: 'Re: structuration', excerpt: 'Merci ...', direction: 'to' },
+        { date: '2026-05-10', subject: 'Présentation société', excerpt: 'Je suis ...', direction: 'from' },
+        { date: '2026-05-02', subject: 'Premier contact', excerpt: 'Cordialement ...', direction: 'from' },
+      ],
+      scanned: 4,
+    });
+    mockSynthesizeContactFiche.mockResolvedValue({
+      nomComplet: 'François Lambert',
+      role: 'Directeur des investissements',
+      societe: 'Lambert Capital',
+      sujets: ['Club deal', 'Structuration patrimoniale'],
+      langue: 'français formel',
+    });
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    // Scan + synthèse appelés avec l'email de l'expéditeur
+    expect(mockGatherContactEmails).toHaveBeenCalledWith('francois@exemple.com');
+    expect(mockSynthesizeContactFiche).toHaveBeenCalledOnce();
+
+    // Fiche créée dans le bon dossier Pro (filename slugifié ASCII).
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    expect(mockCreateVaultFile.mock.calls[0]![0]).toBe('07. Contacts/03. Pro');
+    expect(mockCreateVaultFile.mock.calls[0]![1]).toBe('Francois Lambert.md');
+
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('categorie: pro');
+    expect(content).toContain('# François Lambert'); // titre garde l'accent
+    expect(content).toContain('role: Directeur des investissements');
+    expect(content).toContain('societe: Lambert Capital');
+    expect(content).toContain('## Synthèse');
+    expect(content).toContain('Club deal');
+    expect(content).toContain('Structuration patrimoniale');
+    expect(content).toContain('Fiche enrichie à partir de 4 emails');
+
+    // Message Telegram : "Fiche enrichie créée"
+    const editCall = telegramFetchCalls.find((c) => c.url.includes('editMessageText'));
+    expect((editCall!.body['text'] as string)).toContain('Fiche enrichie créée');
+
+    // Audit : op enrichie
+    const auditCall = mockWriteAuditLog.mock.calls[0]![0];
+    expect(auditCall.trigger).toContain('nomatch_create_enriched');
+  });
+
+  it('scan vide → fallback stub (pas de blocage)', async () => {
+    mockGatherContactEmails.mockResolvedValue({ emails: [], scanned: 0 });
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    // synthèse non appelée (scan vide court-circuite)
+    expect(mockSynthesizeContactFiche).not.toHaveBeenCalled();
+
+    // Fiche stub créée quand même
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('Premier contact email');
+    expect(content).not.toContain('## Synthèse');
+
+    const editCall = telegramFetchCalls.find((c) => c.url.includes('editMessageText'));
+    expect((editCall!.body['text'] as string)).toContain('Fiche créée');
+    expect((editCall!.body['text'] as string)).not.toContain('enrichie');
+  });
+
+  it('scan OK mais synthèse LLM échoue (null) → fallback stub', async () => {
+    mockGatherContactEmails.mockResolvedValue({
+      emails: [{ date: '2026-05-20', subject: 'X', excerpt: 'Y', direction: 'from' }],
+      scanned: 1,
+    });
+    mockSynthesizeContactFiche.mockResolvedValue(null);
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('Premier contact email');
+    expect(content).not.toContain('## Synthèse');
+  });
+
+  it('scan/synthèse throw → fallback stub, pas de crash', async () => {
+    mockGatherContactEmails.mockRejectedValue(new Error('Gmail timeout'));
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    // Création jamais bloquée
+    expect(mockCreateVaultFile).toHaveBeenCalledOnce();
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('Premier contact email');
+    expect(mockDeleteNoMatch).toHaveBeenCalledWith('nomatch-abc123');
+  });
+
+  it('un seul email de l\'expéditeur → fiche enrichie depuis ce seul email', async () => {
+    mockGatherContactEmails.mockResolvedValue({
+      emails: [{ date: '2026-05-20', subject: 'Bonjour', excerpt: 'Texte', direction: 'from' }],
+      scanned: 1,
+    });
+    mockSynthesizeContactFiche.mockResolvedValue({
+      nomComplet: 'François Lambert',
+      societe: 'Lambert Capital',
+    });
+
+    await handleTelegramCallback(makeNoMatchCallback('pro'));
+
+    const content = mockCreateVaultFile.mock.calls[0]![2] as string;
+    expect(content).toContain('societe: Lambert Capital');
+    // Singulier "email" (pas "emails")
+    expect(content).toContain('Fiche enrichie à partir de 1 email');
+    expect(content).not.toContain('1 emails');
   });
 });
