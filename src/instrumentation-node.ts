@@ -45,5 +45,21 @@ void (async () => {
       `[startup-outlook] test connectivité échoué : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
+
+  // Sonde Beeper (Phase 2 — découverte API + validation token). Best-effort.
+  try {
+    const { probeBeeperApi, isBeeperConfigured } = await import(
+      './lib/secretariat/beeper-source/beeper-client'
+    );
+    if (isBeeperConfigured()) {
+      await probeBeeperApi();
+    } else {
+      console.warn('[startup-beeper] BEEPER_ACCESS_TOKEN absent — sonde ignorée');
+    }
+  } catch (err) {
+    console.warn(
+      `[startup-beeper] sonde échouée : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 })();
 
