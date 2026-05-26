@@ -12,7 +12,10 @@
 #
 # Format : <schedule cron> /home/thomas/ISSA-Capital/deploy/anya-cron.sh <endpoint>
 
-0 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-email-ingest >> /home/thomas/anya-cron.log 2>&1
+# email-ingest : run long (N emails × brouillon V4 Pro ~60s) → timeout 900s
+# (15 min). Le défaut 120s coupait le run au ~5e email (Next.js abandonnait le
+# contexte de requête sur déconnexion curl → boucle tuée, run partiel S23).
+0 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-email-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 1,16,31,46 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/calendar-ingest/cron >> /home/thomas/anya-cron.log 2>&1
 */15 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/ticktick/cron-poll >> /home/thomas/anya-cron.log 2>&1
 0 8 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1

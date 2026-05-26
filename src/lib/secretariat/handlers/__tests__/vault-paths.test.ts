@@ -50,8 +50,8 @@ describe('VAULT_PATHS', () => {
     expect(VAULT_PATHS.todoMd).toBe('03. Tâches/Todo.md');
   });
 
-  it('notesAClassifier pointe vers 05. Notes/A classifier', () => {
-    expect(VAULT_PATHS.notesAClassifier).toBe('05. Notes/A classifier');
+  it('notesAClassifier pointe vers _Inbox/A classifier (dossier réel S23)', () => {
+    expect(VAULT_PATHS.notesAClassifier).toBe('_Inbox/A classifier');
   });
 
   it('biensExistants pointe vers Immobilier Direct/Biens', () => {

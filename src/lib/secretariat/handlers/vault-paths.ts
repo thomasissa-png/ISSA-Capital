@@ -12,8 +12,13 @@
 // ============================================================
 
 export const VAULT_PATHS = {
-  /** Notes à classifier — N'EXISTE PAS encore, à créer au premier handler. */
-  notesAClassifier: '05. Notes/A classifier',
+  /**
+   * Notes à classifier (email no-match) — dossier réel `_Inbox/A classifier`
+   * (vérifié scan Drive S23 : seul `A classifier` du vault, sous `_Inbox`).
+   * L'ancien `05. Notes/A classifier` n'existait pas → createVaultFile échouait
+   * à chaque email no-match (locataire/contact-pro/a-classifier).
+   */
+  notesAClassifier: '_Inbox/A classifier',
 
   /** Contacts pro — 22 fiches existantes. Convention : Prenom Nom.md (ASCII). */
   contactsPro: '07. Contacts/03. Pro',
