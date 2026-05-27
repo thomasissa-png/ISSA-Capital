@@ -230,18 +230,8 @@ export function renderMirrorMarkdown(
   lines.push(`<!-- Dernière régénération : ${now.toISOString()}. Source : TickTick API. -->`);
   lines.push('');
 
-  // Section Inbox en tête (orphelines)
-  const orphans = grouped.get('') ?? [];
-  if (orphans.length > 0) {
-    lines.push(`## ${INBOX_SECTION}`);
-    lines.push('');
-    for (const t of orphans) {
-      lines.push(serializeTaskToLine(ticktickToVaultTask(t)));
-    }
-    lines.push('');
-  }
-
-  // Sections par projet (ordre alphabétique des noms de projet, déterministe)
+  // Sections par projet d'abord (ordre alpha FR = Critique → Important → Priorité
+  // basse, soit du plus chaud au moins chaud), puis l'Inbox en DERNIER.
   const projectSections: Array<{ name: string; tasks: TickTickTask[] }> = [];
   for (const [projectId, arr] of grouped.entries()) {
     if (projectId === '') continue;
@@ -254,6 +244,17 @@ export function renderMirrorMarkdown(
     lines.push(`## ${section.name}`);
     lines.push('');
     for (const t of section.tasks) {
+      lines.push(serializeTaskToLine(ticktickToVaultTask(t)));
+    }
+    lines.push('');
+  }
+
+  // Section Inbox EN DERNIER (orphelines : tâches sans projet connu = Inbox).
+  const orphans = grouped.get('') ?? [];
+  if (orphans.length > 0) {
+    lines.push(`## ${INBOX_SECTION}`);
+    lines.push('');
+    for (const t of orphans) {
       lines.push(serializeTaskToLine(ticktickToVaultTask(t)));
     }
     lines.push('');

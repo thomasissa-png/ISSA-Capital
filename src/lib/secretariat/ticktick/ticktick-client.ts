@@ -130,7 +130,23 @@ export async function completeTask(projectId: string, taskId: string): Promise<v
 }
 
 /**
- * Liste les tâches d'un projet. Si projectId non fourni, liste toutes les tâches.
+ * Résout l'ID du projet Inbox TickTick. L'API Open ne liste PAS toujours l'Inbox
+ * dans `/project` → on tente, dans l'ordre :
+ *   1. `TICKTICK_INBOX_PROJECT_ID` (override explicite — le plus fiable).
+ *   2. un projet nommé « Inbox » remonté par `/project`.
+ * Retourne null si non résolu (l'Inbox est alors simplement sautée).
+ */
+function resolveInboxProjectId(projects: TickTickProject[]): string | null {
+  const fromEnv = (process.env.TICKTICK_INBOX_PROJECT_ID ?? '').trim();
+  if (fromEnv) return fromEnv;
+  const byName = projects.find((p) => (p.name ?? '').trim().toLowerCase() === 'inbox');
+  return byName?.id ?? null;
+}
+
+/**
+ * Liste les tâches d'un projet. Si projectId non fourni, liste toutes les tâches
+ * de TOUS les projets + l'Inbox (les tâches créées en mobile via « + » et par le
+ * workflow n8n y atterrissent — sinon jamais ramenées dans Todo.md).
  */
 export async function listTasks(projectId?: string): Promise<TickTickTask[]> {
   if (projectId) {
@@ -154,7 +170,32 @@ export async function listTasks(projectId?: string): Promise<TickTickTask[]> {
     }
   }
 
-  return allTasks;
+  // Inbox : non listé par /project → fetch dédié (best-effort, n'interrompt jamais le poll).
+  const inboxId = resolveInboxProjectId(projects);
+  if (inboxId) {
+    try {
+      const data = await tickTickFetch<{ tasks: TickTickTask[] }>(`/project/${inboxId}/data`);
+      const n = data.tasks?.length ?? 0;
+      if (data.tasks) allTasks.push(...data.tasks);
+      console.warn(`[ticktick-client] inbox ${inboxId} → ${n} tâche(s)`);
+    } catch (err) {
+      console.warn(
+        `[ticktick-client] inbox ${inboxId} inaccessible — ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`,
+      );
+    }
+  } else {
+    console.warn('[ticktick-client] inbox non résolu (définir TICKTICK_INBOX_PROJECT_ID si besoin)');
+  }
+
+  // Dédup par id (au cas où l'Inbox serait aussi remontée par /project).
+  const seen = new Set<string>();
+  return allTasks.filter((t) => {
+    const id = (t as { id?: string }).id ?? '';
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 }
 
 // ============================================================

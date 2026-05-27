@@ -132,9 +132,9 @@ describe('renderMirrorMarkdown', () => {
     expect(inboxIdx).toBeGreaterThan(-1);
     expect(critiqueIdx).toBeGreaterThan(-1);
     expect(importantIdx).toBeGreaterThan(-1);
-    // Inbox en tête (avant projets)
-    expect(inboxIdx).toBeLessThan(critiqueIdx);
-    expect(inboxIdx).toBeLessThan(importantIdx);
+    // Inbox EN DERNIER (après les projets) — priorisation chaud→froid
+    expect(inboxIdx).toBeGreaterThan(critiqueIdx);
+    expect(inboxIdx).toBeGreaterThan(importantIdx);
     // Projets en ordre alphabétique français : Critique avant Important
     expect(critiqueIdx).toBeLessThan(importantIdx);
   });
