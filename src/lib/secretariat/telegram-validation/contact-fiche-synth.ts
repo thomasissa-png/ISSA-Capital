@@ -43,6 +43,8 @@ export interface ContactFicheData {
   autreEmail?: string;
   /** Langue / registre dominant (ex: "français, registre formel"). */
   langue?: string;
+  /** Mentions repérées dans le nom mais NON intégrées (codes type « OMS »). */
+  nameNotes?: string;
 }
 
 export interface ContactFicheSynthInput {
@@ -151,6 +153,8 @@ export function renderEnrichedFiche(
     type: ContactType;
     today: string;
     emailThreadRef: string;
+    /** Sources ayant contribué (gmail, outlook:sarani…) — note d'historique. */
+    sources?: string[];
   },
   scannedCount: number,
 ): { displayName: string; content: string } {
@@ -197,6 +201,7 @@ export function renderEnrichedFiche(
   if (sujets.length > 0) {
     synthLines.push(`- **Sujets récurrents** : ${sujets.join(', ')}`);
   }
+  if (data.nameNotes) synthLines.push(`- **Note (nom)** : ${sanitizeLine(data.nameNotes)}`);
 
   if (synthLines.length > 0) {
     lines.push(...synthLines);
@@ -209,8 +214,10 @@ export function renderEnrichedFiche(
   lines.push('## Historique', '');
   lines.push(buildHistoriqueTitle(ctx.today, 'Fiche créée (synthèse emails)'));
   lines.push('');
+  const sourcesNote =
+    ctx.sources && ctx.sources.length > 0 ? ` (sources : ${ctx.sources.join(', ')})` : '';
   lines.push(
-    `Fiche enrichie à partir de ${scannedCount} email${scannedCount > 1 ? 's' : ''} de l'expéditeur. ${ctx.emailThreadRef}`,
+    `Fiche enrichie à partir de ${scannedCount} email${scannedCount > 1 ? 's' : ''} de l'expéditeur${sourcesNote}. ${ctx.emailThreadRef}`,
   );
   lines.push('');
 

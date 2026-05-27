@@ -36,11 +36,8 @@ import {
   slugifyVaultFilename,
   buildHistoriqueTitle,
 } from '../handlers/vault-paths';
-import { gatherContactEmails } from '../gmail-source/contact-emails-gatherer';
-import {
-  synthesizeContactFiche,
-  renderEnrichedFiche,
-} from './contact-fiche-synth';
+import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
+import type { EnrichContactResult } from '../contact-enrich';
 
 // ============================================================
 // Types
@@ -483,51 +480,24 @@ function buildStubFiche(
 }
 
 /**
- * Tente de construire une fiche ENRICHIE : scanne la boîte de l'expéditeur,
- * synthétise les infos clés via le LLM `contact-fiche`, rend la fiche markdown.
+ * Tente de construire une fiche ENRICHIE via l'orchestrateur cross-boîtes
+ * (Gmail + Outlook), parsing nom LLM, domains.yml, synthèse + signature.
  *
- * Robustesse : retourne `null` à la moindre défaillance (scan vide, synthèse
- * KO) — l'appelant retombe alors sur le stub. Ne throw jamais.
+ * Robustesse : retourne `null` à la moindre défaillance (scan vide, etc.) —
+ * l'appelant retombe alors sur le stub. Ne throw jamais.
  */
 async function buildEnrichedFiche(
   noMatch: NoMatchPending,
   type: ContactType,
   today: string,
-): Promise<{ displayName: string; content: string } | null> {
-  try {
-    const { emails, scanned } = await gatherContactEmails(noMatch.emailFrom);
-    if (emails.length === 0) {
-      return null;
-    }
-
-    const data = await synthesizeContactFiche({
-      senderEmail: noMatch.emailFrom,
-      nameFrom: noMatch.nameFrom,
-      type,
-      emails,
-      emailThreadRef: noMatch.emailThreadRef,
-    });
-    if (!data) {
-      return null;
-    }
-
-    return renderEnrichedFiche(
-      data,
-      {
-        senderEmail: noMatch.emailFrom,
-        nameFrom: noMatch.nameFrom,
-        type,
-        today,
-        emailThreadRef: noMatch.emailThreadRef,
-      },
-      scanned,
-    );
-  } catch (err) {
-    console.warn(
-      `[callback-handler] enrichissement fiche échoué pour ${noMatch.emailFrom} : ${err instanceof Error ? err.message : String(err)} — fallback stub`,
-    );
-    return null;
-  }
+): Promise<EnrichContactResult | null> {
+  return enrichContact({
+    email: noMatch.emailFrom,
+    nameFrom: noMatch.nameFrom,
+    type,
+    today,
+    emailThreadRef: noMatch.emailThreadRef,
+  });
 }
 
 /**
@@ -580,15 +550,21 @@ async function handleNoMatchCallback(
   // Supprimer le no-match pending
   await deleteNoMatch(noMatch.id);
 
-  // Edit le message Telegram
+  // Edit le message Telegram — preview enrichie : on affiche les champs captés.
   const { text: originalText } = buildNoMatchCard(noMatch);
   const time = currentTimeHHMM();
   const ficheLabel = enrichedUsed ? 'Fiche enrichie créée' : 'Fiche créée';
-  await editMessageText(
-    callback.chat_id,
-    callback.message_id,
-    originalText + `\n\n\u{2705} ${ficheLabel} : ${target} à ${time}`,
-  );
+  let suffix = `\n\n\u{2705} ${ficheLabel} : ${target} à ${time}`;
+  if (enriched) {
+    const previewLines = buildEnrichPreviewLines(enriched.data);
+    if (previewLines.length > 0) {
+      suffix += `\n${previewLines.map((l) => escapeHtml(l)).join('\n')}`;
+    }
+    if (enriched.sources.length > 0) {
+      suffix += `\n<i>${enriched.scanned} email(s) — ${escapeHtml(enriched.sources.join(', '))}</i>`;
+    }
+  }
+  await editMessageText(callback.chat_id, callback.message_id, originalText + suffix);
 }
 
 /**

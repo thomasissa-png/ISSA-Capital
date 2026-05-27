@@ -138,6 +138,7 @@ import {
   handleTaskCallback,
   TASK_CALLBACK_PREFIX,
 } from '@/lib/secretariat/handlers/task';
+import { handleEnrichirCommand } from '@/lib/secretariat/handlers/enrichir';
 import { findLatestAwaitingEditForChat } from '@/lib/secretariat/task-pending-store';
 // S19 — handler `tickticksync_delete:` retiré (completion silencieuse vault
 // remplace la carte Telegram delete). Code mort supprimé.
@@ -1291,6 +1292,14 @@ export async function POST(request: Request): Promise<Response> {
           messageId,
           parsed,
         });
+        return Response.json({ ok: true });
+      }
+
+      // ── S24 — slash command /enrichir <nom> → enrichit une fiche contact ──
+      // AVANT handleSlashCommand pour préserver la casse du nom recherché.
+      if (normalizedText.startsWith('/enrichir')) {
+        const query = text.trim().replace(/^\/enrichir(@\w+)?\s*/i, '').trim();
+        await handleEnrichirCommand(chatId, query);
         return Response.json({ ok: true });
       }
 

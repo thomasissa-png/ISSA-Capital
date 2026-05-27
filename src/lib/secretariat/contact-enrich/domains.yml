@@ -1,0 +1,14 @@
+# Mapping domaine email → société, pour enrichir une fiche contact créée sur un
+# expéditeur inconnu (S24). Format plat YAML : `domaine: "Société"` (une par ligne).
+# Le domaine est la partie après @ (minuscule). Surchargé par ENRICH_DOMAINS_YML_PATH.
+#
+# Ne contient QUE des correspondances factuelles connues (écosystème ISSA +
+# partenaires identifiés). Ne jamais deviner une société depuis un domaine
+# générique (gmail.com, outlook.com, etc. → laissé vide).
+
+# Écosystème ISSA Capital
+sarani.studio: "Sarani"
+versi.fr: "Versi"
+immocrew.fr: "Immocrew"
+versimo.fr: "Versimo"
+issa-capital.com: "ISSA Capital"
