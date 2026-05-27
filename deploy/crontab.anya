@@ -27,8 +27,8 @@
 
 # hot-context : le mémo « vit seul » via une REVUE AUTONOME (S24, voie inline
 # supprimée). Mode auto selon le jour (Paris), zéro clic :
-#  - tous les soirs (lun-sam) : revue LÉGÈRE (Haiku) — garde le mémo frais
-#    (intègre agenda + activité du jour, retire le périmé).
+#  - tous les soirs (lun-sam) : revue LÉGÈRE (DeepSeek V4 Pro) — garde le mémo
+#    frais (intègre agenda + activité du jour, retire le périmé).
 #  - dimanche soir : revue PROFONDE (Sonnet) — profil de Thomas + relecture des
 #    fiches modifiées dans la semaine (détection d'oublis) + auto-relecture avant
 #    publication + bilan hebdo Telegram.

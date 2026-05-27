@@ -99,6 +99,7 @@ export type LLMTask =
   | 'hot-context-detect'
   | 'hot-context-modify'
   | 'hot-context-review'
+  | 'hot-context-review-light'
   | 'email-draft'
   | 'morning-citation'
   | 'contact-fiche'
@@ -134,10 +135,13 @@ export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
   'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
-  // Revue nocturne du hot-context (S23) : curation holistique du mémo SOT (retire
-  // le périmé, intègre le pertinent, langage adapté FR) → Sonnet (qualité de
-  // jugement + nuance ; 1 appel/jour, coût négligeable).
+  // Revue hot-context PROFONDE (dimanche) : recul + relecture des fiches de la
+  // semaine + auto-relecture → Sonnet (jugement/nuance ; 1×/sem, coût négligeable).
   'hot-context-review': { provider: 'anthropic', family: 'sonnet' },
+  // Revue hot-context LÉGÈRE (tous les soirs) : rafraîchit le mémo → DeepSeek V4
+  // Pro (décision Thomas S24 : meilleure prose que Haiku ET moins cher ; cohérent
+  // avec l'ingestion email déjà sur DeepSeek). Dimanche reste sur Sonnet.
+  'hot-context-review-light': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
   'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
   // Brief du matin (S23) : distillation lean d'une citation depuis une fiche de
   // lecture → Flash (extraction courte, ~0 €, ne tronque pas).
