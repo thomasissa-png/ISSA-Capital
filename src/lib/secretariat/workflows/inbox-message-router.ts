@@ -19,7 +19,7 @@
 
 import { sendTelegramMessageWithButtons, sendTypingAction } from '../telegram';
 import { createCalendarEvent } from '@/lib/google/calendar';
-import { appendToTodoInbox } from '../drive-todo';
+import { addTaskToTickTick } from '../ticktick/inbox-task';
 import { callLLM } from '../llm/client';
 // NOTE S20.A : `savePreview`/`getPreview`/`deletePreview`/`generatePendingId`
 // sont importés directement par `handlers/inbox-edit.ts`. Ici on garde le
@@ -545,14 +545,18 @@ export async function handleRouterCallback(
     }
 
     case 'task': {
-      const result = await appendToTodoInbox(
-        data.titre,
-        data.date ?? undefined,
-        data.description ?? undefined,
-      );
+      // S24 P2 : route vers TickTick (hub unique), pas Todo.md miroir (écrasé).
+      const result = await addTaskToTickTick({
+        title: data.titre,
+        date: data.date ?? undefined,
+        description: data.description ?? undefined,
+      });
 
-      if (result.success) {
-        let msg = '\u{2705} Ajouté à Todo.md > Inbox';
+      if (result.status !== 'error') {
+        let msg =
+          result.status === 'fallback_todo'
+            ? '\u{26A0}\u{FE0F} TickTick indisponible — ajoutée en secours dans Todo.md'
+            : '\u{2705} Tâche créée dans TickTick';
         if (data.date) {
           const parts = data.date.split('-');
           const dateFr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : data.date;
@@ -561,7 +565,7 @@ export async function handleRouterCallback(
         return msg;
       }
 
-      return `\u{274C} Erreur Todo.md : ${result.error ?? 'inconnue'}`;
+      return `\u{274C} Erreur création tâche : ${result.error ?? 'inconnue'}`;
     }
 
     case 'cancel': {

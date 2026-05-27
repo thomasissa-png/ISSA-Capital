@@ -48,7 +48,7 @@ import {
   updateFrontmatter,
   createVaultFile,
 } from '../vault-client';
-import { appendToTodoInbox } from '../drive-todo';
+import { addTaskToTickTick, mapTodoPriority } from '../ticktick/inbox-task';
 import { createTickTickTaskForEmail } from './ticktick-integration';
 import { buildCoherenceActions } from './coherence-actions';
 import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
@@ -638,15 +638,27 @@ async function executeAutoAction(
       }
 
       case 'add_todo': {
-        const title = (action.payload['title'] as string) ?? triage.summary;
+        // S24 P2 : route vers TickTick (hub unique) au lieu de Todo.md miroir
+        // (qui est écrasé au prochain render → tâche perdue). Les producteurs
+        // (locataire/apporteur) écrivent `task`+`priority` (P1/P2) ; on lit
+        // `task` en priorité, fallback `title`, fallback résumé triage.
+        const title =
+          (action.payload['task'] as string) ??
+          (action.payload['title'] as string) ??
+          triage.summary;
         const date = (action.payload['date'] as string) ?? undefined;
         const description =
           (action.payload['description'] as string) ?? undefined;
 
-        const result = await appendToTodoInbox(title, date, description);
-        return result.success
-          ? { ok: true }
-          : { ok: false, error: result.error ?? 'appendToTodoInbox échoué' };
+        const result = await addTaskToTickTick({
+          title,
+          date,
+          description,
+          priority: mapTodoPriority(action.payload['priority']),
+        });
+        return result.status === 'error'
+          ? { ok: false, error: result.error ?? 'addTaskToTickTick échoué' }
+          : { ok: true };
       }
 
       case 'mark_processed': {

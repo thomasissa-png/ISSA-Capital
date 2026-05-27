@@ -40,11 +40,17 @@ vi.mock('../../vault-client', () => ({
   createVaultFile: (...args: unknown[]) => mockCreateVaultFile(...args),
 }));
 
-const mockAppendToTodoInbox = vi.fn().mockResolvedValue({ success: true });
+const mockAddTaskToTickTick = vi.fn().mockResolvedValue({ status: 'created', taskId: 'tt-1' });
 
-vi.mock('../../drive-todo', () => ({
-  appendToTodoInbox: (...args: unknown[]) => mockAppendToTodoInbox(...args),
-}));
+vi.mock('../../ticktick/inbox-task', async () => {
+  const actual = await vi.importActual<typeof import('../../ticktick/inbox-task')>(
+    '../../ticktick/inbox-task',
+  );
+  return {
+    ...actual,
+    addTaskToTickTick: (...args: unknown[]) => mockAddTaskToTickTick(...args),
+  };
+});
 
 const mockMarkProcessed = vi.fn().mockResolvedValue(true);
 
@@ -221,7 +227,7 @@ beforeEach(() => {
   mockAppendToHistorique.mockResolvedValue(true);
   mockUpdateFrontmatter.mockResolvedValue(true);
   mockCreateVaultFile.mockResolvedValue(true);
-  mockAppendToTodoInbox.mockResolvedValue({ success: true });
+  mockAddTaskToTickTick.mockResolvedValue({ status: 'created', taskId: 'tt-1' });
   mockMarkProcessed.mockResolvedValue(true);
   mockGatherContactEmails.mockResolvedValue({ emails: [], scanned: 0 });
   mockSynthesizeContactFiche.mockResolvedValue(null);
@@ -439,9 +445,10 @@ describe('handleTelegramCallback — validation principale', () => {
 
     await handleTelegramCallback(makeCallback('valider'));
 
-    expect(mockAppendToTodoInbox).toHaveBeenCalledOnce();
-    expect(mockAppendToTodoInbox.mock.calls[0]![0]).toBe('Relancer Martin');
-    expect(mockAppendToTodoInbox.mock.calls[0]![1]).toBe('2026-05-15');
+    expect(mockAddTaskToTickTick).toHaveBeenCalledOnce();
+    const arg = mockAddTaskToTickTick.mock.calls[0]![0] as { title: string; date?: string };
+    expect(arg.title).toBe('Relancer Martin');
+    expect(arg.date).toBe('2026-05-15');
   });
 
   it('valider avec action mark_processed dans les actions : pas de double appel', async () => {
