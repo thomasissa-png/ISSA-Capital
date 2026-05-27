@@ -277,6 +277,7 @@ Les informations suivantes sont archivées dans `docs/project-context-archive.md
 | fullstack (S22) | 2026-05-25 | hot-context : `applier.ts` HOT_CONTEXT_FOLDER='' (`70d1a68`), kill-switch cron-scan (`2083c31`), **PR #4** (3 défauts : détecteur anti-doublon nourri du contenu live + idempotence normalisée, bouton Modifier fonctionnel loop max 2, projection tokens réelle dans la carte). 1951 tests. | Fix bug prod « Segment 00. Me non trouvé » (dossier vault = racine). Cron hot-context **DÉSACTIVÉ** (Thomas : pas réactiver encore). | Réactivation future = décommenter `deploy/crontab.anya` + push, APRÈS décision (doublon avec skill vault non tranché). |
 | fullstack (S22) | 2026-05-25 | `llm/models.ts` (registre TASK_MODEL par tâche), `llm/client.ts` (dispatcher `callLLM`), `llm/deepseek-client.ts` (fetch OpenAI-compat), `health-monitor/deepseek-usage.ts`. **PR #5 mergée + déployée**. 1951 tests. | **Routage LLM PAR TÂCHE** : `deepseek-v4-flash` pour inbox-router/triage/hot-context-detect+modify/email-draft ; CR reste Sonnet (web_search). **No-fallback** (erreur DeepSeek propagée, jamais de bascule Claude). Rollback par tâche = env `LLM_TASK_OVERRIDE_<TASK>`. | `DEEPSEEK_API_KEY` posée sur VPS, **validée en prod (1 appel `deepseek-v4-flash` OK, 0 erreur)**. |
 | orchestrator (S22) | 2026-05-25 | diagnostic calendar-ingest + lecture plan MCP debug vault | **calendar-ingest** : 21 events tous en erreur car dossier `06. Réunions` ABSENT du vault + `createVaultFile` ne crée pas les dossiers parents (raison avalée, non loggée). Décision Thomas : **`06. Réunions` abandonné** → réunions servent à MAJ historiques projets/contacts + todos (refonte à cadrer). **MCP debug VPS** : Cowork a déployé `vps-mcp.issa-capital.com` (joignable, HTTP 404 racine = up), à enregistrer comme connecteur dans l'**env Claude Code web** (≠ Cowork). | Les connecteurs MCP se chargent au DÉMARRAGE de session → tester en session fraîche S23. |
+| claude-code (S23) | 2026-05-27 | **PRs #32-39** (toutes mergées + déployées VPS). email-ingest (sources parallèles + markProcessed final + cap 8/source/run). beeper-client (lecture SQLite via **snapshot** WAL-safe + `BEEPER_INCLUDE`). whatsapp-ingest **V1→V3** (enrichissement vault Contact/Projet + match contact par **téléphone** + brouillon email + Telegram si todo/action). hot-context-review (**revue nocturne autonome 22h Paris**, Sonnet, remplace le nag V0). ticktick (fetch **Inbox** + section Inbox en dernier). **Fiches vault corrigées en place** (8 Beeper/WhatsApp + Email Ingest + Hot Context Updater + index Workflows + Anya.md + Anya v2.0). **3 outils n8n** ajoutés (Lire/MAJ-contenu/Créer fichier vault). 2069 tests verts. | **4 bugs prod corrigés** : Outlook jamais traité (markProcessed manquant → boucle + timeout) ; WhatsApp lecture WAL readonly cassée (snapshot copie) ; TickTick Inbox absent de Todo.md ; hot-context périmé. Édition vault en place débloquée (PATCH média n8n). | Décisions Thomas verbatim : WhatsApp « comme les emails » + Telegram **seulement** si todo/action ; exclure sarani/ubi MAIS garder « Reprise Sarani » (inclusion prioritaire) ; hot-context = **revue auto, pas de nag** (« ça ne devrait pas dépendre de moi ») ; match contact par téléphone. Alternatives écartées : édition vault create+delete (R5 P0) → PATCH média ; nag staleness V0 → revue nocturne. |
 
 ---
 
@@ -296,36 +297,42 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 23
+## Mémo de reprise — Session 24
 
-- **Date de clôture S22** : 2026-05-25
-- **Session clôturée** : 22 (crons VPS pilotés dépôt + hot-context fix/qualité + routage LLM par tâche DeepSeek + diag calendar + plan MCP debug)
-- **Prochaine session** : 23
-- **Branche tronc / déployée** : **`main`** (HEAD = `aa3def2`, merge PR #5). **Le VPS suit `main` et se redéploie seul <5 min après un push** (`anya-autoupdate.sh`).
-- **Workflow git** : nouvelle session = brancher depuis `main` → PR → merge dans `main`. `main` = validé + déployé. PRs S22 #3/#4/#5 mergées.
+- **Date de clôture S23** : 2026-05-27
+- **Session clôturée** : 23 (réparation prod Anya : Outlook + WhatsApp + TickTick + hot-context ; édition vault en place débloquée)
+- **Prochaine session** : 24
+- **Branche tronc / déployée** : **`main`**. **Le VPS suit `main` et se redéploie seul <5 min après un push** (`anya-autoupdate.sh`). PRs S23 #32→#39 mergées + déployées.
+- **Workflow git** : brancher depuis `main` → PR → merge dans `main`.
+- **Nouveauté clé S23** : le **vault est éditable en place** via 3 outils MCP n8n — `Lire_contenu_brut`, `Mettre_a_jour_contenu_fichier` (PATCH média, préserve fileId/wikilinks), `Creer_fichier_vault`. ⚠️ ils renvoient une **erreur cosmétique « circular structure » même en cas de succès** → toujours vérifier par un `Lire_contenu_brut`.
 
-### Résumé S22 (5 lignes)
+### Résumé S23 (5 lignes)
 
-(1) **Crons VPS pilotés par le dépôt** (`deploy/`, PR #3) — éditer `deploy/crontab.anya` + push = appliqué seul sur VPS, sans SSH. (2) **hot-context** : fix bug chemin (`HOT_CONTEXT_FOLDER=''`), cron **désactivé** (kill-switch), 3 défauts qualité corrigés (PR #4 : anti-doublon, Modifier fonctionnel, projection tokens). (3) **Routage LLM PAR TÂCHE + DeepSeek V4 Flash** (PR #5) — `deepseek-v4-flash` pour inbox-router/triage/hot-context/draft, CR reste Sonnet ; no-fallback ; **validé en prod**. (4) Diag **calendar-ingest** : dossier `06. Réunions` absent → abandonné (réunions → MAJ historiques + todos, refonte à cadrer). (5) Plan **MCP debug VPS** déployé par Cowork, à brancher côté env Claude Code. 1951 tests verts.
+(1) **Bug Outlook corrigé** : un email « intéressant » n'était jamais marqué traité (`markProcessed` manquant) → re-traité en boucle, backlog Outlook jamais drainé, run saturé. Fix = markProcessed final + cap 8/source/run. **Prouvé en prod** (brouillon Outlook créé). (2) **WhatsApp V1→V3** : lecture SQLite réparée (snapshot WAL-safe), enrichissement vault (Contact via **téléphone** + Projet), brouillon email, Telegram **seulement** si todo/action ; exclusion sarani/ubi + inclusion « Reprise Sarani ». (3) **hot-context** : remplacé le nag par une **revue nocturne autonome 22h Paris** (Sonnet écrit le mémo seul + Telegram des changements). (4) **TickTick** : fetch Inbox + section Inbox en dernier (PR #39) — **Inbox pas auto-résolue, voir blockers**. (5) **Fiches vault corrigées en place** (Beeper, Email Ingest, Hot Context Updater, index Workflows, Anya v2.0). 2069 tests verts.
 
-### Travaux reportés S23 (par priorité)
+### Travaux en cours / reportés S24 (par priorité)
 
-1. **🔌 MCP debug VPS — vérifier en SESSION FRAÎCHE** : serveur `vps-mcp.issa-capital.com` déployé + joignable, mais PAS chargé dans la session S22 (les connecteurs MCP se chargent au démarrage). **1re action S23** : `ToolSearch` les outils `etat_services`/`journal_anya`/`ressources` → si présents, tester un outil lecture seule. Si absents : config à corriger dans l'**env Claude Code web** (≠ Cowork) — URL/chemin MCP, jeton Bearer (Bitwarden), liste blanche réseau. Plan : vault `08. Outils/Anya/À développer/Plan MCP debogage VPS.md`. Une fois OK → je débogue le VPS en autonomie.
-2. **Refonte calendar-ingest** (à CADRER) : `06. Réunions` **abandonné**. Nouveau rôle des réunions = MAJ **historiques projets/contacts + todos** (plus de fiches réunion). Décider : quelles fiches, format historique, quels todos. Retirer le reunion-writer + folder ici le **logging #2** (logger `result.errors` par event dans `runner.ts`). NE PAS auto-créer le dossier.
-3. **hot-context cron — reste DÉSACTIVÉ** (`deploy/crontab.anya` ligne commentée). Réactivation = décommenter + push, **uniquement après décision Thomas** (question non tranchée : le skill vault gère-t-il déjà le hot-context pendant l'inbox → sinon doublon).
-4. **Branche `claude/youthful-darwin-FiyWQ` orpheline** : framework `update.sh --all` (maj agents + suppression moi.md/orchestrator-reference.md) + **régression `_gates.md` 33→8 + CLAUDE.md 127>125**, jamais mergée. `main` sain. Décider : reprendre proprement (maj agents OK, suppression moi OK) ou abandonner.
-5. **DeepSeek en prod — monitorer** : `deepseek-usage.json` (VPS `/tmp/issa-data/`) doit croître, 0 erreur `[llm] échec DeepSeek`. Rollback par tâche = `LLM_TASK_OVERRIDE_<TASK>` (env VPS, sans redéploiement).
-6. **Carry-over S22 non traités** (la session a pivoté vers crons/hot-context/DeepSeek) : OAuth Anya 7j (décision publier app vs cron alerte), enrichir 6 SKILL.md via Cowork (🔴 `baux`), mention JSON cr-reunion vault, cleanup vault `Workflow TickTick Sync.md`, suppression code `ticktick-sync/`, `REPLIT_ACTIONS.md`→actions VPS.
+1. **🥇 Enrichissement fiches contact (gros — spec Cowork pastée par Thomas)** : aujourd'hui une fiche contact créée sur expéditeur inconnu = **stub** (bug réel « Marc Oms » au lieu de « Marc Gernot », société/rôle/tél vides ; la fiche précise a été corrigée à la main, mais le FEATURE reste à coder). À faire dans `email-ingest`/`handlers/a-classifier` : étape `enrichContact` APRÈS validation Thomas → (1) parsing nom LLM (jamais regex ; red-line « NOM, Prénom » Outlook + codes MAJ type OMS en notes), (2) `domains.yml` mapping domaine→société, (3) recherche cross-boîtes Gmail+2 Outlook (timeout 30s), (4) synthèse historique Haiku (cap 10 entrées), (5) extraction signature, (6) fiche enrichie (`07. Contacts/03. Pro/<nom>.md`, slugify ASCII), (7) carte Telegram preview enrichie + commande `/enrichir <nom>` (idempotent). 10+ tests. Env : `ENRICH_TIMEOUT_MS`, `ENRICH_MAX_EMAILS`, `ENRICH_DOMAINS_YML_PATH`.
+2. **TickTick — 2 finitions** : (a) **Inbox non auto-résolue** (log `[ticktick-client] inbox non résolu`) → poser **`TICKTICK_INBOX_PROJECT_ID`** sur le VPS (Cowork peut donner l'id via l'API), OU ajouter un log de la liste des projets pour le capturer. (b) **`inbox-message-router` append dans `Todo.md` qui est ÉCRASÉ par le miroir** (tâches Telegram disparaissent !) → passer à `createTask` (existe déjà dans `ticktick-client.ts`) vers `TICKTICK_DEFAULT_PROJECT_ID` (= Important `6a0c57dc8f088bc89e671119`), fallback append + alerte. Le miroir Inbox + ordre = **déjà fait PR #39**.
+3. **Monitoring à confirmer en prod** (crons pas encore passés à la clôture) : email 15h (drainage Outlook 25/7→0), WhatsApp **17h20 UTC** (1er run post-fix), revue hot-context **22h Paris** (1er run). Lire `journal_anya`.
+4. **Legacy `pollTickTickTasks`** (ticktick-sync) toujours invoqué par cron-poll mais **vestigial** (sa sortie Todo.md est écrasée par le miroir ; utilise l'état `ticktick-sync-state.json` supprimé, se réinitialise). À retirer du cron-poll dans une PR dédiée.
+5. **Carry-over S22 non traités** : refonte calendar-ingest (`06. Réunions` abandonné → historiques+todos), branche orpheline `claude/youthful-darwin-FiyWQ` (régression gates), OAuth Anya 7j.
 
-### À mettre à jour côté vault (fiches Anya — hors repo)
-- Fiche infra `Anya v2.0 - Infrastructure VPS.md` : ajouter que **DeepSeek V4 Flash** alimente router/triage/hot-context/draft (Claude Sonnet pour CR). (Non fait : PATCH vault risqué sans contenu brut — à faire via Cowork ou MCP propre S23.)
+### Blockers (décisions / infos en attente)
+- **`TICKTICK_INBOX_PROJECT_ID`** + **`TICKTICK_DEFAULT_PROJECT_ID`** à poser sur le VPS `.env.local` (sinon Inbox non pollée + tâches Telegram perdues).
+- Confirmer en prod : Outlook draine, WhatsApp 17h20, revue hot-context 22h.
 
-### Commande de reprise S23
+### Nom de branche recommandé S24
+`claude/issa-capital-s24-contact-enrich-[suffix]` (suffix alphanum généré par Claude Code).
+
+### Commande de reprise S24
 
 ```
-@orchestrator — Session S23. Brancher depuis `main` (tronc déployé sur VPS, auto-deploy <5 min).
-  Lire AVANT tout : project-context.md (## Stack technique + Mémo de reprise S23) + docs/lessons-learned.md (R10-R12, #113-118, #119 Cowork≠ClaudeCode MCP).
-  PRIORITÉ 1 : vérifier que le connecteur MCP debug VPS est chargé (ToolSearch etat_services/ressources) ; si oui tester lecture seule, si non corriger la config env Claude Code web. Voir vault `Plan MCP debogage VPS.md`.
-  Puis selon Thomas : cadrer la refonte calendar-ingest (réunions → historiques+todos, plus de 06. Réunions) ; trancher la branche FiyWQ (régression gates).
-  Rappels : R11 (I/O vault Drive = orchestrator, pas sous-agent) ; hot-context cron reste OFF sauf décision ; no-fallback DeepSeek (rollback = LLM_TASK_OVERRIDE_<TASK>).
+Session S24 — ISSA Capital / Anya. Brancher depuis `main` (déployé VPS auto <5 min).
+Lire AVANT tout : project-context.md (## Stack technique + Mémo de reprise S24) + docs/lessons-learned.md (S23) + docs/founder-preferences.md.
+Contexte clé S23 : email-ingest stabilisé (markProcessed + cap — ne pas casser) ; vault éditable en place via MCP n8n (Lire_contenu_brut / Mettre_a_jour_contenu_fichier PATCH média / Creer_fichier_vault — erreur cosmétique « circular structure » à ignorer, vérifier par relecture) ; createTask existe déjà dans ticktick-client.ts ; Inbox TickTick pas auto-résolue (besoin TICKTICK_INBOX_PROJECT_ID).
+PRIORITÉ 1 : Enrichissement fiches contact (spec Cowork — 7 étapes + /enrichir + 10 tests). Met aussi à jour la fiche `Workflow Email Ingest`.
+PRIORITÉ 2 : TickTick — inbox-message-router → createTask (fix tâches Telegram écrasées) + finaliser Inbox (env id).
+Puis : compte-rendu monitoring (journal_anya : Outlook drainé, WhatsApp 17h20, revue hot-context 22h).
+Rappels : règle 11 (jamais d'envoi email auto, brouillon seul) ; R5 (PATCH in-place, jamais create+delete) ; R12 (pas de questions parasites, brief clair = action).
 ```
