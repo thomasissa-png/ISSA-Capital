@@ -28,6 +28,9 @@ const mockMarkProcessed = vi.fn().mockResolvedValue(true);
 const mockMarkFailed = vi.fn().mockResolvedValue(true);
 // S23 — détection « déjà répondu ». Défaut : pas répondu (brouillon créé).
 const mockHasReplyFromMe = vi.fn().mockResolvedValue(false);
+// S24 — garde « destinataire direct ». Défaut [] = propriétaire inconnu →
+// fail-open (brouillon créé), neutre vis-à-vis des tests brouillon existants.
+const mockGetSelfAddresses = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../gmail-source/gmail-source', () => ({
   listUnprocessed: (...args: unknown[]) => mockListUnprocessed(...args),
@@ -35,6 +38,7 @@ vi.mock('../../gmail-source/gmail-source', () => ({
   markProcessed: (...args: unknown[]) => mockMarkProcessed(...args),
   markFailed: (...args: unknown[]) => mockMarkFailed(...args),
   hasReplyFromMe: (...args: unknown[]) => mockHasReplyFromMe(...args),
+  getSelfAddresses: (...args: unknown[]) => mockGetSelfAddresses(...args),
 }));
 
 const mockTriageEmail = vi.fn().mockResolvedValue(null);

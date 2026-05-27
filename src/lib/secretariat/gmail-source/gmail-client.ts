@@ -123,6 +123,52 @@ export async function getMessage(messageId: string): Promise<GmailMessageRaw | n
 }
 
 /**
+ * Adresse email du propriétaire de la boîte (Thomas). Cache process.
+ *
+ * Sert à la garde « destinataire direct » (S24) : ne préparer un brouillon que
+ * si Thomas est dans le To, pas seulement en Cc. Utilise `GMAIL_USER_EMAIL` si
+ * défini (≠ 'me'), sinon `users/me/profile` (emailAddress). null si KO.
+ */
+let profileEmailCache: string | null = null;
+export async function getProfileEmail(): Promise<string | null> {
+  if (profileEmailCache) return profileEmailCache;
+
+  const envEmail = process.env.GMAIL_USER_EMAIL;
+  if (envEmail && envEmail !== 'me' && envEmail.includes('@')) {
+    profileEmailCache = envEmail;
+    return profileEmailCache;
+  }
+
+  const accessToken = await getAccessToken();
+  if (!accessToken) return null;
+
+  try {
+    const url = `${GMAIL_API}/users/me/profile`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.warn(`[gmail-client] getProfileEmail HTTP ${response.status}`);
+      return null;
+    }
+    const data = (await response.json()) as { emailAddress?: string };
+    if (data.emailAddress) profileEmailCache = data.emailAddress;
+    return profileEmailCache;
+  } catch (err) {
+    console.warn(
+      `[gmail-client] getProfileEmail erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return null;
+  }
+}
+
+/** Réinitialise le cache d'adresse propriétaire (tests). */
+export function _clearProfileEmailCache(): void {
+  profileEmailCache = null;
+}
+
+/**
  * Modifie les labels d'un message Gmail (ajouter ou retirer).
  *
  * @param messageId ID du message

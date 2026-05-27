@@ -37,6 +37,8 @@ export interface EmailSourceAdapter {
   markProcessed(id: string): Promise<boolean>;
   markFailed(id: string): Promise<boolean>;
   hasReplyFromMe(email: EmailMessage): Promise<boolean>;
+  /** Adresses du propriétaire de la boîte (garde « destinataire direct » S24). */
+  getSelfAddresses(): Promise<string[]>;
   /** Crée un BROUILLON de réponse threadé. Jamais d'envoi. */
   createReplyDraft(email: EmailMessage, subject: string, body: string): Promise<AdapterDraftResult>;
 }
@@ -49,6 +51,7 @@ const gmailAdapter: EmailSourceAdapter = {
   markProcessed: (id) => gmail.markProcessed(id),
   markFailed: (id) => gmail.markFailed(id),
   hasReplyFromMe: (email) => gmail.hasReplyFromMe(email.threadId),
+  getSelfAddresses: () => gmail.getSelfAddresses(),
   createReplyDraft: async (email, subject, body) => {
     const r = await gmailCreateDraft({
       to: email.from.email,
@@ -72,6 +75,7 @@ function outlookAdapter(box: OutlookBox): EmailSourceAdapter {
     // une reprise en boucle sur échec de triage (rare).
     markFailed: (id) => outlook.markProcessed(box, id),
     hasReplyFromMe: (email) => outlook.hasReplyFromMe(box, email.threadId),
+    getSelfAddresses: () => outlook.getSelfAddresses(box),
     createReplyDraft: async (email, _subject, body) => {
       // Outlook : createReply a besoin de l'ID du message d'origine (email.id),
       // le sujet/destinataire sont gérés automatiquement par Graph.

@@ -16,6 +16,8 @@ import {
   getMessageFull,
   addTraiteCategory,
   conversationHasOwnerReply,
+  getAccessToken,
+  getOwnerEmail,
 } from './outlook-client';
 
 function addr(r: { emailAddress?: { address?: string; name?: string } } | undefined): EmailAddress {
@@ -83,4 +85,15 @@ export async function markProcessed(box: OutlookBox, id: string): Promise<boolea
 
 export async function hasReplyFromMe(box: OutlookBox, threadId: string | undefined): Promise<boolean> {
   return conversationHasOwnerReply(box, threadId);
+}
+
+/**
+ * Adresse du propriétaire de la boîte (Sarani / Versi) pour la garde
+ * « destinataire direct » (S24). [] si token/résolution KO → fail-open.
+ */
+export async function getSelfAddresses(box: OutlookBox): Promise<string[]> {
+  const token = await getAccessToken(box);
+  if (!token) return [];
+  const email = await getOwnerEmail(box, token);
+  return email ? [email] : [];
 }
