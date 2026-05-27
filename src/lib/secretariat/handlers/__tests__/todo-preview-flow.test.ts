@@ -241,6 +241,26 @@ describe('finalizeAddTaskFromPending (callback task_validate)', () => {
     expect(editMessageTextWithButtons).toHaveBeenCalled();
   });
 
+  it('régression timezone : dueDate heure locale Paris → createTask reçoit isAllDay + timeZone Europe/Paris (pas la chaîne brute)', async () => {
+    vi.mocked(listProjects).mockResolvedValue([]);
+    vi.mocked(createTask).mockResolvedValue({
+      id: 'tt-tz', projectId: '', title: 'RDV', status: 0, priority: 0,
+    } as never);
+
+    const preview = await previewAddTaskFromTelegram({
+      chatId: 1,
+      messageId: 2,
+      parsed: { intent: 'add_task', title: 'RDV', dueDate: '2026-05-28T15:00:00' }, // 15h Paris
+    });
+    await finalizeAddTaskFromPending(preview.pendingId!);
+
+    const arg = vi.mocked(createTask).mock.calls[0]![0];
+    expect(arg.timeZone).toBe('Europe/Paris');
+    expect(arg.isAllDay).toBe(false);
+    expect(arg.dueDate).toMatch(/Z$/); // ISO UTC, converti
+    expect(arg.dueDate).not.toBe('2026-05-28T15:00:00'); // pas la chaîne locale brute
+  });
+
   it('idempotence : 2 clics consécutifs Valider → 1 seul createTask', async () => {
     vi.mocked(listProjects).mockResolvedValue([]);
     vi.mocked(createTask).mockResolvedValue({
