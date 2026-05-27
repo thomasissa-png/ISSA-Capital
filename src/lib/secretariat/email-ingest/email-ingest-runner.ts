@@ -164,32 +164,41 @@ export async function runEmailIngest(): Promise<IngestStats> {
     `[email-ingest] ${sources.length} source(s) active(s) : ${sources.map((s) => s.label).join(', ')}`,
   );
 
-  for (const source of sources) {
-    let messages: Array<{ id: string; threadId?: string }>;
-    try {
-      messages = await source.listUnprocessed();
-    } catch (err) {
-      console.warn(
-        `[email-ingest] erreur listUnprocessed (${source.label}) : ${err instanceof Error ? err.message : String(err)}`,
-      );
-      stats.errors++;
-      continue;
-    }
-
-    stats.totalListed += messages.length;
-    console.warn(`[email-ingest] ${source.label} : ${messages.length} email(s) non traité(s)`);
-
-    for (const msg of messages) {
+  // Traitement des sources EN PARALLÈLE (S23) : chaque boîte (Gmail, Outlook
+  // Sarani, Outlook Versi) tourne indépendamment, pour qu'une source lente
+  // (Gmail + brouillons) n'affame plus les suivantes. Les emails d'UNE source
+  // restent séquentiels (pas de hammering d'un même fournisseur).
+  await Promise.all(
+    sources.map(async (source) => {
+      let messages: Array<{ id: string; threadId?: string }>;
       try {
-        await processOneEmail(source, msg.id, contacts, stats);
+        messages = await source.listUnprocessed();
       } catch (err) {
         console.warn(
-          `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${err instanceof Error ? err.message : String(err)}`,
+          `[email-ingest] erreur listUnprocessed (${source.label}) : ${err instanceof Error ? err.message : String(err)}`,
         );
         stats.errors++;
+        return;
       }
-    }
-  }
+
+      stats.totalListed += messages.length;
+      console.warn(`[email-ingest] ${source.label} : ${messages.length} email(s) non traité(s)`);
+
+      let done = 0;
+      for (const msg of messages) {
+        try {
+          await processOneEmail(source, msg.id, contacts, stats);
+          done++;
+        } catch (err) {
+          console.warn(
+            `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${err instanceof Error ? err.message : String(err)}`,
+          );
+          stats.errors++;
+        }
+      }
+      console.warn(`[email-ingest] ${source.label} : ${done}/${messages.length} traité(s)`);
+    }),
+  );
 
   // 4. Audit final — ligne récap
   stats.durationMs = Date.now() - startMs;
