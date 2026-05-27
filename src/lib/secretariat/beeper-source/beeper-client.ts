@@ -93,10 +93,10 @@ export interface BeeperChat {
   name: string;
 }
 
-/** Fragment de nom de chat à EXCLURE (CSV, case-insensitive). Défaut : "sarani". */
+/** Fragment de nom de chat à EXCLURE (CSV, case-insensitive). Défaut : "sarani,ubi". */
 export function beeperExcludedNameFragments(): string[] {
   ensureEnv();
-  return (process.env.BEEPER_EXCLUDE ?? 'sarani')
+  return (process.env.BEEPER_EXCLUDE ?? 'sarani,ubi')
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter((s) => s.length > 0);
