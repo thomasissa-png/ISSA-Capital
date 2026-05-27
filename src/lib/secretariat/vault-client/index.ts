@@ -18,8 +18,10 @@ import { readFile, readFileById, writeFile, createFile } from './obsidian-file';
 import {
   parseObsidianFile,
   patchFrontmatterField,
+  upsertFrontmatterField,
   extractEmails,
 } from './frontmatter';
+import { computeRelationStats } from './relation-stats';
 import { appendToSection } from './markdown-append';
 import { writeAuditLog, buildAuditEntry } from './audit-log';
 import { withWriteLock } from './write-lock';
@@ -171,7 +173,10 @@ export async function appendToHistorique(
       content: options.content,
     });
 
-    // Optionnellement, mettre à jour date_dernière_interaction
+    // Optionnellement, mettre à jour date_dernière_interaction + stats relation.
+    // updateLastInteraction=true ⇔ interaction CONTACT (les fiches projet posent
+    // false) → on en profite pour rafraîchir canal_préféré + fréquence_échanges
+    // dérivés de l'historique (tous canaux confondus). S24.
     if (options.updateLastInteraction) {
       const today = new Date().toISOString().slice(0, 10);
       updatedContent = patchFrontmatterField(
@@ -179,6 +184,14 @@ export async function appendToHistorique(
         'date_dernière_interaction',
         today,
       );
+
+      const stats = computeRelationStats(updatedContent);
+      if (stats.canalPrefere) {
+        updatedContent = upsertFrontmatterField(updatedContent, 'canal_préféré', stats.canalPrefere);
+      }
+      if (stats.frequence) {
+        updatedContent = upsertFrontmatterField(updatedContent, 'fréquence_échanges', stats.frequence);
+      }
     }
 
     // Écrire la fiche mise à jour
@@ -309,7 +322,8 @@ export async function createVaultFile(
 // ============================================================
 
 export { paths };
-export { parseObsidianFile, patchFrontmatterField, extractEmails } from './frontmatter';
+export { parseObsidianFile, patchFrontmatterField, upsertFrontmatterField, extractEmails } from './frontmatter';
+export { computeRelationStats } from './relation-stats';
 export { appendToSection, hasSection, extractSection } from './markdown-append';
 export { withWriteLock, getActiveWriteLockCount, clearWriteLocks } from './write-lock';
 export { resolvePath, invalidateAllCache, invalidateCache } from './drive-resolver';

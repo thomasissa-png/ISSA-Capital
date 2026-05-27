@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseObsidianFile,
   patchFrontmatterField,
+  upsertFrontmatterField,
   extractEmails,
   isBitIdentical,
 } from '../frontmatter';
@@ -418,6 +419,45 @@ describe('patchFrontmatterField', () => {
       'kenanbe@gmail.com',
       'kenan.b@outlook.fr',
     ]);
+  });
+});
+
+// ============================================================
+// Tests : upsertFrontmatterField (S24)
+// ============================================================
+
+describe('upsertFrontmatterField', () => {
+  it('ajoute une clé absente en fin de frontmatter', () => {
+    const result = upsertFrontmatterField(FIXTURE_LOCATAIRE, 'canal_préféré', 'WhatsApp');
+    const parsed = parseObsidianFile(result);
+    expect(parsed.frontmatter!.fields['canal_préféré']).toBe('WhatsApp');
+    // Champs existants préservés
+    expect(parsed.frontmatter!.lists['alias_email']).toEqual([
+      'kenanbe@gmail.com',
+      'kenan.b@outlook.fr',
+    ]);
+  });
+
+  it('met à jour une clé existante (délègue au patch)', () => {
+    const once = upsertFrontmatterField(FIXTURE_LOCATAIRE, 'fréquence_échanges', 'occasionnel');
+    const twice = upsertFrontmatterField(once, 'fréquence_échanges', 'soutenu');
+    const parsed = parseObsidianFile(twice);
+    expect(parsed.frontmatter!.fields['fréquence_échanges']).toBe('soutenu');
+    // Une seule occurrence de la clé (pas de doublon)
+    const occurrences = twice.split('\n').filter((l) => l.startsWith('fréquence_échanges:')).length;
+    expect(occurrences).toBe(1);
+  });
+
+  it('sans frontmatter → contenu inchangé', () => {
+    const noFm = '# Titre\n\ntexte\n';
+    expect(upsertFrontmatterField(noFm, 'canal_préféré', 'Email')).toBe(noFm);
+  });
+
+  it('préserve le body après ajout', () => {
+    const result = upsertFrontmatterField(FIXTURE_CONTACT_PRO, 'canal_préféré', 'Réunion');
+    const originalBody = FIXTURE_CONTACT_PRO.slice(FIXTURE_CONTACT_PRO.indexOf('---', 4) + 4);
+    const resultBody = result.slice(result.indexOf('---', 4) + 4);
+    expect(resultBody).toBe(originalBody);
   });
 });
 
