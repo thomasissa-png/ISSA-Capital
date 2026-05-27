@@ -10,6 +10,7 @@ const mockParisParts = vi.fn();
 const mockCollectCalendar = vi.fn();
 const mockWriteAudit = vi.fn();
 const mockCallAnthropic = vi.fn();
+const mockCallLLM = vi.fn();
 const mockSendTelegram = vi.fn();
 
 vi.mock('../../vault-client/obsidian-file', () => ({
@@ -30,7 +31,10 @@ vi.mock('../../morning-brief/collect-calendar', () => ({
   collectCalendar: (...a: unknown[]) => mockCollectCalendar(...a),
 }));
 vi.mock('../../vault-client/audit-log', () => ({ writeAuditLog: (...a: unknown[]) => mockWriteAudit(...a) }));
-vi.mock('../../llm/client', () => ({ callAnthropic: (...a: unknown[]) => mockCallAnthropic(...a) }));
+vi.mock('../../llm/client', () => ({
+  callAnthropic: (...a: unknown[]) => mockCallAnthropic(...a),
+  callLLM: (...a: unknown[]) => mockCallLLM(...a),
+}));
 vi.mock('../../telegram', () => ({ sendTelegramMessage: (...a: unknown[]) => mockSendTelegram(...a) }));
 
 import { runReview } from '../reviewer';
@@ -71,6 +75,7 @@ beforeEach(() => {
   mockWriteAudit.mockResolvedValue(undefined);
   mockSendTelegram.mockResolvedValue({ success: true });
   mockCallAnthropic.mockResolvedValue({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj'] }) });
+  mockCallLLM.mockResolvedValue({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj'] }) });
 });
 
 describe('runReview — fenêtre horaire', () => {
@@ -79,20 +84,22 @@ describe('runReview — fenêtre horaire', () => {
     const r = await runReview();
     expect(r.proceeded).toBe(false);
     expect(mockCallAnthropic).not.toHaveBeenCalled();
+    expect(mockCallLLM).not.toHaveBeenCalled();
   });
 });
 
-describe('runReview — mode léger (semaine, Haiku)', () => {
-  it('mardi → light : Haiku, pas de lecture fiches/profil, écrit', async () => {
+describe('runReview — mode léger (semaine, DeepSeek)', () => {
+  it('mardi → light : DeepSeek (task hot-context-review-light), pas de fiches/profil, écrit', async () => {
     mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
     const r = await runReview();
     expect(r.mode).toBe('light');
     expect(r.written).toBe(true);
-    expect(mockCallAnthropic).toHaveBeenCalledTimes(1); // pas de relecture en light
-    expect(mockCallAnthropic.mock.calls[0]![0].family).toBe('haiku');
+    // Léger = DeepSeek via callLLM, pas Anthropic, pas de relecture.
+    expect(mockCallLLM).toHaveBeenCalledTimes(1);
+    expect(mockCallLLM.mock.calls[0]![0].task).toBe('hot-context-review-light');
+    expect(mockCallAnthropic).not.toHaveBeenCalled();
     expect(mockListRecent).not.toHaveBeenCalled(); // pas de fiches en light
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
-    // Maintenance préservée dans le contenu écrit.
     expect(mockWriteFile.mock.calls[0]![2] as string).toContain('## Maintenance');
   });
 });
@@ -131,7 +138,8 @@ describe('runReview — mode profond (dimanche, Sonnet)', () => {
 describe('runReview — garde-fou sortie invalide', () => {
   it('zone éditable invalide → n’écrit pas', async () => {
     mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
-    mockCallAnthropic.mockResolvedValue({ text: JSON.stringify({ editable: 'trop court', changes: [] }) });
+    // mardi = light → c'est callLLM (DeepSeek) qui produit la sortie.
+    mockCallLLM.mockResolvedValue({ text: JSON.stringify({ editable: 'trop court', changes: [] }) });
     const r = await runReview();
     expect(r.written).toBe(false);
     expect(mockWriteFile).not.toHaveBeenCalled();

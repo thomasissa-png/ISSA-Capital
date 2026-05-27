@@ -27,7 +27,7 @@ import { parisParts, bumpFrontmatter } from '../hot-context-staleness/staleness'
 import { collectCalendar } from '../morning-brief/collect-calendar';
 import { ANYA_LOGS } from '../vault-client/vault-paths';
 import { writeAuditLog } from '../vault-client/audit-log';
-import { callAnthropic } from '../llm/client';
+import { callAnthropic, callLLM } from '../llm/client';
 import { sendTelegramMessage } from '../telegram';
 
 const TOKEN_HARD_LIMIT = 900; // au-delà : on alerte mais on écrit quand même
@@ -248,22 +248,35 @@ export async function runReview(
     userParts.push(`\n=== FICHES MODIFIÉES CETTE SEMAINE (vérifier les oublis) ===\n${fiches}`);
   }
 
-  const family: 'haiku' | 'sonnet' = mode === 'deep' ? 'sonnet' : 'haiku';
+  // Modèle : DEEP (dimanche) = Sonnet (override Opus possible) ; LÉGER (soir) =
+  // DeepSeek V4 Pro via le routeur par tâche (meilleure prose que Haiku + moins
+  // cher — décision Thomas S24).
   const modelOverride =
     mode === 'deep' ? (process.env.HOT_CONTEXT_REVIEW_MODEL_DEEP || undefined) : undefined;
 
   let editable = '';
   let changes: string[] = [];
   try {
-    const { text } = await callAnthropic({
-      family,
-      modelOverride,
-      system,
-      messages: [{ role: 'user', content: userParts.join('\n') }],
-      maxTokens: 2000,
-      timeoutMs: 90_000,
-      responseFormat: 'json',
-    });
+    const userContent = userParts.join('\n');
+    const { text } =
+      mode === 'deep'
+        ? await callAnthropic({
+            family: 'sonnet',
+            modelOverride,
+            system,
+            messages: [{ role: 'user', content: userContent }],
+            maxTokens: 2000,
+            timeoutMs: 90_000,
+            responseFormat: 'json',
+          })
+        : await callLLM({
+            task: 'hot-context-review-light',
+            system,
+            messages: [{ role: 'user', content: userContent }],
+            maxTokens: 2000,
+            timeoutMs: 90_000,
+            responseFormat: 'json',
+          });
     const parsed = JSON.parse(text || '{}') as { editable?: string; changes?: string[] };
     editable = cleanEditable(String(parsed.editable ?? ''));
     changes = Array.isArray(parsed.changes) ? parsed.changes.map((c) => String(c).trim()).filter(Boolean) : [];
