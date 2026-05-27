@@ -1,12 +1,15 @@
 /**
- * Ingestion WhatsApp (Beeper) — V2 : enrichit le vault « comme les emails ».
+ * Ingestion WhatsApp (Beeper) — V3 : enrichit le vault « comme les emails »,
+ * avec match contact DÉTERMINISTE par numéro de téléphone.
  *
  * Pour chaque conversation NON exclue (nom sans « sarani » / « ubi », cf.
  * BEEPER_EXCLUDE), Anya lit les nouveaux messages (depuis un curseur), en
  * extrait l'essentiel via LLM, puis :
  *   1. ENRICHIT LE VAULT en silence quand c'est cohérent — append à
- *      l'historique d'une fiche Contact (match par email connu) et/ou d'une
- *      fiche Projet (code entité). Append-only, PATCH in-place (R5).
+ *      l'historique d'une fiche Contact et/ou d'une fiche Projet (code entité).
+ *      Le contact est résolu en PRIORITÉ par numéro de téléphone (DM WhatsApp
+ *      `<phone>@s.whatsapp.net` ↔ champ `telephone` de la fiche), sinon par
+ *      email proposé par le LLM. Append-only, PATCH in-place (R5).
  *   2. PRÉPARE UN BROUILLON D'EMAIL (Gmail) si la conversation appelle un envoi
  *      d'email de la part de Thomas. JAMAIS envoyé — brouillon seul (règle 11).
  *   3. NOTIFIE THOMAS SUR TELEGRAM UNIQUEMENT s'il y a une todo à faire ou une
@@ -21,11 +24,11 @@ import path from 'node:path';
 import { listTextMessagesSince, type BeeperMessage } from '../beeper-source/beeper-client';
 import { callLLM } from '../llm/client';
 import { sendTelegramMessage } from '../telegram';
-import { loadKnownContacts } from '../email-ingest/contacts-cache';
+import { getVaultContacts, type VaultContact } from '../vault-contacts';
 import { findContactByEmail, appendToHistorique } from '../vault-client';
 import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
 import { createDraft } from '../gmail-source/gmail-client';
-import { PROJET_CODES, type ProjetCode, type KnownContact } from '../triage/types';
+import { PROJET_CODES, type ProjetCode } from '../triage/types';
 
 const FIRST_RUN_LOOKBACK_MS = 4 * 60 * 60 * 1000; // 4h au premier run (cadence scan)
 const MAX_MESSAGES_PER_RUN = 300;
@@ -53,12 +56,50 @@ async function writeCursor(ts: number): Promise<void> {
   }
 }
 
+// ============================================================
+// Téléphone — normalisation + index
+// ============================================================
+
+/**
+ * Normalise un numéro vers ses 9 derniers chiffres significatifs (on retire
+ * l'indicatif `+33` / le `0` de tête). Heuristique robuste pour les numéros FR :
+ * `+33 6 64 85 06 31`, `06 64 85 06 31`, `33664850631@s.whatsapp.net` → `664850631`.
+ */
+export function normalizePhone(raw: string): string | null {
+  const digits = (raw || '').replace(/\D/g, '');
+  if (digits.length < 6) return null;
+  return digits.slice(-9);
+}
+
+/** Extrait le numéro normalisé d'un chat DM WhatsApp (`<phone>@s.whatsapp.net`). */
+function chatPhone(chatId: string): string | null {
+  if (!chatId.endsWith('@s.whatsapp.net')) return null; // groupe (`…@g.us`) → pas de match contact
+  return normalizePhone(chatId.split('@')[0] ?? '');
+}
+
+function contactDisplayName(c: VaultContact): string {
+  return `${c.prenom} ${c.nom}`.trim() || c.filename?.replace(/\.md$/i, '') || '(contact)';
+}
+
+/** Index téléphone normalisé → fiche contact (1er gagnant en cas de doublon). */
+function buildPhoneIndex(contacts: VaultContact[]): Map<string, VaultContact> {
+  const map = new Map<string, VaultContact>();
+  for (const c of contacts) {
+    if (!c.telephone) continue;
+    const key = normalizePhone(c.telephone);
+    if (key && !map.has(key)) map.set(key, c);
+  }
+  return map;
+}
+
 export interface WhatsappIngestStats {
   newMessages: number;
   chats: number;
   relevantChats: number;
   /** fiches Contact enrichies (historique). */
   contactsEnriched: number;
+  /** dont enrichis par match téléphone déterministe. */
+  contactsByPhone: number;
   /** fiches Projet enrichies (historique). */
   projetsEnriched: number;
   /** brouillons d'email Gmail préparés. */
@@ -93,11 +134,15 @@ const PROJET_LEGENDE =
 /**
  * Extraction structurée d'UNE conversation : pertinence + match vault + todos +
  * éventuel email à préparer. Un seul appel LLM (DeepSeek Flash) par chat.
+ *
+ * `knownContactName` : si le numéro a déjà été reconnu (match téléphone), on le
+ * donne en indice fort au LLM pour fiabiliser le rattachement.
  */
 async function extractChat(
   chatName: string,
   texts: string[],
-  contacts: KnownContact[],
+  contacts: VaultContact[],
+  knownContactName: string | null,
 ): Promise<ChatExtraction> {
   const empty: ChatExtraction = {
     relevant: false,
@@ -108,11 +153,21 @@ async function extractChat(
     emailToPrepare: null,
   };
   const snippet = texts.slice(-MAX_SNIPPET_MESSAGES).join('\n');
-  const contactsList = contacts.map((c) => `- ${c.name} <${c.email}>`).join('\n') || '(aucun)';
+  const contactsList =
+    contacts
+      .map((c) => {
+        const email = c.email ? ` <${c.email}>` : '';
+        const alias = c.surnoms && c.surnoms.length > 0 ? ` (alias : ${c.surnoms.join(', ')})` : '';
+        return `- ${contactDisplayName(c)}${email}${alias}`;
+      })
+      .join('\n') || '(aucun)';
+  const hint = knownContactName
+    ? `\n\nIMPORTANT : le numéro de cette conversation correspond au contact connu « ${knownContactName} » — rattache-lui les infos.`
+    : '';
   const system =
     "Tu es Anya, secrétariat IA de Thomas Issa (ISSA Capital — patrimoine, immobilier, business). " +
     "On te donne les messages WhatsApp récents d'UNE conversation, la liste des contacts connus de " +
-    "Thomas (avec leur email), et les codes projet. Détermine ce qui mérite d'être consigné/agi. " +
+    "Thomas (avec email + alias), et les codes projet. Détermine ce qui mérite d'être consigné/agi. " +
     "Ignore le bavardage perso/famille/amical pur. Réponds en JSON STRICT :\n" +
     '{"relevant": bool, "summary": "1-2 phrases FR (ce qui compte ; vide si non pertinent)", ' +
     '"contactEmail": "email EXACT pris dans la liste fournie si la conversation concerne clairement CE contact, sinon null", ' +
@@ -129,7 +184,7 @@ async function extractChat(
       messages: [
         {
           role: 'user',
-          content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages :\n${snippet}`,
+          content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages :\n${snippet}${hint}`,
         },
       ],
       maxTokens: 600,
@@ -204,15 +259,19 @@ async function prepareEmailDraft(intent: EmailIntent, chatName: string): Promise
   return r.success ? r.gmailUrl ?? '(brouillon créé)' : null;
 }
 
-/** Enrichit l'historique d'une fiche Contact (match par email connu). */
-async function enrichContact(contactEmail: string, summary: string, chatName: string): Promise<boolean> {
-  const match = await findContactByEmail(contactEmail);
-  if (!match) return false;
+/** Append une ligne d'historique à une fiche contact (chemin connu). */
+async function appendContactLine(
+  folderPath: string,
+  filename: string,
+  summary: string,
+  chatName: string,
+  trigger: string,
+): Promise<boolean> {
   const today = new Date().toISOString().slice(0, 10);
-  return appendToHistorique(match.folderPath, `${match.name}.md`, {
+  return appendToHistorique(folderPath, filename, {
     title: `${today} — WhatsApp : ${chatName}`,
     content: summary,
-    trigger: `whatsapp-ingest:contact:${contactEmail}`,
+    trigger,
     updateLastInteraction: true,
   });
 }
@@ -235,6 +294,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     chats: 0,
     relevantChats: 0,
     contactsEnriched: 0,
+    contactsByPhone: 0,
     projetsEnriched: 0,
     draftsPrepared: 0,
     notified: 0,
@@ -254,17 +314,18 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     return stats;
   }
 
-  let contacts: KnownContact[] = [];
+  let contacts: VaultContact[] = [];
   try {
-    contacts = await loadKnownContacts();
+    contacts = await getVaultContacts();
   } catch {
-    console.warn('[whatsapp-ingest] chargement contacts échoué — match contact désactivé ce run');
+    console.warn('[whatsapp-ingest] chargement contacts échoué — match contact dégradé ce run');
   }
+  const byPhone = buildPhoneIndex(contacts);
 
   // Grouper par chat (roomID).
-  const byChat = new Map<string, { name: string; msgs: BeeperMessage[] }>();
+  const byChat = new Map<string, { name: string; chatId: string; msgs: BeeperMessage[] }>();
   for (const m of messages) {
-    const g = byChat.get(m.roomID) ?? { name: m.chatName || '(chat sans nom)', msgs: [] };
+    const g = byChat.get(m.roomID) ?? { name: m.chatName || '(chat sans nom)', chatId: m.chatId, msgs: [] };
     g.msgs.push(m);
     byChat.set(m.roomID, g);
   }
@@ -272,18 +333,41 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
 
   for (const [, group] of byChat) {
     try {
-      const ex = await extractChat(group.name, group.msgs.map((m) => m.text), contacts);
+      // Match téléphone déterministe (DM uniquement) AVANT l'extraction.
+      const phone = chatPhone(group.chatId);
+      const matched = phone ? byPhone.get(phone) : undefined;
+
+      const ex = await extractChat(
+        group.name,
+        group.msgs.map((m) => m.text),
+        contacts,
+        matched ? contactDisplayName(matched) : null,
+      );
       if (!ex.relevant) continue;
       stats.relevantChats++;
 
-      // 1. Enrichissement vault SILENCIEUX (quand cohérent).
-      if (ex.contactEmail) {
+      // 1a. Contact — priorité au match téléphone (déterministe), sinon email LLM.
+      if (matched?.folderPath && matched.filename) {
         try {
-          if (await enrichContact(ex.contactEmail, ex.summary, group.name)) stats.contactsEnriched++;
+          if (await appendContactLine(matched.folderPath, matched.filename, ex.summary, group.name, `whatsapp-ingest:phone:${phone}`)) {
+            stats.contactsEnriched++;
+            stats.contactsByPhone++;
+          }
         } catch (err) {
-          console.warn(`[whatsapp-ingest] enrichContact échoué : ${err instanceof Error ? err.message : String(err)}`);
+          console.warn(`[whatsapp-ingest] enrich contact (phone) échoué : ${err instanceof Error ? err.message : String(err)}`);
+        }
+      } else if (ex.contactEmail) {
+        try {
+          const m = await findContactByEmail(ex.contactEmail);
+          if (m && (await appendContactLine(m.folderPath, `${m.name}.md`, ex.summary, group.name, `whatsapp-ingest:email:${ex.contactEmail}`))) {
+            stats.contactsEnriched++;
+          }
+        } catch (err) {
+          console.warn(`[whatsapp-ingest] enrich contact (email) échoué : ${err instanceof Error ? err.message : String(err)}`);
         }
       }
+
+      // 1b. Projet.
       if (ex.projet) {
         try {
           const today = new Date().toISOString().slice(0, 10);
@@ -294,7 +378,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
           });
           if (res.status === 'enriched') stats.projetsEnriched++;
         } catch (err) {
-          console.warn(`[whatsapp-ingest] enrichProjet échoué : ${err instanceof Error ? err.message : String(err)}`);
+          console.warn(`[whatsapp-ingest] enrich projet échoué : ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
@@ -326,7 +410,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   await writeCursor(nowTs);
   console.warn(
     `[whatsapp-ingest] terminé — ${stats.newMessages} msg, ${stats.chats} chats, ${stats.relevantChats} pertinents, ` +
-      `${stats.contactsEnriched} contacts enrichis, ${stats.projetsEnriched} projets enrichis, ` +
+      `${stats.contactsEnriched} contacts enrichis (${stats.contactsByPhone} via tél.), ${stats.projetsEnriched} projets enrichis, ` +
       `${stats.draftsPrepared} brouillons, ${stats.notified} notifiés, ${stats.errors} erreurs`,
   );
   return stats;
