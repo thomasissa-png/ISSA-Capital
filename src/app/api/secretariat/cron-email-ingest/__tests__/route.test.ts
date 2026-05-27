@@ -55,6 +55,7 @@ function makeStats(overrides: Partial<IngestStats> = {}): IngestStats {
     draftsCreated: 0,
     draftsSkipped: 0,
     draftsSkippedAlreadyReplied: 0,
+    draftsSkippedNotAddressed: 0,
     draftsFailed: 0,
     contactCardsSent: 0,
     errors: 1,

@@ -30,6 +30,7 @@ import { triageEmail } from '../triage/triage';
 import { isLikelySpamByHeuristic } from './pre-filter';
 import { loadKnownContacts } from './contacts-cache';
 import { composeDraft } from './draft-composer';
+import { isDirectlyAddressed } from './addressee';
 import {
   handleLocataire,
   handleAClassifier,
@@ -75,6 +76,8 @@ export interface IngestStats {
   draftsSkipped: number;
   /** S23 — brouillons non créés car Thomas a déjà répondu dans le fil */
   draftsSkippedAlreadyReplied: number;
+  /** S24 — brouillons non créés car Thomas est en copie (Cc), pas destinataire direct */
+  draftsSkippedNotAddressed: number;
   draftsFailed: number;
   /** S23 — cartes de création de contact envoyées (no-match, seule carte conservée) */
   contactCardsSent: number;
@@ -149,6 +152,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
     draftsCreated: 0,
     draftsSkipped: 0,
     draftsSkippedAlreadyReplied: 0,
+    draftsSkippedNotAddressed: 0,
     draftsFailed: 0,
     contactCardsSent: 0,
     errors: 0,
@@ -233,7 +237,8 @@ export async function runEmailIngest(): Promise<IngestStats> {
     `haiku-spam=${stats.haikuSpam}, traités=${stats.pendingCreated}, ` +
     `auto=${stats.autoExecuted}, sys=${stats.systemEmailsFiltered}, ` +
     `drafts=${stats.draftsCreated}créés/${stats.draftsSkipped}skip/` +
-    `${stats.draftsSkippedAlreadyReplied}déjà-répondu/${stats.draftsFailed}err, ` +
+    `${stats.draftsSkippedAlreadyReplied}déjà-répondu/` +
+    `${stats.draftsSkippedNotAddressed}en-copie/${stats.draftsFailed}err, ` +
     `cartes-contact=${stats.contactCardsSent}, erreurs=${stats.errors}`,
   );
 
@@ -380,13 +385,38 @@ async function processOneEmail(
     );
   }
 
-  // (c) BROUILLON — seulement si pas déjà répondu. Création silencieuse, rattachée
-  // au fil (threadId + In-Reply-To via draft-composer). Aucune carte, aucune notif.
+  // (b2) GARDE « destinataire direct » (S24) — si Thomas est seulement en copie
+  // (Cc) et que l'email s'adresse à quelqu'un d'autre, pas de BROUILLON. La garde
+  // ne touche QUE le brouillon de réponse : la mise à jour des fiches projet/
+  // contact + historique + todo est faite plus haut (docActions/handlers), donc
+  // elle a TOUJOURS lieu selon le contenu, copie ou pas. Fail-open si on ne
+  // résout pas l'adresse propriétaire.
+  let directlyAddressed = true;
+  try {
+    const selfAddresses = await source.getSelfAddresses();
+    const check = isDirectlyAddressed(selfAddresses, detail.to, detail.cc);
+    directlyAddressed = check.addressed;
+    if (!directlyAddressed) {
+      console.warn(
+        `[email-ingest] ${messageId} : ${check.reason} — pas de brouillon (documentation/todo conservés)`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[email-ingest] getSelfAddresses échoué pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // (c) BROUILLON — seulement si pas déjà répondu ET Thomas destinataire direct.
+  // Création silencieuse, rattachée au fil (threadId + In-Reply-To via
+  // draft-composer). Aucune carte, aucune notif.
   if (alreadyReplied) {
     stats.draftsSkippedAlreadyReplied++;
     console.warn(
       `[email-ingest] ${messageId} : Thomas a déjà répondu dans le fil — pas de brouillon`,
     );
+  } else if (!directlyAddressed) {
+    stats.draftsSkippedNotAddressed++;
   } else {
     try {
       const draftResult = await composeDraft(detail, triage, source.createReplyDraft);

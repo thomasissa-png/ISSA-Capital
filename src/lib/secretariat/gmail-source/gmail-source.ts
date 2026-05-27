@@ -21,6 +21,7 @@ import {
   parseEmailAddresses,
   extractBodyPlain,
   extractAttachments,
+  getProfileEmail,
 } from './gmail-client';
 import { resolveTraiteLabel, resolveARevoir } from './label-resolver';
 
@@ -137,6 +138,15 @@ export async function hasReplyFromMe(threadId: string | undefined): Promise<bool
   }
 
   return messages.some((m) => m.labelIds.includes('SENT'));
+}
+
+/**
+ * Adresses du propriétaire de la boîte (Thomas) pour la garde « destinataire
+ * direct » (S24). [] si non résolu → fail-open côté runner.
+ */
+export async function getSelfAddresses(): Promise<string[]> {
+  const email = await getProfileEmail();
+  return email ? [email] : [];
 }
 
 /**
