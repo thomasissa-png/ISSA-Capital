@@ -259,16 +259,24 @@ function buildUserPrompt(input: ContactFicheSynthInput): string {
  */
 function parseFicheJson(raw: string): ContactFicheData | null {
   if (!raw) return null;
-  const blockMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  // DeepSeek peut emballer la sortie : bloc de raisonnement <think>…</think>,
+  // fence ```json, prose autour. On nettoie avant d'extraire l'objet.
+  const cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  const blockMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
   const candidate =
-    blockMatch?.[1]?.trim() ?? raw.match(/\{[\s\S]*\}/)?.[0]?.trim() ?? null;
+    blockMatch?.[1]?.trim() ?? cleaned.match(/\{[\s\S]*\}/)?.[0]?.trim() ?? null;
   if (!candidate) return null;
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(candidate);
   } catch {
-    return null;
+    // Tolérance virgules traînantes (`,}` / `,]`) — erreur DeepSeek fréquente.
+    try {
+      parsed = JSON.parse(candidate.replace(/,(\s*[}\]])/g, '$1'));
+    } catch {
+      return null;
+    }
   }
   if (typeof parsed !== 'object' || parsed === null) return null;
 
