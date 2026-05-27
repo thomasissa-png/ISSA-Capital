@@ -17,6 +17,9 @@
  */
 
 import { execFile } from 'node:child_process';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { loadEnvConfig } from '@next/env';
 
 let envLoaded = false;
@@ -57,31 +60,66 @@ interface SqliteResult {
   error?: string;
 }
 
+/**
+ * Copie la DB (+ ses sidecars WAL/SHM) dans un dossier temporaire détenu par
+ * l'utilisateur courant, puis renvoie le chemin de la copie + un cleanup.
+ *
+ * Pourquoi : `index.db` est en mode WAL. Une lecture `sqlite3 -readonly` d'une DB
+ * WAL doit pouvoir écrire le `-shm` (mmap) — or Anya (`thomas`) n'a PAS les droits
+ * d'écriture sur les fichiers de `root/.beeper` (et le `setfacl` ne survit pas aux
+ * recréations de fichiers par le bridge) → erreur « attempt to write a readonly
+ * database (8) ». La copie locale (writable) supprime cette dépendance. Lecture
+ * du vrai fichier inchangée : aucune écriture vers `root/.beeper` (règle 11).
+ */
+async function snapshotDb(dbPath: string): Promise<{ path: string; cleanup: () => Promise<void> }> {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'anya-beeper-'));
+  const dest = path.join(dir, path.basename(dbPath));
+  // Copie le fichier principal + les sidecars WAL/SHM s'ils existent (snapshot cohérent).
+  for (const suffix of ['', '-wal', '-shm']) {
+    try {
+      await fs.copyFile(dbPath + suffix, dest + suffix);
+    } catch {
+      /* sidecar absent → normal */
+    }
+  }
+  return { path: dest, cleanup: () => fs.rm(dir, { recursive: true, force: true }) };
+}
+
 /** Requête READ-ONLY via la CLI sqlite3, sortie JSON. SELECT uniquement. */
-function runSqliteJson(dbPath: string, query: string): Promise<SqliteResult> {
-  return new Promise((resolve) => {
-    execFile(
-      'sqlite3',
-      ['-readonly', '-json', dbPath, query],
-      { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 32 * 1024 * 1024 },
-      (err, stdout, stderr) => {
-        if (err) {
-          resolve({ ok: false, error: (stderr || err.message).slice(0, 400).trim() });
-          return;
-        }
-        const out = stdout.trim();
-        if (!out) {
-          resolve({ ok: true, rows: [] });
-          return;
-        }
-        try {
-          resolve({ ok: true, rows: JSON.parse(out) as Array<Record<string, unknown>> });
-        } catch {
-          resolve({ ok: false, error: `JSON parse impossible : ${out.slice(0, 200)}` });
-        }
-      },
-    );
-  });
+async function runSqliteJson(dbPath: string, query: string): Promise<SqliteResult> {
+  let snap: { path: string; cleanup: () => Promise<void> };
+  try {
+    snap = await snapshotDb(dbPath);
+  } catch (err) {
+    return { ok: false, error: `snapshot DB impossible : ${err instanceof Error ? err.message : String(err)}` };
+  }
+  try {
+    return await new Promise<SqliteResult>((resolve) => {
+      execFile(
+        'sqlite3',
+        ['-readonly', '-json', snap.path, query],
+        { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 32 * 1024 * 1024 },
+        (err, stdout, stderr) => {
+          if (err) {
+            resolve({ ok: false, error: (stderr || err.message).slice(0, 400).trim() });
+            return;
+          }
+          const out = stdout.trim();
+          if (!out) {
+            resolve({ ok: true, rows: [] });
+            return;
+          }
+          try {
+            resolve({ ok: true, rows: JSON.parse(out) as Array<Record<string, unknown>> });
+          } catch {
+            resolve({ ok: false, error: `JSON parse impossible : ${out.slice(0, 200)}` });
+          }
+        },
+      );
+    });
+  } finally {
+    await snap.cleanup().catch(() => {});
+  }
 }
 
 export interface BeeperChat {
@@ -102,9 +140,27 @@ export function beeperExcludedNameFragments(): string[] {
     .filter((s) => s.length > 0);
 }
 
-/** Vrai si le nom du chat contient un fragment exclu (ex « sarani »). */
+/**
+ * Fragments de nom FORCÉS INCLUS (CSV, case-insensitive), qui PRIMENT sur
+ * l'exclusion. Permet de garder un chat précis même s'il contient un fragment
+ * exclu — ex. « Reprise Sarani » reste traité alors que « sarani » est exclu.
+ * Défaut : "reprise sarani". Override via BEEPER_INCLUDE.
+ */
+export function beeperIncludedNameFragments(): string[] {
+  ensureEnv();
+  return (process.env.BEEPER_INCLUDE ?? 'reprise sarani')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0);
+}
+
+/**
+ * Vrai si le chat doit être exclu. La liste d'inclusion PRIME : un nom qui
+ * matche un fragment inclus n'est jamais exclu (même s'il contient « sarani »).
+ */
 export function isExcludedChat(chatName: string): boolean {
   const n = chatName.toLowerCase();
+  if (beeperIncludedNameFragments().some((frag) => n.includes(frag))) return false;
   return beeperExcludedNameFragments().some((frag) => n.includes(frag));
 }
 
