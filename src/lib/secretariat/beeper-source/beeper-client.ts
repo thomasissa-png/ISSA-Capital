@@ -93,11 +93,32 @@ export interface BeeperChat {
   name: string;
 }
 
-/** Charge la table des chats (portal) → map roomID(mxid) → {chatId, name}. */
+/** Fragment de nom de chat à EXCLURE (CSV, case-insensitive). Défaut : "sarani". */
+export function beeperExcludedNameFragments(): string[] {
+  ensureEnv();
+  return (process.env.BEEPER_EXCLUDE ?? 'sarani')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0);
+}
+
+/** Vrai si le nom du chat contient un fragment exclu (ex « sarani »). */
+export function isExcludedChat(chatName: string): boolean {
+  const n = chatName.toLowerCase();
+  return beeperExcludedNameFragments().some((frag) => n.includes(frag));
+}
+
+/** Charge la table des chats (portal) → map roomID(mxid) → {chatId, name}.
+ *  Résout le nom des DM via ghost (portal.name est vide pour les conversations 1-1). */
 export async function loadChats(): Promise<Map<string, BeeperChat>> {
   const r = await runSqliteJson(
     megabridgeDbPath(),
-    "SELECT mxid, id AS chatId, name FROM portal WHERE mxid IS NOT NULL AND mxid != '';",
+    `SELECT p.mxid AS mxid,
+            p.id AS chatId,
+            COALESCE(NULLIF(p.name,''), g.name, p.other_user_id, '') AS name
+     FROM portal p
+     LEFT JOIN ghost g ON g.bridge_id = p.bridge_id AND g.id = p.other_user_id
+     WHERE p.mxid IS NOT NULL AND p.mxid != '';`,
   );
   const map = new Map<string, BeeperChat>();
   if (r.ok && r.rows) {
@@ -159,7 +180,7 @@ export async function listTextMessagesSince(
         isSender,
       };
     })
-    .filter((m) => !m.isSender && m.text.length > 0);
+    .filter((m) => !m.isSender && m.text.length > 0 && !isExcludedChat(m.chatName));
 }
 
 export interface BeeperHealth {
