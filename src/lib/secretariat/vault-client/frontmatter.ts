@@ -234,6 +234,48 @@ export function patchFrontmatterField(
 }
 
 /**
+ * Comme patchFrontmatterField, mais AJOUTE la clé si elle est absente
+ * (insérée en dernière ligne du bloc frontmatter). Si aucun frontmatter
+ * n'existe, le contenu est renvoyé inchangé (on ne fabrique pas de bloc).
+ *
+ * Sert aux champs dérivés auto (canal_préféré, fréquence_échanges — S24) qui
+ * n'existent pas encore sur la plupart des fiches.
+ */
+export function upsertFrontmatterField(
+  content: string,
+  key: string,
+  newValue: string | number | boolean | null,
+): string {
+  const match = FRONTMATTER_RE.exec(content);
+  if (!match || match[1] === undefined) {
+    return content;
+  }
+
+  const fmRaw = match[1];
+  const hasKey = fmRaw
+    .split('\n')
+    .some((line) => {
+      const colonIdx = line.indexOf(':');
+      return colonIdx !== -1 && line.slice(0, colonIdx).trim() === key;
+    });
+
+  if (hasKey) {
+    return patchFrontmatterField(content, key, newValue);
+  }
+
+  // Insérer la nouvelle clé en fin de bloc frontmatter.
+  const newLine = `${key}: ${formatYamlValue(newValue)}`;
+  const newFm = fmRaw.length > 0 ? `${fmRaw}\n${newLine}` : newLine;
+  const before = content.slice(0, match.index!);
+  const fmDelimStart = content.slice(match.index!, match.index! + match[0].indexOf(fmRaw));
+  const fmDelimEnd = content.slice(
+    match.index! + match[0].indexOf(fmRaw) + fmRaw.length,
+    match.index! + match[0].length,
+  );
+  return before + fmDelimStart + newFm + fmDelimEnd + content.slice(match.index! + match[0].length);
+}
+
+/**
  * Formate une valeur pour l'insertion dans le YAML.
  */
 function formatYamlValue(value: string | number | boolean | null): string {
