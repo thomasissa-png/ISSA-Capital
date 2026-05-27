@@ -10,7 +10,7 @@
  * Réutilise getAccessToken() de drive-upload.ts (mutualisation S13).
  */
 
-import { getAccessToken } from '../drive-upload';
+import { getAccessToken, invalidateAccessToken } from '../drive-upload';
 import { recordOAuthUsage } from '../health-monitor/oauth-timestamps';
 
 // ============================================================
@@ -101,10 +101,21 @@ async function listChildren(
 
   const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=200`;
 
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  const doFetch = (token: string) =>
+    fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+  let response = await doFetch(accessToken);
+
+  // 401 → le token a probablement été invalidé (rotation Google) : on force un
+  // refresh et on retente UNE fois (fix bug 401 transitoire du 2026-05-27).
+  if (response.status === 401) {
+    invalidateAccessToken();
+    const fresh = await getAccessToken(true);
+    if (fresh) response = await doFetch(fresh);
+  }
 
   if (!response.ok) {
     const err = await response.text().catch(() => '');
