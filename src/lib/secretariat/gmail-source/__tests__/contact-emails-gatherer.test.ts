@@ -143,8 +143,10 @@ describe('gatherContactEmails', () => {
     expect(res.emails[0]!.subject).toBe('OK');
   });
 
-  it('tronque les extraits longs et effondre les espaces', async () => {
-    const longBody = 'Bonjour   Thomas.\n\n\nVoici  un texte ' + 'A'.repeat(1000);
+  it('garde début + fin (signature) et effondre les espaces', async () => {
+    // Signature en FIN de mail (rôle/tél) : le head+tail doit la conserver.
+    const longBody =
+      'Bonjour   Thomas.\n\n\nVoici  un texte ' + 'A'.repeat(1000) + '\nCordialement, Jean — Directeur, +33 6 00 00';
     mockListMessages.mockResolvedValue([{ id: 'm1' }]);
     mockGetMessage.mockResolvedValue(
       makeRaw({ id: 'm1', from: 'jean@exemple.com', subject: 'Long', body: longBody, internalDate: '1716000000000' }),
@@ -152,10 +154,13 @@ describe('gatherContactEmails', () => {
 
     const res = await gatherContactEmails('jean@exemple.com');
     const excerpt = res.emails[0]!.excerpt;
-    expect(excerpt.length).toBeLessThanOrEqual(601); // 600 + ellipse
+    expect(excerpt.length).toBeLessThanOrEqual(601);
     expect(excerpt).not.toContain('\n');
     expect(excerpt).not.toContain('   ');
-    expect(excerpt.endsWith('…')).toBe(true);
+    // head+tail : début ET fin (signature) présents, séparés par l'ellipse.
+    expect(excerpt).toContain('Bonjour Thomas');
+    expect(excerpt).toContain('[…]');
+    expect(excerpt).toContain('+33 6 00 00');
   });
 
   it('listMessages qui throw → liste vide (jamais d exception)', async () => {

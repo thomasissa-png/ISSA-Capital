@@ -30,6 +30,7 @@ import {
   completeTask,
   listTasks,
   listProjects,
+  _clearInboxIdCache,
 } from '../ticktick-client';
 
 // ============================================================
@@ -62,6 +63,8 @@ function mockEmptyResponse(status = 200) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _clearInboxIdCache();
+  delete process.env.TICKTICK_INBOX_PROJECT_ID;
   mockGetTickTickAccessToken.mockResolvedValue('mock-access-token');
 });
 
@@ -214,6 +217,46 @@ describe('TickTick Client', () => {
 
       expect(result).toHaveLength(2);
       expect(result[1]!.name).toBe('Anya');
+    });
+  });
+
+  describe('auto-résolution Inbox (S24 OPTION B)', () => {
+    it('createTask sans projectId capte l’ID Inbox depuis la réponse, réutilisé par listTasks', async () => {
+      // 1. createTask sans projectId → la réponse révèle l'ID Inbox.
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({ id: 't1', projectId: 'inbox-XYZ', title: 'T' }),
+      );
+      await createTask({ title: 'Sans projet' });
+
+      // 2. listTasks() : /project (vide) puis fetch de l'Inbox auto-résolue.
+      mockFetch.mockResolvedValueOnce(mockJsonResponse([])); // listProjects
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({ tasks: [{ id: 'i1', title: 'tâche inbox' }] }),
+      ); // /project/inbox-XYZ/data
+
+      const tasks = await listTasks();
+
+      const inboxCall = mockFetch.mock.calls.find((c) =>
+        String(c[0]).includes('/project/inbox-XYZ/data'),
+      );
+      expect(inboxCall).toBeDefined();
+      expect(tasks.some((t) => (t as { id?: string }).id === 'i1')).toBe(true);
+    });
+
+    it('createTask AVEC projectId ne pollue pas le cache Inbox', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({ id: 't1', projectId: 'p-anya', title: 'T' }),
+      );
+      await createTask({ title: 'Dans Anya', projectId: 'p-anya' });
+
+      // listTasks : pas d'inbox en cache → pas de fetch /project/p-anya/data en tant qu'inbox.
+      mockFetch.mockResolvedValueOnce(mockJsonResponse([])); // listProjects vide
+      await listTasks();
+
+      const inboxByCache = mockFetch.mock.calls.find((c) =>
+        String(c[0]).includes('/project/p-anya/data'),
+      );
+      expect(inboxByCache).toBeUndefined();
     });
   });
 });

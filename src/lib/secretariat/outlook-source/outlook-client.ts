@@ -171,6 +171,50 @@ export async function listInboxUnprocessed(
   }
 }
 
+/**
+ * Recherche les messages d'une boîte liés à une adresse (reçus de / écrits à),
+ * tous dossiers — enrichissement fiche contact (S24). Lecture seule.
+ *
+ * Utilise `$search="adresse"` (KQL plein texte : capte from, to, corps) qui
+ * remonte les deux directions du fil. Corps renvoyé en TEXTE (Prefer header).
+ * Fail-soft : [] si token absent / HTTP KO / exception.
+ */
+export async function searchMessagesByAddress(
+  box: OutlookBox,
+  address: string,
+  max = 10,
+): Promise<GraphMessage[]> {
+  const token = await getAccessToken(box);
+  if (!token) return [];
+  const select =
+    'id,conversationId,subject,body,from,toRecipients,receivedDateTime';
+  // $search exige des guillemets autour de la valeur ; pas de $orderby/$filter combiné.
+  const url =
+    `${GRAPH}/me/messages` +
+    `?$select=${select}&$top=${max}&$search=${encodeURIComponent(`"${address}"`)}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Prefer: 'outlook.body-content-type="text"',
+        ConsistencyLevel: 'eventual',
+      },
+      signal: AbortSignal.timeout(GRAPH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.warn(`[outlook-client] search ${box} HTTP ${res.status}`);
+      return [];
+    }
+    const data = (await res.json()) as { value?: GraphMessage[] };
+    return data.value ?? [];
+  } catch (err) {
+    console.warn(
+      `[outlook-client] search ${box} erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return [];
+  }
+}
+
 /** Récupère un message complet, corps en TEXTE (Prefer header). Lecture seule. */
 export async function getMessageFull(box: OutlookBox, id: string): Promise<GraphMessage | null> {
   const token = await getAccessToken(box);

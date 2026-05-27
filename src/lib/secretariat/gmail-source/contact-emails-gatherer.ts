@@ -109,7 +109,9 @@ export async function gatherContactEmails(
       const subject = truncate(subjectRaw.trim(), SUBJECT_MAX_CHARS);
 
       const bodyRaw = extractBodyPlain(raw);
-      const excerpt = truncate(collapseWhitespace(bodyRaw), EXCERPT_MAX_CHARS);
+      // Head + tail : la signature (rôle, société, téléphone) est en FIN de mail.
+      // Tronquer uniquement le début la perdait → fiche sans coordonnées (bug S23/S24).
+      const excerpt = headAndTail(collapseWhitespace(bodyRaw), EXCERPT_MAX_CHARS);
 
       collected.push({
         date: parseDate(raw.internalDate, getHeader(raw, 'Date')),
@@ -177,4 +179,20 @@ function collapseWhitespace(text: string): string {
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max).trimEnd()}…`;
+}
+
+/**
+ * Garde le DÉBUT et la FIN d'un texte (la signature vit en fin de mail).
+ * Si le texte tient dans `max`, retourné tel quel. Sinon : ~60% tête + ~40%
+ * queue, séparés par une ellipse.
+ */
+export function headAndTail(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const SEP = ' […] ';
+  const budget = Math.max(0, max - SEP.length);
+  const headLen = Math.floor(budget * 0.6);
+  const tailLen = budget - headLen;
+  const head = text.slice(0, headLen).trimEnd();
+  const tail = text.slice(text.length - tailLen).trimStart();
+  return `${head}${SEP}${tail}`;
 }

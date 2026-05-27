@@ -1,19 +1,25 @@
 /**
- * Revue nocturne du hot-context (22h Paris) — autonome, langage adapté.
+ * Revue autonome du hot-context (22h Paris) — deux cadences, zéro clic.
  *
- * Anya relit `hot-context.md`, intègre l'activité récente (agenda + journal
- * d'activité du jour), retire le périmé, et réécrit le mémo TOUTE SEULE, puis
- * envoie à Thomas un Telegram listant les changements. Aucun clic requis.
+ *  - LIGHT (tous les soirs, Haiku) : garde le mémo FRAIS. Intègre l'activité du
+ *    jour (agenda + journal), retire le périmé. Rapide, lean.
+ *  - DEEP (dimanche soir, Sonnet) : prend du recul. Lit le PROFIL de Thomas, RELIT
+ *    les fiches modifiées dans la semaine pour détecter les OUBLIS, restructure,
+ *    puis se RELIT (auto-critique) avant d'écrire. Bilan hebdo Telegram.
  *
- * Sécurité (écriture autonome sur la source de vérité) :
- *  - Le frontmatter et la section « ## Maintenance » sont REconstruits depuis
- *    l'original (le LLM ne peut pas les casser) — il ne réécrit QUE la zone
- *    éditable (titre + Je bouge / J'attends / Décisions).
- *  - Garde-fous : zone non vide, contient des sections, cap tokens. Sinon on
- *    n'écrit pas et on signale l'échec (pas de mémo cassé en silence).
+ * Le hot-context « vit seul » : aucune validation Thomas (voie inline supprimée
+ * S24). La transparence vient du Telegram des changements + des garde-fous.
+ *
+ * Sécurité (écriture autonome sur la SOT) :
+ *  - Frontmatter + section « ## Maintenance » REconstruits depuis l'original
+ *    (le LLM ne réécrit QUE la zone éditable).
+ *  - Garde-fous déterministes (zone non vide/sectionnée, cap tokens) ; en DEEP,
+ *    relecture LLM en plus. Si un contrôle échoue → on n'écrit pas + alerte.
  */
 
-import { readFile, writeFile } from '../vault-client/obsidian-file';
+import { readFile, writeFile, readFileById } from '../vault-client/obsidian-file';
+import { listRecentlyModifiedFiles } from '../vault-client/drive-resolver';
+import { getAccessToken } from '../drive-upload';
 import { HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME } from '../hot-context/applier';
 import { parseObsidianFile } from '../vault-client/frontmatter';
 import { estimateTokens, TOKEN_CAP_WARN } from '../hot-context/token-estimator';
@@ -21,10 +27,24 @@ import { parisParts, bumpFrontmatter } from '../hot-context-staleness/staleness'
 import { collectCalendar } from '../morning-brief/collect-calendar';
 import { ANYA_LOGS } from '../vault-client/vault-paths';
 import { writeAuditLog } from '../vault-client/audit-log';
-import { callLLM } from '../llm/client';
+import { callAnthropic } from '../llm/client';
 import { sendTelegramMessage } from '../telegram';
 
 const TOKEN_HARD_LIMIT = 900; // au-delà : on alerte mais on écrit quand même
+const PROFILE_FOLDER = '00. Me/01. Profil';
+const PROFILE_FILENAME = 'Thomas Issa.md';
+const WEEK_FICHES_CAP = 10;
+const FICHE_EXCERPT_CHARS = 700;
+
+export type ReviewMode = 'light' | 'deep';
+
+export interface ReviewResult {
+  proceeded: boolean;
+  written: boolean;
+  mode: ReviewMode;
+  changes: string[];
+  reason: string;
+}
 
 function thomasChatId(): number | null {
   const raw = process.env.TELEGRAM_CHAT_ID_THOMAS;
@@ -58,46 +78,134 @@ async function todayActivity(parisDate: string): Promise<string> {
     const out: string[] = [];
     for (const line of lines.slice(-120)) {
       try {
-        const e = JSON.parse(line) as { op?: string; trigger?: string; payload?: Record<string, unknown> };
+        const e = JSON.parse(line) as { op?: string; trigger?: string; target?: string; payload?: Record<string, unknown> };
         const p = e.payload ?? {};
         const subject = (p['subject'] as string) ?? (p['title'] as string) ?? '';
         const from = (p['from'] as string) ?? '';
         const cat = (p['category'] as string) ?? '';
-        const bit = [e.trigger, cat, from, subject].filter(Boolean).join(' · ').slice(0, 160);
+        const bit = [e.trigger, cat, from, subject, e.target].filter(Boolean).join(' · ').slice(0, 180);
         if (bit) out.push(`- ${bit}`);
       } catch {
         /* ligne illisible → skip */
       }
     }
     if (!out.length) return '(aucune activité exploitable aujourd\'hui)';
-    // Dédup + cap
     return [...new Set(out)].slice(-40).join('\n');
   } catch {
     return '(journal du jour indisponible)';
   }
 }
 
-export interface ReviewResult {
-  proceeded: boolean;
-  written: boolean;
-  changes: string[];
-  reason: string;
+/** Profil stable de Thomas (grille de lecture pour la passe DEEP). Best-effort. */
+async function readProfile(): Promise<string> {
+  try {
+    const r = await readFile(PROFILE_FOLDER, PROFILE_FILENAME);
+    if (!r.success || !r.content) return '(profil indisponible)';
+    return parseObsidianFile(r.content).body.slice(0, 1500).trim() || '(profil vide)';
+  } catch {
+    return '(profil indisponible)';
+  }
 }
 
-export async function runNightlyReview(force = false): Promise<ReviewResult> {
+/**
+ * Relit les fiches du vault modifiées cette semaine (extraits) pour la détection
+ * d'oublis (passe DEEP). Best-effort : '' si rien/indisponible.
+ */
+async function weekFiches(): Promise<string> {
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const files = await listRecentlyModifiedFiles(since, WEEK_FICHES_CAP);
+    if (!files.length) return '(aucune fiche modifiée cette semaine)';
+    const token = await getAccessToken();
+    if (!token) return '(lecture fiches indisponible)';
+    const parts: string[] = [];
+    for (const f of files) {
+      const r = await readFileById(token, f.id);
+      if (!r.success || !r.content) continue;
+      const body = parseObsidianFile(r.content).body.replace(/\s+/g, ' ').trim();
+      parts.push(`### ${f.name.replace(/\.md$/i, '')}\n${body.slice(0, FICHE_EXCERPT_CHARS)}`);
+    }
+    return parts.length ? parts.join('\n\n') : '(fiches illisibles)';
+  } catch {
+    return '(fiches indisponibles)';
+  }
+}
+
+/** Nettoie une zone éditable produite par le LLM (fences, Maintenance parasite). */
+function cleanEditable(raw: string): string {
+  let e = raw.trim();
+  if (e.includes('## Maintenance')) e = e.slice(0, e.indexOf('## Maintenance')).trimEnd();
+  return e.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+}
+
+/** Garde-fou déterministe : la zone produite est plausible. */
+function editableIsValid(e: string): boolean {
+  return e.length > 40 && e.includes('## ') && !e.includes('\n---\n');
+}
+
+/**
+ * Auto-critique (passe DEEP) : le modèle relit sa réécriture vs l'original et
+ * renvoie ok + éventuelle version corrigée. Ne throw jamais.
+ */
+async function critiqueRewrite(
+  before: string,
+  after: string,
+  family: 'sonnet',
+  modelOverride: string | undefined,
+): Promise<{ ok: boolean; issues: string[]; corrected: string | null }> {
+  const system =
+    "Tu RELIS une réécriture du mémo « hot context » de Thomas avant publication. " +
+    "Compare AVANT et APRÈS. Vérifie : (1) rien d'INVENTÉ qui n'était pas dans l'avant ; " +
+    "(2) rien d'IMPORTANT supprimé à tort (item « J'attends » non résolu, décision, échéance future) ; " +
+    "(3) longueur ~500 tokens max ; (4) sections Markdown présentes ; (5) PAS de section « ## Maintenance » ; " +
+    "(6) wikilinks `[[...]]` préservés. " +
+    'Réponds en JSON STRICT : {"ok": true|false, "issues": ["..."], "corrected": "<zone éditable corrigée du titre H1 jusqu\'avant Maintenance, ou null si rien à corriger>"}. ' +
+    "Ne corrige QUE si nécessaire ; sinon corrected=null.";
+  try {
+    const { text } = await callAnthropic({
+      family,
+      modelOverride,
+      system,
+      messages: [{ role: 'user', content: `=== AVANT ===\n${before}\n\n=== APRÈS ===\n${after}` }],
+      maxTokens: 2000,
+      timeoutMs: 90_000,
+      responseFormat: 'json',
+    });
+    const parsed = JSON.parse(text || '{}') as { ok?: boolean; issues?: unknown; corrected?: unknown };
+    const issues = Array.isArray(parsed.issues) ? parsed.issues.map((i) => String(i)).filter(Boolean) : [];
+    const corrected = typeof parsed.corrected === 'string' && parsed.corrected.trim().length > 0
+      ? cleanEditable(parsed.corrected)
+      : null;
+    return { ok: parsed.ok === true, issues, corrected };
+  } catch {
+    // Relecture KO → on ne bloque pas, on laisse les garde-fous déterministes décider.
+    return { ok: true, issues: [], corrected: null };
+  }
+}
+
+/**
+ * Revue du hot-context. `mode` auto (dimanche → deep, sinon light) sauf override.
+ * `force` ignore la fenêtre 22h.
+ */
+export async function runReview(
+  opts: { mode?: ReviewMode; force?: boolean } = {},
+): Promise<ReviewResult> {
   const p = parisParts();
+  const force = opts.force ?? false;
+  const mode: ReviewMode = opts.mode ?? (p.weekday === 0 ? 'deep' : 'light');
+
   if (!force && p.hour !== 22) {
-    return { proceeded: false, written: false, changes: [], reason: `hors fenêtre (Paris ${p.hour}h)` };
+    return { proceeded: false, written: false, mode, changes: [], reason: `hors fenêtre (Paris ${p.hour}h)` };
   }
 
   const chatId = thomasChatId();
   const read = await readFile(HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME);
   if (!read.success || read.content === undefined) {
     if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : lecture impossible (${read.error ?? 'inconnu'}).`);
-    return { proceeded: true, written: false, changes: [], reason: `lecture échouée : ${read.error ?? 'inconnu'}` };
+    return { proceeded: true, written: false, mode, changes: [], reason: `lecture échouée : ${read.error ?? 'inconnu'}` };
   }
 
-  // 1. Frontmatter bumpé + découpe zone éditable / maintenance (reconstruction sûre).
+  // Frontmatter bumpé + découpe zone éditable / maintenance (reconstruction sûre).
   const bumped = bumpFrontmatter(read.content, p.isoWeekStr, p.dateStr);
   const body = parseObsidianFile(bumped).body;
   const frontmatterText = bumped.slice(0, bumped.length - body.length);
@@ -105,62 +213,92 @@ export async function runNightlyReview(force = false): Promise<ReviewResult> {
   const editableRegion = maintIdx >= 0 ? body.slice(0, maintIdx) : body;
   const maintenanceBlock = maintIdx >= 0 ? body.slice(maintIdx) : '';
 
-  // 2. Digest activité récente.
+  // Contexte commun + (deep) profil & fiches de la semaine.
   const [agenda, activity] = await Promise.all([upcomingAgenda(), todayActivity(p.dateStr)]);
+  const [profile, fiches] = mode === 'deep'
+    ? await Promise.all([readProfile(), weekFiches()])
+    : ['', ''];
 
-  // 3. LLM — réécriture de la zone éditable + liste des changements.
-  const system =
-    "Tu es Anya, secrétariat IA de Thomas Issa (ISSA Capital — patrimoine, immobilier, business). " +
-    "Tu fais la REVUE DU SOIR du mémo « hot context » de Thomas. On te donne la zone éditable actuelle " +
-    "(titre + sections « Je bouge sur », « J'attends » (tableau), « Décisions récentes », « Décisions en " +
-    "arbitrage »), la date du jour, et l'activité récente (agenda + journal). Mets le mémo À JOUR :\n" +
-    "- RETIRE ce qui est périmé (échéance/date passée, item résolu, semaine révolue).\n" +
-    "- INTÈGRE le pertinent issu de l'agenda/activité (RDV à venir, décisions, échéances).\n" +
-    "- Garde le mémo SYNTHÉTIQUE (cible ~500 tokens), priorisé du plus chaud au moins chaud.\n" +
+  // System prompt selon le mode.
+  const baseRules =
     "RED LINES : ne JAMAIS inventer (si pas sûr, garde l'existant) ; PRÉSERVE les wikilinks `[[...]]` ; " +
     "garde le format Markdown des sections et le tableau « J'attends » ; mets à jour le titre H1 avec la " +
     "semaine courante ; n'ajoute PAS de section « Maintenance » (gérée à part). " +
-    'Réponds en JSON STRICT : {"editable": "<la zone éditable mise à jour, du titre H1 jusqu\'avant Maintenance>", ' +
-    '"changes": ["liste courte en français des changements effectués (ce qui a été retiré/ajouté/màj)"]}.';
+    'Réponds en JSON STRICT : {"editable": "<zone éditable mise à jour, du titre H1 jusqu\'avant Maintenance>", ' +
+    '"changes": ["liste courte en français des changements"]}.';
+
+  const system = mode === 'deep'
+    ? "Tu es Anya, secrétariat IA de Thomas Issa. C'est la REVUE HEBDOMADAIRE (dimanche soir) de son mémo « hot context ». " +
+      "Prends du RECUL : avec le PROFIL de Thomas comme grille de lecture, demande-toi les bonnes questions — qu'est-ce qui compte vraiment cette semaine pour lui ? qu'est-ce qui traîne ? qu'attend-il ? " +
+      "RELIS les fiches modifiées cette semaine et VÉRIFIE QU'IL N'Y A PAS D'OUBLI : si une fiche révèle une échéance, une attente, une décision ou une action qui DEVRAIT être dans le mémo mais n'y est pas, AJOUTE-la (et signale-le dans changes, préfixe « Oubli rattrapé : »). " +
+      "Puis réécris la zone éditable : retire le périmé, intègre/structure le pertinent, priorise du plus chaud au moins chaud, ~500 tokens. " +
+      baseRules
+    : "Tu es Anya, secrétariat IA de Thomas Issa. C'est la revue du SOIR (rapide) de son mémo « hot context ». " +
+      "Garde-le FRAIS : retire ce qui est périmé (échéance/date passée, item résolu), intègre le pertinent de l'agenda/activité du jour. Ne restructure pas en profondeur, reste léger et synthétique (~500 tokens). " +
+      baseRules;
+
+  const userParts = [
+    `Date du jour : ${p.dateStr} (semaine ${p.isoWeekStr}).`,
+    `\n=== ZONE ÉDITABLE ACTUELLE ===\n${editableRegion}`,
+    `\n=== AGENDA À VENIR (7 j) ===\n${agenda}`,
+    `\n=== ACTIVITÉ DU JOUR (journal) ===\n${activity}`,
+  ];
+  if (mode === 'deep') {
+    userParts.push(`\n=== PROFIL DE THOMAS (grille de lecture) ===\n${profile}`);
+    userParts.push(`\n=== FICHES MODIFIÉES CETTE SEMAINE (vérifier les oublis) ===\n${fiches}`);
+  }
+
+  const family: 'haiku' | 'sonnet' = mode === 'deep' ? 'sonnet' : 'haiku';
+  const modelOverride =
+    mode === 'deep' ? (process.env.HOT_CONTEXT_REVIEW_MODEL_DEEP || undefined) : undefined;
 
   let editable = '';
   let changes: string[] = [];
   try {
-    const { text } = await callLLM({
-      task: 'hot-context-review',
+    const { text } = await callAnthropic({
+      family,
+      modelOverride,
       system,
-      messages: [
-        {
-          role: 'user',
-          content:
-            `Date du jour : ${p.dateStr} (semaine ${p.isoWeekStr}).\n\n` +
-            `=== ZONE ÉDITABLE ACTUELLE ===\n${editableRegion}\n\n` +
-            `=== AGENDA À VENIR (7 j) ===\n${agenda}\n\n` +
-            `=== ACTIVITÉ DU JOUR (journal) ===\n${activity}`,
-        },
-      ],
+      messages: [{ role: 'user', content: userParts.join('\n') }],
       maxTokens: 2000,
       timeoutMs: 90_000,
       responseFormat: 'json',
     });
     const parsed = JSON.parse(text || '{}') as { editable?: string; changes?: string[] };
-    editable = String(parsed.editable ?? '').trim();
+    editable = cleanEditable(String(parsed.editable ?? ''));
     changes = Array.isArray(parsed.changes) ? parsed.changes.map((c) => String(c).trim()).filter(Boolean) : [];
   } catch (err) {
     if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : échec LLM, mémo inchangé (${err instanceof Error ? err.message : String(err)}).`);
-    return { proceeded: true, written: false, changes: [], reason: 'LLM échoué' };
+    return { proceeded: true, written: false, mode, changes: [], reason: 'LLM échoué' };
   }
 
-  // 4. Garde-fous sur la zone éditable produite.
-  if (editable.includes('## Maintenance')) editable = editable.slice(0, editable.indexOf('## Maintenance')).trimEnd();
-  editable = editable.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-  const editableOk = editable.length > 40 && editable.includes('## ') && !editable.includes('\n---\n');
-  if (!editableOk) {
+  if (!editableIsValid(editable)) {
     if (chatId !== null) await sendTelegramMessage(chatId, '🌙 Revue hot-context : sortie LLM invalide, mémo inchangé.');
-    return { proceeded: true, written: false, changes: [], reason: 'garde-fou zone éditable' };
+    return { proceeded: true, written: false, mode, changes: [], reason: 'garde-fou zone éditable' };
   }
 
-  // 5. Reconstruction sûre : frontmatter (bumpé) + zone éditable LLM + maintenance (original).
+  // DEEP : relecture après écriture (auto-critique) avant de publier.
+  if (mode === 'deep') {
+    const critique = await critiqueRewrite(editableRegion, editable, 'sonnet', modelOverride);
+    if (!critique.ok) {
+      if (critique.corrected && editableIsValid(critique.corrected)) {
+        editable = critique.corrected;
+        changes.push(`🔁 Relecture : corrigé (${critique.issues.slice(0, 3).join(' ; ') || 'ajustements'})`);
+      } else {
+        if (chatId !== null) {
+          await sendTelegramMessage(
+            chatId,
+            `🌙 Revue hebdo hot-context : la relecture a bloqué la publication (mémo inchangé).\n${critique.issues.map((i) => `• ${i}`).join('\n')}`,
+          );
+        }
+        return { proceeded: true, written: false, mode, changes, reason: 'relecture KO' };
+      }
+    } else {
+      changes.push('✅ Relecture OK');
+    }
+  }
+
+  // Reconstruction sûre : frontmatter (bumpé) + zone éditable + maintenance (original).
   const sep = maintenanceBlock ? '\n\n' : '';
   const final = `${frontmatterText}${editable}${sep}${maintenanceBlock}`;
   const tokens = estimateTokens(final);
@@ -168,21 +306,22 @@ export async function runNightlyReview(force = false): Promise<ReviewResult> {
   const w = await writeFile(HOT_CONTEXT_FOLDER, HOT_CONTEXT_FILENAME, final);
   if (!w.success) {
     if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : écriture Drive échouée (${w.error ?? 'inconnu'}).`);
-    return { proceeded: true, written: false, changes, reason: `écriture échouée : ${w.error ?? 'inconnu'}` };
+    return { proceeded: true, written: false, mode, changes, reason: `écriture échouée : ${w.error ?? 'inconnu'}` };
   }
 
   await writeAuditLog({
     ts: new Date().toISOString(),
     op: 'classify_note',
     target: 'hot-context.md',
-    trigger: 'hot-context-review:nightly',
-    payload: { event: 'hot-context-nightly-review', semaine: p.isoWeekStr, changes, tokens },
+    trigger: `hot-context-review:${mode}`,
+    payload: { event: 'hot-context-review', mode, semaine: p.isoWeekStr, changes, tokens },
     status: 'success',
   });
 
-  // 6. Telegram — liste des changements.
+  // Telegram — liste des changements.
   if (chatId !== null) {
-    const lines = [`🌙 *Hot context — revue du soir (${p.dateStr})*`];
+    const header = mode === 'deep' ? `🌙 *Hot context — revue hebdo (${p.dateStr})*` : `🌙 *Hot context — revue du soir (${p.dateStr})*`;
+    const lines = [header];
     if (changes.length > 0) {
       lines.push('', ...changes.map((c) => `• ${c}`));
     } else {
@@ -194,6 +333,11 @@ export async function runNightlyReview(force = false): Promise<ReviewResult> {
     await sendTelegramMessage(chatId, lines.join('\n'));
   }
 
-  console.warn(`[hot-context-review] mémo réécrit — ${changes.length} changement(s), ~${tokens} tokens`);
-  return { proceeded: true, written: true, changes, reason: 'ok' };
+  console.warn(`[hot-context-review] mode=${mode} — ${changes.length} changement(s), ~${tokens} tokens`);
+  return { proceeded: true, written: true, mode, changes, reason: 'ok' };
+}
+
+/** @deprecated S24 — utiliser `runReview`. Conservé pour compat (mode auto). */
+export async function runNightlyReview(force = false): Promise<ReviewResult> {
+  return runReview({ force });
 }

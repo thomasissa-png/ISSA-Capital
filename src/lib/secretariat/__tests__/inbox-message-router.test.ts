@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => ({
     eventId: 'evt_xyz',
     htmlLink: 'https://calendar.google.com/event/evt_xyz',
   }),
-  appendToTodoInbox: vi.fn().mockResolvedValue({ success: true }),
+  addTaskToTickTick: vi.fn().mockResolvedValue({ status: 'created', taskId: 'tt-1' }),
   // S22 — extraction inbox routée via callLLM (DeepSeek). Mock du dispatcher
   // directement : retourne { text } comme le site migré le consomme.
   callLLM: vi.fn().mockResolvedValue({
@@ -50,8 +50,8 @@ vi.mock('@/lib/google/calendar', () => ({
   createCalendarEvent: mocks.createCalendarEvent,
 }));
 
-vi.mock('@/lib/secretariat/drive-todo', () => ({
-  appendToTodoInbox: mocks.appendToTodoInbox,
+vi.mock('@/lib/secretariat/ticktick/inbox-task', () => ({
+  addTaskToTickTick: mocks.addTaskToTickTick,
 }));
 
 vi.mock('@/lib/secretariat/llm/client', () => ({
@@ -312,17 +312,17 @@ describe('handleRouterCallback', () => {
     });
   });
 
-  it('callback task → ajoute à Todo.md', async () => {
+  it('callback task → crée dans TickTick', async () => {
     const cacheKey = await setupCachedEntry();
 
     const msg = await handleRouterCallback(CHAT_ID, `${ROUTER_CALLBACK_PREFIX}task:${cacheKey}`);
 
-    expect(msg).toContain('Ajouté à Todo.md > Inbox');
-    expect(mocks.appendToTodoInbox).toHaveBeenCalledWith(
-      'Sortie enfants Aquaboulevard',
-      '2026-05-12',
-      undefined,
-    );
+    expect(msg).toContain('Tâche créée dans TickTick');
+    expect(mocks.addTaskToTickTick).toHaveBeenCalledWith({
+      title: 'Sortie enfants Aquaboulevard',
+      date: '2026-05-12',
+      description: undefined,
+    });
   });
 
   it('callback cancel → nettoyage cache', async () => {
@@ -356,16 +356,16 @@ describe('handleRouterCallback', () => {
   });
 
   it('callback task échoue → message erreur', async () => {
-    mocks.appendToTodoInbox.mockResolvedValueOnce({
-      success: false,
-      error: 'Todo.md introuvable',
+    mocks.addTaskToTickTick.mockResolvedValueOnce({
+      status: 'error',
+      error: 'TickTick non authentifié',
     });
 
     const cacheKey = await setupCachedEntry();
     const msg = await handleRouterCallback(CHAT_ID, `${ROUTER_CALLBACK_PREFIX}task:${cacheKey}`);
 
-    expect(msg).toContain('Erreur Todo.md');
-    expect(msg).toContain('introuvable');
+    expect(msg).toContain('Erreur création tâche');
+    expect(msg).toContain('non authentifié');
   });
 
   it('texte sans date → Calendar utilise la date du jour', async () => {
@@ -424,8 +424,8 @@ describe('Google Calendar integration (via mock)', () => {
 // Tests — Todo.md append
 // ============================================================
 
-describe('Todo.md integration (via mock)', () => {
-  it('passe titre + date + description à appendToTodoInbox', async () => {
+describe('TickTick integration (via mock)', () => {
+  it('passe titre + date + description à addTaskToTickTick', async () => {
     const cacheKey = await setupEntry({
       titre: 'Rappeler le plombier',
       date: '2026-05-14',
@@ -436,13 +436,13 @@ describe('Todo.md integration (via mock)', () => {
 
     const msg = await handleRouterCallback(CHAT_ID, `${ROUTER_CALLBACK_PREFIX}task:${cacheKey}`);
 
-    expect(msg).toContain('Ajouté à Todo.md > Inbox');
+    expect(msg).toContain('Tâche créée dans TickTick');
     expect(msg).toContain('14/05/2026');
-    expect(mocks.appendToTodoInbox).toHaveBeenCalledWith(
-      'Rappeler le plombier',
-      '2026-05-14',
-      'Fuite cuisine',
-    );
+    expect(mocks.addTaskToTickTick).toHaveBeenCalledWith({
+      title: 'Rappeler le plombier',
+      date: '2026-05-14',
+      description: 'Fuite cuisine',
+    });
   });
 });
 
