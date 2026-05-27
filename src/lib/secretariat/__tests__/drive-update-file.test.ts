@@ -26,7 +26,7 @@ vi.stubGlobal('fetch', mockFetch);
 // Import après mock
 // ============================================================
 
-import { updateFileContent } from '../drive-upload';
+import { updateFileContent, invalidateAccessToken } from '../drive-upload';
 
 // ============================================================
 // Helpers
@@ -61,6 +61,7 @@ function patchErrorResponse(status: number, message = 'Bad Request') {
 describe('updateFileContent — PATCH in-place (R5 P0 #99)', () => {
   beforeEach(() => {
     mockFetch.mockReset();
+    invalidateAccessToken(); // cache token (S24) : repartir propre à chaque test
     process.env.GOOGLE_CLIENT_ID = 'fake-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'fake-client-secret';
     process.env.GOOGLE_REFRESH_TOKEN = 'fake-refresh-token';

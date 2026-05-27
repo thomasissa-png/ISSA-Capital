@@ -33,6 +33,7 @@ vi.mock('../vault-reader', () => ({
 import {
   resolveParentFolderForEntite,
   uploadToDrive,
+  invalidateAccessToken,
   _driveUploadInternals,
 } from '../drive-upload';
 import { findProjetFicheByEntite } from '../vault-reader';
@@ -108,6 +109,7 @@ const FAKE_CR_ID = '1COMPTES-RENDUS-FOLDER-ID';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  invalidateAccessToken(); // évite que le cache token (S24) ne fausse la séquence fetch
   _driveUploadInternals.clearParentFolderCache();
   _driveUploadInternals.clearChildFolderCache();
   process.env.GOOGLE_CLIENT_ID = 'fake-client-id';

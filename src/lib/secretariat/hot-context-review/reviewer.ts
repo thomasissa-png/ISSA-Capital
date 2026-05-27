@@ -131,11 +131,34 @@ async function weekFiches(): Promise<string> {
   }
 }
 
-/** Nettoie une zone éditable produite par le LLM (fences, Maintenance parasite). */
+/** Nettoie une zone éditable produite par le LLM (frontmatter, fences, Maintenance). */
 function cleanEditable(raw: string): string {
   let e = raw.trim();
+  // DeepSeek rajoute parfois un bloc frontmatter en tête → le retirer (sinon le
+  // garde-fou `\n---\n` rejette toute la sortie).
+  e = e.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim();
+  // Fences markdown éventuelles.
+  e = e.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  // La section Maintenance n'est jamais réécrite par le LLM.
   if (e.includes('## Maintenance')) e = e.slice(0, e.indexOf('## Maintenance')).trimEnd();
-  return e.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  return e.trim();
+}
+
+/**
+ * Parse robuste de la sortie LLM `{editable, changes}` — tolère un bloc
+ * ```json``` ou du texte autour (DeepSeek n'est pas toujours du JSON pur).
+ */
+function parseReviewOutput(raw: string): { editable: string; changes: string[] } {
+  const t = (raw ?? '').trim();
+  const block = t.match(/```(?:json)?\s*\r?\n?([\s\S]*?)```/);
+  const candidate = block?.[1]?.trim() ?? t.match(/\{[\s\S]*\}/)?.[0] ?? t;
+  const parsed = JSON.parse(candidate) as { editable?: string; changes?: string[] };
+  return {
+    editable: cleanEditable(String(parsed.editable ?? '')),
+    changes: Array.isArray(parsed.changes)
+      ? parsed.changes.map((c) => String(c).trim()).filter(Boolean)
+      : [],
+  };
 }
 
 /** Garde-fou déterministe : la zone produite est plausible. */
@@ -224,8 +247,11 @@ export async function runReview(
     "RED LINES : ne JAMAIS inventer (si pas sûr, garde l'existant) ; PRÉSERVE les wikilinks `[[...]]` ; " +
     "garde le format Markdown des sections et le tableau « J'attends » ; mets à jour le titre H1 avec la " +
     "semaine courante ; n'ajoute PAS de section « Maintenance » (gérée à part). " +
-    'Réponds en JSON STRICT : {"editable": "<zone éditable mise à jour, du titre H1 jusqu\'avant Maintenance>", ' +
-    '"changes": ["liste courte en français des changements"]}.';
+    'Réponds en JSON STRICT, RIEN autour : {"editable": "<zone éditable mise à jour, du titre H1 jusqu\'avant Maintenance>", ' +
+    '"changes": ["liste courte en français des changements"]}. ' +
+    'Le champ "editable" DOIT commencer par "# " (titre H1) et CONTENIR les en-têtes "## " des sections. ' +
+    'N\'inclus JAMAIS de bloc frontmatter (lignes "---" seules). ' +
+    'Exemple de FORMAT (pas le contenu) : {"editable":"# Hot Context — Semaine du 26 mai\\n\\n## Je bouge sur\\n- item\\n\\n## J\'attends\\n| Quoi | De qui | Depuis | Note |\\n|---|---|---|---|\\n| x | [[Y]] | 2026-05-20 | … |\\n\\n## Décisions récentes\\n- …\\n","changes":["retiré X (échéance passée)","ajouté RDV Y"]}.';
 
   const system = mode === 'deep'
     ? "Tu es Anya, secrétariat IA de Thomas Issa. C'est la REVUE HEBDOMADAIRE (dimanche soir) de son mémo « hot context ». " +
@@ -277,15 +303,20 @@ export async function runReview(
             timeoutMs: 90_000,
             responseFormat: 'json',
           });
-    const parsed = JSON.parse(text || '{}') as { editable?: string; changes?: string[] };
-    editable = cleanEditable(String(parsed.editable ?? ''));
-    changes = Array.isArray(parsed.changes) ? parsed.changes.map((c) => String(c).trim()).filter(Boolean) : [];
+    const out = parseReviewOutput(text);
+    editable = out.editable;
+    changes = out.changes;
   } catch (err) {
     if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : échec LLM, mémo inchangé (${err instanceof Error ? err.message : String(err)}).`);
     return { proceeded: true, written: false, mode, changes: [], reason: 'LLM échoué' };
   }
 
   if (!editableIsValid(editable)) {
+    // Log diagnostique (sans le contenu intégral) pour comprendre POURQUOI la
+    // sortie est rejetée (longueur, sections manquantes…) — surtout côté DeepSeek.
+    console.warn(
+      `[hot-context-review] sortie ${mode} invalide — len=${editable.length}, has_section=${editable.includes('## ')}, has_frontmatter=${editable.includes('\n---\n')} — extrait: ${editable.slice(0, 180).replace(/\n/g, '⏎')}`,
+    );
     if (chatId !== null) await sendTelegramMessage(chatId, '🌙 Revue hot-context : sortie LLM invalide, mémo inchangé.');
     return { proceeded: true, written: false, mode, changes: [], reason: 'garde-fou zone éditable' };
   }

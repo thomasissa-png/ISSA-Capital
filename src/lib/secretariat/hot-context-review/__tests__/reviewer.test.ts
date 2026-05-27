@@ -102,6 +102,20 @@ describe('runReview — mode léger (semaine, DeepSeek)', () => {
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
     expect(mockWriteFile.mock.calls[0]![2] as string).toContain('## Maintenance');
   });
+
+  it('DeepSeek renvoie editable avec frontmatter/fences parasites → nettoyé et écrit', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    // DeepSeek emballe : bloc ```json + frontmatter en tête de l'editable.
+    mockCallLLM.mockResolvedValue({
+      text: '```json\n' + JSON.stringify({ editable: `---\nsemaine: 2026-W22\n---\n${GOOD_EDITABLE}`, changes: ['maj'] }) + '\n```',
+    });
+    const r = await runReview();
+    expect(r.written).toBe(true);
+    const written = mockWriteFile.mock.calls[0]![2] as string;
+    // Le frontmatter parasite a été retiré (un seul frontmatter, celui d'origine).
+    expect(written).toContain('# Hot Context');
+    expect(written).toContain('## Maintenance');
+  });
 });
 
 describe('runReview — mode profond (dimanche, Sonnet)', () => {

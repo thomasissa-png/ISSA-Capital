@@ -178,15 +178,40 @@ export interface DriveUploadResult {
 }
 
 /**
- * Obtient un access token frais via le refresh token.
+ * Cache process de l'access token Google. AVANT (bug 401, 2026-05-27) :
+ * `getAccessToken` faisait un échange `refresh_token → access_token` à CHAQUE
+ * appel Drive → rafales de refresh (le run WhatsApp en fait des dizaines) →
+ * Google rate-limite / invalide des tokens → 401 transitoires (vault-contacts=0).
+ * Désormais : on mint UN token et on le réutilise jusqu'à ~1 min avant son
+ * expiration (`expires_in`). Persiste sur globalThis (re-éval Next.js).
  */
-export async function getAccessToken(): Promise<string | null> {
+const ACCESS_TOKEN_CACHE_KEY = '__issa_google_access_token__' as const;
+
+function getTokenCache(): { token: string; expiresAt: number } | null {
+  return ((globalThis as Record<string, unknown>)[ACCESS_TOKEN_CACHE_KEY] as { token: string; expiresAt: number } | undefined) ?? null;
+}
+
+/** Invalide le token en cache (à appeler sur un 401 → force un refresh au prochain appel). */
+export function invalidateAccessToken(): void {
+  delete (globalThis as Record<string, unknown>)[ACCESS_TOKEN_CACHE_KEY];
+}
+
+/**
+ * Obtient un access token Google (caché). `forceRefresh` ignore le cache
+ * (utile après un 401). Retourne null si credentials manquants / refresh KO.
+ */
+export async function getAccessToken(forceRefresh = false): Promise<string | null> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
   if (!clientId || !clientSecret || !refreshToken) {
     return null;
+  }
+
+  if (!forceRefresh) {
+    const cached = getTokenCache();
+    if (cached && Date.now() < cached.expiresAt) return cached.token;
   }
 
   try {
@@ -207,8 +232,15 @@ export async function getAccessToken(): Promise<string | null> {
       return null;
     }
 
-    const data = (await response.json()) as { access_token?: string };
-    return data.access_token ?? null;
+    const data = (await response.json()) as { access_token?: string; expires_in?: number };
+    if (!data.access_token) return null;
+    // Cache jusqu'à 60 s avant l'expiration réelle (défaut 3600 s).
+    const ttlMs = Math.max(60, (data.expires_in ?? 3600) - 60) * 1000;
+    (globalThis as Record<string, unknown>)[ACCESS_TOKEN_CACHE_KEY] = {
+      token: data.access_token,
+      expiresAt: Date.now() + ttlMs,
+    };
+    return data.access_token;
   } catch (err) {
     console.error('[drive] erreur obtention token :', err instanceof Error ? err.message : err);
     return null;
