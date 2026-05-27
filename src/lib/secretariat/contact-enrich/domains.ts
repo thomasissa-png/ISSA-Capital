@@ -9,10 +9,31 @@
  * stable au runtime). Ne throw jamais : fichier absent/illisible → map vide.
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+/**
+ * Mapping domaine email → société (S24, enrichissement fiche contact).
+ *
+ * Le seed (écosystème ISSA + partenaires factuels) est embarqué EN DUR ci-dessous
+ * pour survivre au bundling Next.js (un `.yml` colocalisé n'est pas copié dans
+ * `.next/server/chunks/` → ENOENT en prod, bug S24). Un fichier externe optionnel
+ * (`ENRICH_DOMAINS_YML_PATH`) est fusionné par-dessus s'il est lisible.
+ *
+ * Parser minimal volontaire (zéro dépendance) : une paire `clé: valeur` par
+ * ligne, commentaires `#` ignorés. Cache mémoire. Ne throw jamais.
+ */
 
-const DEFAULT_YML_PATH = join(__dirname, 'domains.yml');
+import { readFileSync } from 'node:fs';
+
+/**
+ * Seed factuel embarqué (miroir de l'ancien domains.yml). Ne contient QUE des
+ * correspondances connues ; jamais de domaine générique (gmail, outlook…).
+ */
+const SEED_DOMAINS: Record<string, string> = {
+  'sarani.studio': 'Sarani',
+  'versi.fr': 'Versi',
+  'immocrew.fr': 'Immocrew',
+  'versimo.fr': 'Versimo',
+  'issa-capital.com': 'ISSA Capital',
+};
 
 interface CachedMap {
   path: string;
@@ -50,18 +71,28 @@ export function parseFlatYaml(raw: string): Map<string, string> {
 }
 
 function loadMap(): Map<string, string> {
-  const path = (process.env.ENRICH_DOMAINS_YML_PATH ?? '').trim() || DEFAULT_YML_PATH;
+  const path = (process.env.ENRICH_DOMAINS_YML_PATH ?? '').trim();
   const cached = getCache();
   if (cached && cached.path === path) return cached.map;
 
-  let map = new Map<string, string>();
-  try {
-    map = parseFlatYaml(readFileSync(path, 'utf8'));
-  } catch (err) {
-    console.warn(
-      `[enrich-domains] lecture ${path} échouée : ${err instanceof Error ? err.message : String(err)} — map vide`,
-    );
+  // Seed embarqué (toujours présent, bundler-safe).
+  const map = new Map<string, string>(
+    Object.entries(SEED_DOMAINS).map(([k, v]) => [k.toLowerCase(), v]),
+  );
+
+  // Fichier externe optionnel : fusionné par-dessus le seed.
+  if (path) {
+    try {
+      for (const [k, v] of parseFlatYaml(readFileSync(path, 'utf8'))) {
+        map.set(k, v);
+      }
+    } catch (err) {
+      console.warn(
+        `[enrich-domains] override ${path} illisible : ${err instanceof Error ? err.message : String(err)} — seed embarqué seul`,
+      );
+    }
   }
+
   setCache({ path, map });
   return map;
 }

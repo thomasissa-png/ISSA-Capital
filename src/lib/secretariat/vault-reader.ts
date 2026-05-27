@@ -220,6 +220,21 @@ export async function listVaultFolder(
 
   try {
     const files = await listMarkdownFiles(folderPath);
+    // Anti-empoisonnement (S24) : `listMarkdownFiles` masque un échec Drive
+    // (401, scope) en `[]`. Ne JAMAIS cacher une liste vide — sinon un 401
+    // transitoire fige « 0 fiche » pendant tout le TTL (cas Ihssane/Christophe :
+    // 401 sur le dossier Pro à 21:20 → 0 pro chargé jusqu'à 22:20). On préfère
+    // le dernier cache non vide, sinon on renvoie [] SANS cacher (retry au
+    // prochain appel).
+    if (files.length === 0) {
+      if (cached) {
+        console.warn(
+          `[vault-reader] listing ${folderPath} vide (échec Drive probable) — conserve cache stale`,
+        );
+        return cached.data;
+      }
+      return files;
+    }
     folderCache.set(folderPath, { data: files, ts: Date.now() });
     return files;
   } catch (err) {

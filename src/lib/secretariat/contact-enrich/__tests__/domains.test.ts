@@ -54,4 +54,11 @@ describe('lookupSocieteByEmail (domains.yml par défaut)', () => {
     expect(lookupSocieteByEmail('jean@gmail.com')).toBeNull();
     expect(lookupSocieteByEmail('jean@outlook.com')).toBeNull();
   });
+
+  it('seed embarqué disponible même si l’override ENRICH_DOMAINS_YML_PATH est introuvable (bug prod S24 — ENOENT)', () => {
+    process.env.ENRICH_DOMAINS_YML_PATH = '/chemin/inexistant/domains.yml';
+    _clearDomainsCache();
+    expect(lookupSocieteByEmail('thomas@sarani.studio')).toBe('Sarani');
+    expect(lookupSocieteByEmail('x@issa-capital.com')).toBe('ISSA Capital');
+  });
 });

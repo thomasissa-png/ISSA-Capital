@@ -179,9 +179,13 @@ export async function appendToHistorique(
     // dérivés de l'historique (tous canaux confondus). S24.
     if (options.updateLastInteraction) {
       const today = new Date().toISOString().slice(0, 10);
-      updatedContent = patchFrontmatterField(
+      // Clé SANS accent : les fiches réelles du vault utilisent
+      // `date_derniere_interaction` (les handlers email aussi). L'ancienne clé
+      // accentuée `date_dernière_interaction` ne matchait jamais → no-op
+      // silencieux (bug S24). upsert : ajoute la clé si la fiche ne l'a pas.
+      updatedContent = upsertFrontmatterField(
         updatedContent,
-        'date_dernière_interaction',
+        'date_derniere_interaction',
         today,
       );
 

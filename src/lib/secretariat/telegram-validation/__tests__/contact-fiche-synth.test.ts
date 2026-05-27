@@ -91,6 +91,26 @@ describe('synthesizeContactFiche', () => {
     expect(res!.societe).toBe('ACME');
   });
 
+  it('bloc <think> DeepSeek + JSON → think ignoré, JSON parsé (bug stub S24)', async () => {
+    mockCallLLM.mockResolvedValue({
+      text: '<think>L\'expéditeur signe « François », société ACME visible.</think>\n{ "societe": "ACME", "role": "CEO" }',
+      networkRetries: 0,
+    });
+    const res = await synthesizeContactFiche({ ...baseInput, emails: makeEmails(2) });
+    expect(res!.societe).toBe('ACME');
+    expect(res!.role).toBe('CEO');
+  });
+
+  it('virgules traînantes (erreur DeepSeek fréquente) → tolérées', async () => {
+    mockCallLLM.mockResolvedValue({
+      text: '{ "societe": "ACME", "sujets": ["earn-out", "séquestres",], }',
+      networkRetries: 0,
+    });
+    const res = await synthesizeContactFiche({ ...baseInput, emails: makeEmails(2) });
+    expect(res!.societe).toBe('ACME');
+    expect(res!.sujets).toEqual(['earn-out', 'séquestres']);
+  });
+
   it('champs vides/whitespace → omis (zéro invention)', async () => {
     mockCallLLM.mockResolvedValue({
       text: JSON.stringify({ role: '   ', societe: 'ACME', telephone: '' }),
