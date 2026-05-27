@@ -657,10 +657,17 @@ export async function finalizeAddTaskFromPending(
 
   const { parsed, projectId, projectName, chatId, messageId } = entry;
 
+  // FIX régression timezone : convertir l'heure locale Paris (parsed.dueDate,
+  // format `YYYY-MM-DDTHH:mm:ss` sans Z) en ISO UTC + flags isAllDay/timeZone,
+  // comme le fait handleAddTaskFromTelegram. Sans ça, TickTick interprète la
+  // chaîne en UTC → tâche créée à la mauvaise heure (R8 P0 #108).
+  const tz = parisLocalToTickTickFields(parsed.dueDate);
   const input: CreateTaskInput = {
     title: parsed.title,
     priority: parsed.priority ?? 0,
-    dueDate: parsed.dueDate,
+    dueDate: tz.dueDate,
+    isAllDay: tz.isAllDay,
+    timeZone: tz.timeZone,
     projectId: projectId ?? undefined,
     tags: [ANYA_TELEGRAM_TAG],
   };
