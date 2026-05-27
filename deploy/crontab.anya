@@ -25,9 +25,14 @@
 # notifie Thomas UNIQUEMENT pour une todo/action (chats hors "sarani"/"ubi").
 20 7,12,17,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-whatsapp-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 
-# hot-context : plus de cron (S23). La mise à jour du briefing est désormais
-# ÉVÉNEMENTIELLE — déclenchée inline depuis email-ingest quand un email porte un
-# signal clé (detectSignal → carte hotcontext:). Endpoint cron-scan supprimé.
+# hot-context : MAJ de contenu = ÉVÉNEMENTIELLE (inline depuis email-ingest quand
+# un email porte un signal clé → carte hotcontext:). Pas de cron de scan.
+#
+# hot-context-staleness (V0) : garde-fou anti-dérive. Tire à 17,18,19 UTC pour
+# couvrir 19h/20h Paris (DST). L'endpoint ne procède qu'aux bonnes heures Paris
+# (20h tous les jours + 19h dimanche, revue weekly) et n'alerte que si le fichier
+# est périmé (semaine ISO passée / pas touché > 3 j). Dédup 1 alerte/jour + snooze.
+0 17,18,19 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-hot-context-staleness >> /home/thomas/anya-cron.log 2>&1
 
 # ============================================================
 # Brief du matin (S23) — 7h HEURE DE PARIS, DST-safe SANS dépendre de CRON_TZ.
