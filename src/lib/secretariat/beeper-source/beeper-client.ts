@@ -220,8 +220,13 @@ export async function listTextMessagesSince(
      ORDER BY timestamp ASC
      LIMIT ${Number(limit) || 200};`,
   );
-  if (!r.ok || !r.rows) return [];
-  const mapped = r.rows.map((row): BeeperMessage => {
+  // Lecture échouée (snapshot/sqlite/WAL « readonly ») : on REMONTE l'erreur au
+  // lieu de renvoyer [] silencieusement — sinon l'appelant la prend pour « aucun
+  // message » et avance le curseur, sautant la fenêtre pour toujours.
+  if (!r.ok) {
+    throw new Error(`lecture SQLite Beeper échouée : ${r.error ?? 'inconnue'}`);
+  }
+  const mapped = (r.rows ?? []).map((row): BeeperMessage => {
     const roomID = String(row.roomID ?? '');
     const chat = chats.get(roomID);
     const isSender = row.isSender === 1 || row.isSender === true || row.isSender === '1';

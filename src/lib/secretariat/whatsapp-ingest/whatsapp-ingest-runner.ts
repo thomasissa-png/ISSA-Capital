@@ -305,12 +305,23 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   const stored = await readCursor();
   const cursor = stored ?? nowTs - FIRST_RUN_LOOKBACK_MS;
 
-  const messages = await listTextMessagesSince(cursor, MAX_MESSAGES_PER_RUN);
+  let messages: BeeperMessage[];
+  try {
+    messages = await listTextMessagesSince(cursor, MAX_MESSAGES_PER_RUN);
+  } catch (err) {
+    // Lecture Beeper échouée → NE PAS avancer le curseur (sinon la fenêtre est
+    // sautée définitivement). On signale l'erreur et on retentera au prochain run.
+    stats.errors += 1;
+    console.warn(
+      `[whatsapp-ingest] lecture Beeper échouée — curseur conservé (${cursor}) : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return stats;
+  }
   stats.newMessages = messages.length;
 
   if (messages.length === 0) {
     await writeCursor(nowTs);
-    console.warn('[whatsapp-ingest] aucun nouveau message (hors exclusions)');
+    console.warn('[whatsapp-ingest] aucun nouveau message');
     return stats;
   }
 
