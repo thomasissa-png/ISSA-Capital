@@ -165,22 +165,30 @@ export async function listTextMessagesSince(
      LIMIT ${Number(limit) || 200};`,
   );
   if (!r.ok || !r.rows) return [];
-  return r.rows
-    .map((row): BeeperMessage => {
-      const roomID = String(row.roomID ?? '');
-      const chat = chats.get(roomID);
-      const isSender = row.isSender === 1 || row.isSender === true || row.isSender === '1';
-      return {
-        roomID,
-        chatId: chat?.chatId ?? '',
-        chatName: chat?.name ?? '',
-        senderContactID: String(row.senderContactID ?? ''),
-        timestamp: Number(row.timestamp ?? 0),
-        text: String(row.text ?? ''),
-        isSender,
-      };
-    })
-    .filter((m) => !m.isSender && m.text.length > 0 && !isExcludedChat(m.chatName));
+  const mapped = r.rows.map((row): BeeperMessage => {
+    const roomID = String(row.roomID ?? '');
+    const chat = chats.get(roomID);
+    const isSender = row.isSender === 1 || row.isSender === true || row.isSender === '1';
+    return {
+      roomID,
+      chatId: chat?.chatId ?? '',
+      chatName: chat?.name ?? '',
+      senderContactID: String(row.senderContactID ?? ''),
+      timestamp: Number(row.timestamp ?? 0),
+      text: String(row.text ?? ''),
+      isSender,
+    };
+  });
+  const kept = mapped.filter((m) => !m.isSender && m.text.length > 0 && !isExcludedChat(m.chatName));
+  // Diagnostic (sans logger le contenu) : permet de distinguer un curseur/timestamp
+  // cassé (raw=0 alors qu'il y a du trafic) d'une exclusion trop large (raw>0, kept=0).
+  const maxTs = mapped.reduce((m, x) => Math.max(m, x.timestamp), 0);
+  console.warn(
+    `[beeper] listTextMessagesSince(since=${Math.round(Number(sinceTimestamp))}) : ` +
+      `${mapped.length} ligne(s) SQL, ${kept.length} gardée(s) (hors isSender/vide/exclus), ` +
+      `maxTs=${maxTs}, now=${Date.now()}`,
+  );
+  return kept;
 }
 
 export interface BeeperHealth {

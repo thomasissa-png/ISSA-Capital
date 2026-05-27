@@ -91,6 +91,15 @@ export interface IngestStats {
 /** Seuil de confiance pour auto-spam sans Telegram */
 const AUTO_SPAM_CONFIDENCE_THRESHOLD = 0.9;
 
+/**
+ * Nombre max d'emails traités PAR SOURCE et PAR RUN. Borne le temps d'un run
+ * (chaque email = triage + brouillon LLM + écritures vault, ~plusieurs s) pour
+ * qu'il TERMINE dans le timeout cron (900s) au lieu d'être coupé au milieu.
+ * Le reliquat est traité au run suivant (les emails traités sont marqués → ne
+ * re-listent plus). Draine un backlog progressivement plutôt que de boucler.
+ */
+const MAX_EMAILS_PER_SOURCE_PER_RUN = 8;
+
 // ============================================================
 // Dispatch handler par catégorie
 // ============================================================
@@ -182,10 +191,18 @@ export async function runEmailIngest(): Promise<IngestStats> {
       }
 
       stats.totalListed += messages.length;
-      console.warn(`[email-ingest] ${source.label} : ${messages.length} email(s) non traité(s)`);
+      // Borne le run : on traite au plus MAX_EMAILS_PER_SOURCE_PER_RUN ce cycle ;
+      // le reste passe au run suivant (les emails traités sont marqués, donc ne
+      // re-listent plus → le backlog se draine au lieu de couper le run).
+      const batch = messages.slice(0, MAX_EMAILS_PER_SOURCE_PER_RUN);
+      const overflow = messages.length - batch.length;
+      console.warn(
+        `[email-ingest] ${source.label} : ${messages.length} email(s) non traité(s)` +
+          (overflow > 0 ? ` — ${batch.length} ce run, ${overflow} reportés` : ''),
+      );
 
       let done = 0;
-      for (const msg of messages) {
+      for (const msg of batch) {
         try {
           await processOneEmail(source, msg.id, contacts, stats);
           done++;
@@ -196,7 +213,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
           stats.errors++;
         }
       }
-      console.warn(`[email-ingest] ${source.label} : ${done}/${messages.length} traité(s)`);
+      console.warn(`[email-ingest] ${source.label} : ${done}/${batch.length} traité(s) ce run`);
     }),
   );
 
@@ -443,6 +460,19 @@ async function processOneEmail(
     // Non bloquant — la tâche TickTick est un bonus, pas un prérequis
     console.warn(
       `[email-ingest] erreur création tâche TickTick pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // CRITIQUE : marquer l'email traité maintenant qu'il est documenté + brouillonné.
+  // Sans ça, un email « intéressant » (non-spam, non-système) n'était jamais marqué
+  // → re-listé et re-traité à CHAQUE run (re-brouillon en boucle, backlog Outlook
+  // jamais drainé, run qui sature le timeout). Le label/catégorie « Anya/traité »
+  // est le marqueur de traitement d'Anya (≠ statut lu/non-lu côté Thomas).
+  try {
+    await source.markProcessed(messageId);
+  } catch (err) {
+    console.warn(
+      `[email-ingest] markProcessed final échoué pour ${source.label} ${messageId} : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
