@@ -394,6 +394,26 @@ function buildCancelButton(taskId: string): { text: string; callback_data: strin
 // API publique — handler principal
 // ============================================================
 
+/**
+ * Construit le `CreateTaskInput` depuis un `ParsedAddTask` — **source UNIQUE**
+ * pour TOUS les chemins de création de tâche Telegram (create direct + preview→
+ * validate). Inclut TOUJOURS la conversion timezone Paris (R8 #108). Centralisé
+ * pour empêcher les deux chemins de diverger à nouveau (régression S24 : le flux
+ * preview avait oublié la conversion appliquée dans le flux direct).
+ */
+function buildTaskInput(parsed: ParsedAddTask, projectId: string | undefined): CreateTaskInput {
+  const tz = parisLocalToTickTickFields(parsed.dueDate);
+  return {
+    title: parsed.title,
+    priority: parsed.priority ?? 0,
+    dueDate: tz.dueDate,
+    isAllDay: tz.isAllDay,
+    timeZone: tz.timeZone,
+    projectId,
+    tags: [ANYA_TELEGRAM_TAG],
+  };
+}
+
 export interface HandleAddTaskParams {
   chatId: number;
   messageId: number;
@@ -443,17 +463,8 @@ export async function handleAddTaskFromTelegram(
   // 3. Resolver projet (best-effort)
   const projectId = await resolveProjectIdByName(parsed.projectName);
 
-  // 4. Création TickTick — convertir heure locale Paris → ISO UTC + flags TZ
-  const tzFields = parisLocalToTickTickFields(parsed.dueDate);
-  const input: CreateTaskInput = {
-    title: parsed.title,
-    priority: parsed.priority ?? 0,
-    dueDate: tzFields.dueDate,
-    isAllDay: tzFields.isAllDay,
-    timeZone: tzFields.timeZone,
-    projectId,
-    tags: [ANYA_TELEGRAM_TAG],
-  };
+  // 4. Création TickTick — input centralisé (conversion TZ Paris incluse).
+  const input = buildTaskInput(parsed, projectId);
 
   let task: TickTickTask;
   try {
@@ -657,20 +668,9 @@ export async function finalizeAddTaskFromPending(
 
   const { parsed, projectId, projectName, chatId, messageId } = entry;
 
-  // FIX régression timezone : convertir l'heure locale Paris (parsed.dueDate,
-  // format `YYYY-MM-DDTHH:mm:ss` sans Z) en ISO UTC + flags isAllDay/timeZone,
-  // comme le fait handleAddTaskFromTelegram. Sans ça, TickTick interprète la
-  // chaîne en UTC → tâche créée à la mauvaise heure (R8 P0 #108).
-  const tz = parisLocalToTickTickFields(parsed.dueDate);
-  const input: CreateTaskInput = {
-    title: parsed.title,
-    priority: parsed.priority ?? 0,
-    dueDate: tz.dueDate,
-    isAllDay: tz.isAllDay,
-    timeZone: tz.timeZone,
-    projectId: projectId ?? undefined,
-    tags: [ANYA_TELEGRAM_TAG],
-  };
+  // Input centralisé (buildTaskInput) — conversion TZ Paris incluse, identique au
+  // flux direct. Évite la régression où ce chemin oubliait la timezone (R8 #108).
+  const input = buildTaskInput(parsed, projectId ?? undefined);
 
   let task: TickTickTask;
   try {
