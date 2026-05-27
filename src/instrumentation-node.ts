@@ -46,16 +46,16 @@ void (async () => {
     );
   }
 
-  // Check Beeper (Phase 2 — accès DB SQLite read-only). Best-effort.
+  // Check Beeper (Phase 2 — lecture messages déchiffrés depuis index.db). Best-effort.
   try {
-    const { checkBeeperDb } = await import('./lib/secretariat/beeper-source/beeper-client');
-    const r = await checkBeeperDb();
+    const { checkBeeperContent } = await import('./lib/secretariat/beeper-source/beeper-client');
+    const r = await checkBeeperContent();
     console.warn(
-      `[startup-beeper] DB — ${r.ok ? `OK (${r.portals} chats, ${r.ghosts} contacts)` : `ÉCHEC : ${r.error}`}`,
+      `[startup-beeper] ${r.ok ? `OK — ${r.totalMessages} messages texte, ${r.chats} chats, dernier: « ${r.lastChatName} » (${r.lastTextLength} car.)` : `ÉCHEC : ${r.error}`}`,
     );
   } catch (err) {
     console.warn(
-      `[startup-beeper] check DB échoué : ${err instanceof Error ? err.message : String(err)}`,
+      `[startup-beeper] check échoué : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 })();

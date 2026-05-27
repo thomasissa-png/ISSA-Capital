@@ -1,16 +1,19 @@
 /**
- * Client Beeper — lecture de la DB SQLite du bridge WhatsApp (Phase 2).
+ * Client Beeper — lecture des messages WhatsApp déchiffrés (Phase 2).
  *
- * L'API HTTP du Beeper Server est cassée (bug nightly `CloudBackup nil` →
- * stuck `initializing` → endpoints vides). Décision actée S24 : lire la DB
- * SQLite locale du bridge en READ-ONLY.
+ * L'API HTTP du Beeper Server est cassée (bug nightly stuck `initializing`).
+ * Source de vérité : les DB SQLite locales du serveur, lues en READ-ONLY via la
+ * CLI `sqlite3` (zéro dépendance npm → pas de module natif, build Replit safe).
  *
- * On n'ajoute AUCUNE dépendance npm (un module SQLite natif casserait le build
- * Replit qui partage ce package.json). On shelle vers la CLI `sqlite3`
- * (installée sur le VPS) en `-readonly -json`. Ce code ne tourne que sur le VPS.
+ * Découverte S24/S25 (vérifiée) :
+ *  - `index.db` table `mx_room_messages` : 9264 messages, texte EN CLAIR dans la
+ *    colonne JSON `message` (`message ->> 'text'`), `roomID` = salle Matrix,
+ *    `senderContactID`, `timestamp`, `type`, `isDeleted`.
+ *  - `megabridge.db` table `portal` : mapping `mxid` (= roomID Matrix) ↔ `id`
+ *    (chat WhatsApp `…@g.us`/`…@s.whatsapp.net`) + `name` (nom du chat).
+ *  - La table `index.db.messages` est vide ; `text_content`/`message_derived_content` aussi.
  *
- * 🔒 LECTURE SEULE STRICTE : jamais d'INSERT/UPDATE/DELETE (c'est le bridge qui
- * écrit). Ouverture `-readonly`. Aucune capacité d'envoi WhatsApp (règle 11).
+ * 🔒 LECTURE SEULE STRICTE. Aucune écriture, aucun envoi WhatsApp (règle 11).
  */
 
 import { execFile } from 'node:child_process';
@@ -27,15 +30,19 @@ function ensureEnv(): void {
   envLoaded = true;
 }
 
-const DEFAULT_DB = '/root/.beeper/profiles/server/server/local-whatsapp/megabridge.db';
+const SERVER_DIR = '/root/.beeper/profiles/server/server';
 const SQLITE_TIMEOUT_MS = 15_000;
 
-export function beeperDbPath(): string {
+function indexDbPath(): string {
   ensureEnv();
-  return process.env.BEEPER_DB_PATH ?? DEFAULT_DB;
+  return process.env.BEEPER_INDEX_DB ?? `${SERVER_DIR}/index.db`;
+}
+function megabridgeDbPath(): string {
+  ensureEnv();
+  return process.env.BEEPER_DB_PATH ?? `${SERVER_DIR}/local-whatsapp/megabridge.db`;
 }
 
-/** Liste blanche pro (chat_id ou numéro), CSV dans BEEPER_WHITELIST. */
+/** Liste blanche pro (chat WhatsApp id `…@g.us`, ou fragment de nom), CSV dans BEEPER_WHITELIST. */
 export function beeperWhitelist(): string[] {
   ensureEnv();
   return (process.env.BEEPER_WHITELIST ?? '')
@@ -44,23 +51,19 @@ export function beeperWhitelist(): string[] {
     .filter((s) => s.length > 0);
 }
 
-export interface SqliteResult {
+interface SqliteResult {
   ok: boolean;
   rows?: Array<Record<string, unknown>>;
   error?: string;
 }
 
-/**
- * Exécute une requête SQLite en READ-ONLY via la CLI `sqlite3`, sortie JSON.
- * Ne JAMAIS passer une requête d'écriture : `-readonly` la rejetterait, mais
- * l'invariant est qu'on ne lit que des SELECT.
- */
-export function runSqliteJson(query: string): Promise<SqliteResult> {
+/** Requête READ-ONLY via la CLI sqlite3, sortie JSON. SELECT uniquement. */
+function runSqliteJson(dbPath: string, query: string): Promise<SqliteResult> {
   return new Promise((resolve) => {
     execFile(
       'sqlite3',
-      ['-readonly', '-json', beeperDbPath(), query],
-      { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 },
+      ['-readonly', '-json', dbPath, query],
+      { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 32 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) {
           resolve({ ok: false, error: (stderr || err.message).slice(0, 400).trim() });
@@ -81,27 +84,122 @@ export function runSqliteJson(query: string): Promise<SqliteResult> {
   });
 }
 
-export interface BeeperDbCheck {
+export interface BeeperChat {
+  /** roomID Matrix (`!xxx:…`) — clé de jointure avec mx_room_messages.roomID. */
+  mxid: string;
+  /** id WhatsApp du chat (`…@g.us` / `…@s.whatsapp.net`). */
+  chatId: string;
+  /** nom lisible du chat. */
+  name: string;
+}
+
+/** Charge la table des chats (portal) → map roomID(mxid) → {chatId, name}. */
+export async function loadChats(): Promise<Map<string, BeeperChat>> {
+  const r = await runSqliteJson(
+    megabridgeDbPath(),
+    "SELECT mxid, id AS chatId, name FROM portal WHERE mxid IS NOT NULL AND mxid != '';",
+  );
+  const map = new Map<string, BeeperChat>();
+  if (r.ok && r.rows) {
+    for (const row of r.rows) {
+      const mxid = String(row.mxid ?? '');
+      if (mxid) map.set(mxid, { mxid, chatId: String(row.chatId ?? ''), name: String(row.name ?? '') });
+    }
+  }
+  return map;
+}
+
+export interface BeeperMessage {
+  roomID: string;
+  chatId: string;
+  chatName: string;
+  senderContactID: string;
+  timestamp: number;
+  text: string;
+  isSender: boolean;
+}
+
+/**
+ * Liste les messages TEXTE reçus depuis un curseur (timestamp ms), enrichis du
+ * nom de chat. Exclut les supprimés et les messages envoyés par le compte
+ * (isSender). Lecture seule.
+ */
+export async function listTextMessagesSince(
+  sinceTimestamp: number,
+  limit = 200,
+): Promise<BeeperMessage[]> {
+  const chats = await loadChats();
+  const r = await runSqliteJson(
+    indexDbPath(),
+    `SELECT roomID,
+            senderContactID,
+            timestamp,
+            message ->> 'text' AS text,
+            message ->> 'isSender' AS isSender
+     FROM mx_room_messages
+     WHERE type='TEXT' AND isDeleted=0
+       AND timestamp > ${Number(sinceTimestamp) || 0}
+       AND COALESCE(message ->> 'text','') != ''
+     ORDER BY timestamp ASC
+     LIMIT ${Number(limit) || 200};`,
+  );
+  if (!r.ok || !r.rows) return [];
+  return r.rows
+    .map((row): BeeperMessage => {
+      const roomID = String(row.roomID ?? '');
+      const chat = chats.get(roomID);
+      const isSender = row.isSender === 1 || row.isSender === true || row.isSender === '1';
+      return {
+        roomID,
+        chatId: chat?.chatId ?? '',
+        chatName: chat?.name ?? '',
+        senderContactID: String(row.senderContactID ?? ''),
+        timestamp: Number(row.timestamp ?? 0),
+        text: String(row.text ?? ''),
+        isSender,
+      };
+    })
+    .filter((m) => !m.isSender && m.text.length > 0);
+}
+
+export interface BeeperHealth {
   ok: boolean;
-  portals?: number;
-  ghosts?: number;
+  totalMessages?: number;
+  chats?: number;
+  lastChatName?: string;
+  lastTextLength?: number;
   error?: string;
 }
 
 /**
- * Vérifie l'accès à la DB du bridge (lecture seule) : compte portals + ghosts.
- * Révèle d'un coup : accès fichier (permissions cross-user), DB lisible (WAL),
- * et volumétrie. Lecture seule.
+ * Sanity check au démarrage : prouve que la lecture déchiffrée marche, SANS
+ * logguer le contenu (privacy) — juste compteurs + nom de chat + longueur.
  */
-export async function checkBeeperDb(): Promise<BeeperDbCheck> {
-  const r = await runSqliteJson(
-    "SELECT (SELECT COUNT(*) FROM portal) AS portals, (SELECT COUNT(*) FROM ghost) AS ghosts;",
+export async function checkBeeperContent(): Promise<BeeperHealth> {
+  const count = await runSqliteJson(
+    indexDbPath(),
+    "SELECT COUNT(*) AS n FROM mx_room_messages WHERE type='TEXT' AND isDeleted=0;",
   );
-  if (!r.ok) return { ok: false, error: r.error };
-  const row = r.rows?.[0] ?? {};
+  if (!count.ok) return { ok: false, error: count.error };
+  const total = Number(count.rows?.[0]?.n ?? 0);
+
+  const chats = await loadChats();
+
+  const last = await runSqliteJson(
+    indexDbPath(),
+    `SELECT roomID, length(message ->> 'text') AS len
+     FROM mx_room_messages
+     WHERE type='TEXT' AND isDeleted=0 AND COALESCE(message ->> 'text','') != ''
+     ORDER BY timestamp DESC LIMIT 1;`,
+  );
+  const lastRow = last.rows?.[0];
+  const lastChat = lastRow ? chats.get(String(lastRow.roomID ?? ''))?.name ?? '(chat inconnu)' : undefined;
+
   return {
     ok: true,
-    portals: Number(row.portals ?? 0),
-    ghosts: Number(row.ghosts ?? 0),
+    totalMessages: total,
+    chats: chats.size,
+    lastChatName: lastChat,
+    lastTextLength: lastRow ? Number(lastRow.len ?? 0) : undefined,
   };
 }
