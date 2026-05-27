@@ -67,6 +67,29 @@ async function tickTickFetch<T>(
 }
 
 // ============================================================
+// Auto-résolution de l'Inbox (S24, OPTION B — sans env var)
+// ============================================================
+
+/**
+ * Cache process de l'ID du projet Inbox. L'API Open ne liste PAS l'Inbox via
+ * `/project`, MAIS une tâche créée SANS `projectId` y atterrit et la réponse
+ * porte alors le vrai `projectId` de l'Inbox → on le capte au vol (cf. createTask).
+ * Persiste sur globalThis pour survivre aux re-évaluations Next.js.
+ */
+const INBOX_ID_CACHE_KEY = '__issa_ticktick_inbox_id__' as const;
+
+function getCachedInboxId(): string | null {
+  return ((globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] as string | undefined) ?? null;
+}
+function setCachedInboxId(id: string): void {
+  (globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] = id;
+}
+/** Réinitialise le cache Inbox (tests). */
+export function _clearInboxIdCache(): void {
+  delete (globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY];
+}
+
+// ============================================================
 // API publique — Tâches
 // ============================================================
 
@@ -87,10 +110,19 @@ export async function createTask(input: CreateTaskInput): Promise<TickTickTask> 
     timeZone: input.timeZone,
   };
 
-  return tickTickFetch<TickTickTask>('/task', {
+  const task = await tickTickFetch<TickTickTask>('/task', {
     method: 'POST',
     body: JSON.stringify(body),
   });
+
+  // OPTION B : une tâche créée SANS projectId atterrit dans l'Inbox → la réponse
+  // révèle son ID. On le mémorise pour le poll/miroir (plus besoin d'env var).
+  if (!input.projectId && task?.projectId && !getCachedInboxId()) {
+    setCachedInboxId(task.projectId);
+    console.warn(`[ticktick-client] inbox auto-résolu via createTask : ${task.projectId}`);
+  }
+
+  return task;
 }
 
 /**
@@ -137,8 +169,13 @@ export async function completeTask(projectId: string, taskId: string): Promise<v
  * Retourne null si non résolu (l'Inbox est alors simplement sautée).
  */
 function resolveInboxProjectId(projects: TickTickProject[]): string | null {
+  // 1. Override explicite (le plus fiable).
   const fromEnv = (process.env.TICKTICK_INBOX_PROJECT_ID ?? '').trim();
   if (fromEnv) return fromEnv;
+  // 2. Auto-résolu (OPTION B) : capté au vol lors d'un createTask sans projectId.
+  const cached = getCachedInboxId();
+  if (cached) return cached;
+  // 3. Dernier recours : un projet nommé « Inbox » remonté par /project.
   const byName = projects.find((p) => (p.name ?? '').trim().toLowerCase() === 'inbox');
   return byName?.id ?? null;
 }
@@ -184,7 +221,9 @@ export async function listTasks(projectId?: string): Promise<TickTickTask[]> {
       );
     }
   } else {
-    console.warn('[ticktick-client] inbox non résolu (définir TICKTICK_INBOX_PROJECT_ID si besoin)');
+    console.warn(
+      '[ticktick-client] inbox non résolu — sera auto-résolu au prochain createTask sans projectId (ou définir TICKTICK_INBOX_PROJECT_ID)',
+    );
   }
 
   // Dédup par id (au cas où l'Inbox serait aussi remontée par /project).
