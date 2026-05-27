@@ -114,6 +114,19 @@ describe('runWhatsappIngest — V2', () => {
     expect(mockSendTelegram).not.toHaveBeenCalled();
   });
 
+  it('lecture Beeper échouée → curseur PRÉSERVÉ (pas d’avance) + erreur comptée', async () => {
+    const { promises } = await import('node:fs');
+    mockListMessages.mockRejectedValue(
+      new Error('lecture SQLite Beeper échouée : in prepare, attempt to write a readonly database (8)'),
+    );
+    const stats = await runWhatsappIngest();
+    expect(stats.errors).toBe(1);
+    expect(stats.newMessages).toBe(0);
+    // Curseur NON avancé : sinon la fenêtre serait sautée définitivement.
+    expect(promises.writeFile).not.toHaveBeenCalled();
+    expect(mockSendTelegram).not.toHaveBeenCalled();
+  });
+
   it('chat pertinent SANS todo ni action → enrichit le vault en SILENCE (pas de Telegram)', async () => {
     mockListMessages.mockResolvedValue([msg()]);
     mockFindContact.mockResolvedValue({ name: 'Jean Dupont', folderPath: '07. Contacts/01. Pro', emails: [], content: '', fileId: 'f1' });
