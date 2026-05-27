@@ -25,14 +25,15 @@
 # notifie Thomas UNIQUEMENT pour une todo/action (chats hors "sarani"/"ubi").
 20 7,12,17,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-whatsapp-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 
-# hot-context : MAJ de contenu = ÉVÉNEMENTIELLE (inline depuis email-ingest quand
-# un email porte un signal clé → carte hotcontext:). Pas de cron de scan.
+# hot-context : MAJ de contenu = (1) ÉVÉNEMENTIELLE inline depuis email-ingest
+# (carte hotcontext: sur signal clé) + (2) REVUE NOCTURNE AUTONOME 22h Paris.
 #
-# hot-context-staleness (V0) : garde-fou anti-dérive. Tire à 17,18,19 UTC pour
-# couvrir 19h/20h Paris (DST). L'endpoint ne procède qu'aux bonnes heures Paris
-# (20h tous les jours + 19h dimanche, revue weekly) et n'alerte que si le fichier
-# est périmé (semaine ISO passée / pas touché > 3 j). Dédup 1 alerte/jour + snooze.
-0 17,18,19 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-hot-context-staleness >> /home/thomas/anya-cron.log 2>&1
+# hot-context-review (S23) : chaque soir 22h Paris, Anya relit le mémo, intègre
+# l'agenda + l'activité du jour, retire le périmé, réécrit le mémo TOUTE SEULE
+# (frontmatter + section Maintenance reconstruits = jamais cassés) et envoie un
+# Telegram listant les changements. Tire à 20,21 UTC (couvre 22h Paris été/hiver) ;
+# l'endpoint ne procède qu'à 22h Paris. 1 appel LLM/jour (Sonnet).
+0 20,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-hot-context-review >> /home/thomas/anya-cron.log 2>&1
 
 # ============================================================
 # Brief du matin (S23) — 7h HEURE DE PARIS, DST-safe SANS dépendre de CRON_TZ.

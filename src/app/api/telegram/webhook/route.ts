@@ -109,7 +109,6 @@ import {
 import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
 import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
 import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
-import { handleStalenessCallback } from '@/lib/secretariat/hot-context-staleness/callback';
 import {
   TICKTICK_PROJECTS_CALLBACK_PREFIX,
   handleTickTickProjectsCallback,
@@ -1877,17 +1876,6 @@ export async function POST(request: Request): Promise<Response> {
       if (callbackData.startsWith('health_snooze:')) {
         await handleHealthSnooze({
           callbackQueryId: callbackQueryId,
-          callbackData,
-          chatId: callbackChatId,
-          messageId: update.callback_query.message?.message_id ?? 0,
-        });
-        return Response.json({ ok: true });
-      }
-
-      // Hot-context staleness (V0) — callbacks préfixés par "hcstale:" (bump / snooze)
-      if (callbackData.startsWith('hcstale:')) {
-        await handleStalenessCallback({
-          callbackQueryId,
           callbackData,
           chatId: callbackChatId,
           messageId: update.callback_query.message?.message_id ?? 0,
