@@ -210,9 +210,10 @@ export async function buildCoherenceActions(
   const attachmentActions = await buildCopyAttachmentActions(email, triage, deps);
   actions.push(...attachmentActions);
 
-  // (e) Hot-context (proposé, carte dédiée)
-  const hotContextAction = await buildHotContextAction(email, deps);
-  if (hotContextAction) actions.push(hotContextAction);
+  // (e) Hot-context : SUPPRIMÉ S24. La voie inline (signal email → carte
+  // `hotcontext:` à valider) est retirée — le hot-context « vit seul » via la
+  // revue autonome du soir (Haiku) + hebdo (Sonnet). `buildHotContextAction`
+  // reste exporté (tests) mais n'est plus branché ici.
 
   return actions;
 }

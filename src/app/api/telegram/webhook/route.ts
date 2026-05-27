@@ -113,11 +113,9 @@ import {
   TICKTICK_PROJECTS_CALLBACK_PREFIX,
   handleTickTickProjectsCallback,
 } from '@/lib/secretariat/telegram-validation/handlers/ticktick-projects-confirm';
-import {
-  HOT_CONTEXT_CALLBACK_PREFIX,
-  handleHotContextPatchCallback,
-  handleHotContextEditText,
-} from '@/lib/secretariat/telegram-validation/handlers/hot-context-patch';
+// S24 — voie hot-context inline supprimée : plus de carte `hotcontext:` ni de
+// routage de texte d'édition. Le hot-context « vit seul » via la revue autonome
+// (cron `cron-hot-context-review` : Haiku le soir, Sonnet le dimanche).
 // S23 — désambiguïsation projet calendar-ingest, callback `calproj:` (R4)
 import {
   CAL_PROJET_CALLBACK_PREFIX,
@@ -1376,21 +1374,8 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // ── Niveau 2e : reformulation d'un patch hot-context (S22 — défaut 2) ──
-      // Thomas a cliqué « Modifier » sur une carte patch hot-context → le
-      // pending est en phase `awaiting_edit`. Le prochain texte libre est
-      // traité comme INSTRUCTION PARTIELLE (ex: « plutôt vendredi »,
-      // « ajoute [[X]] ») via `patchHotContextPayloadFromInstruction`.
-      //
-      // ORDRE CRITIQUE : ce check vient APRÈS inbox-edit (2c) et task
-      // awaiting_edit (2d) pour ne JAMAIS shadow ces routages. Il ne capte le
-      // texte QUE si un pending hot-context `awaiting_edit` existe — sinon
-      // `handleHotContextEditText` retourne `no_awaiting` et le webhook poursuit
-      // son routage normal (auto-CR / preview TickTick / note Drive).
-      const hotContextEditResult = await handleHotContextEditText(chatId, text);
-      if (hotContextEditResult !== 'no_awaiting') {
-        return Response.json({ ok: true });
-      }
+      // ── Niveau 2e SUPPRIMÉ (S24) : édition de patch hot-context inline retirée
+      //    (le hot-context vit seul via la revue autonome). ──
 
       // ── Niveau 3 : mode inbox (par défaut) ─────────────────────
       // Texte long (>= seuil) → démarrer automatiquement un workflow CR
@@ -1928,17 +1913,7 @@ export async function POST(request: Request): Promise<Response> {
         return Response.json({ ok: true });
       }
 
-      // Hot-context — callbacks préfixés par "hotcontext:" (S19.B, R4)
-      // Validation patches briefing 00. Me/hot-context.md (Valider/Modifier/Skip)
-      if (callbackData.startsWith(HOT_CONTEXT_CALLBACK_PREFIX)) {
-        await handleHotContextPatchCallback({
-          callback_query_id: callbackQueryId,
-          data: callbackData,
-          message_id: update.callback_query.message?.message_id ?? 0,
-          chat_id: callbackChatId,
-        });
-        return Response.json({ ok: true });
-      }
+      // Hot-context inline SUPPRIMÉ (S24) : plus de callback `hotcontext:`.
 
       // S20 — Telegram → TickTick : callback `task_*` (R4)
       // Annulation tâche créée depuis Telegram (decision Thomas : completeTask

@@ -25,14 +25,15 @@
 # notifie Thomas UNIQUEMENT pour une todo/action (chats hors "sarani"/"ubi").
 20 7,12,17,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-whatsapp-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 
-# hot-context : MAJ de contenu = (1) ÉVÉNEMENTIELLE inline depuis email-ingest
-# (carte hotcontext: sur signal clé) + (2) REVUE NOCTURNE AUTONOME 22h Paris.
-#
-# hot-context-review (S23) : chaque soir 22h Paris, Anya relit le mémo, intègre
-# l'agenda + l'activité du jour, retire le périmé, réécrit le mémo TOUTE SEULE
-# (frontmatter + section Maintenance reconstruits = jamais cassés) et envoie un
-# Telegram listant les changements. Tire à 20,21 UTC (couvre 22h Paris été/hiver) ;
-# l'endpoint ne procède qu'à 22h Paris. 1 appel LLM/jour (Sonnet).
+# hot-context : le mémo « vit seul » via une REVUE AUTONOME (S24, voie inline
+# supprimée). Mode auto selon le jour (Paris), zéro clic :
+#  - tous les soirs (lun-sam) : revue LÉGÈRE (Haiku) — garde le mémo frais
+#    (intègre agenda + activité du jour, retire le périmé).
+#  - dimanche soir : revue PROFONDE (Sonnet) — profil de Thomas + relecture des
+#    fiches modifiées dans la semaine (détection d'oublis) + auto-relecture avant
+#    publication + bilan hebdo Telegram.
+# Frontmatter + section Maintenance reconstruits (jamais cassés). Tire à 20,21 UTC
+# (couvre 22h Paris été/hiver) ; l'endpoint ne procède qu'à 22h Paris.
 0 20,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-hot-context-review >> /home/thomas/anya-cron.log 2>&1
 
 # ============================================================

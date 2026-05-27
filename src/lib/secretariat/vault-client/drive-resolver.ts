@@ -283,3 +283,52 @@ export async function listMarkdownFiles(
     (c) => c.name.endsWith('.md') && !c.name.startsWith('_'),
   );
 }
+
+/**
+ * Liste les fichiers `.md` du vault modifiés depuis `sinceIso`, triés du plus
+ * récent au plus ancien (S24 — revue hebdo hot-context : recouper les fiches de
+ * la semaine pour détecter les oublis). Inclut les éditions manuelles de Thomas.
+ *
+ * Requête Drive globale par `modifiedTime` (pas de récursion de parents en
+ * Drive query) ; on filtre localement les `.md` et on exclut les fichiers
+ * techniques (`_…`, AnyaState/Logs). Best-effort : [] si token/HTTP KO.
+ *
+ * @param sinceIso Borne basse RFC 3339 (ex: il y a 7 jours).
+ * @param cap Nombre max de fichiers retournés (défaut 12).
+ */
+export async function listRecentlyModifiedFiles(
+  sinceIso: string,
+  cap = 12,
+): Promise<Array<{ id: string; name: string; modifiedTime: string }>> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return [];
+
+  const q = `modifiedTime > '${sinceIso}' and trashed=false and name contains '.md'`;
+  const url =
+    `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}` +
+    `&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc` +
+    `&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=${Math.min(cap * 3, 100)}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.warn(`[drive-resolver] listRecentlyModifiedFiles HTTP ${response.status}`);
+      return [];
+    }
+    const data = (await response.json()) as {
+      files?: Array<{ id: string; name: string; modifiedTime?: string }>;
+    };
+    return (data.files ?? [])
+      .filter((f) => f.name.endsWith('.md') && !f.name.startsWith('_'))
+      .map((f) => ({ id: f.id, name: f.name, modifiedTime: f.modifiedTime ?? '' }))
+      .slice(0, cap);
+  } catch (err) {
+    console.warn(
+      `[drive-resolver] listRecentlyModifiedFiles erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return [];
+  }
+}

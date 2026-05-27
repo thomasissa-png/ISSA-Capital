@@ -164,7 +164,7 @@ describe('buildHotContextAction', () => {
 });
 
 describe('buildCoherenceActions (agrégation)', () => {
-  it('scénario complet : histo projet (auto) + PJ (proposé) + hot-context (proposé)', async () => {
+  it('scénario complet : histo projet (auto) + PJ (proposé) — plus de hot-context inline (S24)', async () => {
     const deps = makeDeps({
       passesHeuristicPrefilter: vi.fn().mockReturnValue(true),
       detectSignal: vi.fn().mockResolvedValue({ patch: makePatch(), confidence: 0.9, reasonIfNull: '' }),
@@ -177,11 +177,11 @@ describe('buildCoherenceActions (agrégation)', () => {
     const types = actions.map((a) => a.type);
     expect(types).toContain('append_projet_historique');
     expect(types).toContain('copy_attachment');
-    expect(types).toContain('update_hot_context');
-    // histo projet silencieux, PJ + hot-context proposés
+    // S24 : la voie hot-context inline est supprimée → jamais d'action update_hot_context.
+    expect(types).not.toContain('update_hot_context');
+    expect(deps.detectSignal).not.toHaveBeenCalled();
     expect(actions.find((a) => a.type === 'append_projet_historique')!.autoExecute).toBe(true);
     expect(actions.find((a) => a.type === 'copy_attachment')!.autoExecute).toBe(false);
-    expect(actions.find((a) => a.type === 'update_hot_context')!.autoExecute).toBe(false);
   });
 
   it('email perso sans projet/PJ/signal → aucune action (anti-bruit)', async () => {

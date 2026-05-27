@@ -52,8 +52,6 @@ import { addTaskToTickTick, mapTodoPriority } from '../ticktick/inbox-task';
 import { createTickTickTaskForEmail } from './ticktick-integration';
 import { buildCoherenceActions } from './coherence-actions';
 import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
-import { sendHotContextPatchCard } from '../telegram-validation/handlers/hot-context-patch';
-import type { Patch } from '../hot-context/types';
 
 // ============================================================
 // Types
@@ -333,27 +331,10 @@ async function processOneEmail(
     );
   }
 
-  // Hot-context → carte dédiée `hotcontext:` (flux de validation distinct, conservé).
-  // C'est la seule exception à l'autonomie : un patch hot-context reste validé
-  // par Thomas via sa propre machinerie (pas la carte email générique supprimée).
-  const hotContextActions = coherenceActions.filter((a) => a.type === 'update_hot_context');
-  for (const hcAction of hotContextActions) {
-    const patch = hcAction.payload['patch'] as Patch | undefined;
-    if (!patch) continue;
-    try {
-      await sendHotContextPatchCard(patch);
-    } catch (err) {
-      console.warn(
-        `[email-ingest] envoi carte hot-context pour ${messageId} échoué : ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }
-
-  // Toutes les actions (handler + cohérence), hors hot-context déjà traité.
-  const allActions = [
-    ...handlerActions,
-    ...coherenceActions.filter((a) => a.type !== 'update_hot_context'),
-  ];
+  // S24 — voie hot-context inline SUPPRIMÉE : plus de carte `hotcontext:` depuis
+  // l'email. Le hot-context « vit seul » via la revue autonome (soir + hebdo).
+  // Toutes les actions (handler + cohérence).
+  const allActions = [...handlerActions, ...coherenceActions];
 
   // Séparer la proposition de création de contact (no-match) : c'est la SEULE
   // interaction Telegram conservée (S23). Tout le reste est documentation auto.

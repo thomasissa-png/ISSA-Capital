@@ -977,7 +977,7 @@ describe('runEmailIngest', () => {
 // ============================================================
 
 describe('runEmailIngest — actions de cohérence S23', () => {
-  it('hot-context → carte hotcontext: dédiée, JAMAIS dans la carte email principale', async () => {
+  it('S24 : plus de carte hotcontext: (voie inline supprimée — le hot-context vit seul)', async () => {
     const email = makeEmail({ id: 'msg_hc', from: { email: 'avocat@cabinet.fr' } });
     mockListUnprocessed.mockResolvedValue([{ id: 'msg_hc' }]);
     mockFetchDetail.mockResolvedValue(email);
@@ -985,6 +985,7 @@ describe('runEmailIngest — actions de cohérence S23', () => {
     mockHandleContactPro.mockResolvedValue([
       { type: 'create_file', target: '05. Notes/x.md', payload: {}, description: 'note' },
     ]);
+    // Même si un producteur legacy renvoyait un update_hot_context, aucune carte hot-context n'est envoyée.
     const patch = { patchId: 'p1', section: 'attends', action: 'add', payload: {}, source: 'email', sourceId: 'msg_hc', proposedAt: 'x', rationale: 'r', signalId: 's1' };
     mockBuildCoherenceActions.mockResolvedValue([
       { type: 'update_hot_context', target: null, payload: { patch }, description: 'hc', autoExecute: false },
@@ -992,11 +993,7 @@ describe('runEmailIngest — actions de cohérence S23', () => {
 
     await runEmailIngest();
 
-    // La carte hot-context dédiée a été envoyée avec le patch (flux distinct conservé).
-    expect(mockSendHotContextPatchCard).toHaveBeenCalledWith(patch);
-    // Plus de carte de validation générique : update_hot_context n'est jamais
-    // exécuté comme une action de documentation.
-    expect(mockSavePending).not.toHaveBeenCalled();
+    expect(mockSendHotContextPatchCard).not.toHaveBeenCalled();
     expect(mockSendValidationCard).not.toHaveBeenCalled();
   });
 
