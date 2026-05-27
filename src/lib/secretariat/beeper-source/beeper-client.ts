@@ -95,9 +95,15 @@ async function runSqliteJson(dbPath: string, query: string): Promise<SqliteResul
   }
   try {
     return await new Promise<SqliteResult>((resolve) => {
+      // PAS de `-readonly` : on lit la COPIE jetable en read-WRITE pour que SQLite
+      // puisse rejouer le `-wal` et reconstruire le `-shm` (un `-readonly` sur une
+      // DB WAL ne peut PAS écrire le `-shm` → soit « readonly database (8) », soit
+      // lecture du seul fichier principal sans les messages récents encore dans le
+      // `-wal`). La vraie DB sous /root/.beeper n'est JAMAIS touchée (règle 11) :
+      // on n'écrit que sur la copie temporaire, supprimée juste après (cleanup).
       execFile(
         'sqlite3',
-        ['-readonly', '-json', snap.path, query],
+        ['-json', snap.path, query],
         { timeout: SQLITE_TIMEOUT_MS, maxBuffer: 32 * 1024 * 1024 },
         (err, stdout, stderr) => {
           if (err) {
