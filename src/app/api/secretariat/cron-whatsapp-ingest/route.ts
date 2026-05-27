@@ -2,10 +2,11 @@
  * GET /api/secretariat/cron-whatsapp-ingest
  *
  * Cron 4×/jour : ingestion WhatsApp (Beeper) — lit les nouveaux messages des
- * chats non exclus, triage la pertinence, notifie Thomas sur Telegram.
- * Protégé par Authorization: Bearer <CRON_SECRET>.
+ * chats non exclus, enrichit le vault (fiches Contact/Projet) quand cohérent,
+ * prépare un brouillon d'email si besoin, et notifie Thomas sur Telegram
+ * UNIQUEMENT s'il y a une todo ou une action. Protégé par Bearer <CRON_SECRET>.
  *
- * 🔒 Lecture WhatsApp read-only ; V1 = notification seule (pas d'écriture vault).
+ * 🔒 Lecture WhatsApp read-only ; brouillons email seulement (jamais d'envoi, règle 11).
  */
 
 import { type NextRequest, NextResponse } from 'next/server';

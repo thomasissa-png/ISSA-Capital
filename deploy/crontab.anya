@@ -19,8 +19,10 @@
 1,16,31,46 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/calendar-ingest/cron >> /home/thomas/anya-cron.log 2>&1
 */15 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/ticktick/cron-poll >> /home/thomas/anya-cron.log 2>&1
 0 8 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1
-# whatsapp-ingest (Beeper) : 4×/jour, triage LLM par chat → timeout 900s. Lit
-# index.db (read-only), notifie Thomas du pertinent (chats hors "sarani").
+# whatsapp-ingest (Beeper) V2 : 4×/jour (~toutes les 4h), extraction LLM par
+# chat → timeout 900s. Lit index.db (read-only), enrichit le vault (fiches
+# Contact/Projet) quand cohérent, prépare un brouillon email si besoin, et
+# notifie Thomas UNIQUEMENT pour une todo/action (chats hors "sarani"/"ubi").
 20 7,12,17,21 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-whatsapp-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 
 # hot-context : plus de cron (S23). La mise à jour du briefing est désormais
