@@ -33,6 +33,10 @@ export interface VaultContact {
   categorie?: string;
   surnoms?: string[];
   tags?: string[];
+  /** Chemin logique du dossier de la fiche (pour enrichissement direct). */
+  folderPath?: string;
+  /** Nom du fichier de la fiche (ex « Jean Dupont.md »). */
+  filename?: string;
 }
 
 // ============================================================
@@ -108,7 +112,7 @@ export async function getVaultContacts(): Promise<VaultContact[]> {
             const readResult = await readFileById(accessToken, file.id);
             if (!readResult.success || !readResult.content) continue;
 
-            const contact = parseContactFile(readResult.content, file.name);
+            const contact = parseContactFile(readResult.content, file.name, folder);
             if (contact) {
               contacts.push(contact);
             }
@@ -182,6 +186,7 @@ export function getVaultContactsCacheTs(): number | null {
 export function parseContactFile(
   content: string,
   filename: string,
+  folderPath?: string,
 ): VaultContact | null {
   try {
     const parsed = parseObsidianFile(content);
@@ -240,6 +245,8 @@ export function parseContactFile(
       categorie,
       surnoms: surnoms.length > 0 ? surnoms : undefined,
       tags,
+      folderPath,
+      filename,
     };
   } catch (err) {
     console.warn(

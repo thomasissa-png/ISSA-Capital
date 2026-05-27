@@ -38,11 +38,20 @@ vi.mock('../../telegram', () => ({
   sendTelegramMessage: (...args: unknown[]) => mockSendTelegram(...args),
 }));
 
-const mockLoadKnownContacts = vi.fn().mockResolvedValue([
-  { name: 'Jean Dupont', email: 'jean@exemple.fr', type: 'pro' },
-]);
-vi.mock('../../email-ingest/contacts-cache', () => ({
-  loadKnownContacts: (...args: unknown[]) => mockLoadKnownContacts(...args),
+const JEAN = {
+  prenom: 'Jean',
+  nom: 'Dupont',
+  titre: '',
+  societe: '',
+  entitesVisibles: [],
+  email: 'jean@exemple.fr',
+  telephone: '+33 6 64 85 06 31',
+  folderPath: '07. Contacts/03. Pro',
+  filename: 'Jean Dupont.md',
+};
+const mockGetVaultContacts = vi.fn().mockResolvedValue([JEAN]);
+vi.mock('../../vault-contacts', () => ({
+  getVaultContacts: (...args: unknown[]) => mockGetVaultContacts(...args),
 }));
 
 const mockFindContact = vi.fn().mockResolvedValue(null);
@@ -90,6 +99,7 @@ beforeEach(() => {
   process.env.TELEGRAM_CHAT_ID_THOMAS = '999';
   nextExtraction = { relevant: false };
   mockListMessages.mockResolvedValue([]);
+  mockGetVaultContacts.mockResolvedValue([JEAN]);
   mockFindContact.mockResolvedValue(null);
   mockAppendProjet.mockResolvedValue({ status: 'enriched' });
   mockCreateDraft.mockResolvedValue({ success: true, draftId: 'd1', gmailUrl: 'https://mail/x' });
@@ -124,6 +134,27 @@ describe('runWhatsappIngest — V2', () => {
     // Constraint clé : pas de todo/action → pas de Telegram.
     expect(stats.notified).toBe(0);
     expect(mockSendTelegram).not.toHaveBeenCalled();
+  });
+
+  it('match téléphone (DM) → enrichit la fiche directement, sans findContactByEmail', async () => {
+    mockListMessages.mockResolvedValue([msg({ chatId: '33664850631@s.whatsapp.net', chatName: 'Jean' })]);
+    nextExtraction = {
+      relevant: true,
+      summary: 'Jean propose un RDV mardi.',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.contactsByPhone).toBe(1);
+    expect(stats.contactsEnriched).toBe(1);
+    expect(mockFindContact).not.toHaveBeenCalled();
+    const args = mockAppendHistorique.mock.calls[0]!;
+    expect(args[0]).toBe('07. Contacts/03. Pro');
+    expect(args[1]).toBe('Jean Dupont.md');
+    // pas de todo/action → pas de Telegram
+    expect(stats.notified).toBe(0);
   });
 
   it('chat avec todo → notifie Thomas sur Telegram', async () => {
