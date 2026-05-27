@@ -1,16 +1,16 @@
 /**
- * GET /api/secretariat/cron-hot-context-staleness
+ * GET /api/secretariat/cron-hot-context-review
  *
- * Garde-fou anti-dérive du hot-context.md (V0). Lancé par cron aux heures UTC
- * couvrant 19h/20h Paris ; l'endpoint ne procède qu'aux bonnes heures Paris
- * (20h tous les jours + 19h le dimanche). Alerte Thomas sur Telegram si périmé.
+ * Revue nocturne autonome du hot-context.md (22h Paris). Lancé par cron aux
+ * heures UTC couvrant 22h Paris ; l'endpoint ne procède qu'à 22h Paris.
+ * Anya met le mémo à jour seule et envoie un Telegram listant les changements.
  * `?force=1` ignore la fenêtre horaire (test manuel).
  *
- * Protégé par Authorization: Bearer <CRON_SECRET>. 0 appel LLM.
+ * Protégé par Authorization: Bearer <CRON_SECRET>.
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { runStalenessCheck } from '@/lib/secretariat/hot-context-staleness/runner';
+import { runNightlyReview } from '@/lib/secretariat/hot-context-review/reviewer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,11 +28,11 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const force = req.nextUrl.searchParams.get('force') === '1';
   try {
-    const result = await runStalenessCheck(force);
+    const result = await runNightlyReview(force);
     return NextResponse.json({ ok: true, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.warn(`[cron-hot-context-staleness] erreur : ${message}`);
+    console.warn(`[cron-hot-context-review] erreur : ${message}`);
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

@@ -98,6 +98,7 @@ export type LLMTask =
   | 'email-triage'
   | 'hot-context-detect'
   | 'hot-context-modify'
+  | 'hot-context-review'
   | 'email-draft'
   | 'morning-citation'
   | 'contact-fiche'
@@ -133,6 +134,10 @@ export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
   'email-triage': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'hot-context-detect': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
   'hot-context-modify': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  // Revue nocturne du hot-context (S23) : curation holistique du mémo SOT (retire
+  // le périmé, intègre le pertinent, langage adapté FR) → Sonnet (qualité de
+  // jugement + nuance ; 1 appel/jour, coût négligeable).
+  'hot-context-review': { provider: 'anthropic', family: 'sonnet' },
   'email-draft': { provider: 'deepseek', model: DEEPSEEK_V4_PRO },
   // Brief du matin (S23) : distillation lean d'une citation depuis une fiche de
   // lecture → Flash (extraction courte, ~0 €, ne tronque pas).
