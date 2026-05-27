@@ -30,7 +30,12 @@ import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
 import { createDraft } from '../gmail-source/gmail-client';
 import { PROJET_CODES, type ProjetCode } from '../triage/types';
 
-const FIRST_RUN_LOOKBACK_MS = 4 * 60 * 60 * 1000; // 4h au premier run (cadence scan)
+// Fallback si curseur absent/corrompu : 48 h par défaut (R3 — un « 4 h » trop
+// court saute la matinée si le 1er run de la journée est tardif). Paramétrable.
+function fallbackLookbackMs(): number {
+  const h = Number(process.env.BEEPER_FALLBACK_LOOKBACK_HOURS);
+  return (Number.isFinite(h) && h > 0 ? h : 48) * 60 * 60 * 1000;
+}
 const MAX_MESSAGES_PER_RUN = 300;
 const MAX_SNIPPET_MESSAGES = 30;
 
@@ -303,7 +308,11 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
 
   const nowTs = Date.now();
   const stored = await readCursor();
-  const cursor = stored ?? nowTs - FIRST_RUN_LOOKBACK_MS;
+  const cursor = stored ?? nowTs - fallbackLookbackMs();
+  // R4 — diagnostic lisible : curseur d'entrée (date + epoch ms), source du curseur.
+  console.warn(
+    `[whatsapp-ingest] curseur d'entrée : ${new Date(cursor).toISOString()} (${cursor}) — ${stored ? 'fichier' : `fallback ${fallbackLookbackMs() / 3_600_000}h`}`,
+  );
 
   let messages: BeeperMessage[];
   try {
