@@ -1,0 +1,48 @@
+# Site vitrine — vhost à appender à /etc/caddy/Caddyfile (S25, migration Replit → VPS)
+#
+# Mécanique :
+#  - Sert https://issa-capital.com et https://www.issa-capital.com (www redirigé vers apex).
+#  - Reverse proxy vers le service Anya (Next.js, port 3000) — même process que anya.issa-capital.com,
+#    pas d'instance dupliquée (le mono-repo Next.js sert site + API dans un seul build).
+#  - Filtre les routes admin/Anya en 404 côté Caddy : le site public n'expose QUE /api/contact + les pages.
+#  - Caddy s'occupe du certificat TLS automatiquement (ACME Let's Encrypt).
+#
+# Sécurité :
+#  - HSTS 1 an (le domaine est verrouillé en HTTPS).
+#  - X-Frame-Options DENY (pas d'embedding tiers).
+#  - X-Content-Type-Options nosniff.
+#  - Referrer-Policy strict-origin-when-cross-origin.
+#
+# Installation : voir deploy/caddy/README.md (1 commande SSH pour appender + reload).
+
+issa-capital.com, www.issa-capital.com {
+    # Redirection canonique : www.* → apex
+    @www host www.issa-capital.com
+    redir @www https://issa-capital.com{uri} permanent
+
+    # Blocklist : routes Anya/admin inaccessibles depuis le domaine public.
+    # Anya reste joignable normalement sur anya.issa-capital.com (autre vhost).
+    # /api/contact n'est PAS dans la blocklist (formulaire vitrine légitime).
+    @blocked path /api/drive-auth* /api/ms-auth* /api/outlook-auth* /api/secretariat/* /api/telegram/*
+    handle @blocked {
+        respond 404
+    }
+
+    # Tout le reste (pages site, assets statiques, /api/contact) → Next.js
+    reverse_proxy localhost:3000
+
+    # En-têtes de sécurité standard
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Log dédié (pour distinguer du trafic anya)
+    log {
+        output file /var/log/caddy/issa-capital.com.log
+        format json
+    }
+}
