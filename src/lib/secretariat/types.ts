@@ -89,6 +89,12 @@ export const TelegramMessageSchema = z
     caption: z.string().optional(),
     /** Identifiant de groupe média — les photos d'un album partagent le même ID */
     media_group_id: z.string().optional(),
+    /** Message d'origine quand l'utilisateur fait un reply (S24 soir — capture
+     * du contexte sur cartes no-match). On ne valide qu'un sous-ensemble. */
+    reply_to_message: z
+      .object({ message_id: z.number().int() })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 export type TelegramMessage = z.infer<typeof TelegramMessageSchema>;
