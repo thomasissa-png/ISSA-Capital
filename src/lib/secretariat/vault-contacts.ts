@@ -30,6 +30,13 @@ export interface VaultContact {
   notes?: string;
   email?: string;
   telephone?: string;
+  /**
+   * S26 — Téléphones alias (frontmatter `alias_telephone:` liste). Ajoutés via
+   * le bouton « Lier » d'une carte no-match WhatsApp. Indexés par
+   * `buildPhoneIndex` pour que les contacts liés ne re-déclenchent pas de
+   * carte au cron suivant (bug observé S26 : alias_telephone non indexé).
+   */
+  aliasTelephones?: string[];
   categorie?: string;
   surnoms?: string[];
   tags?: string[];
@@ -214,6 +221,12 @@ export function parseContactFile(
       ? fm['telephone'].trim()
       : undefined;
 
+    // S26 — alias_telephone (liste). Indexés par buildPhoneIndex pour qu'un
+    // contact lié via le bouton « Lier » ne re-déclenche pas de carte.
+    const aliasTelephones = fmLists['alias_telephone'] && fmLists['alias_telephone'].length > 0
+      ? fmLists['alias_telephone'].filter((s) => s && s.trim().length > 0)
+      : undefined;
+
     // Categorie
     const categorie = typeof fm['categorie'] === 'string' && fm['categorie'].trim()
       ? fm['categorie'].trim()
@@ -242,6 +255,7 @@ export function parseContactFile(
       notes: notes || undefined,
       email,
       telephone,
+      aliasTelephones,
       categorie,
       surnoms: surnoms.length > 0 ? surnoms : undefined,
       tags,

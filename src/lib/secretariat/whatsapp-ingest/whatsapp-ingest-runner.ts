@@ -33,6 +33,7 @@ import { PROJET_CODES, type ProjetCode } from '../triage/types';
 import {
   saveWhatsappNoMatch,
   sendWhatsappNoMatchCard,
+  listActiveWhatsappNoMatch,
   type WhatsappNoMatchPending,
 } from '../telegram-validation';
 import { matchContacts } from '../handlers/enrichir';
@@ -133,13 +134,25 @@ function contactDisplayName(c: VaultContact): string {
   return `${c.prenom} ${c.nom}`.trim() || c.filename?.replace(/\.md$/i, '') || '(contact)';
 }
 
-/** Index téléphone normalisé → fiche contact (1er gagnant en cas de doublon). */
+/**
+ * Index téléphone normalisé → fiche contact (1er gagnant en cas de doublon).
+ *
+ * S26 — Indexe `telephone` ET `aliasTelephones` (liste). Sans ça, un contact
+ * « Lié » via le bouton no-match (numéro ajouté en `alias_telephone`) restait
+ * vu comme inconnu au cron suivant → carte renvoyée → spam Thomas. Bug
+ * structurel observé en complément de la demande Thomas S26 « carte pour
+ * tout inconnu » (sinon le fix carte-pour-tout-inconnu démultipliait le spam).
+ */
 function buildPhoneIndex(contacts: VaultContact[]): Map<string, VaultContact> {
   const map = new Map<string, VaultContact>();
   for (const c of contacts) {
-    if (!c.telephone) continue;
-    const key = normalizePhone(c.telephone);
-    if (key && !map.has(key)) map.set(key, c);
+    const allPhones = [c.telephone, ...(c.aliasTelephones ?? [])].filter(
+      (p): p is string => typeof p === 'string' && p.trim().length > 0,
+    );
+    for (const raw of allPhones) {
+      const key = normalizePhone(raw);
+      if (key && !map.has(key)) map.set(key, c);
+    }
   }
   return map;
 }
@@ -175,6 +188,9 @@ export interface WhatsappIngestStats {
    *  JSON cassé). À distinguer de `chatsSkippedNotRelevant` (relevant=false
    *  explicite du LLM) pour ne pas biaiser le diag Bug #2. */
   chatsSkippedLlmError: number;
+  /** S26 — DM inconnu où une carte pending est déjà active (TTL 7j) → on
+   *  n'envoie pas de 2e carte pour le même chatId (anti-spam). */
+  chatsSkippedAlreadyPending: number;
   errors: number;
 }
 
@@ -377,6 +393,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     chatsSkippedAlreadyMatched: 0,
     chatsSkippedEmptySummary: 0,
     chatsSkippedLlmError: 0,
+    chatsSkippedAlreadyPending: 0,
     errors: 0,
   };
 
@@ -416,6 +433,20 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   }
   const byPhone = buildPhoneIndex(contacts);
 
+  // S26 — Demande Thomas : « envoie carte pour TOUT numéro inconnu, pas
+  // seulement les conversations marquées `relevant` par le LLM ». Pour ne pas
+  // spammer une 2e carte sur le même chat tant qu'une carte est déjà en
+  // attente (TTL 7j), on lit la liste des pendings actifs une fois par run.
+  const activeNoMatchChatIds = new Set<string>();
+  try {
+    const activePendings = await listActiveWhatsappNoMatch();
+    for (const p of activePendings) activeNoMatchChatIds.add(p.chatId);
+  } catch (err) {
+    console.warn(
+      `[whatsapp-ingest] lecture pendings WhatsApp KO (dédup carte dégradée) : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   // Grouper par chat (roomID).
   const byChat = new Map<string, { name: string; chatId: string; msgs: BeeperMessage[] }>();
   for (const m of messages) {
@@ -428,7 +459,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   for (const [, group] of byChat) {
     // S26 — Bug #2 : 1 ligne de log par chat à la fin de la boucle, pour
     // identifier précisément où chaque chat « tombe » dans le pipeline.
-    let cardOutcome: 'sent' | 'skip:group' | 'skip:matched' | 'skip:empty-summary' | 'skip:not-relevant' | 'skip:llm-error' | 'error' = 'skip:not-relevant';
+    let cardOutcome: 'sent' | 'skip:group' | 'skip:matched' | 'skip:already-pending' | 'skip:empty-summary' | 'skip:llm-error' | 'error' = 'skip:matched';
     let chatRelevant = false;
     let chatEnrichedContact = false;
     let chatEnrichedByEmail = false;
@@ -446,67 +477,84 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
         matched ? contactDisplayName(matched) : null,
       );
       // S26 I2 — Distinguer LLM échoué (exception) de `relevant: false` explicite.
+      // Reste un early-return : sans extraction on ne peut rien tagger.
       if (ex.extractFailed) {
         stats.chatsSkippedLlmError++;
         cardOutcome = 'skip:llm-error';
         continue;
       }
-      if (!ex.relevant) {
+      // S26 — Demande Thomas verbatim : « Anya doit me proposer une carte pour
+      // tout numéro qu'elle ne connaît pas à compter de maintenant », même
+      // si le LLM marque la conversation `relevant: false` (= bavardage perso).
+      // Le gate `relevant` ne s'applique donc PLUS au chemin carte no-match —
+      // il reste en revanche sur l'enrichissement (historique fiche/projet)
+      // et sur la préparation de brouillon email (les flux business).
+      if (ex.relevant) {
+        chatRelevant = true;
+        stats.relevantChats++;
+      } else {
         stats.chatsSkippedNotRelevant++;
-        cardOutcome = 'skip:not-relevant';
-        continue;
+        // Pas de `continue` ici : on continue vers la décision carte
+        // no-match (qui ignore `relevant`). Le compteur trace que le LLM
+        // a jugé la conv non-business, c'est tout.
       }
-      chatRelevant = true;
-      stats.relevantChats++;
 
       // 1a. Contact — priorité au match téléphone (déterministe), sinon email LLM.
-      let enrichedContact = false;
-      if (matched?.folderPath && matched.filename) {
-        try {
-          if (await appendContactLine(matched.folderPath, matched.filename, ex.summary, group.name, `whatsapp-ingest:phone:${phone}`)) {
-            stats.contactsEnriched++;
-            stats.contactsByPhone++;
-            enrichedContact = true;
-            chatEnrichedContact = true;
+      // S26 — Gardé sous `ex.relevant` : on n'enrichit l'historique d'une fiche
+      // qu'avec des conv business. Sinon on polluerait les fiches avec du
+      // bavardage perso (« Salut, ça va ? »).
+      if (ex.relevant) {
+        if (matched?.folderPath && matched.filename) {
+          try {
+            if (await appendContactLine(matched.folderPath, matched.filename, ex.summary, group.name, `whatsapp-ingest:phone:${phone}`)) {
+              stats.contactsEnriched++;
+              stats.contactsByPhone++;
+              chatEnrichedContact = true;
+            }
+          } catch (err) {
+            console.warn(`[whatsapp-ingest] enrich contact (phone) échoué : ${err instanceof Error ? err.message : String(err)}`);
           }
-        } catch (err) {
-          console.warn(`[whatsapp-ingest] enrich contact (phone) échoué : ${err instanceof Error ? err.message : String(err)}`);
-        }
-      } else if (ex.contactEmail) {
-        try {
-          const m = await findContactByEmail(ex.contactEmail);
-          if (m && (await appendContactLine(m.folderPath, `${m.name}.md`, ex.summary, group.name, `whatsapp-ingest:email:${ex.contactEmail}`))) {
-            stats.contactsEnriched++;
-            enrichedContact = true;
-            chatEnrichedContact = true;
-            chatEnrichedByEmail = true;
+        } else if (ex.contactEmail) {
+          try {
+            const m = await findContactByEmail(ex.contactEmail);
+            if (m && (await appendContactLine(m.folderPath, `${m.name}.md`, ex.summary, group.name, `whatsapp-ingest:email:${ex.contactEmail}`))) {
+              stats.contactsEnriched++;
+              chatEnrichedContact = true;
+              chatEnrichedByEmail = true;
+            }
+          } catch (err) {
+            console.warn(`[whatsapp-ingest] enrich contact (email) échoué : ${err instanceof Error ? err.message : String(err)}`);
           }
-        } catch (err) {
-          console.warn(`[whatsapp-ingest] enrich contact (email) échoué : ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
-      // 1c. Aucun match contact + DM pertinent → carte Telegram « contact
-      // WhatsApp inconnu » (S24 soir, symétrie avec le no-match email).
-      // Restreint aux DM (`<phone>@s.whatsapp.net`) — pas de carte pour les
-      // groupes (pas d'expéditeur unique à transformer en fiche).
-      // S26 I1 — Ordre inversé : tester `isDM` AVANT `enrichedContact` pour
-      // qu'un chat groupe enrichi par email compte en `skip:group` (pas en
-      // `skip:matched`, qui fausserait le diag Bug #2).
+      // 1c. Décision carte « contact WhatsApp inconnu ».
+      // S26 — Demande Thomas : carte envoyée pour TOUT numéro inconnu DM,
+      // peu importe `relevant`. Anti-spam : skip si pending actif pour ce
+      // chatId, OU si contact déjà matché (phone via index étendu
+      // alias_telephone, ou email lors d'un enrichissement précédent).
       const isDM = group.chatId.endsWith('@s.whatsapp.net');
+      // S26 — Summary : si LLM a un summary `relevant`, on l'utilise ;
+      // sinon fallback générique (Thomas verra juste « Contact inconnu — N
+      // messages dans la fenêtre » → suffisant pour décider du type).
+      const summaryForCard =
+        ex.relevant && ex.summary && ex.summary.trim().length > 0
+          ? ex.summary
+          : `Conversation détectée (${group.msgs.length} message${group.msgs.length > 1 ? 's' : ''} dans la fenêtre, classée non-business par le LLM).`;
+      const isContactKnown = Boolean(matched);
+      const isAlreadyPending = activeNoMatchChatIds.has(group.chatId);
       if (!isDM) {
         stats.chatsSkippedGroup++;
         cardOutcome = 'skip:group';
-      } else if (enrichedContact) {
+      } else if (isContactKnown) {
         stats.chatsSkippedAlreadyMatched++;
         cardOutcome = 'skip:matched';
-      } else if (!ex.summary || ex.summary.trim().length === 0) {
-        // Cas vu en S26 (potentiel) : LLM renvoie relevant=true mais summary=''
-        // → carte muette inutile. On compte pour audit, on n'envoie pas.
-        stats.chatsSkippedEmptySummary++;
-        cardOutcome = 'skip:empty-summary';
+      } else if (isAlreadyPending) {
+        // Une carte est déjà en attente pour ce chat (TTL 7j) — pas de doublon.
+        stats.chatsSkippedAlreadyPending++;
+        cardOutcome = 'skip:already-pending';
       }
-      if (isDM && !enrichedContact && ex.summary && ex.summary.trim().length > 0) {
+      if (isDM && !isContactKnown && !isAlreadyPending) {
         try {
           // S24 nuit — détection homonyme via chatName (array jusqu'à 3).
           // S26 I3 — tracker le `total` réel avant `slice(0,3)` pour que la
@@ -540,7 +588,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             chatId: group.chatId,
             chatName: group.name,
             phone: phone ?? null,
-            summary: ex.summary,
+            summary: summaryForCard,
             defaultType: 'pro',
             userContext: null,
             cardMessageId: null,
@@ -554,6 +602,9 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
           const sent = await sendWhatsappNoMatchCard(pending);
           pending.cardMessageId = sent.messageId;
           await saveWhatsappNoMatch(pending);
+          // S26 — Ajouter immédiatement au set anti-spam pour éviter une 2e
+          // carte sur le même chatId si plusieurs runs concurrents.
+          activeNoMatchChatIds.add(group.chatId);
           stats.noMatchCardsSent++;
           cardOutcome = 'sent';
         } catch (err) {
@@ -629,14 +680,17 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       `${stats.contactsEnriched} contacts enrichis (${stats.contactsByPhone} via tél.), ${stats.projetsEnriched} projets enrichis, ` +
       `${stats.draftsPrepared} brouillons, ${stats.notified} notifiés, ${stats.noMatchCardsSent} cartes no-match, ${stats.errors} erreurs`,
   );
-  // S26 — Bug #2 : ventilation par raison de skip carte. Permet d'identifier la
-  // cause exacte du déficit de fiches (« manque beaucoup de fiches contact »).
+  // S26 — Ventilation par raison de skip carte. Le compteur
+  // `chatsSkippedNotRelevant` n'est plus une raison de skip carte depuis le
+  // fix Thomas S26 (carte envoyée même si relevant=false) mais reste utile
+  // pour observer combien de conversations sont jugées non-business.
   console.warn(
     `[whatsapp-ingest] ventilation cartes — sent=${stats.noMatchCardsSent}, ` +
-      `skip:not-relevant=${stats.chatsSkippedNotRelevant}, ` +
       `skip:group=${stats.chatsSkippedGroup}, ` +
       `skip:matched=${stats.chatsSkippedAlreadyMatched}, ` +
-      `skip:empty-summary=${stats.chatsSkippedEmptySummary}`,
+      `skip:already-pending=${stats.chatsSkippedAlreadyPending}, ` +
+      `skip:llm-error=${stats.chatsSkippedLlmError}, ` +
+      `(info) not-relevant=${stats.chatsSkippedNotRelevant} (LLM non-business — n'empêche plus la carte)`,
   );
   return stats;
 }
