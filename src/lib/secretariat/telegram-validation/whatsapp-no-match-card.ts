@@ -45,12 +45,12 @@ export interface WhatsappNoMatchPending {
    * Permet d'afficher un bouton « 🔗 Lier à <nom> » qui ajoute le téléphone
    * comme `alias_telephone` à la fiche existante au lieu de créer une nouvelle.
    */
-  existingMatchHint?: {
+  existingMatchHints?: Array<{
     displayName: string;
     knownPhones: string[];
     folderPath: string;
     filename: string;
-  } | null;
+  }> | null;
 }
 
 /** Préfixe callback_data pour les boutons no-match WhatsApp */
@@ -92,14 +92,28 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
     : noMatch.summary;
   lines.push(`<i>${escapeHtml(summary)}</i>`);
   lines.push('');
-  // S24 nuit — Warning homonymie côté WhatsApp (cas où une fiche au même nom existe).
-  if (noMatch.existingMatchHint) {
-    const known = noMatch.existingMatchHint.knownPhones.filter(Boolean).join(', ');
+  // S24 nuit — Warning homonymie côté WhatsApp + bouton(s) Lier.
+  const hints = noMatch.existingMatchHints ?? [];
+  if (hints.length >= 1) {
     lines.push('');
-    lines.push(
-      `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(noMatch.existingMatchHint.displayName)}` +
-        (known ? ` (tél connu : ${escapeHtml(known)})` : ''),
-    );
+    if (hints.length === 1) {
+      const h = hints[0]!;
+      const known = h.knownPhones.filter(Boolean).join(', ');
+      lines.push(
+        `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(h.displayName)}` +
+          (known ? ` (tél connu : ${escapeHtml(known)})` : ''),
+      );
+    } else if (hints.length <= 3) {
+      lines.push(`\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> :`);
+      for (const h of hints) {
+        const known = h.knownPhones.filter(Boolean).join(', ');
+        lines.push(`  • ${escapeHtml(h.displayName)}` + (known ? ` — ${escapeHtml(known)}` : ''));
+      }
+    } else {
+      lines.push(
+        `\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> — trop ambigu pour un clic. Skip et lie à la main.`,
+      );
+    }
   }
 
   lines.push('');
@@ -118,13 +132,17 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
       { text: '\u{1F4CB} Autres', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}autres:${noMatch.id}` },
     ],
   ];
-  if (noMatch.existingMatchHint) {
-    inlineKeyboard.push([
-      {
-        text: `\u{1F517} Lier à ${noMatch.existingMatchHint.displayName}`,
-        callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}link:${noMatch.id}`,
-      },
-    ]);
+  const linkable = (noMatch.existingMatchHints ?? []).slice(0, 3);
+  if (linkable.length >= 1 && (noMatch.existingMatchHints?.length ?? 0) <= 3) {
+    for (let i = 0; i < linkable.length; i++) {
+      const h = linkable[i]!;
+      inlineKeyboard.push([
+        {
+          text: `\u{1F517} Lier à ${h.displayName}`,
+          callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}link:${i}:${noMatch.id}`,
+        },
+      ]);
+    }
   }
   inlineKeyboard.push([
     { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },
@@ -194,26 +212,44 @@ export async function sendWhatsappNoMatchCard(
 // Parsing callback
 // ============================================================
 
-export type WhatsappNoMatchAction = ContactType | 'skip' | 'link';
+export type WhatsappNoMatchAction = ContactType | 'skip' | 'link' | 'link_yes' | 'link_cancel';
 
 export interface ParsedWhatsappNoMatchCallback {
   action: WhatsappNoMatchAction;
   noMatchId: string;
+  hintIdx?: number;
 }
 
 /**
- * Parse `wa_nomatch:<type>:<id>` → { action, noMatchId }, ou null si invalide.
+ * Parse les callbacks WhatsApp no-match. Formats :
+ *  - `wa_nomatch:<type>:<id>` pour pro/famille/amis/autres/skip
+ *  - `wa_nomatch:link:<idx>:<id>` (demande confirm)
+ *  - `wa_nomatch:link_yes:<idx>:<id>` (confirme)
+ *  - `wa_nomatch:link_cancel:<id>` (annule)
  */
 export function parseWhatsappNoMatchCallback(
   data: string,
 ): ParsedWhatsappNoMatchCallback | null {
   if (!data.startsWith(WA_NOMATCH_CALLBACK_PREFIX)) return null;
-  const rest = data.slice(WA_NOMATCH_CALLBACK_PREFIX.length);
-  const sep = rest.indexOf(':');
-  if (sep === -1) return null;
-  const action = rest.slice(0, sep) as WhatsappNoMatchAction;
-  const noMatchId = rest.slice(sep + 1);
+  const tokens = data.slice(WA_NOMATCH_CALLBACK_PREFIX.length).split(':');
+  if (tokens.length < 2) return null;
+  const action = tokens[0] as WhatsappNoMatchAction;
+
+  if (action === 'link' || action === 'link_yes') {
+    if (tokens.length !== 3) return null;
+    const hintIdx = parseInt(tokens[1]!, 10);
+    const noMatchId = tokens[2]!;
+    if (Number.isNaN(hintIdx) || hintIdx < 0 || !noMatchId) return null;
+    return { action, noMatchId, hintIdx };
+  }
+  if (action === 'link_cancel') {
+    if (tokens.length !== 2) return null;
+    return { action: 'link_cancel', noMatchId: tokens[1]! };
+  }
+
+  if (tokens.length !== 2) return null;
+  const noMatchId = tokens[1]!;
+  if (!['pro', 'famille', 'amis', 'autres', 'skip'].includes(action)) return null;
   if (!noMatchId) return null;
-  if (!['pro', 'famille', 'amis', 'autres', 'skip', 'link'].includes(action)) return null;
   return { action, noMatchId };
 }

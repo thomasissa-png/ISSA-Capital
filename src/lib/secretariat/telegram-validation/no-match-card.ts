@@ -44,14 +44,24 @@ export interface NoMatchPending {
    * Sert UNIQUEMENT à l'affichage de la carte (warning), pas à un choix
    * automatique : Thomas décide.
    */
-  existingMatchHint?: {
+  /**
+   * S24 nuit — Liste d'indices « fiches existantes au même nom » (homonymes).
+   * Émis quand `findContactByEmail` ne matche pas l'email entrant mais
+   * qu'une (ou plusieurs) fiche(s) au nom proche existe(nt).
+   *
+   * Politique d'affichage :
+   *  - 1 entrée → bouton « 🔗 Lier à <nom> » + warning.
+   *  - 2 ou 3 entrées → autant de boutons « 🔗 Lier à <nom_i> » + warning
+   *    listant tous les candidats (Thomas choisit explicitement).
+   *  - > 3 entrées → warning textuel SEUL, pas de bouton (trop ambigu pour
+   *    un clic ; Thomas Skip et édite à la main).
+   */
+  existingMatchHints?: Array<{
     displayName: string;
     knownEmails: string[];
-    /** Chemin du dossier vault de la fiche (ex `07. Contacts/02. Amis`). */
     folderPath: string;
-    /** Nom de fichier de la fiche (ex `Maxime Lemoine.md`). */
     filename: string;
-  } | null;
+  }> | null;
 }
 
 /** Types de contact valides pour la création de fiche */
@@ -99,19 +109,32 @@ export function buildNoMatchCard(noMatch: NoMatchPending): {
   // Suggestion triage
   lines.push(`<b>Suggestion triage</b> : ${escapeHtml(noMatch.defaultType)}`);
 
-  // S24 nuit — Warning homonymie : une fiche au même nom existe déjà.
-  // Probable email secondaire absent de la fiche → Thomas peut choisir Skip
-  // puis ajouter l'email à la main, ou créer une nouvelle fiche (faux homonyme).
-  if (noMatch.existingMatchHint) {
-    const known = noMatch.existingMatchHint.knownEmails.join(', ');
+  // S24 nuit — Warning homonymie + bouton(s) « Lier ».
+  // 1 → un bouton ; 2-3 → autant de boutons ; >3 → warning seul (trop ambigu).
+  const hints = noMatch.existingMatchHints ?? [];
+  if (hints.length >= 1) {
     lines.push('');
-    lines.push(
-      `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(noMatch.existingMatchHint.displayName)}` +
-        (known ? ` (email connu : ${escapeHtml(known)})` : ''),
-    );
-    lines.push(
-      `<i>S'il s'agit de la même personne, Skip cette carte puis ajoute <code>${escapeHtml(noMatch.emailFrom)}</code> à <code>alias_email</code> dans la fiche.</i>`,
-    );
+    if (hints.length === 1) {
+      const h = hints[0]!;
+      const known = h.knownEmails.join(', ');
+      lines.push(
+        `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(h.displayName)}` +
+          (known ? ` (email connu : ${escapeHtml(known)})` : ''),
+      );
+    } else if (hints.length <= 3) {
+      lines.push(`\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> dans le vault :`);
+      for (const h of hints) {
+        const known = h.knownEmails.join(', ');
+        lines.push(
+          `  • ${escapeHtml(h.displayName)}` + (known ? ` — ${escapeHtml(known)}` : ''),
+        );
+      }
+      lines.push('<i>Choisis explicitement quelle fiche cibler (boutons « Lier à … »).</i>');
+    } else {
+      lines.push(
+        `\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> — trop ambigu pour un clic. Skip et ajoute <code>${escapeHtml(noMatch.emailFrom)}</code> à la bonne fiche à la main.`,
+      );
+    }
   }
   lines.push('');
 
@@ -132,15 +155,20 @@ export function buildNoMatchCard(noMatch: NoMatchPending): {
       { text: '\u{1F4CB} Autres', callback_data: `${NOMATCH_CALLBACK_PREFIX}autres:${noMatch.id}` },
     ],
   ];
-  // S24 nuit — bouton « 🔗 Lier à <nom> » si une fiche au même nom existe.
-  // Au clic, l'email courant est ajouté en `alias_email` à la fiche existante.
-  if (noMatch.existingMatchHint) {
-    inlineKeyboard.push([
-      {
-        text: `\u{1F517} Lier à ${noMatch.existingMatchHint.displayName}`,
-        callback_data: `${NOMATCH_CALLBACK_PREFIX}link:${noMatch.id}`,
-      },
-    ]);
+  // S24 nuit — bouton(s) « 🔗 Lier à <nom> » si 1-3 homonymes détectés
+  // (au-delà : warning textuel uniquement). Index du hint dans la callback
+  // pour identifier la fiche cible sans ambiguïté.
+  const linkable = (noMatch.existingMatchHints ?? []).slice(0, 3);
+  if (linkable.length >= 1 && (noMatch.existingMatchHints?.length ?? 0) <= 3) {
+    for (let i = 0; i < linkable.length; i++) {
+      const h = linkable[i]!;
+      inlineKeyboard.push([
+        {
+          text: `\u{1F517} Lier à ${h.displayName}`,
+          callback_data: `${NOMATCH_CALLBACK_PREFIX}link:${i}:${noMatch.id}`,
+        },
+      ]);
+    }
   }
   inlineKeyboard.push([
     { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },

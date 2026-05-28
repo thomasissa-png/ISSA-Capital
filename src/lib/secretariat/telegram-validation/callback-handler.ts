@@ -18,7 +18,7 @@ import type { ActionProposal } from '../handlers/types';
 import type { PendingValidation } from './telegram-cards';
 import type { NoMatchPending, ContactType } from './no-match-card';
 import type { WhatsappNoMatchPending } from './whatsapp-no-match-card';
-import { VALIDATION_CALLBACK_PREFIX, buildValidationCard, editMessageText, sendSimpleMessage, escapeHtml } from './telegram-cards';
+import { VALIDATION_CALLBACK_PREFIX, buildValidationCard, editMessageText, editMessageTextWithButtons, sendSimpleMessage, escapeHtml } from './telegram-cards';
 import { NOMATCH_CALLBACK_PREFIX, buildNoMatchCard } from './no-match-card';
 import {
   WA_NOMATCH_CALLBACK_PREFIX,
@@ -41,6 +41,19 @@ import {
   addToFrontmatterList,
 } from '../vault-client';
 import { readFile, writeFile } from '../vault-client/obsidian-file';
+import { invalidateVaultContactsCache } from '../vault-contacts';
+import { invalidateContactsCache } from '../email-ingest/contacts-cache';
+
+/**
+ * Invalide les deux caches contacts (vault-contacts + email-ingest) après
+ * toute écriture sur une fiche contact — création ou lien d'alias. Évite
+ * qu'un cache stale fasse louper la détection homonyme à la prochaine carte
+ * juste après la mise à jour (S24 nuit, audit Thomas).
+ */
+function invalidateContactCachesAfterWrite(): void {
+  invalidateContactsCache();
+  invalidateVaultContactsCache();
+}
 import { addTaskToTickTick, mapTodoPriority } from '../ticktick/inbox-task';
 import { markProcessed } from '../gmail-source/gmail-source';
 import { writeAuditLog } from '../vault-client/audit-log';
@@ -406,27 +419,42 @@ const VALID_CONTACT_TYPES: readonly ContactType[] = ['pro', 'famille', 'amis', '
  * Parse le callback data pour un bouton no-match.
  * Format attendu : "email_nomatch:<type>:<noMatchId>"
  */
+/**
+ * Parse les callbacks no-match. Formats supportés :
+ *  - `email_nomatch:<type>:<id>` pour pro/famille/amis/autres/skip
+ *  - `email_nomatch:link:<idx>:<id>` (1er clic, demande confirm)
+ *  - `email_nomatch:link_yes:<idx>:<id>` (confirme)
+ *  - `email_nomatch:link_cancel:<id>` (annule, re-render)
+ */
 function parseNoMatchCallbackData(data: string): {
-  type: ContactType | 'skip' | 'link';
+  type: ContactType | 'skip' | 'link' | 'link_yes' | 'link_cancel';
   noMatchId: string;
+  /** Index du hint dans `existingMatchHints` (link / link_yes uniquement). */
+  hintIdx?: number;
 } | null {
   if (!data.startsWith(NOMATCH_CALLBACK_PREFIX)) return null;
+  const tokens = data.slice(NOMATCH_CALLBACK_PREFIX.length).split(':');
+  if (tokens.length < 2) return null;
+  const action = tokens[0]!;
 
-  const withoutPrefix = data.slice(NOMATCH_CALLBACK_PREFIX.length);
-  const colonIdx = withoutPrefix.indexOf(':');
-  if (colonIdx === -1) return null;
+  if (action === 'link' || action === 'link_yes') {
+    if (tokens.length !== 3) return null;
+    const hintIdx = parseInt(tokens[1]!, 10);
+    const noMatchId = tokens[2]!;
+    if (Number.isNaN(hintIdx) || hintIdx < 0 || !noMatchId) return null;
+    return { type: action, noMatchId, hintIdx };
+  }
+  if (action === 'link_cancel') {
+    if (tokens.length !== 2) return null;
+    return { type: 'link_cancel', noMatchId: tokens[1]! };
+  }
 
-  const type = withoutPrefix.slice(0, colonIdx);
-  const noMatchId = withoutPrefix.slice(colonIdx + 1);
-
-  if (
-    type !== 'skip' &&
-    type !== 'link' &&
-    !(VALID_CONTACT_TYPES as readonly string[]).includes(type)
-  ) return null;
+  // Actions classiques : pro/famille/amis/autres/skip
+  if (tokens.length !== 2) return null;
+  const noMatchId = tokens[1]!;
+  if (action !== 'skip' && !(VALID_CONTACT_TYPES as readonly string[]).includes(action)) return null;
   if (!noMatchId) return null;
-
-  return { type: type as ContactType | 'skip' | 'link', noMatchId };
+  return { type: action as ContactType | 'skip', noMatchId };
 }
 
 /**
@@ -571,7 +599,9 @@ async function handleNoMatchCallback(
   // Créer le fichier via vault-client
   const success = await createVaultFile(targetFolder, filename, content, trigger);
 
-  if (!success) {
+  if (success) {
+    invalidateContactCachesAfterWrite();
+  } else {
     console.warn(`[callback-handler] createVaultFile échoué pour ${target}`);
     await sendSimpleMessage(
       callback.chat_id,
@@ -729,7 +759,7 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
     return;
   }
 
-  const { type, noMatchId } = parsed;
+  const { type, noMatchId, hintIdx } = parsed;
 
   try {
     const noMatch = await getNoMatch(noMatchId);
@@ -744,7 +774,11 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
     if (type === 'skip') {
       await handleNoMatchSkip(noMatch, callback);
     } else if (type === 'link') {
-      await handleNoMatchLink(noMatch, callback);
+      await askNoMatchLinkConfirm(noMatch, hintIdx ?? 0, callback);
+    } else if (type === 'link_yes') {
+      await handleNoMatchLink(noMatch, hintIdx ?? 0, callback);
+    } else if (type === 'link_cancel') {
+      await restoreNoMatchCard(noMatch, callback);
     } else {
       await handleNoMatchCallback(noMatch, type, callback);
     }
@@ -763,11 +797,58 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
 // No-match LINK (S24 nuit — ajoute l'email à une fiche existante au même nom)
 // ============================================================
 
-async function handleNoMatchLink(
+/**
+ * Étape 1 du « Lier » : demande de confirmation. La carte est éditée pour
+ * afficher la cible exacte et deux boutons [Oui, lier] / [Annuler].
+ */
+async function askNoMatchLinkConfirm(
+  noMatch: NoMatchPending,
+  hintIdx: number,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHints?.[hintIdx];
+  if (!hint) {
+    await sendSimpleMessage(callback.chat_id, '\u{26A0}\u{FE0F} Fiche cible introuvable.');
+    return;
+  }
+  const text =
+    `\u{2753} <b>Confirmer le lien ?</b>\n\n` +
+    `Email <code>${escapeHtml(noMatch.emailFrom)}</code> → ajouté à <code>alias_email</code> ` +
+    `de la fiche <b>${escapeHtml(hint.displayName)}</b> (${escapeHtml(hint.folderPath)}/${escapeHtml(hint.filename)}).\n\n` +
+    `<i>Action irréversible côté Drive — vérifie que c'est la bonne personne.</i>`;
+  const keyboard = [
+    [
+      { text: '\u{2705} Oui, lier', callback_data: `${NOMATCH_CALLBACK_PREFIX}link_yes:${hintIdx}:${noMatch.id}` },
+      { text: '\u{21A9}\u{FE0F} Annuler', callback_data: `${NOMATCH_CALLBACK_PREFIX}link_cancel:${noMatch.id}` },
+    ],
+  ];
+  await editMessageTextWithButtons(callback.chat_id, callback.message_id, text, keyboard);
+}
+
+/**
+ * Étape « Annuler » : restaure la carte d'origine (boutons + warning).
+ */
+async function restoreNoMatchCard(
   noMatch: NoMatchPending,
   callback: TelegramCallback,
 ): Promise<void> {
-  const hint = noMatch.existingMatchHint;
+  const { text, inlineKeyboard } = buildNoMatchCard(noMatch);
+  // Cast : `TelegramKeyboard` peut contenir des boutons url ; ici on a
+  // uniquement des callback_data → cast sûr.
+  await editMessageTextWithButtons(
+    callback.chat_id,
+    callback.message_id,
+    text,
+    inlineKeyboard as Array<Array<{ text: string; callback_data: string }>>,
+  );
+}
+
+async function handleNoMatchLink(
+  noMatch: NoMatchPending,
+  hintIdx: number,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHints?.[hintIdx];
   if (!hint) {
     await sendSimpleMessage(
       callback.chat_id,
@@ -816,6 +897,7 @@ async function handleNoMatchLink(
       );
       return;
     }
+    invalidateContactCachesAfterWrite();
 
     await auditAction(
       'nomatch_link_email',
@@ -954,6 +1036,7 @@ async function handleWhatsappNoMatchCallback(
     await sendSimpleMessage(callback.chat_id, `\u{274C} Erreur création fiche : ${target}`);
     return;
   }
+  invalidateContactCachesAfterWrite();
 
   await auditAction(
     'whatsapp_nomatch_create',
@@ -990,11 +1073,52 @@ async function handleWhatsappNoMatchSkip(
   );
 }
 
-async function handleWhatsappNoMatchLink(
+/**
+ * Étape 1 du « Lier » WhatsApp : demande de confirmation 2 étapes.
+ */
+async function askWhatsappNoMatchLinkConfirm(
+  noMatch: WhatsappNoMatchPending,
+  hintIdx: number,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHints?.[hintIdx];
+  if (!hint) {
+    await sendSimpleMessage(callback.chat_id, '\u{26A0}\u{FE0F} Fiche cible introuvable.');
+    return;
+  }
+  const text =
+    `\u{2753} <b>Confirmer le lien ?</b>\n\n` +
+    `Téléphone <code>${escapeHtml(noMatch.phone ?? '?')}</code> → ajouté à <code>alias_telephone</code> ` +
+    `de la fiche <b>${escapeHtml(hint.displayName)}</b> (${escapeHtml(hint.folderPath)}/${escapeHtml(hint.filename)}).\n\n` +
+    `<i>Action irréversible côté Drive — vérifie que c'est la bonne personne.</i>`;
+  const keyboard = [
+    [
+      { text: '\u{2705} Oui, lier', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}link_yes:${hintIdx}:${noMatch.id}` },
+      { text: '\u{21A9}\u{FE0F} Annuler', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}link_cancel:${noMatch.id}` },
+    ],
+  ];
+  await editMessageTextWithButtons(callback.chat_id, callback.message_id, text, keyboard);
+}
+
+async function restoreWhatsappNoMatchCard(
   noMatch: WhatsappNoMatchPending,
   callback: TelegramCallback,
 ): Promise<void> {
-  const hint = noMatch.existingMatchHint;
+  const { text, inlineKeyboard } = buildWhatsappNoMatchCard(noMatch);
+  await editMessageTextWithButtons(
+    callback.chat_id,
+    callback.message_id,
+    text,
+    inlineKeyboard as Array<Array<{ text: string; callback_data: string }>>,
+  );
+}
+
+async function handleWhatsappNoMatchLink(
+  noMatch: WhatsappNoMatchPending,
+  hintIdx: number,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHints?.[hintIdx];
   if (!hint || !noMatch.phone) {
     await sendSimpleMessage(
       callback.chat_id,
@@ -1039,6 +1163,7 @@ async function handleWhatsappNoMatchLink(
       );
       return;
     }
+    invalidateContactCachesAfterWrite();
 
     await auditAction(
       'whatsapp_nomatch_link_phone',
@@ -1087,7 +1212,11 @@ async function handleWhatsappNoMatchDispatch(callback: TelegramCallback): Promis
     if (action === 'skip') {
       await handleWhatsappNoMatchSkip(noMatch, callback);
     } else if (action === 'link') {
-      await handleWhatsappNoMatchLink(noMatch, callback);
+      await askWhatsappNoMatchLinkConfirm(noMatch, parsed.hintIdx ?? 0, callback);
+    } else if (action === 'link_yes') {
+      await handleWhatsappNoMatchLink(noMatch, parsed.hintIdx ?? 0, callback);
+    } else if (action === 'link_cancel') {
+      await restoreWhatsappNoMatchCard(noMatch, callback);
     } else {
       await handleWhatsappNoMatchCallback(noMatch, action, callback);
     }
