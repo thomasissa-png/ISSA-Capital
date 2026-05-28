@@ -46,3 +46,18 @@
 # de CRON_TZ par le démon cron. (Aucune autre ligne ne suit : pas d'effet de
 # bord sur les crons UTC ci-dessus.)
 0 5,6 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-morning-brief >> /home/thomas/anya-cron.log 2>&1
+
+# ============================================================
+# Backup vault (S25) — copie quotidienne du Vault Drive vers le VPS, rétention 90j.
+#
+# Script bash STANDALONE (pas un endpoint HTTP) — appelé directement, sans
+# passer par anya-cron.sh. Lit la remote rclone `vault:` (même conf que
+# rclone-vault.service, user thomas), écrit dans /home/thomas/vault-backup/.
+#
+# Mécanique : `rclone copy` jamais destructif + --backup-dir daté pour archiver
+# les versions remplacées (snapshot différentiel). Rotation > 90 jours auto.
+# Vault ~2 Go → backup total ~2.5 Go (≈ 1% du disque VPS 232 Go).
+#
+# Horaire : 1h UTC = 3h Paris (creux total, pas en conflit avec brief 7h / ingests).
+# Restauration : voir docs/dev-decisions.md (« Backup vault »).
+0 1 * * * /home/thomas/ISSA-Capital/deploy/backup-vault.sh >> /home/thomas/vault-backup.log 2>&1
