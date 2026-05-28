@@ -40,9 +40,8 @@ issa-capital.com, www.issa-capital.com {
         -Server
     }
 
-    # Log dédié (pour distinguer du trafic anya)
-    log {
-        output file /var/log/caddy/issa-capital.com.log
-        format json
-    }
+    # Logs : Caddy écrit dans journalctl -u caddy (champ `host` JSON filtrable par domaine).
+    # Pas de fichier dédié — évite le besoin de provisionner /var/log/caddy/ avec les bons droits.
+    # Pour suivre le trafic site uniquement :
+    #   sudo journalctl -u caddy -f -o cat | grep '"server_name":"issa-capital.com"'
 }

@@ -142,3 +142,24 @@ sudo systemctl reload caddy
 - `issa-capital.caddy` — Source de vérité du bloc vhost à appender (versionné).
 - Backup Caddyfile pré-modification : `/etc/caddy/Caddyfile.bak.<date>` (généré par l'étape 1 de l'install).
 - Cert TLS : géré par Caddy, stocké dans `/var/lib/caddy/.local/share/caddy/`.
+
+## Logs
+
+Caddy log dans `journalctl -u caddy` (pas de fichier dédié — évite la galère de droits sur `/var/log/caddy/`). Pour filtrer par domaine :
+
+```bash
+# Site uniquement (issa-capital.com + www.*)
+sudo journalctl -u caddy -f -o cat | grep '"server_name":"issa-capital.com"\|"server_name":"www.issa-capital.com"'
+
+# Anya uniquement
+sudo journalctl -u caddy -f -o cat | grep '"server_name":"anya.issa-capital.com"'
+
+# Toutes les erreurs (toutes serveurs confondus)
+sudo journalctl -u caddy -f -o cat | grep '"level":"error"'
+```
+
+## Erratum (S25.1)
+
+La v1 du snippet contenait une directive `log { output file /var/log/caddy/issa-capital.com.log }`. Le `caddy validate` la passait (syntaxe OK) mais le `systemctl reload` échouait au runtime sur `permission denied` (Caddy ne pouvait pas créer le fichier). Retirée en S25.1 — Caddy log toujours dans `journalctl`, c'est suffisant pour ce projet.
+
+**Learning à propager** : `caddy validate` ne teste pas les permissions filesystem. Toujours **`systemctl reload`** sur un test environnement avant de pousser une conf qui touche aux fichiers (logs, sockets, etc.).
