@@ -71,6 +71,16 @@ vi.mock('../../gmail-source/gmail-client', () => ({
   createDraft: (...args: unknown[]) => mockCreateDraft(...args),
 }));
 
+// S24 soir — mock telegram-validation pour ne pas charger toute la chaîne
+// (pending-store → drive-resolver → fs) ; le runner n'utilise que ces deux
+// fonctions pour la carte no-match WhatsApp.
+const mockSaveWhatsappNoMatch = vi.fn().mockResolvedValue(undefined);
+const mockSendWhatsappNoMatchCard = vi.fn().mockResolvedValue({ messageId: 12345 });
+vi.mock('../../telegram-validation', () => ({
+  saveWhatsappNoMatch: (...args: unknown[]) => mockSaveWhatsappNoMatch(...args),
+  sendWhatsappNoMatchCard: (...args: unknown[]) => mockSendWhatsappNoMatchCard(...args),
+}));
+
 // fs : curseur — lecture échoue (null) → premier run ; écriture OK.
 vi.mock('node:fs', () => ({
   promises: {

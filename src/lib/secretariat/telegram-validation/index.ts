@@ -26,6 +26,11 @@ export {
   getNoMatch,
   deleteNoMatch,
   purgeExpiredNoMatch,
+  saveWhatsappNoMatch,
+  getWhatsappNoMatch,
+  deleteWhatsappNoMatch,
+  findWhatsappNoMatchByCardMessageId,
+  updateWhatsappNoMatchUserContext,
 } from './pending-store';
 
 export {
@@ -35,6 +40,19 @@ export {
 } from './no-match-card';
 
 export type { NoMatchPending, ContactType } from './no-match-card';
+
+export {
+  buildWhatsappNoMatchCard,
+  sendWhatsappNoMatchCard,
+  parseWhatsappNoMatchCallback,
+  WA_NOMATCH_CALLBACK_PREFIX,
+} from './whatsapp-no-match-card';
+
+export type {
+  WhatsappNoMatchPending,
+  WhatsappNoMatchAction,
+  ParsedWhatsappNoMatchCallback,
+} from './whatsapp-no-match-card';
 
 export { handleTelegramCallback } from './callback-handler';
 export type { TelegramCallback } from './callback-handler';
