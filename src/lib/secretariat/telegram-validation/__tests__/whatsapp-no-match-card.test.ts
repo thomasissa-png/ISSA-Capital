@@ -69,6 +69,38 @@ describe('buildWhatsappNoMatchCard', () => {
     expect(text).toContain('&lt;script&gt;');
     expect(text).toContain('&amp;');
   });
+
+  // S26 I3 — Quand le total réel d'homonymes > 3, la carte doit afficher le
+  // chiffre RÉEL (pas la version tronquée à 3) et NE PAS afficher de bouton Lier.
+  it('S26 I3 : existingMatchHintsTotal=5 (hints capés à 3) → "5 homonymes (top 3)" + pas de bouton Lier', () => {
+    const hints = Array.from({ length: 3 }, (_, i) => ({
+      displayName: `Homonyme ${i + 1}`,
+      knownPhones: [],
+      folderPath: '07. Contacts/03. Pro',
+      filename: `Homonyme ${i + 1}.md`,
+    }));
+    const { text, inlineKeyboard } = buildWhatsappNoMatchCard(
+      makePending({ existingMatchHints: hints, existingMatchHintsTotal: 5 }),
+    );
+    expect(text).toContain('5 homonymes');
+    expect(text).toContain('top 3 affichés');
+    // Pas de bouton Lier quand >3
+    const labels = inlineKeyboard.flat().map((b) => b.text);
+    expect(labels.some((l) => l.includes('Lier à'))).toBe(false);
+  });
+
+  it('S26 I3 : existingMatchHintsTotal=2 (≤3) → "2 homonymes" + boutons Lier affichés', () => {
+    const hints = [
+      { displayName: 'A', knownPhones: [], folderPath: '07. Contacts/03. Pro', filename: 'A.md' },
+      { displayName: 'B', knownPhones: [], folderPath: '07. Contacts/03. Pro', filename: 'B.md' },
+    ];
+    const { text, inlineKeyboard } = buildWhatsappNoMatchCard(
+      makePending({ existingMatchHints: hints, existingMatchHintsTotal: 2 }),
+    );
+    expect(text).toContain('2 homonymes');
+    const labels = inlineKeyboard.flat().map((b) => b.text);
+    expect(labels.filter((l) => l.includes('Lier à'))).toHaveLength(2);
+  });
 });
 
 describe('parseWhatsappNoMatchCallback', () => {

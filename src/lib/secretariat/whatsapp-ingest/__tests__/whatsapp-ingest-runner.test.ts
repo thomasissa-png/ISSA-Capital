@@ -114,6 +114,14 @@ beforeEach(() => {
   mockAppendProjet.mockResolvedValue({ status: 'enriched' });
   mockCreateDraft.mockResolvedValue({ success: true, draftId: 'd1', gmailUrl: 'https://mail/x' });
   mockSendTelegram.mockResolvedValue({ success: true });
+  // S26 — reset mockCallLLM à l'impl par défaut (sinon un test précédent qui
+  // fait `.mockRejectedValue(...)` pollue tous les tests suivants).
+  mockCallLLM.mockImplementation(async (opts: { task: string }) => {
+    if (opts.task === 'email-draft') {
+      return { text: JSON.stringify({ body: 'Bonjour,\n\nVoici.\n\nTrès cordialement,\n\nThomas Issa\n06 64 85 06 31' }) };
+    }
+    return { text: JSON.stringify(nextExtraction) };
+  });
 });
 
 describe('runWhatsappIngest — V2', () => {
@@ -328,6 +336,44 @@ describe('runWhatsappIngest — V2', () => {
     expect(stats.chatsSkippedEmptySummary).toBe(1);
     expect(mockSendWhatsappNoMatchCard).not.toHaveBeenCalled();
   });
+
+  // S26 I2 — LLM échec dans extractChat ne doit PAS être compté en NotRelevant.
+  it('S26 I2 — extractFailed (LLM error) → compteur chatsSkippedLlmError, pas NotRelevant', async () => {
+    mockListMessages.mockResolvedValue([msg({ chatId: '33712345678@s.whatsapp.net' })]);
+    // Simule une exception LLM : le retour de extractChat est `{ ...empty, extractFailed: true }`.
+    mockCallLLM.mockRejectedValue(new Error('DeepSeek 500'));
+    const stats = await runWhatsappIngest();
+    expect(stats.chatsSkippedLlmError).toBe(1);
+    expect(stats.chatsSkippedNotRelevant).toBe(0); // ne doit PAS être ici
+    expect(stats.noMatchCardsSent).toBe(0);
+  });
+
+  // S26 I1 — Ordre des conditions : un chat groupe enrichi par email doit
+  // compter en `skip:group`, pas en `skip:matched` (ordre `isDM` first).
+  it('S26 I1 — chat groupe (@g.us) enrichi par email → skip:group, pas skip:matched', async () => {
+    mockListMessages.mockResolvedValue([
+      msg({ chatId: '12345@g.us', chatName: 'Groupe Versi' }),
+    ]);
+    mockFindContact.mockResolvedValue({
+      name: 'Jean Dupont',
+      folderPath: '07. Contacts/03. Pro',
+      emails: [],
+      content: '',
+      fileId: 'f1',
+    });
+    nextExtraction = {
+      relevant: true,
+      summary: 'Action attendue.',
+      contactEmail: 'jean@exemple.fr',
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.chatsSkippedGroup).toBe(1);
+    expect(stats.chatsSkippedAlreadyMatched).toBe(0); // ordre corrigé
+    expect(stats.noMatchCardsSent).toBe(0);
+  });
 });
 
 describe('formatPhoneForDisplay (S26 Bug #1)', () => {
@@ -356,5 +402,32 @@ describe('formatPhoneForDisplay (S26 Bug #1)', () => {
     const normalized = normalizePhone(display);
     expect(normalized).toBe('664850631');
     expect(formatPhoneForDisplay(normalized)).toBe(display);
+  });
+
+  // S26 H5 — entrée 11 chiffres préfixés `33` (sans `+`) → normalisée puis formatée.
+  it('S26 H5 : 11 digits préfixés 33 (sans +) → +33 6 64 85 06 31', () => {
+    expect(formatPhoneForDisplay('33664850631')).toBe('+33 6 64 85 06 31');
+  });
+
+  // S26 H3 — numéro international non-FR : ne PAS inventer +33, préserver l'indicatif.
+  it('S26 H3 : numéro US "+1 415 555 1234" → préservé, pas re-fabriqué en +33', () => {
+    const us = '+1 415 555 1234';
+    const out = formatPhoneForDisplay(us);
+    expect(out).not.toContain('+33');
+    expect(out).toContain('+1');
+  });
+
+  it('S26 H3 : numéro UK "+44 20 1234 5678" → préservé', () => {
+    const uk = '+44 20 1234 5678';
+    const out = formatPhoneForDisplay(uk);
+    expect(out).not.toContain('+33');
+    expect(out).toContain('+44');
+  });
+
+  it('S26 H3 : digits seuls non-FR (US sans +, 11 digits commençant pas 33) → préfixe + ajouté', () => {
+    // Ex : 14155551234 (11 chiffres, US sans +) → +14155551234 (pas +33…)
+    const out = formatPhoneForDisplay('14155551234');
+    expect(out).not.toContain('+33');
+    expect(out.startsWith('+1')).toBe(true);
   });
 });

@@ -95,7 +95,7 @@ import {
 import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
 import { polishUserContext } from '../contact-enrich/polish-user-context';
 import type { EnrichContactResult } from '../contact-enrich';
-import { formatPhoneForDisplay } from '../whatsapp-ingest/whatsapp-ingest-runner';
+import { formatPhoneForDisplay, normalizePhone } from '../whatsapp-ingest/whatsapp-ingest-runner';
 
 // ============================================================
 // Types
@@ -1218,11 +1218,15 @@ async function handleWhatsappNoMatchLink(
     }
 
     const phoneFormatted = formatPhoneForDisplay(noMatch.phone);
+    // S26 H2 — Dédup par hash 9-chiffres pour éviter doublon avec fiches
+    // S24-S26 polluées (`alias_telephone: 664850631` + nouveau format
+    // `+33 6 64 85 06 31` → mêmes 9 chiffres normalisés → no-op détecté).
     const newContent = addToFrontmatterList(
       read.content,
       'alias_telephone',
       phoneFormatted,
       'telephone',
+      (v: string) => normalizePhone(v) ?? v.trim().toLowerCase(),
     );
 
     if (newContent === read.content) {

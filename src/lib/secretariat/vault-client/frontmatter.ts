@@ -297,13 +297,25 @@ export function addToFrontmatterList(
   listKey: string,
   newValue: string,
   anchorKey: string,
+  /**
+   * S26 H2 — Hook de normalisation custom pour la dédup (compare des entrées
+   * du même contact écrites sous deux formats différents). Cas réel :
+   *   - Fiches WhatsApp S24-S26 polluées : `alias_telephone: 664850631`
+   *   - Nouveau code S26 écrit : `+33 6 64 85 06 31`
+   * Sans hook, la dédup texte+lowercase ne matche pas → doublon silencieux.
+   * Avec `normalize = normalizePhone`, les deux écritures hashent vers
+   * `664850631` → doublon détecté → no-op.
+   * Defaut : `(v) => v.trim().toLowerCase()` (comportement historique).
+   */
+  normalize?: (v: string) => string,
 ): string {
   const match = FRONTMATTER_RE.exec(content);
   if (!match || match[1] === undefined) return content;
 
   const fmRaw = match[1];
   const lines = fmRaw.split('\n');
-  const normalizedNew = newValue.trim().toLowerCase();
+  const normalizer = normalize ?? ((v: string) => v.trim().toLowerCase());
+  const normalizedNew = normalizer(newValue);
 
   // Localiser la clé liste (`listKey:`) et collecter ses entrées contiguës.
   let listKeyIdx = -1;
@@ -327,8 +339,8 @@ export function addToFrontmatterList(
       // Parcourir les entrées suivantes en `  - val`.
       let j = i + 1;
       while (j < lines.length && /^\s+-\s+/.test(lines[j]!)) {
-        const entryVal = lines[j]!.replace(/^\s+-\s+/, '').trim().toLowerCase();
-        if (entryVal === normalizedNew) return content; // déjà présent : no-op
+        const entryRaw = lines[j]!.replace(/^\s+-\s+/, '').trim();
+        if (normalizer(entryRaw) === normalizedNew) return content; // déjà présent : no-op
         lastListEntryIdx = j;
         j++;
       }

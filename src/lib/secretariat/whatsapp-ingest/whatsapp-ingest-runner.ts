@@ -89,18 +89,38 @@ export function normalizePhone(raw: string): string | null {
  * affiche/écrit un téléphone issu d'un `chatPhone()` ou `normalizePhone()` —
  * sinon on stocke ou affiche des « 664850631 » (bug S26 #1).
  *
- * Robuste : accepte null/undefined → `''`. Si l'entrée n'a pas exactement
- * 9 chiffres (cas dégénéré non-FR), on renvoie la chaîne d'origine telle quelle
- * (graceful : pas de format inventé).
+ * Comportement :
+ *  - `null` / `undefined` / `''` → `''`
+ *  - 9 chiffres FR (mobile ou fixe) → `+33 X XX XX XX XX`
+ *  - 11 chiffres préfixés `33` (S26 H5) → normalisés vers 9 puis formatés
+ *  - Autre cas (numéro international non-FR, court, alpha) → on **préfixe `+`**
+ *    aux digits s'il en manque (préserve l'indicatif au lieu d'inventer `+33`
+ *    pour un numéro US/UK — S26 H3). Si on ne peut rien faire de raisonnable,
+ *    renvoyer la chaîne d'origine telle quelle.
  *
  * Le matching `alias_telephone` reste cohérent : `normalizePhone('+33 6 64 …')`
  * et `normalizePhone('664850631')` produisent le même hash 9-chiffres.
  */
 export function formatPhoneForDisplay(normalized: string | null | undefined): string {
   if (!normalized) return '';
-  const d = String(normalized).replace(/\D/g, '');
-  if (d.length !== 9) return String(normalized);
-  return `+33 ${d[0]} ${d.slice(1, 3)} ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)}`;
+  const raw = String(normalized);
+  const d = raw.replace(/\D/g, '');
+  if (d.length === 9) {
+    return `+33 ${d[0]} ${d.slice(1, 3)} ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)}`;
+  }
+  // S26 H5 — 11 chiffres préfixés `33` (avec ou sans `+`) → mobile/fixe FR.
+  if (d.length === 11 && d.startsWith('33')) {
+    const nine = d.slice(2);
+    return `+33 ${nine[0]} ${nine.slice(1, 3)} ${nine.slice(3, 5)} ${nine.slice(5, 7)} ${nine.slice(7, 9)}`;
+  }
+  // S26 H3 — Numéro international non-FR (US `+1…`, UK `+44…`) ou format non
+  // reconnu : préserver l'indicatif au lieu d'inventer `+33`. Si la chaîne
+  // d'origine a déjà un `+`, on la renvoie inchangée ; sinon on préfixe
+  // `+` aux digits (préserve la longueur, signale que c'est un numéro
+  // international plutôt qu'un identifiant interne).
+  if (raw.trim().startsWith('+')) return raw.trim();
+  if (d.length >= 7) return `+${d}`;
+  return raw;
 }
 
 /** Extrait le numéro normalisé d'un chat DM WhatsApp (`<phone>@s.whatsapp.net`). */
@@ -151,6 +171,10 @@ export interface WhatsappIngestStats {
   chatsSkippedAlreadyMatched: number;
   /** chats DM pertinents non matchés où `summary` LLM est vide → carte muette évitée. */
   chatsSkippedEmptySummary: number;
+  /** S26 I2 — chats où l'appel LLM `extractChat` a échoué (timeout / 5xx /
+   *  JSON cassé). À distinguer de `chatsSkippedNotRelevant` (relevant=false
+   *  explicite du LLM) pour ne pas biaiser le diag Bug #2. */
+  chatsSkippedLlmError: number;
   errors: number;
 }
 
@@ -171,6 +195,10 @@ interface ChatExtraction {
   todos: string[];
   /** email à préparer si la conversation appelle un envoi de la part de Thomas. */
   emailToPrepare: EmailIntent | null;
+  /** S26 I2 — `true` si le LLM a échoué (try/catch) et qu'on est retombé sur
+   *  l'objet vide. Le caller doit alors compter le chat en `LlmError`, pas en
+   *  `NotRelevant` (qui réfère à un `relevant: false` explicite du LLM). */
+  extractFailed?: boolean;
 }
 
 const PROJET_LEGENDE =
@@ -267,7 +295,7 @@ async function extractChat(
     console.warn(
       `[whatsapp-ingest] extraction "${chatName}" échouée : ${err instanceof Error ? err.message : String(err)}`,
     );
-    return empty;
+    return { ...empty, extractFailed: true };
   }
 }
 
@@ -348,6 +376,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     chatsSkippedGroup: 0,
     chatsSkippedAlreadyMatched: 0,
     chatsSkippedEmptySummary: 0,
+    chatsSkippedLlmError: 0,
     errors: 0,
   };
 
@@ -399,7 +428,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   for (const [, group] of byChat) {
     // S26 — Bug #2 : 1 ligne de log par chat à la fin de la boucle, pour
     // identifier précisément où chaque chat « tombe » dans le pipeline.
-    let cardOutcome: 'sent' | 'skip:group' | 'skip:matched' | 'skip:empty-summary' | 'skip:not-relevant' | 'error' = 'skip:not-relevant';
+    let cardOutcome: 'sent' | 'skip:group' | 'skip:matched' | 'skip:empty-summary' | 'skip:not-relevant' | 'skip:llm-error' | 'error' = 'skip:not-relevant';
     let chatRelevant = false;
     let chatEnrichedContact = false;
     let chatEnrichedByEmail = false;
@@ -416,6 +445,12 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
         contacts,
         matched ? contactDisplayName(matched) : null,
       );
+      // S26 I2 — Distinguer LLM échoué (exception) de `relevant: false` explicite.
+      if (ex.extractFailed) {
+        stats.chatsSkippedLlmError++;
+        cardOutcome = 'skip:llm-error';
+        continue;
+      }
       if (!ex.relevant) {
         stats.chatsSkippedNotRelevant++;
         cardOutcome = 'skip:not-relevant';
@@ -455,33 +490,43 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       // WhatsApp inconnu » (S24 soir, symétrie avec le no-match email).
       // Restreint aux DM (`<phone>@s.whatsapp.net`) — pas de carte pour les
       // groupes (pas d'expéditeur unique à transformer en fiche).
-      if (enrichedContact) {
-        stats.chatsSkippedAlreadyMatched++;
-        cardOutcome = 'skip:matched';
-      } else if (!group.chatId.endsWith('@s.whatsapp.net')) {
+      // S26 I1 — Ordre inversé : tester `isDM` AVANT `enrichedContact` pour
+      // qu'un chat groupe enrichi par email compte en `skip:group` (pas en
+      // `skip:matched`, qui fausserait le diag Bug #2).
+      const isDM = group.chatId.endsWith('@s.whatsapp.net');
+      if (!isDM) {
         stats.chatsSkippedGroup++;
         cardOutcome = 'skip:group';
+      } else if (enrichedContact) {
+        stats.chatsSkippedAlreadyMatched++;
+        cardOutcome = 'skip:matched';
       } else if (!ex.summary || ex.summary.trim().length === 0) {
         // Cas vu en S26 (potentiel) : LLM renvoie relevant=true mais summary=''
         // → carte muette inutile. On compte pour audit, on n'envoie pas.
         stats.chatsSkippedEmptySummary++;
         cardOutcome = 'skip:empty-summary';
       }
-      if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net') && ex.summary && ex.summary.trim().length > 0) {
+      if (isDM && !enrichedContact && ex.summary && ex.summary.trim().length > 0) {
         try {
           // S24 nuit — détection homonyme via chatName (array jusqu'à 3).
+          // S26 I3 — tracker le `total` réel avant `slice(0,3)` pour que la
+          // carte puisse afficher « X homonymes (top 3 affichés) » au lieu
+          // du chiffre tronqué silencieusement.
           let existingMatchHints: WhatsappNoMatchPending['existingMatchHints'] = null;
+          let existingMatchHintsTotal = 0;
           if (group.name && group.name.trim().length >= 3) {
             try {
-              const homonyms = matchContacts(contacts, group.name).slice(0, 3);
-              existingMatchHints = homonyms
-                .filter((m) => m.folderPath && m.filename)
-                .map((m) => ({
-                  displayName: `${m.prenom} ${m.nom}`.trim(),
-                  knownPhones: [m.telephone].filter((p): p is string => Boolean(p)),
-                  folderPath: m.folderPath!,
-                  filename: m.filename!,
-                }));
+              const allHomonyms = matchContacts(contacts, group.name).filter(
+                (m) => m.folderPath && m.filename,
+              );
+              existingMatchHintsTotal = allHomonyms.length;
+              const homonyms = allHomonyms.slice(0, 3);
+              existingMatchHints = homonyms.map((m) => ({
+                displayName: `${m.prenom} ${m.nom}`.trim(),
+                knownPhones: [m.telephone].filter((p): p is string => Boolean(p)),
+                folderPath: m.folderPath!,
+                filename: m.filename!,
+              }));
               if (existingMatchHints.length === 0) existingMatchHints = null;
             } catch (homErr) {
               console.warn(
@@ -501,6 +546,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             cardMessageId: null,
             createdAt: new Date().toISOString(),
             existingMatchHints,
+            existingMatchHintsTotal: existingMatchHintsTotal || undefined,
           };
           // S24 nuit (post-audit) — ordre corrigé : envoyer D'ABORD, sauver
           // UNE FOIS avec messageId. Élimine la race save → send → re-save
