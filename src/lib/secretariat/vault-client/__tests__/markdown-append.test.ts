@@ -5,7 +5,12 @@
  * ne doivent pas bouger, la nouvelle section est insérée AVANT les existantes.
  */
 import { describe, it, expect } from 'vitest';
-import { appendToSection, hasSection, extractSection } from '../markdown-append';
+import {
+  appendToSection,
+  hasSection,
+  extractSection,
+  insertH2SectionBefore,
+} from '../markdown-append';
 import { parseObsidianFile } from '../frontmatter';
 
 // ============================================================
@@ -219,5 +224,130 @@ describe('extractSection', () => {
     const content = extractSection(FIXTURE_WITH_HISTORIQUE, 'Notes');
     expect(content).toContain('Paiement par virement bancaire.');
     expect(content).not.toContain('### 2026-05-06');
+  });
+});
+
+// ============================================================
+// S25.1 — insertH2SectionBefore (alignement templates vault)
+// ============================================================
+
+describe('insertH2SectionBefore', () => {
+  const FIXTURE_FICHE_CONTACT = `---
+type: contact
+categorie: pro
+societe: ACME
+---
+
+# Marc Gernot
+
+## Qui c'est
+
+Notaire rencontré via Maxime.
+
+## Synthèse
+
+- **Rôle** : Notaire
+- **Société** : ACME
+
+## Historique
+
+### 2026-05-28 — Fiche créée
+Première interaction.
+`;
+
+  it('insère une nouvelle section H2 juste avant l\'ancrage si absente', () => {
+    const result = insertH2SectionBefore(
+      FIXTURE_FICHE_CONTACT,
+      'Statut courant',
+      'Synthèse',
+      '_À renseigner._',
+    );
+    expect(result).toContain('## Statut courant');
+    // Ordre : Qui c'est → Statut courant → Synthèse
+    const idxQui = result.indexOf("## Qui c'est");
+    const idxStatut = result.indexOf('## Statut courant');
+    const idxSynth = result.indexOf('## Synthèse');
+    expect(idxQui).toBeGreaterThan(-1);
+    expect(idxStatut).toBeGreaterThan(idxQui);
+    expect(idxSynth).toBeGreaterThan(idxStatut);
+    // Body de la nouvelle section présent
+    expect(result).toContain('_À renseigner._');
+  });
+
+  it('idempotence : no-op si la section existe déjà (même avec contenu)', () => {
+    const ficheAvecStatut = `---
+type: contact
+---
+
+# X
+
+## Qui c'est
+
+Foo.
+
+## Statut courant
+
+Thomas a écrit ici son propre contenu.
+Plusieurs lignes.
+
+## Synthèse
+
+Bar.
+`;
+    const result = insertH2SectionBefore(
+      ficheAvecStatut,
+      'Statut courant',
+      'Synthèse',
+      '_À renseigner._',
+    );
+    expect(result).toBe(ficheAvecStatut);
+    expect(result).toContain('Thomas a écrit ici son propre contenu.');
+    expect(result).not.toContain('_À renseigner._');
+  });
+
+  it('fail-safe : ne fait rien si l\'ancrage est absent', () => {
+    const ficheSansAncre = `---
+type: contact
+---
+
+# X
+
+## Qui c'est
+
+Foo.
+
+## Historique
+
+Bar.
+`;
+    const result = insertH2SectionBefore(
+      ficheSansAncre,
+      'Statut courant',
+      'Synthèse',
+      '_À renseigner._',
+    );
+    // Pas de Synthèse → ne fait rien (ne pollue pas la fiche).
+    expect(result).toBe(ficheSansAncre);
+    expect(result).not.toContain('## Statut courant');
+  });
+
+  it('frontmatter et autres sections intacts', () => {
+    const before = FIXTURE_FICHE_CONTACT;
+    const result = insertH2SectionBefore(
+      before,
+      'Statut courant',
+      'Synthèse',
+      '_À renseigner._',
+    );
+    // Frontmatter inchangé
+    expect(result).toContain('type: contact');
+    expect(result).toContain('categorie: pro');
+    expect(result).toContain('societe: ACME');
+    // Section Qui c'est intacte
+    expect(result).toContain('Notaire rencontré via Maxime.');
+    // Section Synthèse intacte
+    expect(result).toContain('- **Rôle** : Notaire');
+    // Section Historique intacte
+    expect(result).toContain('### 2026-05-28 — Fiche créée');
   });
 });

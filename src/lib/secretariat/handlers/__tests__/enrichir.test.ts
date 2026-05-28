@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockGetVaultContacts = vi.fn();
 const mockEnrichContact = vi.fn();
 const mockUpdateFrontmatter = vi.fn();
+const mockReadFile = vi.fn();
+const mockWriteFile = vi.fn();
 const mockSendTelegram = vi.fn();
 
 vi.mock('../../vault-contacts', () => ({
@@ -15,9 +17,16 @@ vi.mock('../../contact-enrich', async (importOriginal) => {
     enrichContact: (...a: unknown[]) => mockEnrichContact(...a),
   };
 });
-vi.mock('../../vault-client', () => ({
-  updateFrontmatter: (...a: unknown[]) => mockUpdateFrontmatter(...a),
-}));
+vi.mock('../../vault-client', async (importOriginal) => {
+  // On garde le vrai `insertH2SectionBefore` (fonction pure) ; on mock seulement les I/O Drive.
+  const actual = await importOriginal<typeof import('../../vault-client')>();
+  return {
+    ...actual,
+    updateFrontmatter: (...a: unknown[]) => mockUpdateFrontmatter(...a),
+    readFile: (...a: unknown[]) => mockReadFile(...a),
+    writeFile: (...a: unknown[]) => mockWriteFile(...a),
+  };
+});
 vi.mock('../../telegram', () => ({
   sendTelegramMessage: (...a: unknown[]) => mockSendTelegram(...a),
 }));
@@ -42,10 +51,43 @@ function contact(over: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+// Fiche par défaut : contient déjà `## Synthèse` (ancrage) et `## Statut courant`
+// → la logique d'insertion est idempotente (no-op).
+const FICHE_AVEC_STATUT = `---
+type: contact
+categorie: pro
+---
+
+# Marc Gernot
+
+## Statut courant
+
+_À renseigner._
+
+## Synthèse
+
+- **Société** : Gernot Capital
+`;
+
+// Fiche sans `## Statut courant` mais avec `## Synthèse` → insertion attendue.
+const FICHE_SANS_STATUT = `---
+type: contact
+categorie: pro
+---
+
+# Marc Gernot
+
+## Synthèse
+
+- **Société** : Gernot Capital
+`;
+
 beforeEach(() => {
   mockGetVaultContacts.mockReset();
   mockEnrichContact.mockReset();
   mockUpdateFrontmatter.mockReset();
+  mockReadFile.mockReset();
+  mockWriteFile.mockReset();
   mockSendTelegram.mockReset();
   mockGetVaultContacts.mockResolvedValue([contact()]);
   mockEnrichContact.mockResolvedValue({
@@ -56,6 +98,10 @@ beforeEach(() => {
     scanned: 3,
   });
   mockUpdateFrontmatter.mockResolvedValue(true);
+  // Défaut : fiche déjà à jour → readFile renvoie une fiche qui a déjà `## Statut courant`
+  // → l'insertion est no-op (writeFile ne doit pas être appelé).
+  mockReadFile.mockResolvedValue({ success: true, content: FICHE_AVEC_STATUT });
+  mockWriteFile.mockResolvedValue({ success: true });
   mockSendTelegram.mockResolvedValue({ success: true });
 });
 
@@ -128,5 +174,76 @@ describe('handleEnrichirCommand', () => {
     await handleEnrichirCommand(CHAT, 'Marc Gernot');
     expect(mockUpdateFrontmatter).not.toHaveBeenCalled();
     expect(mockSendTelegram.mock.calls.at(-1)![1]).toContain('rien à enrichir');
+  });
+
+  // ============================================================
+  // S25.1 — insertion `## Statut courant` (alignement template v3)
+  // ============================================================
+
+  it('S25.1 — fiche SANS ## Statut courant → insertion + writeFile + message dédié', async () => {
+    mockReadFile.mockResolvedValue({ success: true, content: FICHE_SANS_STATUT });
+    await handleEnrichirCommand(CHAT, 'Marc Gernot');
+    expect(mockWriteFile).toHaveBeenCalledOnce();
+    const [, , patched] = mockWriteFile.mock.calls[0]! as [string, string, string];
+    expect(patched).toContain('## Statut courant');
+    // L'ancrage Synthèse vient APRÈS dans le contenu patché.
+    expect(patched.indexOf('## Statut courant')).toBeLessThan(
+      patched.indexOf('## Synthèse'),
+    );
+    const reply = mockSendTelegram.mock.calls.at(-1)![1] as string;
+    expect(reply).toContain('« Statut courant » ajoutée');
+  });
+
+  it('S25.1 — fiche AVEC ## Statut courant → no-op (pas de writeFile, pas de message)', async () => {
+    // Le défaut beforeEach renvoie déjà FICHE_AVEC_STATUT.
+    await handleEnrichirCommand(CHAT, 'Marc Gernot');
+    expect(mockWriteFile).not.toHaveBeenCalled();
+    const reply = mockSendTelegram.mock.calls.at(-1)![1] as string;
+    expect(reply).not.toContain('« Statut courant » ajoutée');
+  });
+
+  it('S25.1 — fiche AVEC ## Statut courant + contenu Thomas → JAMAIS écrasé', async () => {
+    const ficheRemplie = `---
+type: contact
+---
+
+# X
+
+## Statut courant
+
+- Relance prévue mardi
+- Devis envoyé le 12/05
+
+## Synthèse
+
+Bla.
+`;
+    mockReadFile.mockResolvedValue({ success: true, content: ficheRemplie });
+    await handleEnrichirCommand(CHAT, 'Marc Gernot');
+    expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('S25.1 — fiche SANS ancrage ## Synthèse → fail-safe (pas d\'écriture, pas de plantage)', async () => {
+    const ficheCorrompue = `---
+type: contact
+---
+
+# X
+
+## Qui c'est
+
+Foo.
+`;
+    mockReadFile.mockResolvedValue({ success: true, content: ficheCorrompue });
+    await handleEnrichirCommand(CHAT, 'Marc Gernot');
+    expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('S25.1 — readFile en erreur → ne plante pas, continue le flow normal', async () => {
+    mockReadFile.mockResolvedValue({ success: false, error: 'Drive KO' });
+    await handleEnrichirCommand(CHAT, 'Marc Gernot');
+    expect(mockWriteFile).not.toHaveBeenCalled();
+    // Le récap Telegram doit quand même partir (le frontmatter a été mis à jour).
+    expect(mockSendTelegram).toHaveBeenCalled();
   });
 });

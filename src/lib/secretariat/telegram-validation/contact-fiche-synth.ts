@@ -35,6 +35,11 @@ export interface ContactFicheData {
   role?: string;
   /** Société / organisation. */
   societe?: string;
+  /** Sous-catégorie pro (S25.1, alignement template `Contact pro.md` v3). Valeurs
+   * conseillées : juridique, comptable, fiscaliste, banquier, notaire,
+   * apporteur-affaires, conseil, prestataire, partenaire, client, ex-collegue, autre.
+   * Laissé vide en V1 (Thomas renseigne manuellement) — déduction LLM/domain reportée. */
+  sousCategorie?: string;
   /** Sujets / dossiers récurrents abordés dans les échanges. */
   sujets?: string[];
   /** Numéro(s) de téléphone repéré(s). */
@@ -175,10 +180,12 @@ export function renderEnrichedFiche(
     '---',
     'type: contact',
     `categorie: ${ctx.type}`,
+    `sous_categorie: ${sanitizeLine(data.sousCategorie) ?? ''}`,
     `societe: ${sanitizeLine(data.societe) ?? ''}`,
     `role: ${sanitizeLine(data.role) ?? ''}`,
     `email: ${ctx.senderEmail}`,
     `telephone: ${sanitizeLine(data.telephone) ?? ''}`,
+    `langue: ${sanitizeLine(data.langue) ?? 'fr'}`,
     'rencontre_via: ',
     `date_premier_contact: ${ctx.today}`,
     `date_derniere_interaction: ${ctx.today}`,
@@ -195,6 +202,11 @@ export function renderEnrichedFiche(
   if (ctx.userContext && ctx.userContext.trim().length > 0) {
     lines.push('## Qui c\'est', '', ctx.userContext.trim(), '');
   }
+
+  // S25.1 — section vide à compléter ; alignée sur template vault `Contact pro.md` v3.
+  // Décrit où en est la relation (2-4 bullets max). Renseignée par l'opérateur humain ;
+  // Anya n'écrit pas dedans à ce stade (red-line code-vs-template documentée S21 #118).
+  lines.push('## Statut courant', '', '_À renseigner._', '');
 
   lines.push('## Synthèse', '');
 
