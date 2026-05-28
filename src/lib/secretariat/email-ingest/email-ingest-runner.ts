@@ -31,6 +31,8 @@ import { isLikelySpamByHeuristic } from './pre-filter';
 import { loadKnownContacts } from './contacts-cache';
 import { composeDraft } from './draft-composer';
 import { isDirectlyAddressed } from './addressee';
+import { getVaultContacts } from '../vault-contacts';
+import { matchContacts } from '../handlers/enrichir';
 import {
   handleLocataire,
   handleAClassifier,
@@ -440,16 +442,52 @@ async function processOneEmail(
 
   // (d) CONTACT INCONNU → carte de création de contact (la SEULE carte conservée).
   if (noMatchAction) {
+    const senderEmail = noMatchAction.payload['emailFrom'] as string;
+    const nameFrom = (noMatchAction.payload['nameFrom'] as string | null) ?? null;
+
+    // S24 nuit — Détection homonymie : si l'email entrant ne match aucune fiche
+    // mais qu'une fiche au même nom existe (et son email principal est DIFFÉRENT
+    // du sender), c'est probablement la même personne avec un email secondaire
+    // pas encore enregistré (cas Maxime Lemoine : edhec / versi). On annote la
+    // carte d'un warning explicite — Thomas décide.
+    let existingMatchHint: NoMatchPending['existingMatchHint'] = null;
+    if (nameFrom && nameFrom.trim().length >= 3) {
+      try {
+        const contacts = await getVaultContacts();
+        const matches = matchContacts(contacts, nameFrom).filter(
+          (c) => (c.email ?? '').toLowerCase() !== senderEmail.toLowerCase(),
+        );
+        if (matches.length >= 1) {
+          const m = matches[0]!;
+          // Le bouton « Lier » a besoin du chemin de la fiche cible.
+          if (m.folderPath && m.filename) {
+            existingMatchHint = {
+              displayName: `${m.prenom} ${m.nom}`.trim(),
+              knownEmails: [m.email].filter((e): e is string => Boolean(e)),
+              folderPath: m.folderPath,
+              filename: m.filename,
+            };
+          }
+        }
+      } catch (err) {
+        // Pas d'hint plutôt qu'un crash — best-effort, jamais bloquant.
+        console.warn(
+          `[email-ingest] détection homonymie KO pour ${senderEmail} : ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     const noMatch: NoMatchPending = {
       id: randomUUID(),
       // Plus de pending de validation parent : la carte no-match est autonome.
       parentPendingId: noMatchAction.payload['emailMessageId'] as string,
-      emailFrom: noMatchAction.payload['emailFrom'] as string,
-      nameFrom: (noMatchAction.payload['nameFrom'] as string | null) ?? null,
+      emailFrom: senderEmail,
+      nameFrom,
       defaultType: (noMatchAction.payload['defaultType'] as NoMatchPending['defaultType']) ?? 'autres',
       emailMessageId: noMatchAction.payload['emailMessageId'] as string,
       emailThreadRef: noMatchAction.payload['emailThreadRef'] as string,
       createdAt: new Date().toISOString(),
+      existingMatchHint,
     };
 
     await saveNoMatch(noMatch);

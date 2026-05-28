@@ -1293,9 +1293,12 @@ export async function POST(request: Request): Promise<Response> {
           if (emailNoMatch) {
             const ok = await updateNoMatchUserContext(emailNoMatch.id, userContext);
             if (ok) {
+              const who = emailNoMatch.nameFrom
+                ? `${emailNoMatch.nameFrom} (${emailNoMatch.emailFrom})`
+                : emailNoMatch.emailFrom;
               await sendTelegramMessage(
                 chatId,
-                `\u{1F4DD} Contexte noté pour ${emailNoMatch.emailFrom}. Clique sur un type quand tu veux.`,
+                `\u{1F4DD} Contexte noté pour ${who}. Clique sur un type de cette carte quand tu veux.`,
               );
               return Response.json({ ok: true });
             }
@@ -1306,7 +1309,7 @@ export async function POST(request: Request): Promise<Response> {
             if (ok) {
               await sendTelegramMessage(
                 chatId,
-                `\u{1F4DD} Contexte noté pour « ${waNoMatch.chatName} ». Clique sur un type quand tu veux.`,
+                `\u{1F4DD} Contexte noté pour « ${waNoMatch.chatName} ». Clique sur un type de cette carte quand tu veux.`,
               );
               return Response.json({ ok: true });
             }

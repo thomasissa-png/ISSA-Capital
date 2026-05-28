@@ -276,6 +276,99 @@ export function upsertFrontmatterField(
 }
 
 /**
+ * Ajoute une entrée à une LISTE YAML du frontmatter (pattern `clé:\n  - val\n`).
+ * Si la liste n'existe pas, on la crée juste après une clé scalaire « ancre »
+ * (par défaut le champ ciblé sans valeur — ex `alias_email:` vide, ou après
+ * `email:` pour alias_email). Si la valeur est déjà dans la liste (match
+ * insensible casse), on no-op. Idempotent.
+ *
+ * S24 nuit — utilisé par le bouton « 🔗 Lier à <contact> » pour ajouter un
+ * email/téléphone secondaire à une fiche existante au même nom.
+ *
+ * @param content Contenu Markdown complet (frontmatter + body).
+ * @param listKey Clé de la liste (ex `alias_email`).
+ * @param newValue Valeur à ajouter (ex `maxime@versi.fr`).
+ * @param anchorKey Clé après laquelle insérer la liste si elle n'existe pas
+ *                  (ex `email`). Doit exister dans le frontmatter.
+ * @returns Contenu modifié, ou le contenu inchangé si frontmatter absent.
+ */
+export function addToFrontmatterList(
+  content: string,
+  listKey: string,
+  newValue: string,
+  anchorKey: string,
+): string {
+  const match = FRONTMATTER_RE.exec(content);
+  if (!match || match[1] === undefined) return content;
+
+  const fmRaw = match[1];
+  const lines = fmRaw.split('\n');
+  const normalizedNew = newValue.trim().toLowerCase();
+
+  // Localiser la clé liste (`listKey:`) et collecter ses entrées contiguës.
+  let listKeyIdx = -1;
+  let lastListEntryIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i]!;
+    const colonIdx = ln.indexOf(':');
+    if (colonIdx !== -1 && ln.slice(0, colonIdx).trim() === listKey) {
+      listKeyIdx = i;
+      // Parcourir les entrées suivantes en `  - val`.
+      let j = i + 1;
+      while (j < lines.length && /^\s+-\s+/.test(lines[j]!)) {
+        const entryVal = lines[j]!.replace(/^\s+-\s+/, '').trim().toLowerCase();
+        if (entryVal === normalizedNew) return content; // déjà présent : no-op
+        lastListEntryIdx = j;
+        j++;
+      }
+      break;
+    }
+  }
+
+  if (listKeyIdx === -1) {
+    // Pas de clé liste → on la crée après l'anchor.
+    let anchorIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i]!;
+      const colonIdx = ln.indexOf(':');
+      if (colonIdx !== -1 && ln.slice(0, colonIdx).trim() === anchorKey) {
+        anchorIdx = i;
+        break;
+      }
+    }
+    if (anchorIdx === -1) return content; // pas d'anchor → on ne crée pas
+    const insert = [`${listKey}:`, `  - ${newValue}`];
+    const newLines = [...lines.slice(0, anchorIdx + 1), ...insert, ...lines.slice(anchorIdx + 1)];
+    return rebuildContentWithFrontmatter(content, match, newLines.join('\n'));
+  }
+
+  // Liste existante : append une entrée après la dernière (ou après la clé si vide).
+  const insertAfter = lastListEntryIdx === -1 ? listKeyIdx : lastListEntryIdx;
+  const newLines = [
+    ...lines.slice(0, insertAfter + 1),
+    `  - ${newValue}`,
+    ...lines.slice(insertAfter + 1),
+  ];
+  return rebuildContentWithFrontmatter(content, match, newLines.join('\n'));
+}
+
+/** Reconstruit le content complet avec un nouveau bloc frontmatter texte. */
+function rebuildContentWithFrontmatter(
+  original: string,
+  match: RegExpExecArray,
+  newFm: string,
+): string {
+  const fmRaw = match[1]!;
+  const before = original.slice(0, match.index);
+  const fmDelimStart = original.slice(match.index, match.index + match[0].indexOf(fmRaw));
+  const fmDelimEnd = original.slice(
+    match.index + match[0].indexOf(fmRaw) + fmRaw.length,
+    match.index + match[0].length,
+  );
+  return before + fmDelimStart + newFm + fmDelimEnd + original.slice(match.index + match[0].length);
+}
+
+/**
  * Formate une valeur pour l'insertion dans le YAML.
  */
 function formatYamlValue(value: string | number | boolean | null): string {

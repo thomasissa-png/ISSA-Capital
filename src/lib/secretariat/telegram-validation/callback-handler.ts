@@ -38,7 +38,9 @@ import {
   appendToHistorique,
   updateFrontmatter,
   createVaultFile,
+  addToFrontmatterList,
 } from '../vault-client';
+import { readFile, writeFile } from '../vault-client/obsidian-file';
 import { addTaskToTickTick, mapTodoPriority } from '../ticktick/inbox-task';
 import { markProcessed } from '../gmail-source/gmail-source';
 import { writeAuditLog } from '../vault-client/audit-log';
@@ -405,7 +407,7 @@ const VALID_CONTACT_TYPES: readonly ContactType[] = ['pro', 'famille', 'amis', '
  * Format attendu : "email_nomatch:<type>:<noMatchId>"
  */
 function parseNoMatchCallbackData(data: string): {
-  type: ContactType | 'skip';
+  type: ContactType | 'skip' | 'link';
   noMatchId: string;
 } | null {
   if (!data.startsWith(NOMATCH_CALLBACK_PREFIX)) return null;
@@ -417,10 +419,14 @@ function parseNoMatchCallbackData(data: string): {
   const type = withoutPrefix.slice(0, colonIdx);
   const noMatchId = withoutPrefix.slice(colonIdx + 1);
 
-  if (type !== 'skip' && !(VALID_CONTACT_TYPES as readonly string[]).includes(type)) return null;
+  if (
+    type !== 'skip' &&
+    type !== 'link' &&
+    !(VALID_CONTACT_TYPES as readonly string[]).includes(type)
+  ) return null;
   if (!noMatchId) return null;
 
-  return { type: type as ContactType | 'skip', noMatchId };
+  return { type: type as ContactType | 'skip' | 'link', noMatchId };
 }
 
 /**
@@ -737,6 +743,8 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
 
     if (type === 'skip') {
       await handleNoMatchSkip(noMatch, callback);
+    } else if (type === 'link') {
+      await handleNoMatchLink(noMatch, callback);
     } else {
       await handleNoMatchCallback(noMatch, type, callback);
     }
@@ -747,6 +755,91 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
     await sendSimpleMessage(
       callback.chat_id,
       `\u{274C} Erreur lors de la création de fiche : ${err instanceof Error ? err.message : 'inconnue'}`,
+    );
+  }
+}
+
+// ============================================================
+// No-match LINK (S24 nuit — ajoute l'email à une fiche existante au même nom)
+// ============================================================
+
+async function handleNoMatchLink(
+  noMatch: NoMatchPending,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHint;
+  if (!hint) {
+    await sendSimpleMessage(
+      callback.chat_id,
+      '\u{26A0}\u{FE0F} Aucune fiche cible mémorisée pour le lien — impossible.',
+    );
+    return;
+  }
+
+  try {
+    // Lire la fiche existante.
+    const read = await readFile(hint.folderPath, hint.filename);
+    if (!read.success || !read.content) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        `\u{274C} Lecture fiche échouée (${hint.folderPath}/${hint.filename}).`,
+      );
+      return;
+    }
+
+    // Ajouter l'email à `alias_email` (créée après `email:` si absente,
+    // idempotent si déjà présente).
+    const newContent = addToFrontmatterList(
+      read.content,
+      'alias_email',
+      noMatch.emailFrom,
+      'email',
+    );
+
+    if (newContent === read.content) {
+      // Email déjà présent → on supprime juste le pending et on note.
+      await deleteNoMatch(noMatch.id);
+      const { text: original } = buildNoMatchCard(noMatch);
+      await editMessageText(
+        callback.chat_id,
+        callback.message_id,
+        `${original}\n\n\u{1F517} ${noMatch.emailFrom} déjà présent dans la fiche ${hint.displayName} (rien à faire) — ${currentTimeHHMM()}.`,
+      );
+      return;
+    }
+
+    const writeOk = await writeFile(hint.folderPath, hint.filename, newContent);
+    if (!writeOk.success) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        `\u{274C} Échec écriture fiche : ${writeOk.error ?? 'inconnue'}`,
+      );
+      return;
+    }
+
+    await auditAction(
+      'nomatch_link_email',
+      'pro',
+      noMatch.id,
+      `${hint.folderPath}/${hint.filename}`,
+      'ok',
+    );
+    await deleteNoMatch(noMatch.id);
+
+    const { text: original } = buildNoMatchCard(noMatch);
+    const time = currentTimeHHMM();
+    await editMessageText(
+      callback.chat_id,
+      callback.message_id,
+      `${original}\n\n\u{1F517} ${noMatch.emailFrom} ajouté en alias_email à ${hint.displayName} à ${time}.`,
+    );
+  } catch (err) {
+    console.warn(
+      `[callback-handler] handleNoMatchLink erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    await sendSimpleMessage(
+      callback.chat_id,
+      `\u{274C} Erreur lors du lien : ${err instanceof Error ? err.message : 'inconnue'}`,
     );
   }
 }
@@ -897,6 +990,83 @@ async function handleWhatsappNoMatchSkip(
   );
 }
 
+async function handleWhatsappNoMatchLink(
+  noMatch: WhatsappNoMatchPending,
+  callback: TelegramCallback,
+): Promise<void> {
+  const hint = noMatch.existingMatchHint;
+  if (!hint || !noMatch.phone) {
+    await sendSimpleMessage(
+      callback.chat_id,
+      '\u{26A0}\u{FE0F} Lien impossible (fiche cible ou téléphone manquant).',
+    );
+    return;
+  }
+
+  try {
+    const read = await readFile(hint.folderPath, hint.filename);
+    if (!read.success || !read.content) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        `\u{274C} Lecture fiche échouée (${hint.folderPath}/${hint.filename}).`,
+      );
+      return;
+    }
+
+    const newContent = addToFrontmatterList(
+      read.content,
+      'alias_telephone',
+      noMatch.phone,
+      'telephone',
+    );
+
+    if (newContent === read.content) {
+      await deleteWhatsappNoMatch(noMatch.id);
+      const { text: original } = buildWhatsappNoMatchCard(noMatch);
+      await editMessageText(
+        callback.chat_id,
+        callback.message_id,
+        `${original}\n\n\u{1F517} ${noMatch.phone} déjà présent dans ${hint.displayName} (rien à faire) — ${currentTimeHHMM()}.`,
+      );
+      return;
+    }
+
+    const writeOk = await writeFile(hint.folderPath, hint.filename, newContent);
+    if (!writeOk.success) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        `\u{274C} Échec écriture fiche : ${writeOk.error ?? 'inconnue'}`,
+      );
+      return;
+    }
+
+    await auditAction(
+      'whatsapp_nomatch_link_phone',
+      'pro',
+      noMatch.id,
+      `${hint.folderPath}/${hint.filename}`,
+      'ok',
+    );
+    await deleteWhatsappNoMatch(noMatch.id);
+
+    const { text: original } = buildWhatsappNoMatchCard(noMatch);
+    const time = currentTimeHHMM();
+    await editMessageText(
+      callback.chat_id,
+      callback.message_id,
+      `${original}\n\n\u{1F517} ${noMatch.phone} ajouté en alias_telephone à ${hint.displayName} à ${time}.`,
+    );
+  } catch (err) {
+    console.warn(
+      `[callback-handler] handleWhatsappNoMatchLink erreur : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    await sendSimpleMessage(
+      callback.chat_id,
+      `\u{274C} Erreur lien WhatsApp : ${err instanceof Error ? err.message : 'inconnue'}`,
+    );
+  }
+}
+
 async function handleWhatsappNoMatchDispatch(callback: TelegramCallback): Promise<void> {
   const parsed = parseWhatsappNoMatchCallback(callback.data);
   if (!parsed) {
@@ -916,6 +1086,8 @@ async function handleWhatsappNoMatchDispatch(callback: TelegramCallback): Promis
     }
     if (action === 'skip') {
       await handleWhatsappNoMatchSkip(noMatch, callback);
+    } else if (action === 'link') {
+      await handleWhatsappNoMatchLink(noMatch, callback);
     } else {
       await handleWhatsappNoMatchCallback(noMatch, action, callback);
     }

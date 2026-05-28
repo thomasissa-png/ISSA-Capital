@@ -326,7 +326,13 @@ export async function createVaultFile(
 // ============================================================
 
 export { paths };
-export { parseObsidianFile, patchFrontmatterField, upsertFrontmatterField, extractEmails } from './frontmatter';
+export {
+  parseObsidianFile,
+  patchFrontmatterField,
+  upsertFrontmatterField,
+  addToFrontmatterList,
+  extractEmails,
+} from './frontmatter';
 export { computeRelationStats } from './relation-stats';
 export { appendToSection, hasSection, extractSection } from './markdown-append';
 export { withWriteLock, getActiveWriteLockCount, clearWriteLocks } from './write-lock';

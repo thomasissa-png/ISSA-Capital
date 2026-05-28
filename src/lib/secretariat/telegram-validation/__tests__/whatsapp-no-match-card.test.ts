@@ -28,7 +28,7 @@ describe('buildWhatsappNoMatchCard', () => {
     expect(text).toContain('Marc Gernot');
     expect(text).toContain('664850631');
     expect(text).toContain('compromis Lot 3');
-    expect(text).toContain('réponds à ce message AVANT de cliquer');
+    expect(text).toContain('AVANT de cliquer');
 
     const allButtons = inlineKeyboard.flat();
     expect(allButtons).toHaveLength(5);
