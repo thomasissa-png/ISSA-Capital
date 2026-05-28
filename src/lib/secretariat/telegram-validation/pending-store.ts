@@ -654,6 +654,23 @@ export async function updateNoMatchUserContext(
 }
 
 /**
+ * Liste tous les NoMatchPending actifs (non expirés), triés du plus récent
+ * au plus ancien. Utilisé par la commande `/pending` (S24 nuit).
+ */
+export async function listActiveNoMatch(): Promise<NoMatchPending[]> {
+  return withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return [];
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return [];
+    const now = Date.now();
+    return Object.values(result.store.pendings)
+      .filter((p) => now - new Date(p.createdAt).getTime() <= PENDING_TTL_MS)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  });
+}
+
+/**
  * Supprime un NoMatchPending du store.
  */
 export async function deleteNoMatch(id: string): Promise<void> {
@@ -925,6 +942,22 @@ export async function updateWhatsappNoMatchUserContext(
 }
 
 /** Supprime un WhatsappNoMatchPending du store. */
+/**
+ * Liste tous les WhatsappNoMatchPending actifs (non expirés). Pour `/pending`.
+ */
+export async function listActiveWhatsappNoMatch(): Promise<WhatsappNoMatchPending[]> {
+  return withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return [];
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return [];
+    const now = Date.now();
+    return Object.values(result.store.pendings)
+      .filter((p) => now - new Date(p.createdAt).getTime() <= PENDING_TTL_MS)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  });
+}
+
 export async function deleteWhatsappNoMatch(id: string): Promise<void> {
   await withWaNoMatchStoreLock(async () => {
     const accessToken = await getAccessToken();

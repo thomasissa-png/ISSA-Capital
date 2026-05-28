@@ -28,11 +28,13 @@ export {
   purgeExpiredNoMatch,
   findNoMatchByCardMessageId,
   updateNoMatchUserContext,
+  listActiveNoMatch,
   saveWhatsappNoMatch,
   getWhatsappNoMatch,
   deleteWhatsappNoMatch,
   findWhatsappNoMatchByCardMessageId,
   updateWhatsappNoMatchUserContext,
+  listActiveWhatsappNoMatch,
 } from './pending-store';
 
 export {

@@ -113,6 +113,8 @@ import {
   updateNoMatchUserContext,
   findWhatsappNoMatchByCardMessageId,
   updateWhatsappNoMatchUserContext,
+  listActiveNoMatch,
+  listActiveWhatsappNoMatch,
 } from '@/lib/secretariat/telegram-validation';
 import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
 import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
@@ -905,6 +907,63 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
       chatId,
       'Anya prête. Mode inbox actif — envoie photos, notes ou documents.\nPour un compte rendu, tape /cr ou envoie un long message.',
     );
+    return Response.json({ ok: true });
+  }
+
+  // /pending — liste les cartes no-match actives (audit S24 nuit).
+  if (normalizedText === '/pending') {
+    try {
+      const [emailPendings, waPendings] = await Promise.all([
+        listActiveNoMatch(),
+        listActiveWhatsappNoMatch(),
+      ]);
+      const total = emailPendings.length + waPendings.length;
+      if (total === 0) {
+        await sendTelegramMessage(chatId, '\u{2705} Aucune carte no-match en attente.');
+        return Response.json({ ok: true });
+      }
+      const lines: string[] = [`\u{1F4CC} ${total} carte(s) no-match en attente :`, ''];
+      const now = Date.now();
+      const fmtAge = (iso: string): string => {
+        const ms = now - new Date(iso).getTime();
+        const h = Math.floor(ms / 3_600_000);
+        if (h < 1) return 'il y a < 1h';
+        if (h < 24) return `il y a ${h}h`;
+        return `il y a ${Math.floor(h / 24)}j`;
+      };
+      for (const p of emailPendings) {
+        const who = p.nameFrom ? `${p.nameFrom} <${p.emailFrom}>` : p.emailFrom;
+        lines.push(`📧 Email — ${who} (${fmtAge(p.createdAt)})`);
+        const hints = p.existingMatchHints ?? [];
+        if (hints.length === 1) {
+          lines.push(`   ⚠️ Homonyme : ${hints[0]!.displayName}`);
+        } else if (hints.length > 1) {
+          lines.push(`   ⚠️ ${hints.length} homonymes`);
+        }
+      }
+      for (const p of waPendings) {
+        lines.push(
+          `💬 WhatsApp — ${p.chatName}${p.phone ? ` (${p.phone})` : ''} (${fmtAge(p.createdAt)})`,
+        );
+        const hints = p.existingMatchHints ?? [];
+        if (hints.length === 1) {
+          lines.push(`   ⚠️ Homonyme : ${hints[0]!.displayName}`);
+        } else if (hints.length > 1) {
+          lines.push(`   ⚠️ ${hints.length} homonymes`);
+        }
+      }
+      lines.push('');
+      lines.push(
+        '_Remonte le fil Telegram pour retrouver chaque carte et cliquer un type (ou Lier)._',
+      );
+      lines.push('_TTL pending : 7 jours (R3)._');
+      await sendTelegramMessage(chatId, lines.join('\n'));
+    } catch (err) {
+      console.warn(
+        `[/pending] erreur : ${err instanceof Error ? err.message : String(err)}`,
+      );
+      await sendTelegramMessage(chatId, `\u{274C} Erreur lecture pendings : ${err instanceof Error ? err.message : 'inconnue'}`);
+    }
     return Response.json({ ok: true });
   }
 
