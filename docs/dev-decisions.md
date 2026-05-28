@@ -1359,3 +1359,71 @@ tsc 0 erreur, next lint 0 warning, next build OK, vitest 2016/2016 (0 régressio
 ### Fichiers
 - Modifiés : `gmail-source/types.ts`, `gmail-source/gmail-source.ts` (`hasReplyFromMe`, expose threadId/messageIdHeader), `gmail-source/gmail-client.ts` (`getThreadMessages`), `email-ingest/draft-composer.ts` (threading + garde corps-vide + maxTokens), `email-ingest/email-ingest-runner.ts` (restructuration). Tests adaptés : `email-ingest-runner.test.ts`, `draft-composer.test.ts`, `gmail-source.test.ts`, routes email-ingest.
 - Créés : `gmail-source/__tests__/get-thread-messages.test.ts`.
+
+---
+
+## Session 25 — 2026-05-28 — Backup vault quotidien (VPS)
+
+### Décision
+
+Backup quotidien du Vault Drive vers le VPS, **rétention 90 jours**, avec archive différentielle des versions remplacées. Le service `rclone-vault.service` existant ne fait QUE monter le Drive en FUSE (`/home/thomas/vault`) — pas de copie de sauvegarde. Première sauvegarde réelle des notes.
+
+### Mécanique
+
+- `deploy/backup-vault.sh` (bash standalone, idempotent, verrouillé par `flock`).
+- Cron `0 1 * * *` (= 3h Paris, creux total) dans `deploy/crontab.anya` — pilotage par le dépôt (R5), pas d'accès SSH requis pour ajuster.
+- `rclone copy vault: /home/thomas/vault-backup/current --backup-dir /home/thomas/vault-backup/<YYYY-MM-DD>` — `copy` est jamais destructif côté destination ; `--backup-dir` reçoit l'ancienne version d'un fichier modifié/supprimé ce jour-là.
+- Rotation : `find ... -name "20*-*-*" -mtime +90 -exec rm -rf` — les snapshots datés > 90 jours sont supprimés ; `current/` n'est jamais touché.
+- Filet de sécurité : `--max-delete 100` (au cas où la remote retournerait du vide sur quota/network blip).
+- Logs : `/home/thomas/vault-backup.log` (lisible via MCP `journal_service`).
+
+### Dimensionnement (mesuré 2026-05-28)
+
+| Métrique | Valeur |
+|---|---|
+| Taille vault Drive (mesurée `rclone size vault:`) | **1.93 Go** (1969 fichiers) |
+| Taille `current/` après 1er run | ~1.93 Go |
+| Taille moyenne archives quotidiennes (~1 % modifs/jour) | ~20 Mo |
+| Taille totale backup après 90 j (pire cas) | ~3 Go |
+| Disque VPS dispo (`/dev/vda1`) | 222 Go / 232 Go (5 % used) |
+| Part du disque consommée | **~1,3 %** |
+
+### Procédure de restauration
+
+**Cas 1 — Fichier supprimé/écrasé il y a N jours** :
+```bash
+# La version "saine" se trouve dans le dossier daté du LENDEMAIN de la modif destructrice
+# (le backup tourne à 1h UTC et archive l'ancienne version qu'il connaissait la veille).
+cp /home/thomas/vault-backup/<YYYY-MM-DD>/<chemin>/<fichier.md>  /home/thomas/vault/<chemin>/
+# Le mount FUSE propage au Drive en ~30 s.
+```
+
+**Cas 2 — Sinistre total Drive** :
+```bash
+rclone copy /home/thomas/vault-backup/current  vault:
+# Repousse l'intégralité du vault tel qu'à 1h UTC du jour de la commande.
+# Perte max = ce qui a été écrit entre 1h UTC et l'incident.
+```
+
+**Cas 3 — Inspection d'une archive donnée** :
+```bash
+ls -la /home/thomas/vault-backup/2026-05-27/    # fichiers modifiés ce jour-là
+du -sh /home/thomas/vault-backup/                # taille totale du backup
+find /home/thomas/vault-backup -maxdepth 1 -type d -name "20*-*-*" | sort  # liste snapshots
+```
+
+### Coupures d'urgence
+
+- **Désactiver le backup** : commenter la ligne `0 1 * * *` dans `deploy/crontab.anya` + push `main` → désactivation auto < 5 min.
+- **Tout effacer côté VPS** (le mount Drive reste intact) : `rm -rf /home/thomas/vault-backup/`.
+- **Monitoring** : Anya peut lire `/home/thomas/vault-backup.log` via `journal_service` ; ajout possible plus tard d'une alerte Telegram si le dernier `OK` date de > 26 h.
+
+### Ce que ce backup NE protège PAS
+
+- Corruption au moment du run (1h UTC) : la version corrompue est copiée. Mitigation = `--backup-dir` daté préserve la veille saine.
+- Compromission du VPS lui-même : le backup est lisible par un attaquant qui prend root. Pour ce niveau, ajouter un offsite chiffré (Backblaze B2, S3) — hors scope V1.
+
+### Fichiers livrés (PR S25)
+- `deploy/backup-vault.sh` (créé, exécutable).
+- `deploy/crontab.anya` (ligne backup + commentaire ajoutés en fin).
+- `docs/dev-decisions.md` (cette section).
