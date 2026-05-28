@@ -301,65 +301,99 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 25
+## Mémo de reprise — Session 26
 
-- **Date de clôture S24** : 2026-05-28
-- **Session clôturée** : 24 (chantier complet « nouveaux contacts » : Cc gate + canal/fréquence + WhatsApp no-match + reply contexte + polish LLM + Lier homonyme + sécurité + /pending + preview + bugfix audit reviewer)
-- **Prochaine session** : 25
-- **Branche tronc / déployée** : **`main`**. Le VPS suit `main` et se redéploie seul <5 min (`anya-autoupdate.sh`). 14 PRs S24 (#47→#60) mergées + déployées.
+- **Date de clôture S25.1** : 2026-05-28 soir
+- **Session clôturée** : 25.1 (5 chantiers livrés en une session : propagation P1 framework + backup vault VPS + migration site Replit→VPS + alignement Contact pro v3 + migration landing Gradient Agents)
+- **Prochaine session** : 26
+- **Branche tronc / déployée** : **`main`**. Le VPS suit `main` et se redéploie seul <5 min (`anya-autoupdate.sh`). 6 PRs S25.1 mergées (#62, #63, #64, #66, #68) + 1 reportée (PR #67 conflit à rebase).
 - **Workflow git** : brancher depuis `main` → PR → merge dans `main`.
-- **Nouveauté clé S24** : pattern UX « **carte Telegram avec confirmation 2 étapes** » pour toute action irréversible côté Drive (ex. bouton « Lier à fiche existante »). À répliquer pour d'autres opérations risquées.
+- **Nouveauté clé S25.1** : pattern « **vhost statique Caddy + cron `git pull` quotidien** » pour servir n'importe quel repo public sur un sous-domaine custom (Gradient Agents en pilote, transposable). Et **migration site sans downtime** via `tls internal` pré-bascule + retrait post-DNS.
 
-### Résumé S24 (5 lignes)
+### Résumé S25.1 (5 chantiers)
 
-(1) **Email Cc gate + enrichissement relation** : `addressee.ts` (brouillon seulement si Thomas dans To, pas Cc) + `relation-stats.ts` (`canal_préféré` + `fréquence_échanges` dérivés de l'historique tous canaux, recalculés à chaque interaction). (2) **4 fix prod identifiés en debug live Maxime/Christophe/Ihssane/Ameena** : cache vault anti-empoisonnement 401, clé `date_derniere_interaction` SANS accent, domains→société embarqué (anti-ENOENT bundling), parse JSON synthèse tolérant `<think>`/virgules. (3) **TickTick inbox persiste sur disque** (#51) → morning brief sync. (4) **Chantier nouveaux contacts complet** (#53 carte WhatsApp + #54 reply pour contexte + #55 polish LLM Haiku + #56-57 bouton Lier avec confirm 2 étapes + ambiguïté + cache invalidate + #58 `/pending` + #59 preview Qui c'est + conseil enrichir). (5) **Audit critique reviewer mid-chantier** → **PR #60 corrige 9 bugs réels** (YAML flow corruption, race cardMessageId, polish tronqué, reply à carte expirée → TickTick fantôme, double-clic, link_cancel pending null, link_yes fiche disparue, /pending Drive KO, reply VOCAL/PHOTO → tâche fantôme). 2175 tests verts.
+(1) **Propagation 6 P1 S24** dans `ia.md` / `ux.md` / `fullstack.md` / `founder-preferences.md` (PR #62). Gate framework verrouillée avant chantier S25. (2) **Backup vault VPS** : `deploy/backup-vault.sh` + cron `0 1 * * *` (3h Paris) + rétention 90j + archive différentielle (PR #62). Vault Drive = 1.93 Go → backup ~2.5 Go = 1.1 % du disque VPS. Restauration validée. (3) **Migration site Replit → VPS** : Caddy reverse_proxy `localhost:3000` + filtre 404 routes admin (`/api/secretariat/*`, `/api/telegram/*`, etc.) + cert Let's Encrypt + redirect www→apex (PR #63, #64, #66). Site live, 7 tests internes 6/6 ✅, cert valide. Économie Replit ~$20-25/mois à venir J+7. (4) **Alignement template `Contact pro.md` v3** (PR #67 — **conflit à rebase**) : frontmatter `sous_categorie` + `langue` + ordre clés ; section `## Statut courant` insérée entre `## Qui c'est` et `## Synthèse` ; helper `insertH2SectionBefore` réutilisable ; `/enrichir` rattrape les fiches existantes. +16 tests, 2191 verts. Vault `Workflow Email Ingest.md` v2.2→v2.3. (5) **Migration Gradient Agents GitHub Pages → VPS** : `agents.issa-capital.com` servi par Caddy `file_server /home/thomas/Agent-Team` + cron `0 2 * * *` git pull quotidien (PR #68). Cert Let's Encrypt obtenu en 7 sec.
 
-### Travaux en cours / reportés S25 (par priorité)
+### 🚨 BUGS WHATSAPP IDENTIFIÉS EN FIN DE SESSION (P0 absolue S26)
 
-1. **🥇 Confirmation en prod des fixes S24** (non testable d'ici) — au prochain run, vérifier dans `journal_anya` : (a) plus de 401 Drive en rafale post-PR #47 ; (b) `[contacts-cache] chargé N contact(s) ... X pros` avec X > 0 (PR #50 cache anti-poisoning) ; (c) Maxime/Ihssane/Christophe enrichis si nouveau mail Sarani ; (d) au prochain CR vocal, la fiche participant reçoit bien une ligne d'historique (PR #52) ; (e) morning brief inclut bien les 19+ tâches inbox TickTick (PR #51).
-2. **Auto-enrichir WhatsApp V2** (reporté en V1 par décision Thomas — conseil `/enrichir <nom>` suffit V1) : scan Gmail/Outlook PAR NOM (pas par email) pour deviner l'email d'un contact WhatsApp fraîchement créé, puis lancer `enrichContact` automatique. Mesurer le besoin réel en S25 avant de coder.
-3. **Calendrier — réservations resto/RDV (carry-over S23)** : email/WhatsApp évoque une réservation → check Google Calendar → créer event si absent. Garder la notif Telegram.
-4. **WhatsApp `hasReplyFromMe` équivalent** : cas Martin signalé S23 — Anya prépare un brouillon WhatsApp alors que Thomas a déjà répondu. Logique parallèle au `hasReplyFromMe` Gmail.
-5. **Curseur WhatsApp transactionnel complet** : R1 plein — ne pas avancer le curseur si l'enrichissement vault échoue (pas seulement si la lecture Beeper échoue, ce qui est déjà géré PR #44).
-6. **OAuth Google passage en production** (action Thomas, pas code) : sortir l'app du mode « Testing » sinon refresh token expire tous les 7 j. Risque latent.
-7. **Carry-over S22 non traités** : refonte calendar-ingest (`06. Réunions` abandonné → historiques+todos), branche orpheline `claude/youthful-darwin-FiyWQ` (régression gates).
+**Verbatim Thomas (28/05 soir)** : « il manque beaucoup de fiches contact c'est une certitude » + « le numéro de tel qu'elle m'affiche est faux (manque l'indicatif pays je pense) ».
+
+**Bug WhatsApp #1 — Téléphone affiché sans `+33`** (CONFIRMÉ par code) :
+- Cause : `whatsapp-no-match-card.ts:85-86` affiche `noMatch.phone` qui est le téléphone **normalisé 9 chiffres** (clé d'index matching, pas valeur d'affichage).
+- Exemple : `664850631` au lieu de `+33 6 64 85 06 31`.
+- Fix : helper `formatPhoneForDisplay(normalized9: string): string` → préfixe `+33 ` + reformatage espacé. Appel dans `whatsapp-no-match-card.ts` (et auditer côté création fiche WhatsApp pour pareil). ~10-15 min.
+
+**Bug WhatsApp #2 — Volume fiches anormalement bas** (CONFIRMÉ par Thomas, ~2 reçues vs ~30 attendues) :
+- Symptôme observé dans le journal du 28/05 : 1 run cron WhatsApp visible (17:20:01 UTC), 300 messages SQL fetched → 7 gardés (hors isSender/vide/exclus BEEPER_EXCLUDE).
+- Hypothèses à investiguer en S26 :
+  - Filtre `BEEPER_EXCLUDE` (`sarani`/`ubi`) mange trop large ?
+  - `isSender` filter trop strict (skip aussi des messages que Thomas a envoyés mais où le chat doit créer une fiche pour l'autre) ?
+  - Match phone déterministe pollue : un faux match silencieux empêche la carte ?
+  - L'incident Anya 53 min `deactivating` (18:06-19:02 UTC) a fait sauter le run 19:20 ?
+  - Bug introduit dans une PR S24 (carte WhatsApp PR #53, polish #55, ou autre) ?
+- Fix S26 : **ajouter logging détaillé par étape** dans `whatsapp-ingest-runner.ts` :
+  ```
+  [whatsapp-ingest] X msgs raw → Y chats actifs → Z exclus (BEEPER_EXCLUDE) → A traités → B matchés phone (silencieux) → C cartes no-match envoyées (+raisons)
+  ```
+  Puis tourner 2-3 cron WhatsApp, analyser, identifier la cause.
+
+### Travaux S26 (par priorité)
+
+1. **🥇 BUG WHATSAPP #2** — investigation logging + identification cause + fix. Thomas a confirmé verbatim que c'est un bug : volume <<< attendu. PRIORITÉ ABSOLUE.
+2. **🥈 BUG WHATSAPP #1** — formatPhoneForDisplay (+33 6 XX XX XX XX) dans la carte no-match. Fix rapide (~15 min) + test prod.
+3. **PR #67 reportée** — rebase + merge `feat(s25.1): align contact-enrich on template Contact pro.md v3`. Conflit sur `project-context.md` (à résoudre en gardant les 2 entrées historique S25.1). Tests déjà verts (2191/2191) — pas de re-build.
+4. **Incident Anya 53 min `deactivating`** — ajouter `TimeoutStopSec=30s` au unit systemd `/etc/systemd/system/anya.service` pour forcer SIGKILL au bout de 30 sec au lieu d'attendre indéfiniment. Cause root probable : un handler hung en cours (probablement long appel LLM bloquant) lors du shutdown post-merge PR #68 à 18:06 UTC.
+5. **Cleanup Replit J+7** (~4 juin) — désactiver le projet Replit (économie ~$20-25/mois), retirer `REPLIT_ACTIONS.md` du repo, remettre TTL DNS à 3600/86400 chez IONOS.
+6. **Action Thomas — Repackage `traite-inbox.skill`** (Cowork) : ZIP du dossier `08. Outils/Skills/traite-inbox/` côté vault, réinstaller dans Cowork. La SKILL.md vault est en v5.5, le .skill installé encore en v5.3 (l'ancien retour Cowork « ## Inbox obsolète » venait du ZIP installé).
+7. **Action Thomas — og-image.png Gradient Agents** : générer + commit côté `Agent-Team` (preview LinkedIn/Twitter actuellement cassée).
+8. **Action Thomas — OAuth Google `Testing` → `Production`** (carry-over S20-S23, latent). Sortir l'app du mode Testing dans Google Cloud Console sinon refresh token expire tous les 7j.
+9. **Carry-over S25** : auto-enrichir WhatsApp V2 (scan par nom), réservations Calendar (S23), WhatsApp `hasReplyFromMe` équivalent, curseur WhatsApp transactionnel complet, carry-over S22 (refonte calendar-ingest, branche orpheline `claude/youthful-darwin-FiyWQ`).
 
 ### Blockers (décisions / infos en attente)
 
-- **Aucun blocker code** côté S25. Tout dépend de retours d'usage S24 (Maxime enrichi ? Carte WhatsApp utile ? Reply pour contexte fluide ?) → Thomas doit utiliser ~3 jours puis dire ce qui frotte vraiment.
-- **OAuth Google « Testing » → « Production »** : décision/action de Thomas dans Google Cloud Console. Bloque rien tant que pas de panne, mais latent.
+- **Aucun blocker code** côté S26. Priorité absolue = investigation + fix bugs WhatsApp #1 + #2.
+- **OAuth Google « Testing » → « Production »** : action Thomas, latent.
 
-### Nom de branche recommandé S25
+### Nom de branche recommandé S26
 
-`claude/issa-capital-s25-confirm-prod-[suffix]` (suffix alphanum généré par Claude Code au démarrage). Slug 2-3 mots correspond à la priorité 1 (confirmation prod des fixes S24).
+`claude/issa-capital-s26-whatsapp-bugfix-[suffix]` (suffix alphanum). Slug 2-3 mots correspond aux priorités 1+2 (bugs WhatsApp).
 
-### Commande de reprise S25
+### Commande de reprise S26
 
 ```
-Session S25 — ISSA Capital / Anya. Brancher depuis `main` (déployé VPS auto <5 min).
+Session S26 — ISSA Capital / Anya. Brancher depuis `main` (déployé VPS auto <5 min).
 
 Lire AVANT tout :
-1. project-context.md (## Stack technique + Mémo de reprise S25 ci-dessus).
-2. docs/lessons-learned.md (S24).
+1. project-context.md (## Stack technique + Mémo de reprise S26 ci-dessus).
+2. docs/lessons-learned.md (S25 #137-138 + S24).
 3. docs/founder-preferences.md.
 
-Contexte clé S24 :
-- 14 PRs mergées (#47→#60) — chantier « nouveaux contacts » complet (carte Telegram email + WhatsApp, reply pour contexte, polish LLM Haiku, bouton Lier homonyme avec confirm 2 étapes, /pending, preview, 9 bugfixes audit reviewer).
-- Pattern UX émergent : **confirmation 2 étapes sur toute action irréversible côté Drive** (ex. bouton « Lier »).
-- Détection homonyme par nom dans tous les flux no-match (cap 3 boutons, sinon warning seul).
-- Polish LLM Haiku 4.5 (task `contact-context-polish`) sur tout texte libre fourni par Thomas avant insertion en fiche — zéro invention, fallback brut.
-- `addToFrontmatterList` ajoute en `alias_email` / `alias_telephone` (REFUSE le YAML flow-style anti-corruption).
-- 2175 tests verts.
+Contexte clé S25.1 :
+- 5 chantiers livrés (PRs #62, #63, #64, #66, #68 mergées ; #67 conflit à rebase).
+- Site issa-capital.com : **live sur VPS** (Caddy + Let's Encrypt) — Replit à désactiver J+7 (~4 juin).
+- Backup vault quotidien actif (cron 1h UTC = 3h Paris, rétention 90j, archive différentielle, restauration validée).
+- agents.issa-capital.com live (landing Gradient Agents servie par Caddy file_server, auto-update cron 2h UTC = 4h Paris).
+- PR #67 (contact-template-v3) prête mais conflit `project-context.md` à rebase.
 
-PRIORITÉ 1 (avant tout code) : **Confirmation en prod des fixes S24** via `journal_anya` (15-30 min) — plus de 401 ? pros chargés ? contacts pro enrichis ? CR participants enrichis ? morning brief complet ? Si tout OK, retour à Thomas avant d'attaquer du nouveau.
+🚨 PRIORITÉ 0 ABSOLUE : **Bugs WhatsApp**
+- Thomas verbatim : « manque beaucoup de fiches contact c'est une certitude »
+- Bug #1 (téléphone sans +33) : `whatsapp-no-match-card.ts:85-86` affiche le numéro normalisé 9 chiffres. Fix : helper `formatPhoneForDisplay`. ~15 min.
+- Bug #2 (2 fiches au lieu de ~30) : cause inconnue. Étapes : (a) ajouter logging détaillé par étape dans `whatsapp-ingest-runner.ts`, (b) déployer, (c) laisser tourner 2-3 crons WhatsApp (4h, 8h, 12h Paris suivants), (d) analyser journal, (e) identifier la cause exacte, (f) fix ciblé.
 
-PRIORITÉ 2 (si Thomas a un retour d'usage) : appliquer les frictions remontées par usage réel (auto-enrichir WhatsApp, snooze, undo, etc.).
+PRIORITÉ 1 (après bugs WhatsApp résolus) : Rebase + merge PR #67 (contact-template-v3).
 
-PRIORITÉ 3 (carry-over) : réservations Calendar (création si absente) OU WhatsApp `hasReplyFromMe` OU OAuth production (action Thomas).
+PRIORITÉ 2 : Fix incident Anya `deactivating` (TimeoutStopSec=30s sur anya.service).
+
+PRIORITÉ 3 : Cleanup Replit (~4 juin).
+
+PRIORITÉ 4 (carry-over S25) : auto-enrichir WhatsApp V2, réservations Calendar, hasReplyFromMe WhatsApp, OAuth Google production, etc.
 
 Rappels critiques :
 - Règle 11 (jamais d'envoi email auto, brouillon seul).
 - R5 (PATCH in-place via MCP n8n, jamais create+delete).
 - R12 (pas de questions parasites, brief clair = action).
-- Si chantier ≥ 3 PRs : lancer un reviewer agent à la fin pour challenger ton propre travail (cf. PR #60 S24 — 9 bugs trouvés).
+- R13 (chantier ≥ 3 PRs : lancer reviewer agent avant clôture).
+- R6 (batch vault Drive : tester 1 fichier ET attendre validation visuelle Thomas).
+- **Anti-pattern à éviter** : ne pas conclure « comportement attendu » sur un bug sans logging détaillé. Thomas a CONFIRMÉ que volume WhatsApp bas est un bug — investigation empirique requise, pas hypothèse.
+- Si chantier ≥ 3 PRs : lancer un reviewer agent à la fin pour challenger ton propre travail.
 ```
