@@ -334,7 +334,7 @@ export {
   extractEmails,
 } from './frontmatter';
 export { computeRelationStats } from './relation-stats';
-export { appendToSection, hasSection, extractSection } from './markdown-append';
+export { appendToSection, hasSection, extractSection, insertH2SectionBefore } from './markdown-append';
 export { withWriteLock, getActiveWriteLockCount, clearWriteLocks } from './write-lock';
 export { resolvePath, invalidateAllCache, invalidateCache } from './drive-resolver';
 export { readFile, readFileById, writeFile, writeFileById, createFile } from './obsidian-file';

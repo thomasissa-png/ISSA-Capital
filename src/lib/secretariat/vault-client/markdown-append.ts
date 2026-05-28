@@ -115,6 +115,45 @@ export function extractSection(
   return sectionContent;
 }
 
+/**
+ * Insère une nouvelle section H2 dans un fichier Markdown, juste avant une
+ * section d'ancrage existante. Idempotent : no-op si la section cible existe déjà.
+ *
+ * Cas d'usage S25.1 : aligner les fiches contact pro existantes sur le template
+ * `Contact pro.md` v3 — insère une section vide `## Statut courant` avant la
+ * section `## Synthèse` (l'ancrage) si elle est absente. Ne touche jamais une
+ * section déjà créée par Thomas, même avec un contenu différent du placeholder.
+ *
+ * @param content     Contenu complet du fichier .md
+ * @param h2Title     Titre H2 de la NOUVELLE section à insérer (ex: "Statut courant")
+ * @param anchorTitle Titre H2 de la section AVANT laquelle insérer (ex: "Synthèse")
+ * @param body        Corps de la nouvelle section (sans le titre H2 ; peut être vide)
+ * @returns           Contenu modifié, ou inchangé si idempotence (section déjà là).
+ *                    Inchangé aussi si l'ancrage est introuvable (fail-safe).
+ */
+export function insertH2SectionBefore(
+  content: string,
+  h2Title: string,
+  anchorTitle: string,
+  body: string,
+): string {
+  // Idempotence : si la section cible existe déjà, no-op (même si le contenu diffère).
+  if (hasSection(content, h2Title)) {
+    return content;
+  }
+
+  // Trouver l'ancrage. Sans ancrage, fail-safe = ne rien faire (mieux que pollute la fiche).
+  const anchorPattern = new RegExp(`^## ${escapeRegex(anchorTitle)}\\s*$`, 'm');
+  const anchorMatch = anchorPattern.exec(content);
+  if (!anchorMatch) {
+    return content;
+  }
+
+  const newBlock = `## ${h2Title}\n\n${body}\n\n`;
+  const insertAt = anchorMatch.index;
+  return content.slice(0, insertAt) + newBlock + content.slice(insertAt);
+}
+
 // ============================================================
 // Utilitaires
 // ============================================================

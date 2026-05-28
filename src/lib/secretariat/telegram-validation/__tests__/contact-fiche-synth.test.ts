@@ -228,4 +228,88 @@ describe('renderEnrichedFiche', () => {
     // Le frontmatter ne doit pas contenir de saut de ligne parasite dans la valeur.
     expect(content).not.toContain('societe: ACME\nInc.');
   });
+
+  // ============================================================
+  // S25.1 — alignement template `Contact pro.md` v3
+  // ============================================================
+
+  it('S25.1 — frontmatter contient `sous_categorie:` (vide si non fourni)', () => {
+    const { content } = renderEnrichedFiche({ societe: 'X' }, ctx, 1);
+    expect(content).toContain('sous_categorie: ');
+    // Pas écrasé par une autre clé (vérif ligne entière).
+    expect(content).toMatch(/\nsous_categorie: \n/);
+  });
+
+  it('S25.1 — frontmatter contient `sous_categorie:` rempli si fourni', () => {
+    const { content } = renderEnrichedFiche({ sousCategorie: 'notaire' }, ctx, 1);
+    expect(content).toContain('sous_categorie: notaire');
+  });
+
+  it('S25.1 — frontmatter contient `langue: fr` par défaut', () => {
+    const { content } = renderEnrichedFiche({ societe: 'X' }, ctx, 1);
+    expect(content).toContain('langue: fr');
+  });
+
+  it('S25.1 — `langue` respecte la valeur fournie si non-vide', () => {
+    const { content } = renderEnrichedFiche(
+      { langue: 'français, registre formel' },
+      ctx,
+      1,
+    );
+    expect(content).toContain('langue: français, registre formel');
+    expect(content).not.toContain('langue: fr\n');
+  });
+
+  it('S25.1 — section `## Statut courant` insérée AVANT `## Synthèse`', () => {
+    const { content } = renderEnrichedFiche({ societe: 'ACME' }, ctx, 1);
+    expect(content).toContain('## Statut courant');
+    // Ordre des sections : Statut courant doit précéder Synthèse.
+    const idxStatut = content.indexOf('## Statut courant');
+    const idxSynth = content.indexOf('## Synthèse');
+    expect(idxStatut).toBeGreaterThan(-1);
+    expect(idxSynth).toBeGreaterThan(idxStatut);
+  });
+
+  it('S25.1 — section `## Statut courant` APRÈS `## Qui c\'est` quand userContext fourni', () => {
+    const { content } = renderEnrichedFiche(
+      { societe: 'ACME' },
+      { ...ctx, userContext: 'Notaire rencontré via Maxime.' },
+      1,
+    );
+    const idxQui = content.indexOf("## Qui c'est");
+    const idxStatut = content.indexOf('## Statut courant');
+    const idxSynth = content.indexOf('## Synthèse');
+    expect(idxQui).toBeGreaterThan(-1);
+    expect(idxStatut).toBeGreaterThan(idxQui);
+    expect(idxSynth).toBeGreaterThan(idxStatut);
+  });
+
+  it('S25.1 — ordre frontmatter aligné sur template `Contact pro.md` v3', () => {
+    const { content } = renderEnrichedFiche({ societe: 'X' }, ctx, 1);
+    // Capture les clés frontmatter dans l'ordre où elles apparaissent.
+    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    expect(fmMatch).toBeTruthy();
+    const fmBody = fmMatch?.[1] ?? '';
+    const keys = fmBody
+      .split('\n')
+      .map((l) => l.split(':')[0]?.trim() ?? '')
+      .filter((k) => k.length > 0 && !k.startsWith('-'));
+    // Ordre attendu (sous-ensemble des clés écrites par le code, dans l'ordre).
+    const expectedOrder = [
+      'type',
+      'categorie',
+      'sous_categorie',
+      'societe',
+      'role',
+      'email',
+      'telephone',
+      'langue',
+      'rencontre_via',
+      'date_premier_contact',
+      'date_derniere_interaction',
+      'classification',
+      'tags',
+    ];
+    expect(keys).toEqual(expectedOrder);
+  });
 });

@@ -13,7 +13,12 @@
 
 import { getVaultContacts, type VaultContact } from '../vault-contacts';
 import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
-import { updateFrontmatter } from '../vault-client';
+import {
+  updateFrontmatter,
+  readFile,
+  writeFile,
+  insertH2SectionBefore,
+} from '../vault-client';
 import { sendTelegramMessage } from '../telegram';
 import type { ContactType } from '../telegram-validation/no-match-card';
 
@@ -162,6 +167,32 @@ export async function handleEnrichirCommand(chatId: number, query: string): Prom
     });
   }
 
+  // S25.1 — Aligne la fiche existante sur le template `Contact pro.md` v3 :
+  // insère une section `## Statut courant` vide juste avant `## Synthèse` si absente.
+  // Idempotent (helper `insertH2SectionBefore` no-op si la section existe déjà,
+  // même si Thomas a mis du contenu). Fail-safe : ne fait rien si `## Synthèse` absent.
+  let statutSectionInserted = false;
+  try {
+    const read = await readFile(contact.folderPath, contact.filename);
+    if (read.success && read.content) {
+      const patched = insertH2SectionBefore(
+        read.content,
+        'Statut courant',
+        'Synthèse',
+        '_À renseigner._',
+      );
+      if (patched !== read.content) {
+        const write = await writeFile(contact.folderPath, contact.filename, patched);
+        statutSectionInserted = write.success;
+      }
+    }
+  } catch (err) {
+    // Non bloquant : on log et on continue (le récap Telegram signale juste l'échec).
+    console.warn(
+      `[enrichir] insertion ## Statut courant KO pour ${name} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   // Récapitulatif à Thomas.
   const previewLines = buildEnrichPreviewLines(enriched.data);
   const lines: string[] = [`\u{1F50D} Enrichissement « ${name} »`];
@@ -180,6 +211,9 @@ export async function handleEnrichirCommand(chatId: number, query: string): Prom
     );
   } else {
     lines.push('', 'Champs frontmatter déjà renseignés — rien à compléter.');
+  }
+  if (statutSectionInserted) {
+    lines.push('\u{2795} Section « Statut courant » ajoutée (vide).');
   }
   lines.push(`\u{1F4E5} ${enriched.scanned} email(s) — ${enriched.sources.join(', ') || 'aucune source'}`);
 
