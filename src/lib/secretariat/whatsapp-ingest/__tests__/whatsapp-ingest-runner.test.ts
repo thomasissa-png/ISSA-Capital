@@ -89,7 +89,7 @@ vi.mock('node:fs', () => ({
   },
 }));
 
-import { runWhatsappIngest } from '../whatsapp-ingest-runner';
+import { runWhatsappIngest, formatPhoneForDisplay, normalizePhone } from '../whatsapp-ingest-runner';
 
 function msg(overrides: Partial<BeeperMessage> = {}): BeeperMessage {
   return {
@@ -240,5 +240,121 @@ describe('runWhatsappIngest — V2', () => {
     const stats = await runWhatsappIngest();
     expect(mockCreateDraft).not.toHaveBeenCalled();
     expect(stats.draftsPrepared).toBe(0);
+  });
+
+  it('S26 Bug #2 — chat DM pertinent non matché → carte envoyée + compteur sent', async () => {
+    mockListMessages.mockResolvedValue([
+      msg({ chatId: '33712345678@s.whatsapp.net', chatName: 'Inconnu' }),
+    ]);
+    nextExtraction = {
+      relevant: true,
+      summary: 'Demande de RDV mardi pour parler patrimoine.',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.noMatchCardsSent).toBe(1);
+    expect(stats.chatsSkippedGroup).toBe(0);
+    expect(stats.chatsSkippedNotRelevant).toBe(0);
+    expect(stats.chatsSkippedAlreadyMatched).toBe(0);
+    expect(stats.chatsSkippedEmptySummary).toBe(0);
+    expect(mockSendWhatsappNoMatchCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('S26 Bug #2 — chat groupe (@g.us) pertinent non matché → pas de carte, compteur skip:group', async () => {
+    mockListMessages.mockResolvedValue([msg({ chatId: '12345@g.us', chatName: 'Projet Versi' })]);
+    nextExtraction = {
+      relevant: true,
+      summary: 'Discussion logistique groupe.',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.noMatchCardsSent).toBe(0);
+    expect(stats.chatsSkippedGroup).toBe(1);
+    expect(mockSendWhatsappNoMatchCard).not.toHaveBeenCalled();
+  });
+
+  it('S26 Bug #2 — chat DM pertinent déjà matché par tél → pas de carte, compteur skip:matched', async () => {
+    mockListMessages.mockResolvedValue([
+      msg({ chatId: '33664850631@s.whatsapp.net', chatName: 'Jean' }),
+    ]);
+    nextExtraction = {
+      relevant: true,
+      summary: 'Confirmation RDV.',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.noMatchCardsSent).toBe(0);
+    expect(stats.chatsSkippedAlreadyMatched).toBe(1);
+    expect(stats.contactsByPhone).toBe(1);
+    expect(mockSendWhatsappNoMatchCard).not.toHaveBeenCalled();
+  });
+
+  it('S26 Bug #2 — chat non pertinent → compteur skip:not-relevant', async () => {
+    mockListMessages.mockResolvedValue([msg({ chatId: '33712345678@s.whatsapp.net' })]);
+    nextExtraction = {
+      relevant: false,
+      summary: '',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.chatsSkippedNotRelevant).toBe(1);
+    expect(stats.noMatchCardsSent).toBe(0);
+  });
+
+  it('S26 Bug #2 — chat DM pertinent non matché mais summary vide → carte évitée, compteur skip:empty-summary', async () => {
+    mockListMessages.mockResolvedValue([msg({ chatId: '33712345678@s.whatsapp.net' })]);
+    nextExtraction = {
+      relevant: true,
+      summary: '   ',
+      contactEmail: null,
+      projet: null,
+      todos: [],
+      emailToPrepare: null,
+    };
+    const stats = await runWhatsappIngest();
+    expect(stats.noMatchCardsSent).toBe(0);
+    expect(stats.chatsSkippedEmptySummary).toBe(1);
+    expect(mockSendWhatsappNoMatchCard).not.toHaveBeenCalled();
+  });
+});
+
+describe('formatPhoneForDisplay (S26 Bug #1)', () => {
+  it('formate les 9 chiffres FR mobile au format +33 6 XX XX XX XX', () => {
+    expect(formatPhoneForDisplay('664850631')).toBe('+33 6 64 85 06 31');
+    expect(formatPhoneForDisplay('712345678')).toBe('+33 7 12 34 56 78');
+  });
+
+  it('formate les 9 chiffres FR fixe au même schéma', () => {
+    expect(formatPhoneForDisplay('123456789')).toBe('+33 1 23 45 67 89');
+  });
+
+  it('graceful sur null / undefined / chaîne vide → ""', () => {
+    expect(formatPhoneForDisplay(null)).toBe('');
+    expect(formatPhoneForDisplay(undefined)).toBe('');
+    expect(formatPhoneForDisplay('')).toBe('');
+  });
+
+  it('graceful si entrée n\'a pas exactement 9 chiffres → renvoie tel quel', () => {
+    expect(formatPhoneForDisplay('12345')).toBe('12345');
+    expect(formatPhoneForDisplay('abc')).toBe('abc');
+  });
+
+  it('round-trip avec normalizePhone : +33 ... → 9 chiffres → +33 ... cohérent', () => {
+    const display = '+33 6 64 85 06 31';
+    const normalized = normalizePhone(display);
+    expect(normalized).toBe('664850631');
+    expect(formatPhoneForDisplay(normalized)).toBe(display);
   });
 });

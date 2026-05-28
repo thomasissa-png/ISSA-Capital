@@ -22,11 +22,13 @@ function makePending(overrides: Partial<WhatsappNoMatchPending> = {}): WhatsappN
 }
 
 describe('buildWhatsappNoMatchCard', () => {
-  it('contient nom de chat, numéro, résumé, et 5 boutons préfixés wa_nomatch:', () => {
+  it('contient nom de chat, numéro formaté +33, résumé, et 5 boutons préfixés wa_nomatch:', () => {
     const { text, inlineKeyboard } = buildWhatsappNoMatchCard(makePending());
     expect(text).toContain('Contact WhatsApp inconnu');
     expect(text).toContain('Marc Gernot');
-    expect(text).toContain('664850631');
+    // S26 Bug #1 — affichage formaté `+33 6 64 85 06 31` au lieu des 9 chiffres bruts.
+    expect(text).toContain('+33 6 64 85 06 31');
+    expect(text).not.toContain('664850631');
     expect(text).toContain('compromis Lot 3');
     expect(text).toContain('AVANT de cliquer');
 

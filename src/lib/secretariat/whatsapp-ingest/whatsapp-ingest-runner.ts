@@ -83,6 +83,26 @@ export function normalizePhone(raw: string): string | null {
   return digits.slice(-9);
 }
 
+/**
+ * Formate un téléphone (9 derniers chiffres FR) pour affichage / écriture dans
+ * le vault au format canonique `+33 6 64 85 06 31`. Utilisé partout où on
+ * affiche/écrit un téléphone issu d'un `chatPhone()` ou `normalizePhone()` —
+ * sinon on stocke ou affiche des « 664850631 » (bug S26 #1).
+ *
+ * Robuste : accepte null/undefined → `''`. Si l'entrée n'a pas exactement
+ * 9 chiffres (cas dégénéré non-FR), on renvoie la chaîne d'origine telle quelle
+ * (graceful : pas de format inventé).
+ *
+ * Le matching `alias_telephone` reste cohérent : `normalizePhone('+33 6 64 …')`
+ * et `normalizePhone('664850631')` produisent le même hash 9-chiffres.
+ */
+export function formatPhoneForDisplay(normalized: string | null | undefined): string {
+  if (!normalized) return '';
+  const d = String(normalized).replace(/\D/g, '');
+  if (d.length !== 9) return String(normalized);
+  return `+33 ${d[0]} ${d.slice(1, 3)} ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)}`;
+}
+
 /** Extrait le numéro normalisé d'un chat DM WhatsApp (`<phone>@s.whatsapp.net`). */
 function chatPhone(chatId: string): string | null {
   if (!chatId.endsWith('@s.whatsapp.net')) return null; // groupe (`…@g.us`) → pas de match contact
@@ -120,6 +140,17 @@ export interface WhatsappIngestStats {
   notified: number;
   /** cartes Telegram « contact WhatsApp inconnu » envoyées (S24 soir). */
   noMatchCardsSent: number;
+  // S26 — Ventilation des chats DM non transformés en carte no-match, par raison.
+  // Permet d'identifier pourquoi le volume de fiches reçues << volume attendu
+  // (Bug #2 confirmé Thomas 28/05 — « manque beaucoup de fiches contact »).
+  /** chats où le LLM a renvoyé `relevant: false` (bavardage / non actionnable). */
+  chatsSkippedNotRelevant: number;
+  /** chats qui sont des groupes (`@g.us`) — pas de carte no-match (pas d'expéditeur unique). */
+  chatsSkippedGroup: number;
+  /** chats pertinents mais dont le contact est déjà connu (match téléphone ou email) → enrichi sans carte. */
+  chatsSkippedAlreadyMatched: number;
+  /** chats DM pertinents non matchés où `summary` LLM est vide → carte muette évitée. */
+  chatsSkippedEmptySummary: number;
   errors: number;
 }
 
@@ -313,6 +344,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     draftsPrepared: 0,
     notified: 0,
     noMatchCardsSent: 0,
+    chatsSkippedNotRelevant: 0,
+    chatsSkippedGroup: 0,
+    chatsSkippedAlreadyMatched: 0,
+    chatsSkippedEmptySummary: 0,
     errors: 0,
   };
 
@@ -362,6 +397,14 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   stats.chats = byChat.size;
 
   for (const [, group] of byChat) {
+    // S26 — Bug #2 : 1 ligne de log par chat à la fin de la boucle, pour
+    // identifier précisément où chaque chat « tombe » dans le pipeline.
+    let cardOutcome: 'sent' | 'skip:group' | 'skip:matched' | 'skip:empty-summary' | 'skip:not-relevant' | 'error' = 'skip:not-relevant';
+    let chatRelevant = false;
+    let chatEnrichedContact = false;
+    let chatEnrichedByEmail = false;
+    let chatProjet: string | null = null;
+    let chatDraft = false;
     try {
       // Match téléphone déterministe (DM uniquement) AVANT l'extraction.
       const phone = chatPhone(group.chatId);
@@ -373,7 +416,12 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
         contacts,
         matched ? contactDisplayName(matched) : null,
       );
-      if (!ex.relevant) continue;
+      if (!ex.relevant) {
+        stats.chatsSkippedNotRelevant++;
+        cardOutcome = 'skip:not-relevant';
+        continue;
+      }
+      chatRelevant = true;
       stats.relevantChats++;
 
       // 1a. Contact — priorité au match téléphone (déterministe), sinon email LLM.
@@ -384,6 +432,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             stats.contactsEnriched++;
             stats.contactsByPhone++;
             enrichedContact = true;
+            chatEnrichedContact = true;
           }
         } catch (err) {
           console.warn(`[whatsapp-ingest] enrich contact (phone) échoué : ${err instanceof Error ? err.message : String(err)}`);
@@ -394,6 +443,8 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
           if (m && (await appendContactLine(m.folderPath, `${m.name}.md`, ex.summary, group.name, `whatsapp-ingest:email:${ex.contactEmail}`))) {
             stats.contactsEnriched++;
             enrichedContact = true;
+            chatEnrichedContact = true;
+            chatEnrichedByEmail = true;
           }
         } catch (err) {
           console.warn(`[whatsapp-ingest] enrich contact (email) échoué : ${err instanceof Error ? err.message : String(err)}`);
@@ -404,7 +455,19 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       // WhatsApp inconnu » (S24 soir, symétrie avec le no-match email).
       // Restreint aux DM (`<phone>@s.whatsapp.net`) — pas de carte pour les
       // groupes (pas d'expéditeur unique à transformer en fiche).
-      if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net')) {
+      if (enrichedContact) {
+        stats.chatsSkippedAlreadyMatched++;
+        cardOutcome = 'skip:matched';
+      } else if (!group.chatId.endsWith('@s.whatsapp.net')) {
+        stats.chatsSkippedGroup++;
+        cardOutcome = 'skip:group';
+      } else if (!ex.summary || ex.summary.trim().length === 0) {
+        // Cas vu en S26 (potentiel) : LLM renvoie relevant=true mais summary=''
+        // → carte muette inutile. On compte pour audit, on n'envoie pas.
+        stats.chatsSkippedEmptySummary++;
+        cardOutcome = 'skip:empty-summary';
+      }
+      if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net') && ex.summary && ex.summary.trim().length > 0) {
         try {
           // S24 nuit — détection homonyme via chatName (array jusqu'à 3).
           let existingMatchHints: WhatsappNoMatchPending['existingMatchHints'] = null;
@@ -446,8 +509,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
           pending.cardMessageId = sent.messageId;
           await saveWhatsappNoMatch(pending);
           stats.noMatchCardsSent++;
+          cardOutcome = 'sent';
         } catch (err) {
           stats.errors++;
+          cardOutcome = 'error';
           console.warn(
             `[whatsapp-ingest] envoi carte no-match KO pour "${group.name}" : ${err instanceof Error ? err.message : String(err)}`,
           );
@@ -463,7 +528,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             content: ex.summary,
             trigger: `whatsapp-ingest:projet:${ex.projet}`,
           });
-          if (res.status === 'enriched') stats.projetsEnriched++;
+          if (res.status === 'enriched') {
+            stats.projetsEnriched++;
+            chatProjet = ex.projet;
+          }
         } catch (err) {
           console.warn(`[whatsapp-ingest] enrich projet échoué : ${err instanceof Error ? err.message : String(err)}`);
         }
@@ -473,7 +541,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       let draftUrl: string | null = null;
       if (ex.emailToPrepare) {
         draftUrl = await prepareEmailDraft(ex.emailToPrepare, group.name);
-        if (draftUrl) stats.draftsPrepared++;
+        if (draftUrl) {
+          stats.draftsPrepared++;
+          chatDraft = true;
+        }
       }
 
       // 3. Telegram UNIQUEMENT s'il y a une todo ou une action.
@@ -490,8 +561,20 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       }
     } catch (err) {
       stats.errors++;
+      cardOutcome = 'error';
       console.warn(`[whatsapp-ingest] erreur chat "${group.name}" : ${err instanceof Error ? err.message : String(err)}`);
     }
+
+    // S26 — Bug #2 : 1 ligne par chat avec le résultat de chaque étape.
+    // Sans logger le contenu (privacy) : juste outcome + flags binaires.
+    const isDM = group.chatId.endsWith('@s.whatsapp.net');
+    const phoneStr = chatPhone(group.chatId) ?? 'none';
+    const matchedStr = (isDM && byPhone.get(phoneStr) ? 'phone' : chatEnrichedByEmail ? 'email' : 'none');
+    console.warn(
+      `[whatsapp-ingest:chat] "${group.name}" DM=${isDM ? 'oui' : 'non'} phone=${phoneStr} matched=${matchedStr} ` +
+        `relevant=${chatRelevant ? 'oui' : 'non'} enriched=${chatEnrichedContact ? 'oui' : 'non'} ` +
+        `projet=${chatProjet ?? 'none'} draft=${chatDraft ? 'oui' : 'non'} card=${cardOutcome}`,
+    );
   }
 
   await writeCursor(nowTs);
@@ -499,6 +582,15 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     `[whatsapp-ingest] terminé — ${stats.newMessages} msg, ${stats.chats} chats, ${stats.relevantChats} pertinents, ` +
       `${stats.contactsEnriched} contacts enrichis (${stats.contactsByPhone} via tél.), ${stats.projetsEnriched} projets enrichis, ` +
       `${stats.draftsPrepared} brouillons, ${stats.notified} notifiés, ${stats.noMatchCardsSent} cartes no-match, ${stats.errors} erreurs`,
+  );
+  // S26 — Bug #2 : ventilation par raison de skip carte. Permet d'identifier la
+  // cause exacte du déficit de fiches (« manque beaucoup de fiches contact »).
+  console.warn(
+    `[whatsapp-ingest] ventilation cartes — sent=${stats.noMatchCardsSent}, ` +
+      `skip:not-relevant=${stats.chatsSkippedNotRelevant}, ` +
+      `skip:group=${stats.chatsSkippedGroup}, ` +
+      `skip:matched=${stats.chatsSkippedAlreadyMatched}, ` +
+      `skip:empty-summary=${stats.chatsSkippedEmptySummary}`,
   );
   return stats;
 }

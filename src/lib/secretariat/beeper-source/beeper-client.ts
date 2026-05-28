@@ -246,13 +246,37 @@ export async function listTextMessagesSince(
       isSender,
     };
   });
-  const kept = mapped.filter((m) => !m.isSender && m.text.length > 0 && !isExcludedChat(m.chatName));
-  // Diagnostic (sans logger le contenu) : permet de distinguer un curseur/timestamp
-  // cassé (raw=0 alors qu'il y a du trafic) d'une exclusion trop large (raw>0, kept=0).
+  // S26 — Bug #2 investigation : ventiler les drops par raison plutôt qu'un
+  // total agrégé. Permet de discriminer « curseur cassé » (raw=0) d'une
+  // « exclusion BEEPER_EXCLUDE trop large » (raw>0, kept=0, exclus>0) ou d'un
+  // « volume isSender élevé » (Thomas répond beaucoup, peu de messages reçus).
+  let droppedIsSender = 0;
+  let droppedEmpty = 0;
+  let droppedExcluded = 0;
+  const excludedChatNamesSeen = new Set<string>();
+  const kept: BeeperMessage[] = [];
+  for (const m of mapped) {
+    if (m.isSender) {
+      droppedIsSender++;
+      continue;
+    }
+    if (m.text.length === 0) {
+      droppedEmpty++;
+      continue;
+    }
+    if (isExcludedChat(m.chatName)) {
+      droppedExcluded++;
+      excludedChatNamesSeen.add(m.chatName);
+      continue;
+    }
+    kept.push(m);
+  }
   const maxTs = mapped.reduce((m, x) => Math.max(m, x.timestamp), 0);
+  const excludedSample = [...excludedChatNamesSeen].slice(0, 5).join(' | ') || '∅';
   console.warn(
     `[beeper] listTextMessagesSince(since=${Math.round(Number(sinceTimestamp))}) : ` +
-      `${mapped.length} ligne(s) SQL, ${kept.length} gardée(s) (hors isSender/vide/exclus), ` +
+      `${mapped.length} ligne(s) SQL → kept ${kept.length} | dropped: isSender=${droppedIsSender} ` +
+      `vide=${droppedEmpty} exclus(BEEPER_EXCLUDE)=${droppedExcluded} (chats: ${excludedSample}) | ` +
       `maxTs=${maxTs}, now=${Date.now()}`,
   );
   return kept;

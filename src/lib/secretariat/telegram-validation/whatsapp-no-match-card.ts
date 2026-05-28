@@ -16,6 +16,7 @@
 import type { TelegramKeyboard } from './telegram-cards';
 import { escapeHtml } from './telegram-cards';
 import type { ContactType } from './no-match-card';
+import { formatPhoneForDisplay } from '../whatsapp-ingest/whatsapp-ingest-runner';
 
 // ============================================================
 // Types
@@ -83,7 +84,7 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
   lines.push('');
   lines.push(`<b>Chat</b> : ${escapeHtml(noMatch.chatName)}`);
   if (noMatch.phone) {
-    lines.push(`<b>Numéro</b> : ${escapeHtml(noMatch.phone)}`);
+    lines.push(`<b>Numéro</b> : ${escapeHtml(formatPhoneForDisplay(noMatch.phone))}`);
   }
   lines.push('');
   // Résumé du LLM — tronqué pour ne pas exploser la carte.

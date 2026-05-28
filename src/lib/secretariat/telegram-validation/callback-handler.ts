@@ -95,6 +95,7 @@ import {
 import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
 import { polishUserContext } from '../contact-enrich/polish-user-context';
 import type { EnrichContactResult } from '../contact-enrich';
+import { formatPhoneForDisplay } from '../whatsapp-ingest/whatsapp-ingest-runner';
 
 // ============================================================
 // Types
@@ -1045,7 +1046,7 @@ function buildWhatsappFiche(
     'societe: ',
     'role: ',
     'email: ',
-    `telephone: ${noMatch.phone ?? ''}`,
+    `telephone: ${formatPhoneForDisplay(noMatch.phone)}`,
     'rencontre_via: WhatsApp',
     `date_premier_contact: ${today}`,
     `date_derniere_interaction: ${today}`,
@@ -1162,7 +1163,7 @@ async function askWhatsappNoMatchLinkConfirm(
   }
   const text =
     `\u{2753} <b>Confirmer le lien ?</b>\n\n` +
-    `Téléphone <code>${escapeHtml(noMatch.phone ?? '?')}</code> → ajouté à <code>alias_telephone</code> ` +
+    `Téléphone <code>${escapeHtml(formatPhoneForDisplay(noMatch.phone) || '?')}</code> → ajouté à <code>alias_telephone</code> ` +
     `de la fiche <b>${escapeHtml(hint.displayName)}</b> (${escapeHtml(hint.folderPath)}/${escapeHtml(hint.filename)}).\n\n` +
     `<i>Action irréversible côté Drive — vérifie que c'est la bonne personne.</i>`;
   const keyboard = [
@@ -1216,10 +1217,11 @@ async function handleWhatsappNoMatchLink(
       return;
     }
 
+    const phoneFormatted = formatPhoneForDisplay(noMatch.phone);
     const newContent = addToFrontmatterList(
       read.content,
       'alias_telephone',
-      noMatch.phone,
+      phoneFormatted,
       'telephone',
     );
 
@@ -1229,7 +1231,7 @@ async function handleWhatsappNoMatchLink(
       await editMessageText(
         callback.chat_id,
         callback.message_id,
-        `${original}\n\n\u{1F517} ${noMatch.phone} déjà présent dans ${hint.displayName} (rien à faire) — ${currentTimeHHMM()}.`,
+        `${original}\n\n\u{1F517} ${phoneFormatted} déjà présent dans ${hint.displayName} (rien à faire) — ${currentTimeHHMM()}.`,
       );
       return;
     }
@@ -1258,7 +1260,7 @@ async function handleWhatsappNoMatchLink(
     await editMessageText(
       callback.chat_id,
       callback.message_id,
-      `${original}\n\n\u{1F517} ${noMatch.phone} ajouté en alias_telephone à ${hint.displayName} à ${time}.`,
+      `${original}\n\n\u{1F517} ${phoneFormatted} ajouté en alias_telephone à ${hint.displayName} à ${time}.`,
     );
   } catch (err) {
     console.warn(
