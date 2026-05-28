@@ -50,6 +50,7 @@ import {
   buildHistoriqueTitle,
 } from '../handlers/vault-paths';
 import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
+import { polishUserContext } from '../contact-enrich/polish-user-context';
 import type { EnrichContactResult } from '../contact-enrich';
 
 // ============================================================
@@ -537,9 +538,22 @@ async function handleNoMatchCallback(
   const today = new Date().toISOString().slice(0, 10);
   const targetFolder = contactTypeToVaultPath(type);
 
+  // S24 nuit — polissage LLM du userContext (Thomas a peut-être écrit en mode
+  // brouillon vocal/clavier ; on reformule pour ton fiche, ZÉRO invention).
+  // Fallback silencieux sur le texte brut si LLM KO.
+  let workingNoMatch = noMatch;
+  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
+    const polished = await polishUserContext({
+      rawText: noMatch.userContext,
+      contactName: noMatch.nameFrom ?? extractLocalPart(noMatch.emailFrom),
+      type,
+    });
+    workingNoMatch = { ...noMatch, userContext: polished };
+  }
+
   // Enrichissement (await complet — pas de fire-and-forget) avec fallback stub.
-  const enriched = await buildEnrichedFiche(noMatch, type, today);
-  const fiche = enriched ?? buildStubFiche(noMatch, type, today);
+  const enriched = await buildEnrichedFiche(workingNoMatch, type, today);
+  const fiche = enriched ?? buildStubFiche(workingNoMatch, type, today);
   const enrichedUsed = enriched !== null;
 
   const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
@@ -825,7 +839,18 @@ async function handleWhatsappNoMatchCallback(
   const today = new Date().toISOString().slice(0, 10);
   const targetFolder = contactTypeToVaultPath(type);
 
-  const fiche = buildWhatsappFiche(noMatch, type, today);
+  // S24 nuit — polissage LLM du userContext (cf. handleNoMatchCallback).
+  let workingNoMatch = noMatch;
+  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
+    const polished = await polishUserContext({
+      rawText: noMatch.userContext,
+      contactName: noMatch.chatName || '(contact WhatsApp)',
+      type,
+    });
+    workingNoMatch = { ...noMatch, userContext: polished };
+  }
+
+  const fiche = buildWhatsappFiche(workingNoMatch, type, today);
   const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
   const target = `${targetFolder}/${filename}`;
   const trigger = `whatsapp_nomatch:${type}:${noMatch.id}`;

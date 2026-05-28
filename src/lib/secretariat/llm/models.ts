@@ -103,6 +103,7 @@ export type LLMTask =
   | 'email-draft'
   | 'morning-citation'
   | 'contact-fiche'
+  | 'contact-context-polish'
   | 'cr';
 
 /**
@@ -150,6 +151,9 @@ export const TASK_MODEL: Record<LLMTask, TaskModelConfig> = {
   // sujets, coordonnées) à partir de N emails de l'expéditeur → Flash (extraction
   // structurée, zéro invention, ne tronque pas).
   'contact-fiche': { provider: 'deepseek', model: DEEPSEEK_V4_FLASH },
+  // S24 nuit — polissage du contexte libre fourni par Thomas avant insertion
+  // dans la fiche. Haiku pour le ton neutre + tenue stricte du « zéro invention ».
+  'contact-context-polish': { provider: 'anthropic', family: 'haiku' },
   cr: { provider: 'anthropic', family: 'sonnet' },
 };
 
