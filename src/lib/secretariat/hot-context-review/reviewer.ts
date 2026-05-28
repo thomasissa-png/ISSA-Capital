@@ -282,8 +282,15 @@ export async function runReview(
 
   let editable = '';
   let changes: string[] = [];
-  try {
-    const userContent = userParts.join('\n');
+  // S26 — Bug prod Thomas 28/05 soir « Unexpected end of JSON input » récurrent :
+  // `JSON.parse` dans `parseReviewOutput` throw quand DeepSeek renvoie du JSON
+  // tronqué (MAX_TOKENS=2000 atteint en plein milieu) ou vide. Lessons #129 S24
+  // exigeait déjà ce pattern (détection troncature + fallback) mais l'avait
+  // appliqué seulement aux call sites ia (polish), pas ici.
+  // Fix : 2 essais avec MAX_TOKENS doublé au 2e — couvre les cas où le LLM
+  // a juste besoin d'un peu plus de marge pour clôturer le JSON.
+  const userContent = userParts.join('\n');
+  const callOnce = async (maxTokens: number): Promise<string> => {
     const { text } =
       mode === 'deep'
         ? await callAnthropic({
@@ -291,7 +298,7 @@ export async function runReview(
             modelOverride,
             system,
             messages: [{ role: 'user', content: userContent }],
-            maxTokens: 2000,
+            maxTokens,
             timeoutMs: 90_000,
             responseFormat: 'json',
           })
@@ -299,16 +306,36 @@ export async function runReview(
             task: 'hot-context-review-light',
             system,
             messages: [{ role: 'user', content: userContent }],
-            maxTokens: 2000,
+            maxTokens,
             timeoutMs: 90_000,
             responseFormat: 'json',
           });
-    const out = parseReviewOutput(text);
-    editable = out.editable;
-    changes = out.changes;
-  } catch (err) {
-    if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : échec LLM, mémo inchangé (${err instanceof Error ? err.message : String(err)}).`);
-    return { proceeded: true, written: false, mode, changes: [], reason: 'LLM échoué' };
+    return text;
+  };
+
+  let succeeded = false;
+  let lastErr: unknown = null;
+  let lastText = '';
+  for (const [attempt, maxTokens] of [[1, 2000], [2, 4000]] as const) {
+    try {
+      lastText = await callOnce(maxTokens);
+      const out = parseReviewOutput(lastText);
+      editable = out.editable;
+      changes = out.changes;
+      succeeded = true;
+      break;
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[hot-context-review] essai ${attempt}/2 KO mode=${mode} maxTokens=${maxTokens} : ${msg} — text head: ${(lastText || '(vide)').slice(0, 200).replace(/\n/g, '⏎')}`,
+      );
+    }
+  }
+  if (!succeeded) {
+    const msg = lastErr instanceof Error ? lastErr.message : 'inconnu';
+    if (chatId !== null) await sendTelegramMessage(chatId, `🌙 Revue hot-context : LLM échoue (2 essais : ${msg}). Mémo inchangé.`);
+    return { proceeded: true, written: false, mode, changes: [], reason: `LLM échoué (2 essais) : ${msg}` };
   }
 
   if (!editableIsValid(editable)) {
