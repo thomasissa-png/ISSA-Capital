@@ -439,9 +439,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             createdAt: new Date().toISOString(),
             existingMatchHints,
           };
-          await saveWhatsappNoMatch(pending);
+          // S24 nuit (post-audit) — ordre corrigé : envoyer D'ABORD, sauver
+          // UNE FOIS avec messageId. Élimine la race save → send → re-save
+          // qui faisait perdre les replies ultra-rapides.
           const sent = await sendWhatsappNoMatchCard(pending);
-          // Re-save avec le messageId pour permettre le reply-pour-contexte (PR B).
           pending.cardMessageId = sent.messageId;
           await saveWhatsappNoMatch(pending);
           stats.noMatchCardsSent++;

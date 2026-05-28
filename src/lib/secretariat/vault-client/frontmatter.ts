@@ -312,6 +312,17 @@ export function addToFrontmatterList(
     const ln = lines[i]!;
     const colonIdx = ln.indexOf(':');
     if (colonIdx !== -1 && ln.slice(0, colonIdx).trim() === listKey) {
+      // Détection YAML flow-style (`alias_email: [a@b, c@d]`) — non géré par le
+      // parser ligne-par-ligne ci-dessous : insertion d'une entrée bloc-style
+      // après une ligne flow-style produit du YAML invalide. Préférable de
+      // refuser l'édition (Thomas l'ajoutera à la main) plutôt que corrompre.
+      const afterColon = ln.slice(colonIdx + 1).trim();
+      if (afterColon.startsWith('[')) {
+        console.warn(
+          `[addToFrontmatterList] flow-style YAML détecté pour ${listKey} — édition refusée pour ne pas corrompre (édite à la main)`,
+        );
+        return content;
+      }
       listKeyIdx = i;
       // Parcourir les entrées suivantes en `  - val`.
       let j = i + 1;

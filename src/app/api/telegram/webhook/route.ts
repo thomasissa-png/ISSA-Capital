@@ -913,6 +913,17 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
   // /pending — liste les cartes no-match actives (audit S24 nuit).
   if (normalizedText === '/pending') {
     try {
+      // Check préalable Drive : si pas de token, on évite le faux négatif
+      // « 0 carte en attente » alors que Drive est juste KO.
+      const { getAccessToken } = await import('@/lib/secretariat/drive-upload');
+      const tok = await getAccessToken();
+      if (!tok) {
+        await sendTelegramMessage(
+          chatId,
+          '\u{26A0}\u{FE0F} Drive indisponible (pas de token OAuth2). Impossible de lire les pendings — réessaie dans quelques minutes.',
+        );
+        return Response.json({ ok: true });
+      }
       const [emailPendings, waPendings] = await Promise.all([
         listActiveNoMatch(),
         listActiveWhatsappNoMatch(),
@@ -1329,6 +1340,29 @@ export async function POST(request: Request): Promise<Response> {
 
   // 3. Dispatch
   try {
+    // S24 nuit (post-audit) — guard transverse : reply VOCAL/PHOTO/DOCUMENT
+    // à une carte no-match. Sans ça, le vocal partait dans `handleInboxVoice`
+    // et devenait une todo aléatoire. Ack utile + return.
+    const replyText = (update.message?.reply_to_message as { text?: string } | undefined)?.text ?? '';
+    const replyToNoMatchCard =
+      replyText.includes('Contact inconnu détecté') ||
+      replyText.includes('Contact WhatsApp inconnu');
+    const isNonTextReply =
+      (update.message?.voice || update.message?.photo?.length || update.message?.document) &&
+      update.message?.text === undefined &&
+      update.message?.reply_to_message;
+    if (replyToNoMatchCard && isNonTextReply && update.message) {
+      const chatId = update.message.chat.id;
+      if (isAllowedChatId(chatId)) {
+        await sendTelegramMessage(
+          chatId,
+          "\u{1F50A} Reply non-texte à une carte contact : seul le TEXTE est capté comme contexte. " +
+            "Réponds en texte (ou crée la fiche puis utilise `/enrichir <nom>` après).",
+        );
+      }
+      return Response.json({ ok: true });
+    }
+
     // 3a. Message texte — router 3 niveaux
     if (update.message?.text !== undefined) {
       const chatId = update.message.chat.id;
@@ -1344,7 +1378,19 @@ export async function POST(request: Request): Promise<Response> {
       // Si Thomas répond à une carte avec un texte AVANT de cliquer un bouton,
       // on capture ce texte comme contexte du pending — il sera intégré à la
       // fiche au moment du clic (priorité dans la section « Qui c'est »).
+      //
+      // S24 nuit (post-audit) — détection de reply à carte EXPIRÉE :
+      // si le `reply_to_message` est manifestement une carte no-match (texte
+      // contient « Contact inconnu » / « Contact WhatsApp inconnu ») mais
+      // aucun pending ne matche son `message_id` (déjà traité ou expiré 7j),
+      // on ack « carte expirée » et on RETURN — sans tomber dans le pipeline
+      // normal qui aurait créé une fausse tâche TickTick.
       const repliedToId = update.message.reply_to_message?.message_id;
+      const repliedToText = (update.message.reply_to_message as { text?: string } | undefined)?.text ?? '';
+      const looksLikeNoMatchCard =
+        repliedToText.includes('Contact inconnu détecté') ||
+        repliedToText.includes('Contact WhatsApp inconnu');
+
       if (repliedToId && text.trim().length > 0) {
         const userContext = text.trim();
         try {
@@ -1373,7 +1419,19 @@ export async function POST(request: Request): Promise<Response> {
               return Response.json({ ok: true });
             }
           }
-          // Pas un reply à une carte no-match → on laisse passer aux autres handlers.
+          // Pas de pending matché. Si c'est manifestement un reply à une carte
+          // no-match (texte d'origine reconnaissable) → carte expirée/cliquée.
+          // ack utile + RETURN pour ne pas créer une fausse tâche TickTick.
+          if (looksLikeNoMatchCard) {
+            await sendTelegramMessage(
+              chatId,
+              "\u{26A0}\u{FE0F} Cette carte a déjà été traitée ou a expiré (TTL 7j). " +
+                "Si tu veux compléter une fiche existante, utilise `/enrichir <nom>`.",
+            );
+            return Response.json({ ok: true });
+          }
+          // Sinon (reply à un autre message bot — CR, todo, etc.) → on laisse
+          // passer au pipeline normal.
         } catch (ctxErr) {
           console.warn(
             `[telegram-webhook] capture contexte no-match KO : ${ctxErr instanceof Error ? ctxErr.message : String(ctxErr)}`,
@@ -1381,6 +1439,9 @@ export async function POST(request: Request): Promise<Response> {
           // ne pas bloquer le flux normal
         }
       }
+
+      // (le guard voice/photo en reply à carte no-match est posé plus haut
+      //  dans la dispatch — cf. juste avant le branchement texte/voice/photo.)
 
       const normalizedText = text.trim().toLowerCase();
 

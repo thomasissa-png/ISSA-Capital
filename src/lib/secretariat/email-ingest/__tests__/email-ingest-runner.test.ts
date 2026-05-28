@@ -519,8 +519,9 @@ describe('runEmailIngest', () => {
     expect(mockSendValidationCard).not.toHaveBeenCalled();
 
     // SEULE la carte no-match (création de contact) est envoyée
-    // S24 soir : saveNoMatch est appelé 2 fois (init + re-save avec cardMessageId).
-    expect(mockSaveNoMatch).toHaveBeenCalledTimes(2);
+    // S24 nuit (post-audit) : saveNoMatch est appelé 1 fois (carte envoyée
+    // D'ABORD, pending sauvé UNE FOIS avec cardMessageId déjà rempli).
+    expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
     expect(mockSendNoMatchCard).toHaveBeenCalledTimes(1);
     expect(stats.contactCardsSent).toBe(1);
 
@@ -589,9 +590,9 @@ describe('runEmailIngest', () => {
     // Le noMatch est sauvegardé même si l'envoi de la carte échoue
     expect(stats.pendingCreated).toBe(1);
     expect(stats.errors).toBe(0);
-    // S24 soir : si l'envoi a échoué, on n'a que le save initial (pas de re-save
-    // avec cardMessageId — la valeur n'est jamais disponible).
-    expect(mockSaveNoMatch).toHaveBeenCalledTimes(1);
+    // S24 nuit (post-audit) : carte non envoyée → pending PAS sauvé du tout
+    // (sinon TTL 7j de pollution pour rien — le pending est inutilisable).
+    expect(mockSaveNoMatch).toHaveBeenCalledTimes(0);
     // L'envoi a échoué → la carte n'est pas comptée comme envoyée
     expect(stats.contactCardsSent).toBe(0);
   });

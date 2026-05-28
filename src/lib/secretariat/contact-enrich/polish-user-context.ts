@@ -15,13 +15,29 @@ import { callLLM } from '../llm/client';
 import type { ContactType } from '../telegram-validation/no-match-card';
 
 const TIMEOUT_MS = 15_000;
-const MAX_TOKENS = 512;
+// S24 nuit (post-audit) : bumpé de 512 → 2048 pour laisser de la marge sur les
+// contextes longs. Avec Haiku le polish a un ratio ~1:1 à 1:1.3 vs l'input,
+// donc 2048 tokens ≈ 5-6k caractères de sortie, largement assez pour les
+// notes Thomas (dictée vocale, paragraphes). Toujours protégé par la
+// détection de troncature ci-dessous (fallback brut si polish suspect).
+const MAX_TOKENS = 2048;
+
+/** Texte trop court (< 8 car. utiles) → on retourne tel quel, pas la peine
+ * de payer un LLM ni de risquer une reformulation maladroite. */
+const MIN_LENGTH_TO_POLISH = 8;
 
 /**
- * Texte trop court (< 8 car. utiles) → on retourne tel quel, pas la peine
- * de payer un LLM ni de risquer une reformulation maladroite.
+ * Détecte si le polish a probablement été TRONQUÉ par le cap MAX_TOKENS,
+ * auquel cas on perd la fin du texte de Thomas (violation directe de la red
+ * line « préserver TOUTES les infos »). Heuristique : fin abrupte sans
+ * ponctuation finale (ni `.`, `!`, `?`, `:`, ni fin de bloc markdown).
  */
-const MIN_LENGTH_TO_POLISH = 8;
+function looksTruncated(text: string): boolean {
+  const trimmed = text.trimEnd();
+  if (trimmed.length === 0) return false;
+  const lastChar = trimmed[trimmed.length - 1]!;
+  return !/[.!?:")\]'»]/u.test(lastChar);
+}
 
 const SYSTEM_PROMPT = `Tu reformules une note libre que Thomas a écrite à propos d'un contact qu'il vient d'ajouter à son répertoire, pour qu'elle s'intègre dans la section "## Qui c'est" de la fiche.
 
@@ -69,6 +85,15 @@ export async function polishUserContext(input: PolishUserContextInput): Promise<
     const polished = (text ?? '').trim();
     if (polished.length === 0) {
       return raw; // LLM vide → on garde le brut
+    }
+    // Garde-fou troncature : si le polish se termine sans ponctuation finale,
+    // probable cap MAX_TOKENS atteint → on perdrait la fin du texte de Thomas
+    // (et peut-être des infos clés : tél, email…). Fallback brut sécurisé.
+    if (looksTruncated(polished)) {
+      console.warn(
+        `[polish-user-context] sortie suspectée tronquée (fin "${polished.slice(-20)}") — fallback texte brut`,
+      );
+      return raw;
     }
     return polished;
   } catch (err) {

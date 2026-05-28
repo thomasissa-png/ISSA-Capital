@@ -56,6 +56,30 @@ describe('polishUserContext', () => {
     expect(r).toBe('Karim apporteur sur Henri Barbusse');
   });
 
+  it('sortie tronquée (sans ponctuation finale) → fallback texte brut (S24 nuit, audit)', async () => {
+    // Cas réel : Haiku atteint MAX_TOKENS et coupe au milieu d'une phrase.
+    mockCallLLM.mockResolvedValue({
+      text: 'Avocat Sarani, pilote la GAPD. Référent juridique. Son téléphone est 06 74',
+    });
+    const r = await polishUserContext({
+      rawText: 'Marc avocat sarani pilote gapd, son tel : 0674582100 et email m@cabinet.fr',
+      contactName: 'Marc',
+      type: 'pro',
+    });
+    // Pas de ponctuation finale → suspect tronqué → fallback brut
+    expect(r).toBe('Marc avocat sarani pilote gapd, son tel : 0674582100 et email m@cabinet.fr');
+  });
+
+  it('sortie avec ponctuation finale → utilisée', async () => {
+    mockCallLLM.mockResolvedValue({ text: 'Avocat Sarani, pilote la GAPD.' });
+    const r = await polishUserContext({
+      rawText: 'marc avocat sarani gapd',
+      contactName: 'Marc',
+      type: 'pro',
+    });
+    expect(r).toBe('Avocat Sarani, pilote la GAPD.');
+  });
+
   it('inclut le nom + type dans le prompt user', async () => {
     mockCallLLM.mockResolvedValue({ text: 'polished' });
     await polishUserContext({
