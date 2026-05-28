@@ -111,7 +111,30 @@ Vérifier dans un navigateur :
 - Pages site OK ;
 - Formulaire contact fonctionne (POST `/api/contact`).
 
-### Étape 4 — Cleanup (après 7 jours de stabilité)
+### Étape 4 — Retirer `tls internal` (juste après la bascule DNS)
+
+Le snippet contient `tls internal` pour permettre les tests pré-bascule (cert autosigné, sinon Let's Encrypt échoue tant que le DNS pointe sur Replit). Une fois le DNS basculé, **Caddy doit récupérer un vrai cert Let's Encrypt** sinon les visiteurs auront un warning "cert invalide".
+
+```bash
+# (a) Éditer le Caddyfile et retirer la ligne `tls internal` du bloc issa-capital
+sudo nano /etc/caddy/Caddyfile
+# OU plus rapide via sed :
+sudo sed -i '/^    tls internal$/d' /etc/caddy/Caddyfile
+
+# (b) Valider + reload
+sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy
+
+# (c) Caddy va automatiquement tenter le challenge ACME Let's Encrypt
+#     (~30 sec à 2 min). Vérifier dans les logs :
+sudo journalctl -u caddy -f -o cat | grep -E "issa-capital|acme|certificate"
+
+# (d) Quand un log "certificate obtained successfully" apparaît, le cert est OK.
+#     Tester :
+curl -I https://issa-capital.com
+# attendu : HTTP/2 200, PAS de warning cert
+```
+
+### Étape 5 — Cleanup (après 7 jours de stabilité)
 
 - Désactiver le projet Replit (économie ~$20-25/mois).
 - Retirer toute référence Replit du dépôt (`REPLIT_ACTIONS.md`, `.replit` si présent, conf next.config.js spécifique Replit).
