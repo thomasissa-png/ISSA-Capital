@@ -58,6 +58,7 @@ import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 import { writeBackCrToFiche } from '@/lib/secretariat/handlers/cr-writeback';
+import { writeBackCrToContacts } from '@/lib/secretariat/handlers/cr-contact-writeback';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
 import { backupToGoogleDrive, restoreFromGoogleDrive } from '@/lib/secretariat/drive-backup';
 import { getWorkflow } from '@/lib/secretariat/workflows/registry';
@@ -2071,6 +2072,29 @@ export async function POST(request: Request): Promise<Response> {
                   // Le write-back ne doit jamais casser le workflow CR.
                   console.warn(
                     '[telegram-webhook] write-back fiche Projet exception :',
+                    wbErr instanceof Error ? wbErr.message : wbErr,
+                  );
+                }
+
+                // 6ter. Write-back CR → fiches CONTACT des participants (S24).
+                // Symétrique du projet : ligne d'historique + lien PDF sur la
+                // fiche de chaque participant matché par nom. Idempotent. Le
+                // write-back contact ne doit jamais casser le workflow CR.
+                try {
+                  const contactWb = await writeBackCrToContacts({
+                    participants: pendingDraft.cr.participants,
+                    crDate: pendingDraft.cr.date_reunion,
+                    crTitle: craftTitle,
+                    crWebViewLink: driveLink,
+                    crFilename: pdfFilename,
+                    entiteCode: pendingDraft.cr.entite,
+                  });
+                  console.info(
+                    `[telegram-webhook] write-back contacts : ${contactWb.enriched} enrichies, ${contactWb.skippedIdempotent} déjà à jour, ${contactWb.notMatched.length} non matchées${contactWb.notMatched.length ? ` (${contactWb.notMatched.join(', ')})` : ''}${contactWb.ambiguous.length ? `, ${contactWb.ambiguous.length} ambigus (${contactWb.ambiguous.join(', ')})` : ''}${contactWb.errors ? `, ${contactWb.errors} erreurs` : ''}`,
+                  );
+                } catch (wbErr) {
+                  console.warn(
+                    '[telegram-webhook] write-back fiches contact exception :',
                     wbErr instanceof Error ? wbErr.message : wbErr,
                   );
                 }
