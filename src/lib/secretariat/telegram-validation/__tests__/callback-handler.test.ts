@@ -658,14 +658,17 @@ describe('handleTelegramCallback — no-match dispatch', () => {
     expect(auditCall.status).toBe('success');
   });
 
-  it('no-match expiré : envoie message "expirée"', async () => {
+  it('no-match expiré : neutralise le clavier (post-audit S24 nuit)', async () => {
     mockGetNoMatch.mockResolvedValue(null);
 
     await handleTelegramCallback(makeNoMatchCallback('pro', 'expired-id'));
 
-    const sendCalls = telegramFetchCalls.filter((c) => c.url.includes('sendMessage'));
-    expect(sendCalls.length).toBeGreaterThanOrEqual(1);
-    expect((sendCalls[0]!.body['text'] as string)).toContain('expirée ou introuvable');
+    // S24 nuit (post-audit) : on `editMessageText` (avec keyboard vide) au
+    // lieu d'envoyer un nouveau message → la carte n'a plus de boutons
+    // cliquables (pas de dead-end).
+    const editCalls = telegramFetchCalls.filter((c) => c.url.includes('editMessageText'));
+    expect(editCalls.length).toBeGreaterThanOrEqual(1);
+    expect((editCalls[0]!.body['text'] as string)).toMatch(/expir|déjà traitée/i);
 
     expect(mockCreateVaultFile).not.toHaveBeenCalled();
   });

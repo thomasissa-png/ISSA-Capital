@@ -624,6 +624,16 @@ async function handleNoMatchCallback(
 
   const trigger = `email_nomatch:${type}:${noMatch.id}`;
 
+  // S24 nuit (post-audit) — anti double-clic : re-vérifier que le pending
+  // existe AVANT d'écrire. Le mutex Drive est intra-process ; un 2e clic
+  // pendant le 1er traitement crée 2 fiches en doublon ou un message d'erreur
+  // confus. Si le pending a déjà été supprimé, on ack en mode silencieux.
+  const stillThere = await getNoMatch(noMatch.id);
+  if (!stillThere) {
+    console.warn(`[callback-handler] no-match ${noMatch.id} déjà traité (race / double-clic) — skip`);
+    return;
+  }
+
   // Créer le fichier via vault-client
   const success = await createVaultFile(targetFolder, filename, content, trigger);
 
@@ -798,9 +808,14 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
   try {
     const noMatch = await getNoMatch(noMatchId);
     if (!noMatch) {
-      await sendSimpleMessage(
+      // S24 nuit (post-audit) — neutraliser le clavier au lieu de juste alerter :
+      // sinon la carte (notamment en mode confirm Lier) reste cliquable avec
+      // pending null → dead-end (chaque clic suivant relog la même erreur).
+      await editMessageTextWithButtons(
         callback.chat_id,
-        '\u{26A0}\u{FE0F} Demande expirée ou introuvable. Crée la fiche manuellement si nécessaire.',
+        callback.message_id,
+        '\u{26A0}\u{FE0F} Carte expirée ou déjà traitée. (Boutons désactivés.)',
+        [],
       );
       return;
     }
@@ -895,9 +910,16 @@ async function handleNoMatchLink(
     // Lire la fiche existante.
     const read = await readFile(hint.folderPath, hint.filename);
     if (!read.success || !read.content) {
-      await sendSimpleMessage(
+      // S24 nuit (post-audit) — fiche cible inaccessible (renommée, supprimée,
+      // 401). Supprimer le pending casse la boucle « re-clic → même erreur »
+      // sinon Thomas reste bloqué. Carte neutralisée + conseil utile.
+      await deleteNoMatch(noMatch.id);
+      await editMessageTextWithButtons(
         callback.chat_id,
-        `\u{274C} Lecture fiche échouée (${hint.folderPath}/${hint.filename}).`,
+        callback.message_id,
+        `\u{274C} Fiche cible introuvable (${escapeHtml(hint.folderPath)}/${escapeHtml(hint.filename)}). ` +
+          `Vérifie si elle a été renommée. (Carte fermée.)`,
+        [],
       );
       return;
     }
@@ -1064,6 +1086,13 @@ async function handleWhatsappNoMatchCallback(
   const target = `${targetFolder}/${filename}`;
   const trigger = `whatsapp_nomatch:${type}:${noMatch.id}`;
 
+  // Anti double-clic : pending existe-t-il encore ?
+  const stillThere = await getWhatsappNoMatch(noMatch.id);
+  if (!stillThere) {
+    console.warn(`[callback-handler] wa-no-match ${noMatch.id} déjà traité — skip`);
+    return;
+  }
+
   const success = await createVaultFile(targetFolder, filename, fiche.content, trigger);
   if (!success) {
     console.warn(`[callback-handler] createVaultFile (WhatsApp) échoué pour ${target}`);
@@ -1175,9 +1204,14 @@ async function handleWhatsappNoMatchLink(
   try {
     const read = await readFile(hint.folderPath, hint.filename);
     if (!read.success || !read.content) {
-      await sendSimpleMessage(
+      // Fiche cible inaccessible → casse la boucle (audit S24 nuit).
+      await deleteWhatsappNoMatch(noMatch.id);
+      await editMessageTextWithButtons(
         callback.chat_id,
-        `\u{274C} Lecture fiche échouée (${hint.folderPath}/${hint.filename}).`,
+        callback.message_id,
+        `\u{274C} Fiche cible introuvable (${escapeHtml(hint.folderPath)}/${escapeHtml(hint.filename)}). ` +
+          `Vérifie si elle a été renommée. (Carte fermée.)`,
+        [],
       );
       return;
     }
@@ -1248,9 +1282,11 @@ async function handleWhatsappNoMatchDispatch(callback: TelegramCallback): Promis
   try {
     const noMatch = await getWhatsappNoMatch(noMatchId);
     if (!noMatch) {
-      await sendSimpleMessage(
+      await editMessageTextWithButtons(
         callback.chat_id,
-        '\u{26A0}\u{FE0F} Demande WhatsApp expirée ou introuvable.',
+        callback.message_id,
+        '\u{26A0}\u{FE0F} Carte WhatsApp expirée ou déjà traitée. (Boutons désactivés.)',
+        [],
       );
       return;
     }

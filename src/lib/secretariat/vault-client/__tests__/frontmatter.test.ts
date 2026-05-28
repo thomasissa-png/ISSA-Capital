@@ -9,6 +9,7 @@ import {
   parseObsidianFile,
   patchFrontmatterField,
   upsertFrontmatterField,
+  addToFrontmatterList,
   extractEmails,
   isBitIdentical,
 } from '../frontmatter';
@@ -458,6 +459,92 @@ describe('upsertFrontmatterField', () => {
     const originalBody = FIXTURE_CONTACT_PRO.slice(FIXTURE_CONTACT_PRO.indexOf('---', 4) + 4);
     const resultBody = result.slice(result.indexOf('---', 4) + 4);
     expect(resultBody).toBe(originalBody);
+  });
+});
+
+// ============================================================
+// Tests : addToFrontmatterList (S24 nuit — bouton « Lier »)
+// ============================================================
+
+describe('addToFrontmatterList', () => {
+  const FIXTURE_NO_ALIAS = `---
+type: contact
+email: maxime.lemoine@edhec.com
+telephone: +33 6 32 68 32 74
+---
+
+# Maxime Lemoine
+`;
+
+  const FIXTURE_WITH_ALIAS = `---
+type: contact
+email: kbeguigneau@gmail.com
+alias_email:
+  - kenanbe@gmail.com
+  - kenan.b@outlook.fr
+telephone: +33 6 11 22 33 44
+---
+
+# Kenan B.
+`;
+
+  const FIXTURE_FLOW_STYLE = `---
+type: contact
+email: x@y.fr
+alias_email: [a@b.fr, c@d.fr]
+---
+
+# Test
+`;
+
+  it('crée la liste si absente, après la clé ancre', () => {
+    const result = addToFrontmatterList(FIXTURE_NO_ALIAS, 'alias_email', 'maxime@versi.fr', 'email');
+    expect(result).toContain('alias_email:');
+    expect(result).toContain('  - maxime@versi.fr');
+    const idxEmail = result.indexOf('email:');
+    const idxAlias = result.indexOf('alias_email:');
+    const idxTel = result.indexOf('telephone:');
+    expect(idxEmail).toBeLessThan(idxAlias);
+    expect(idxAlias).toBeLessThan(idxTel);
+  });
+
+  it('append à une liste existante (bloc-style)', () => {
+    const result = addToFrontmatterList(
+      FIXTURE_WITH_ALIAS,
+      'alias_email',
+      'kenan@versi.fr',
+      'email',
+    );
+    expect(result).toContain('  - kenan@versi.fr');
+    expect(result).toContain('  - kenanbe@gmail.com');
+    expect(result).toContain('  - kenan.b@outlook.fr');
+  });
+
+  it('idempotent : valeur déjà présente → no-op (case-insensitive)', () => {
+    const result = addToFrontmatterList(
+      FIXTURE_WITH_ALIAS,
+      'alias_email',
+      'KenanBE@gmail.com',
+      'email',
+    );
+    expect(result).toBe(FIXTURE_WITH_ALIAS);
+  });
+
+  it('YAML flow-style → REFUSE l\'édition (anti-corruption, audit S24 nuit)', () => {
+    const result = addToFrontmatterList(FIXTURE_FLOW_STYLE, 'alias_email', 'new@x.fr', 'email');
+    // Inchangé : on préfère ne rien faire plutôt que casser le YAML.
+    expect(result).toBe(FIXTURE_FLOW_STYLE);
+    expect(result).not.toContain('  - new@x.fr');
+  });
+
+  it('frontmatter absent → contenu inchangé', () => {
+    const noFm = '# Titre\n\nsans frontmatter\n';
+    expect(addToFrontmatterList(noFm, 'alias_email', 'x@y.fr', 'email')).toBe(noFm);
+  });
+
+  it('clé ancre absente → contenu inchangé (pas de point d\'insertion fiable)', () => {
+    const noAnchor = '---\ntype: contact\n---\n\n# Test\n';
+    expect(addToFrontmatterList(noAnchor, 'alias_email', 'x@y.fr', 'email')).toBe(noAnchor);
   });
 });
 
