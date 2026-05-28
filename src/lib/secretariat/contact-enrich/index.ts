@@ -37,6 +37,8 @@ export interface EnrichContactInput {
   today: string;
   /** Référence du thread email d'origine (1re ligne d'historique). */
   emailThreadRef: string;
+  /** Contexte libre fourni par Thomas via reply Telegram avant son clic (S24 soir). */
+  userContext?: string | null;
 }
 
 export interface EnrichContactResult {
@@ -101,6 +103,7 @@ export async function enrichContact(
         today: input.today,
         emailThreadRef: input.emailThreadRef,
         sources,
+        userContext: input.userContext ?? null,
       },
       scanned,
     );

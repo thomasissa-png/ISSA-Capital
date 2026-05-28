@@ -619,6 +619,40 @@ export async function getNoMatch(id: string): Promise<NoMatchPending | null> {
   });
 }
 
+/** Cherche un NoMatchPending par cardMessageId (reply Telegram → contexte, S24 soir). */
+export async function findNoMatchByCardMessageId(
+  messageId: number,
+): Promise<NoMatchPending | null> {
+  return withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return null;
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return null;
+    for (const p of Object.values(result.store.pendings)) {
+      if (p.cardMessageId === messageId) return p;
+    }
+    return null;
+  });
+}
+
+/** Met à jour le userContext d'un NoMatchPending (S24 soir). */
+export async function updateNoMatchUserContext(
+  id: string,
+  userContext: string,
+): Promise<boolean> {
+  return withNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return false;
+    const result = await loadOrCreateNoMatchStore(accessToken);
+    if (!result) return false;
+    const { store, fileId } = result;
+    const existing = store.pendings[id];
+    if (!existing) return false;
+    store.pendings[id] = { ...existing, userContext };
+    return writeNoMatchStore(accessToken, fileId, store);
+  });
+}
+
 /**
  * Supprime un NoMatchPending du store.
  */

@@ -40,7 +40,9 @@ describe('buildWhatsappNoMatchCard', () => {
     expect(labels.some((l) => l.includes('Skip'))).toBe(true);
 
     for (const b of allButtons) {
-      expect(b.callback_data).toMatch(/^wa_nomatch:(pro|famille|amis|autres|skip):uuid-abc$/);
+      // Tous les boutons no-match ont un callback_data (jamais un url-button).
+      const cb = (b as { callback_data?: string }).callback_data;
+      expect(cb).toMatch(/^wa_nomatch:(pro|famille|amis|autres|skip):uuid-abc$/);
     }
   });
 

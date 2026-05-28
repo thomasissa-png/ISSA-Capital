@@ -33,6 +33,10 @@ export interface NoMatchPending {
   emailThreadRef: string;
   /** Timestamp ISO de création */
   createdAt: string;
+  /** message_id de la carte Telegram (pour retrouver le pending au reply, S24 soir). Optionnel pour rétro-compatibilité des pendings déjà en store. */
+  cardMessageId?: number | null;
+  /** Texte libre fourni par Thomas via reply Telegram AVANT son clic (S24 soir). Optionnel. */
+  userContext?: string | null;
 }
 
 /** Types de contact valides pour la création de fiche */
@@ -81,8 +85,9 @@ export function buildNoMatchCard(noMatch: NoMatchPending): {
   lines.push(`<b>Suggestion triage</b> : ${escapeHtml(noMatch.defaultType)}`);
   lines.push('');
 
-  // Question
+  // Question + astuce contexte (S24 soir)
   lines.push('Veux-tu créer une fiche pour ce contact ? Choisis le type :');
+  lines.push('<i>Astuce : réponds à ce message AVANT de cliquer pour ajouter du contexte.</i>');
 
   const text = lines.join('\n');
 

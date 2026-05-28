@@ -155,6 +155,8 @@ export function renderEnrichedFiche(
     emailThreadRef: string;
     /** Sources ayant contribué (gmail, outlook:sarani…) — note d'historique. */
     sources?: string[];
+    /** Contexte libre fourni par Thomas via reply Telegram avant son clic (S24 soir). */
+    userContext?: string | null;
   },
   scannedCount: number,
 ): { displayName: string; content: string } {
@@ -187,9 +189,14 @@ export function renderEnrichedFiche(
     '',
     `# ${displayName}`,
     '',
-    '## Synthèse',
-    '',
   ];
+
+  // S24 soir — contexte fourni par Thomas (reply Telegram avant clic) en tête.
+  if (ctx.userContext && ctx.userContext.trim().length > 0) {
+    lines.push('## Qui c\'est', '', ctx.userContext.trim(), '');
+  }
+
+  lines.push('## Synthèse', '');
 
   // Corps de synthèse — uniquement les champs connus.
   const synthLines: string[] = [];

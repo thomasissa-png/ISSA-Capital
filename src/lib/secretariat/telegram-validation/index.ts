@@ -26,6 +26,8 @@ export {
   getNoMatch,
   deleteNoMatch,
   purgeExpiredNoMatch,
+  findNoMatchByCardMessageId,
+  updateNoMatchUserContext,
   saveWhatsappNoMatch,
   getWhatsappNoMatch,
   deleteWhatsappNoMatch,

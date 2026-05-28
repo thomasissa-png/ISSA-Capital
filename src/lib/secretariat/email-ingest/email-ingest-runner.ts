@@ -455,8 +455,14 @@ async function processOneEmail(
     await saveNoMatch(noMatch);
 
     try {
-      await sendNoMatchCard(noMatch);
+      const sent = await sendNoMatchCard(noMatch);
       stats.contactCardsSent++;
+      // S24 soir — on persiste le message_id de la carte pour permettre à
+      // Thomas d'ajouter du contexte en répondant au message Telegram AVANT
+      // de cliquer un bouton (reply → pending.userContext → intégré dans la
+      // fiche créée). Re-save = 1 PATCH Drive de plus, acceptable (~1/no-match).
+      noMatch.cardMessageId = sent.messageId;
+      await saveNoMatch(noMatch);
     } catch (err) {
       console.warn(
         `[email-ingest] erreur envoi carte no-match pour ${messageId} : ${err instanceof Error ? err.message : String(err)}`,

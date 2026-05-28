@@ -107,7 +107,13 @@ import {
   handleInboxEditText,
   hasActivePendingEdit,
 } from '@/lib/secretariat/handlers/inbox-edit';
-import { handleTelegramCallback as handleEmailValCallback } from '@/lib/secretariat/telegram-validation';
+import {
+  handleTelegramCallback as handleEmailValCallback,
+  findNoMatchByCardMessageId,
+  updateNoMatchUserContext,
+  findWhatsappNoMatchByCardMessageId,
+  updateWhatsappNoMatchUserContext,
+} from '@/lib/secretariat/telegram-validation';
 import { handleHealthRenewed } from '@/lib/secretariat/telegram-validation/handlers/health-renewed';
 import { handleHealthSnooze } from '@/lib/secretariat/telegram-validation/handlers/health-snooze';
 import {
@@ -1273,6 +1279,45 @@ export async function POST(request: Request): Promise<Response> {
       if (!isAllowedChatId(chatId)) {
         console.warn(`[telegram-webhook] chat_id ${chatId} non autorisé`);
         return Response.json({ ok: true });
+      }
+
+      // ── S24 soir — Reply à une carte no-match (email OU WhatsApp) ────
+      // Si Thomas répond à une carte avec un texte AVANT de cliquer un bouton,
+      // on capture ce texte comme contexte du pending — il sera intégré à la
+      // fiche au moment du clic (priorité dans la section « Qui c'est »).
+      const repliedToId = update.message.reply_to_message?.message_id;
+      if (repliedToId && text.trim().length > 0) {
+        const userContext = text.trim();
+        try {
+          const emailNoMatch = await findNoMatchByCardMessageId(repliedToId);
+          if (emailNoMatch) {
+            const ok = await updateNoMatchUserContext(emailNoMatch.id, userContext);
+            if (ok) {
+              await sendTelegramMessage(
+                chatId,
+                `\u{1F4DD} Contexte noté pour ${emailNoMatch.emailFrom}. Clique sur un type quand tu veux.`,
+              );
+              return Response.json({ ok: true });
+            }
+          }
+          const waNoMatch = await findWhatsappNoMatchByCardMessageId(repliedToId);
+          if (waNoMatch) {
+            const ok = await updateWhatsappNoMatchUserContext(waNoMatch.id, userContext);
+            if (ok) {
+              await sendTelegramMessage(
+                chatId,
+                `\u{1F4DD} Contexte noté pour « ${waNoMatch.chatName} ». Clique sur un type quand tu veux.`,
+              );
+              return Response.json({ ok: true });
+            }
+          }
+          // Pas un reply à une carte no-match → on laisse passer aux autres handlers.
+        } catch (ctxErr) {
+          console.warn(
+            `[telegram-webhook] capture contexte no-match KO : ${ctxErr instanceof Error ? ctxErr.message : String(ctxErr)}`,
+          );
+          // ne pas bloquer le flux normal
+        }
       }
 
       const normalizedText = text.trim().toLowerCase();

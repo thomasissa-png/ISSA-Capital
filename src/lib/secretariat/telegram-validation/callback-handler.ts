@@ -463,6 +463,13 @@ function buildStubFiche(
     ? noMatch.nameFrom
     : extractLocalPart(noMatch.emailFrom);
 
+  // S24 soir — contexte fourni par Thomas (reply Telegram avant clic) inséré
+  // en tête de la fiche pour qu'elle ne soit pas vide / hors-contexte.
+  const quiCest: string[] = [];
+  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
+    quiCest.push('## Qui c\'est', '', noMatch.userContext.trim(), '');
+  }
+
   const content = [
     '---',
     'type: contact',
@@ -481,6 +488,7 @@ function buildStubFiche(
     '',
     `# ${displayName}`,
     '',
+    ...quiCest,
     '## Historique',
     '',
     buildHistoriqueTitle(today, 'Premier contact email'),
@@ -510,6 +518,7 @@ async function buildEnrichedFiche(
     type,
     today,
     emailThreadRef: noMatch.emailThreadRef,
+    userContext: noMatch.userContext ?? null,
   });
 }
 
