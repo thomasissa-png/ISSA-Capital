@@ -22,6 +22,7 @@ import type {
   UpdateTaskInput,
 } from './types';
 import { getTickTickAccessToken } from './oauth';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 
 // ============================================================
 // Constantes
@@ -74,19 +75,66 @@ async function tickTickFetch<T>(
  * Cache process de l'ID du projet Inbox. L'API Open ne liste PAS l'Inbox via
  * `/project`, MAIS une tâche créée SANS `projectId` y atterrit et la réponse
  * porte alors le vrai `projectId` de l'Inbox → on le capte au vol (cf. createTask).
- * Persiste sur globalThis pour survivre aux re-évaluations Next.js.
+ *
+ * Persistance double (S24 soir) :
+ *  - `globalThis` pour survivre aux re-évaluations Next.js entre requêtes.
+ *  - fichier disque pour survivre aux REDÉMARRAGES du service (sinon : après
+ *    chaque restart, l'inbox redevient invisible jusqu'à la prochaine écriture
+ *    → poll/morning-brief manquaient les tâches de l'inbox).
  */
 const INBOX_ID_CACHE_KEY = '__issa_ticktick_inbox_id__' as const;
+const INBOX_PERSIST_PATH = (process.env.TICKTICK_INBOX_CACHE_FILE ?? '').trim()
+  || `${process.env.HOME ?? '/tmp'}/.anya-ticktick-inbox.json`;
+
+function readPersistedInboxId(): string | null {
+  try {
+    if (!existsSync(INBOX_PERSIST_PATH)) return null;
+    const raw = readFileSync(INBOX_PERSIST_PATH, 'utf8');
+    const data = JSON.parse(raw) as { inboxId?: string };
+    return data.inboxId && typeof data.inboxId === 'string' ? data.inboxId : null;
+  } catch (err) {
+    console.warn(
+      `[ticktick-client] lecture cache inbox ${INBOX_PERSIST_PATH} KO : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return null;
+  }
+}
+
+function writePersistedInboxId(id: string): void {
+  try {
+    writeFileSync(INBOX_PERSIST_PATH, JSON.stringify({ inboxId: id }), 'utf8');
+  } catch (err) {
+    console.warn(
+      `[ticktick-client] écriture cache inbox ${INBOX_PERSIST_PATH} KO : ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
 
 function getCachedInboxId(): string | null {
-  return ((globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] as string | undefined) ?? null;
+  const fromMemory =
+    ((globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] as string | undefined) ?? null;
+  if (fromMemory) return fromMemory;
+  // Cache mémoire vide (premier appel après restart) → tenter le disque.
+  const fromDisk = readPersistedInboxId();
+  if (fromDisk) {
+    (globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] = fromDisk;
+    console.warn(`[ticktick-client] inbox restaurée du cache disque : ${fromDisk}`);
+    return fromDisk;
+  }
+  return null;
 }
 function setCachedInboxId(id: string): void {
   (globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY] = id;
+  writePersistedInboxId(id);
 }
 /** Réinitialise le cache Inbox (tests). */
 export function _clearInboxIdCache(): void {
   delete (globalThis as Record<string, unknown>)[INBOX_ID_CACHE_KEY];
+  try {
+    if (existsSync(INBOX_PERSIST_PATH)) unlinkSync(INBOX_PERSIST_PATH);
+  } catch {
+    // best-effort
+  }
 }
 
 // ============================================================
