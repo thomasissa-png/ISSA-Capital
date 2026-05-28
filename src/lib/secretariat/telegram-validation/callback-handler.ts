@@ -54,6 +54,34 @@ function invalidateContactCachesAfterWrite(): void {
   invalidateContactsCache();
   invalidateVaultContactsCache();
 }
+
+/**
+ * Extrait les 3-4 premières lignes utiles de la section `## Qui c'est` du
+ * contenu fiche pour preview dans le message de succès Telegram (audit
+ * S24 nuit : « rendre le polish accountable »).
+ * Retourne `null` si la section est absente / vide.
+ */
+function extractQuiCestPreview(content: string, maxLines = 4): string | null {
+  const lines = content.split('\n');
+  let capturing = false;
+  const captured: string[] = [];
+  for (const line of lines) {
+    if (/^##\s+Qui c'est\s*$/i.test(line)) {
+      capturing = true;
+      continue;
+    }
+    if (capturing) {
+      if (/^##\s/.test(line)) break;
+      const t = line.trim();
+      if (t.length === 0) continue;
+      // Skip italic placeholders type « _Contact ajouté…_ ».
+      if (/^_[^_]*_$/.test(t)) continue;
+      captured.push(t);
+      if (captured.length >= maxLines) break;
+    }
+  }
+  return captured.length > 0 ? captured.join('\n') : null;
+}
 import { addTaskToTickTick, mapTodoPriority } from '../ticktick/inbox-task';
 import { markProcessed } from '../gmail-source/gmail-source';
 import { writeAuditLog } from '../vault-client/audit-log';
@@ -636,6 +664,12 @@ async function handleNoMatchCallback(
       suffix += `\n<i>${enriched.scanned} email(s) — ${escapeHtml(enriched.sources.join(', '))}</i>`;
     }
   }
+  // S24 nuit (audit) — preview de la section « Qui c'est » polie. Rend
+  // visible ce qu'Anya a écrit (texte de Thomas reformulé par Haiku).
+  const quiCest = extractQuiCestPreview(content);
+  if (quiCest) {
+    suffix += `\n\n📝 <b>Qui c'est</b> (extrait) :\n<i>${escapeHtml(quiCest)}</i>`;
+  }
   await editMessageText(callback.chat_id, callback.message_id, originalText + suffix);
 }
 
@@ -1050,10 +1084,21 @@ async function handleWhatsappNoMatchCallback(
 
   const { text: originalText } = buildWhatsappNoMatchCard(noMatch);
   const time = currentTimeHHMM();
-  const ctxNote = noMatch.userContext
-    ? '\n<i>Contexte fourni par toi inclus.</i>'
-    : '';
-  const suffix = `\n\n\u{2705} Fiche créée : ${target} à ${time}${ctxNote}`;
+  let suffix = `\n\n\u{2705} Fiche créée : ${target} à ${time}`;
+
+  // S24 nuit (audit) — preview du « Qui c'est » polish, rend visible ce qui a
+  // été écrit (incl. la reformulation Haiku du userContext fourni).
+  const quiCest = extractQuiCestPreview(fiche.content);
+  if (quiCest) {
+    suffix += `\n\n📝 <b>Qui c'est</b> (extrait) :\n<i>${escapeHtml(quiCest)}</i>`;
+  }
+
+  // Comble l'asymétrie email vs WhatsApp : la fiche WhatsApp n'a pas d'email
+  // donc pas de cross-boîtes possible (enrichContact a besoin d'un email).
+  // Si Thomas connaît l'email du contact, il peut compléter via /enrichir
+  // une fois la fiche créée — on lui glisse le conseil.
+  suffix += `\n\n<i>💡 Si tu connais son email, complète la fiche avec :</i> <code>/enrichir ${escapeHtml(fiche.displayName)}</code>`;
+
   await editMessageText(callback.chat_id, callback.message_id, originalText + suffix);
 }
 
