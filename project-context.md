@@ -278,6 +278,7 @@ Les informations suivantes sont archivées dans `docs/project-context-archive.md
 | fullstack (S22) | 2026-05-25 | `llm/models.ts` (registre TASK_MODEL par tâche), `llm/client.ts` (dispatcher `callLLM`), `llm/deepseek-client.ts` (fetch OpenAI-compat), `health-monitor/deepseek-usage.ts`. **PR #5 mergée + déployée**. 1951 tests. | **Routage LLM PAR TÂCHE** : `deepseek-v4-flash` pour inbox-router/triage/hot-context-detect+modify/email-draft ; CR reste Sonnet (web_search). **No-fallback** (erreur DeepSeek propagée, jamais de bascule Claude). Rollback par tâche = env `LLM_TASK_OVERRIDE_<TASK>`. | `DEEPSEEK_API_KEY` posée sur VPS, **validée en prod (1 appel `deepseek-v4-flash` OK, 0 erreur)**. |
 | orchestrator (S22) | 2026-05-25 | diagnostic calendar-ingest + lecture plan MCP debug vault | **calendar-ingest** : 21 events tous en erreur car dossier `06. Réunions` ABSENT du vault + `createVaultFile` ne crée pas les dossiers parents (raison avalée, non loggée). Décision Thomas : **`06. Réunions` abandonné** → réunions servent à MAJ historiques projets/contacts + todos (refonte à cadrer). **MCP debug VPS** : Cowork a déployé `vps-mcp.issa-capital.com` (joignable, HTTP 404 racine = up), à enregistrer comme connecteur dans l'**env Claude Code web** (≠ Cowork). | Les connecteurs MCP se chargent au DÉMARRAGE de session → tester en session fraîche S23. |
 | claude-code (S23) | 2026-05-27 | **PRs #32-39** (toutes mergées + déployées VPS). email-ingest (sources parallèles + markProcessed final + cap 8/source/run). beeper-client (lecture SQLite via **snapshot** WAL-safe + `BEEPER_INCLUDE`). whatsapp-ingest **V1→V3** (enrichissement vault Contact/Projet + match contact par **téléphone** + brouillon email + Telegram si todo/action). hot-context-review (**revue nocturne autonome 22h Paris**, Sonnet, remplace le nag V0). ticktick (fetch **Inbox** + section Inbox en dernier). **Fiches vault corrigées en place** (8 Beeper/WhatsApp + Email Ingest + Hot Context Updater + index Workflows + Anya.md + Anya v2.0). **3 outils n8n** ajoutés (Lire/MAJ-contenu/Créer fichier vault). 2069 tests verts. | **4 bugs prod corrigés** : Outlook jamais traité (markProcessed manquant → boucle + timeout) ; WhatsApp lecture WAL readonly cassée (snapshot copie) ; TickTick Inbox absent de Todo.md ; hot-context périmé. Édition vault en place débloquée (PATCH média n8n). | Décisions Thomas verbatim : WhatsApp « comme les emails » + Telegram **seulement** si todo/action ; exclure sarani/ubi MAIS garder « Reprise Sarani » (inclusion prioritaire) ; hot-context = **revue auto, pas de nag** (« ça ne devrait pas dépendre de moi ») ; match contact par téléphone. Alternatives écartées : édition vault create+delete (R5 P0) → PATCH média ; nag staleness V0 → revue nocturne. |
+| claude-code (S24) | 2026-05-28 | **14 PRs mergées + déployées VPS** (#47→#60). **PR #47** : cache token Google (anti-401 Drive) + DeepSeek hot-context tolérant (cleanEditable + parseReviewOutput). **PR #48** : garde « destinataire direct » email (Cc seul → pas de brouillon ; doc/todo conservés). **PR #49** : `canal_préféré` + `fréquence_échanges` dérivés de l'historique (relation-stats.ts) — recalculés à chaque interaction contact. **PR #50** : 4 fix prod (cache vault anti-empoisonnement 401, clé `date_derniere_interaction` SANS accent, domains→société embarqué dans code anti-ENOENT bundling, parse JSON synthèse fiche tolérant — fini stubs vides type Ameena Gorton). **PR #51** : TickTick inbox ID persisté sur disque (`~/.anya-ticktick-inbox.json`) → survit aux restarts → morning brief synchro. **PR #52** : write-back CR → fiches contact des participants (symétrie projet, idempotent, déclenche relation-stats). **PR #53** : carte Telegram « contact WhatsApp inconnu » (symétrie email) — 5 boutons + store séparé + handler. **PR #54** : capture du contexte via reply Telegram sur les 2 flux (email + WhatsApp) → `userContext` intégré en section « Qui c'est » de la fiche créée. **PR #55** : polit le contexte via LLM Haiku 4.5 (zéro invention, ton fiche, fallback brut si KO). **PR #56** : détection homonyme + bouton « 🔗 Lier à contact existant » qui ajoute en `alias_email` / `alias_telephone`. **PR #57** : sécurise Lier — confirmation 2 étapes + ambiguïté homonyme (cap 3 boutons, jamais silencieusement le premier) + invalidate cache contacts après écriture. **PR #58** : commande `/pending` (récap cartes no-match actives). **PR #59** : preview « Qui c'est » dans message de succès + conseil `/enrichir` post-WhatsApp. **PR #60** : 9 bugs réels remontés par revue critique reviewer (YAML flow-style corruption, race cardMessageId → TickTick fantôme, polish LLM tronqué, reply à carte expirée → tâche fantôme, double-clic race, link_cancel pending null → carte morte, link_yes fiche cible disparue → loop, /pending Drive KO → faux "0", reply VOCAL/PHOTO → tâche fantôme). **5 fiches vault MAJ** (Email Ingest v2.2, Draft Email v7, No-match Contact v4.0, WhatsApp Ingest v3.3, CR Write-back v2.0). **2175 tests verts**. | **Réorientation majeure** : audit qualité demandé par Thomas mid-session → reviewer agent → 9 trous trouvés → tous corrigés (PR #60). Première fois cette session que je lance un reviewer pour me challenger sur mon propre travail. Bon réflexe à institutionnaliser après chantier ≥ 3 PRs. | Décisions Thomas verbatim S24 : « Si je suis en copie ne veut pas dire de ne pas mettre à jour des fiches projets ou contact » (Cc gate ne touche QUE le brouillon, doc reste faite) ; « le hot context doit vivre seul sans moi, anya doit apprendre a me comprendre » (revue autonome + DeepSeek Pro + relecture) ; « Pour deepseek ta réponse a l'air paresseuse, fais ça bien jusqu'au bout » (rejeté un compromis bâclé sur le hot-context) ; « Anya doit me proposer de créer les contacts restants » (carte WhatsApp no-match) ; « il faut que je puisse ajouter un peu de contexte » (reply pour userContext) ; « si jamais je ne veux pas que le texte soit inséré tel quel mais que Anya repasse dessus » (polish LLM zéro invention) ; « Rajoute la possibilité d'ajouter un nouveau contact à un contact existant » (bouton Lier) ; « revoie tout ce que tu as fait et verifie ni bug ni trou » (audit reviewer → PR #60). Alternatives écartées : (a) auto-enrichir full-auto WhatsApp (scan par nom) reporté en V2 (conseil `/enrichir <nom>` suffit V1) ; (b) mode batch cartes refusé (« y en a pas tant que ça ») ; (c) `If-Match` revisionId sur Drive writes accepté V1 (mutex intra-process suffit, pas multi-instance Vercel ici). |
 
 ---
 
@@ -297,42 +298,65 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 
 ---
 
-## Mémo de reprise — Session 24
+## Mémo de reprise — Session 25
 
-- **Date de clôture S23** : 2026-05-27
-- **Session clôturée** : 23 (réparation prod Anya : Outlook + WhatsApp + TickTick + hot-context ; édition vault en place débloquée)
-- **Prochaine session** : 24
-- **Branche tronc / déployée** : **`main`**. **Le VPS suit `main` et se redéploie seul <5 min après un push** (`anya-autoupdate.sh`). PRs S23 #32→#39 mergées + déployées.
+- **Date de clôture S24** : 2026-05-28
+- **Session clôturée** : 24 (chantier complet « nouveaux contacts » : Cc gate + canal/fréquence + WhatsApp no-match + reply contexte + polish LLM + Lier homonyme + sécurité + /pending + preview + bugfix audit reviewer)
+- **Prochaine session** : 25
+- **Branche tronc / déployée** : **`main`**. Le VPS suit `main` et se redéploie seul <5 min (`anya-autoupdate.sh`). 14 PRs S24 (#47→#60) mergées + déployées.
 - **Workflow git** : brancher depuis `main` → PR → merge dans `main`.
-- **Nouveauté clé S23** : le **vault est éditable en place** via 3 outils MCP n8n — `Lire_contenu_brut`, `Mettre_a_jour_contenu_fichier` (PATCH média, préserve fileId/wikilinks), `Creer_fichier_vault`. ⚠️ ils renvoient une **erreur cosmétique « circular structure » même en cas de succès** → toujours vérifier par un `Lire_contenu_brut`.
+- **Nouveauté clé S24** : pattern UX « **carte Telegram avec confirmation 2 étapes** » pour toute action irréversible côté Drive (ex. bouton « Lier à fiche existante »). À répliquer pour d'autres opérations risquées.
 
-### Résumé S23 (5 lignes)
+### Résumé S24 (5 lignes)
 
-(1) **Bug Outlook corrigé** : un email « intéressant » n'était jamais marqué traité (`markProcessed` manquant) → re-traité en boucle, backlog Outlook jamais drainé, run saturé. Fix = markProcessed final + cap 8/source/run. **Prouvé en prod** (brouillon Outlook créé). (2) **WhatsApp V1→V3** : lecture SQLite réparée (snapshot WAL-safe), enrichissement vault (Contact via **téléphone** + Projet), brouillon email, Telegram **seulement** si todo/action ; exclusion sarani/ubi + inclusion « Reprise Sarani ». (3) **hot-context** : remplacé le nag par une **revue nocturne autonome 22h Paris** (Sonnet écrit le mémo seul + Telegram des changements). (4) **TickTick** : fetch Inbox + section Inbox en dernier (PR #39) — **Inbox pas auto-résolue, voir blockers**. (5) **Fiches vault corrigées en place** (Beeper, Email Ingest, Hot Context Updater, index Workflows, Anya v2.0). 2069 tests verts.
+(1) **Email Cc gate + enrichissement relation** : `addressee.ts` (brouillon seulement si Thomas dans To, pas Cc) + `relation-stats.ts` (`canal_préféré` + `fréquence_échanges` dérivés de l'historique tous canaux, recalculés à chaque interaction). (2) **4 fix prod identifiés en debug live Maxime/Christophe/Ihssane/Ameena** : cache vault anti-empoisonnement 401, clé `date_derniere_interaction` SANS accent, domains→société embarqué (anti-ENOENT bundling), parse JSON synthèse tolérant `<think>`/virgules. (3) **TickTick inbox persiste sur disque** (#51) → morning brief sync. (4) **Chantier nouveaux contacts complet** (#53 carte WhatsApp + #54 reply pour contexte + #55 polish LLM Haiku + #56-57 bouton Lier avec confirm 2 étapes + ambiguïté + cache invalidate + #58 `/pending` + #59 preview Qui c'est + conseil enrichir). (5) **Audit critique reviewer mid-chantier** → **PR #60 corrige 9 bugs réels** (YAML flow corruption, race cardMessageId, polish tronqué, reply à carte expirée → TickTick fantôme, double-clic, link_cancel pending null, link_yes fiche disparue, /pending Drive KO, reply VOCAL/PHOTO → tâche fantôme). 2175 tests verts.
 
-### Travaux en cours / reportés S24 (par priorité)
+### Travaux en cours / reportés S25 (par priorité)
 
-1. **🥇 Enrichissement fiches contact (gros — spec Cowork pastée par Thomas)** : aujourd'hui une fiche contact créée sur expéditeur inconnu = **stub** (bug réel « Marc Oms » au lieu de « Marc Gernot », société/rôle/tél vides ; la fiche précise a été corrigée à la main, mais le FEATURE reste à coder). À faire dans `email-ingest`/`handlers/a-classifier` : étape `enrichContact` APRÈS validation Thomas → (1) parsing nom LLM (jamais regex ; red-line « NOM, Prénom » Outlook + codes MAJ type OMS en notes), (2) `domains.yml` mapping domaine→société, (3) recherche cross-boîtes Gmail+2 Outlook (timeout 30s), (4) synthèse historique Haiku (cap 10 entrées), (5) extraction signature, (6) fiche enrichie (`07. Contacts/03. Pro/<nom>.md`, slugify ASCII), (7) carte Telegram preview enrichie + commande `/enrichir <nom>` (idempotent). 10+ tests. Env : `ENRICH_TIMEOUT_MS`, `ENRICH_MAX_EMAILS`, `ENRICH_DOMAINS_YML_PATH`.
-2. **TickTick — 2 finitions** : (a) **Inbox non auto-résolue** (log `[ticktick-client] inbox non résolu`) → poser **`TICKTICK_INBOX_PROJECT_ID`** sur le VPS (Cowork peut donner l'id via l'API), OU ajouter un log de la liste des projets pour le capturer. (b) **`inbox-message-router` append dans `Todo.md` qui est ÉCRASÉ par le miroir** (tâches Telegram disparaissent !) → passer à `createTask` (existe déjà dans `ticktick-client.ts`) vers `TICKTICK_DEFAULT_PROJECT_ID` (= Important `6a0c57dc8f088bc89e671119`), fallback append + alerte. Le miroir Inbox + ordre = **déjà fait PR #39**.
-3. **Monitoring à confirmer en prod** (crons pas encore passés à la clôture) : email 15h (drainage Outlook 25/7→0), WhatsApp **17h20 UTC** (1er run post-fix), revue hot-context **22h Paris** (1er run). Lire `journal_anya`.
-4. **Legacy `pollTickTickTasks`** (ticktick-sync) toujours invoqué par cron-poll mais **vestigial** (sa sortie Todo.md est écrasée par le miroir ; utilise l'état `ticktick-sync-state.json` supprimé, se réinitialise). À retirer du cron-poll dans une PR dédiée.
-5. **Carry-over S22 non traités** : refonte calendar-ingest (`06. Réunions` abandonné → historiques+todos), branche orpheline `claude/youthful-darwin-FiyWQ` (régression gates), OAuth Anya 7j.
+1. **🥇 Confirmation en prod des fixes S24** (non testable d'ici) — au prochain run, vérifier dans `journal_anya` : (a) plus de 401 Drive en rafale post-PR #47 ; (b) `[contacts-cache] chargé N contact(s) ... X pros` avec X > 0 (PR #50 cache anti-poisoning) ; (c) Maxime/Ihssane/Christophe enrichis si nouveau mail Sarani ; (d) au prochain CR vocal, la fiche participant reçoit bien une ligne d'historique (PR #52) ; (e) morning brief inclut bien les 19+ tâches inbox TickTick (PR #51).
+2. **Auto-enrichir WhatsApp V2** (reporté en V1 par décision Thomas — conseil `/enrichir <nom>` suffit V1) : scan Gmail/Outlook PAR NOM (pas par email) pour deviner l'email d'un contact WhatsApp fraîchement créé, puis lancer `enrichContact` automatique. Mesurer le besoin réel en S25 avant de coder.
+3. **Calendrier — réservations resto/RDV (carry-over S23)** : email/WhatsApp évoque une réservation → check Google Calendar → créer event si absent. Garder la notif Telegram.
+4. **WhatsApp `hasReplyFromMe` équivalent** : cas Martin signalé S23 — Anya prépare un brouillon WhatsApp alors que Thomas a déjà répondu. Logique parallèle au `hasReplyFromMe` Gmail.
+5. **Curseur WhatsApp transactionnel complet** : R1 plein — ne pas avancer le curseur si l'enrichissement vault échoue (pas seulement si la lecture Beeper échoue, ce qui est déjà géré PR #44).
+6. **OAuth Google passage en production** (action Thomas, pas code) : sortir l'app du mode « Testing » sinon refresh token expire tous les 7 j. Risque latent.
+7. **Carry-over S22 non traités** : refonte calendar-ingest (`06. Réunions` abandonné → historiques+todos), branche orpheline `claude/youthful-darwin-FiyWQ` (régression gates).
 
 ### Blockers (décisions / infos en attente)
-- **`TICKTICK_INBOX_PROJECT_ID`** + **`TICKTICK_DEFAULT_PROJECT_ID`** à poser sur le VPS `.env.local` (sinon Inbox non pollée + tâches Telegram perdues).
-- Confirmer en prod : Outlook draine, WhatsApp 17h20, revue hot-context 22h.
 
-### Nom de branche recommandé S24
-`claude/issa-capital-s24-contact-enrich-[suffix]` (suffix alphanum généré par Claude Code).
+- **Aucun blocker code** côté S25. Tout dépend de retours d'usage S24 (Maxime enrichi ? Carte WhatsApp utile ? Reply pour contexte fluide ?) → Thomas doit utiliser ~3 jours puis dire ce qui frotte vraiment.
+- **OAuth Google « Testing » → « Production »** : décision/action de Thomas dans Google Cloud Console. Bloque rien tant que pas de panne, mais latent.
 
-### Commande de reprise S24
+### Nom de branche recommandé S25
+
+`claude/issa-capital-s25-confirm-prod-[suffix]` (suffix alphanum généré par Claude Code au démarrage). Slug 2-3 mots correspond à la priorité 1 (confirmation prod des fixes S24).
+
+### Commande de reprise S25
 
 ```
-Session S24 — ISSA Capital / Anya. Brancher depuis `main` (déployé VPS auto <5 min).
-Lire AVANT tout : project-context.md (## Stack technique + Mémo de reprise S24) + docs/lessons-learned.md (S23) + docs/founder-preferences.md.
-Contexte clé S23 : email-ingest stabilisé (markProcessed + cap — ne pas casser) ; vault éditable en place via MCP n8n (Lire_contenu_brut / Mettre_a_jour_contenu_fichier PATCH média / Creer_fichier_vault — erreur cosmétique « circular structure » à ignorer, vérifier par relecture) ; createTask existe déjà dans ticktick-client.ts ; Inbox TickTick pas auto-résolue (besoin TICKTICK_INBOX_PROJECT_ID).
-PRIORITÉ 1 : Enrichissement fiches contact (spec Cowork — 7 étapes + /enrichir + 10 tests). Met aussi à jour la fiche `Workflow Email Ingest`.
-PRIORITÉ 2 : TickTick — inbox-message-router → createTask (fix tâches Telegram écrasées) + finaliser Inbox (env id).
-Puis : compte-rendu monitoring (journal_anya : Outlook drainé, WhatsApp 17h20, revue hot-context 22h).
-Rappels : règle 11 (jamais d'envoi email auto, brouillon seul) ; R5 (PATCH in-place, jamais create+delete) ; R12 (pas de questions parasites, brief clair = action).
+Session S25 — ISSA Capital / Anya. Brancher depuis `main` (déployé VPS auto <5 min).
+
+Lire AVANT tout :
+1. project-context.md (## Stack technique + Mémo de reprise S25 ci-dessus).
+2. docs/lessons-learned.md (S24).
+3. docs/founder-preferences.md.
+
+Contexte clé S24 :
+- 14 PRs mergées (#47→#60) — chantier « nouveaux contacts » complet (carte Telegram email + WhatsApp, reply pour contexte, polish LLM Haiku, bouton Lier homonyme avec confirm 2 étapes, /pending, preview, 9 bugfixes audit reviewer).
+- Pattern UX émergent : **confirmation 2 étapes sur toute action irréversible côté Drive** (ex. bouton « Lier »).
+- Détection homonyme par nom dans tous les flux no-match (cap 3 boutons, sinon warning seul).
+- Polish LLM Haiku 4.5 (task `contact-context-polish`) sur tout texte libre fourni par Thomas avant insertion en fiche — zéro invention, fallback brut.
+- `addToFrontmatterList` ajoute en `alias_email` / `alias_telephone` (REFUSE le YAML flow-style anti-corruption).
+- 2175 tests verts.
+
+PRIORITÉ 1 (avant tout code) : **Confirmation en prod des fixes S24** via `journal_anya` (15-30 min) — plus de 401 ? pros chargés ? contacts pro enrichis ? CR participants enrichis ? morning brief complet ? Si tout OK, retour à Thomas avant d'attaquer du nouveau.
+
+PRIORITÉ 2 (si Thomas a un retour d'usage) : appliquer les frictions remontées par usage réel (auto-enrichir WhatsApp, snooze, undo, etc.).
+
+PRIORITÉ 3 (carry-over) : réservations Calendar (création si absente) OU WhatsApp `hasReplyFromMe` OU OAuth production (action Thomas).
+
+Rappels critiques :
+- Règle 11 (jamais d'envoi email auto, brouillon seul).
+- R5 (PATCH in-place via MCP n8n, jamais create+delete).
+- R12 (pas de questions parasites, brief clair = action).
+- Si chantier ≥ 3 PRs : lancer un reviewer agent à la fin pour challenger ton propre travail (cf. PR #60 S24 — 9 bugs trouvés).
 ```
