@@ -16,6 +16,18 @@
 # Installation : voir deploy/caddy/README.md (1 commande SSH pour appender + reload).
 
 issa-capital.com, www.issa-capital.com {
+    # ⚠️ MODE TEST PRÉ-BASCULE DNS (S25.1)
+    # Tant que `issa-capital.com` pointe encore vers Replit, Let's Encrypt ne peut
+    # PAS obtenir un cert via HTTP-01 challenge (le challenge depuis le VPS échoue).
+    # `tls internal` = Caddy émet un cert autosigné géré localement, ce qui permet
+    # de tester le vhost en HTTPS depuis le VPS via :
+    #     curl -k --resolve issa-capital.com:443:127.0.0.1 https://issa-capital.com/
+    #
+    # 🚨 À RETIRER après la bascule DNS vers le VPS (sinon les visiteurs publics
+    # auront un warning "cert invalide"). La ligne `tls internal` retirée, Caddy
+    # repassera automatiquement en auto-https Let's Encrypt.
+    tls internal
+
     # Redirection canonique : www.* → apex
     @www host www.issa-capital.com
     redir @www https://issa-capital.com{uri} permanent
