@@ -61,3 +61,12 @@
 # Horaire : 1h UTC = 3h Paris (creux total, pas en conflit avec brief 7h / ingests).
 # Restauration : voir docs/dev-decisions.md (« Backup vault »).
 0 1 * * * /home/thomas/ISSA-Capital/deploy/backup-vault.sh >> /home/thomas/vault-backup.log 2>&1
+
+# ============================================================
+# Mise à jour quotidienne du repo Agent-Team (S25.1, site statique sur VPS).
+#
+# Récupère les push GitHub `master` de thomasissa-png/Agent-Team et publie
+# la nouvelle version sur agents.issa-capital.com (Caddy serve le clone local).
+# Tourne à 2h UTC = 4h Paris (après backup vault 3h, avant brief 7h).
+# Logs : /home/thomas/agent-team-update.log.
+0 2 * * * cd /home/thomas/Agent-Team && /usr/bin/git pull --quiet origin master >> /home/thomas/agent-team-update.log 2>&1
