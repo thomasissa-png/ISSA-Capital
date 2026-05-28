@@ -1,5 +1,21 @@
 # Déploiement ISSA Capital sur Replit — Procédure étape par étape
 
+> ## ⚠️ OBSOLÈTE depuis S25.1 (2026-05-28)
+>
+> Le site `issa-capital.com` a été **migré sur le VPS IONOS** (Caddy + Let's
+> Encrypt). Replit a été conservé en hot standby J+7 le temps de stabiliser
+> la prod VPS, puis désactivé (~4 juin).
+>
+> **Ce document est gardé en archive historique uniquement.** Ne pas suivre
+> ces étapes pour un nouveau déploiement. SOT actuelle :
+> - `deploy/caddy/README.md` (procédure migration site sur VPS)
+> - `deploy/README.md` (architecture VPS générale)
+> - `docs/infra/infrastructure.md` (SOT infra)
+>
+> À supprimer du dépôt après la désactivation Replit confirmée (J+7 ~ 4 juin).
+>
+> ---
+
 > **Pour qui ?** Thomas (fondateur, non-technique).
 > **Objectif** : déployer issa-capital.com en confiance, sans surprise, avec un plan de retour arrière clair.
 > **Durée estimée** : 1h30 à 2h30 le jour J (hors propagation DNS qui peut prendre jusqu'à 24h).
