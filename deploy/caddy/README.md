@@ -11,6 +11,7 @@ Caddy tourne sur le VPS (service systemd `caddy`, depuis la migration S21) et ex
 | `n8n.issa-capital.com` | `localhost:5678` | n8n (workflows MCP-Drive) |
 | `vps-mcp.issa-capital.com` | `localhost:8765` | MCP debug VPS |
 | **`issa-capital.com`** + `www.*` | `localhost:3000` | **Site vitrine** (S25, migration Replit → VPS) |
+| **`agents.issa-capital.com`** | `file_server /home/thomas/Agent-Team` | **Landing page Gradient Agents** (S25.1, migration GitHub Pages → VPS) |
 
 Le service Anya sur le port 3000 sert le **même build Next.js** pour les deux hostnames `anya.issa-capital.com` et `issa-capital.com`. C'est Caddy qui :
 
@@ -186,3 +187,78 @@ sudo journalctl -u caddy -f -o cat | grep '"level":"error"'
 La v1 du snippet contenait une directive `log { output file /var/log/caddy/issa-capital.com.log }`. Le `caddy validate` la passait (syntaxe OK) mais le `systemctl reload` échouait au runtime sur `permission denied` (Caddy ne pouvait pas créer le fichier). Retirée en S25.1 — Caddy log toujours dans `journalctl`, c'est suffisant pour ce projet.
 
 **Learning à propager** : `caddy validate` ne teste pas les permissions filesystem. Toujours **`systemctl reload`** sur un test environnement avant de pousser une conf qui touche aux fichiers (logs, sockets, etc.).
+
+---
+
+# Migration `agents.issa-capital.com` (S25.1, Gradient Agents — GitHub Pages → VPS)
+
+## Objectif
+
+Servir la landing page du framework Gradient Agents (`thomasissa-png/Agent-Team`) depuis le VPS au lieu de GitHub Pages. Domaine custom `agents.issa-capital.com` au lieu de `thomasissa-png.github.io/Agent-Team/`.
+
+Le repo est **public**, l'`index.html` est un single-file 4372 lignes self-contained (CSS inline, favicon SVG base64) — aucun build, aucun process, juste du `file_server` Caddy.
+
+## Installation (1ère fois — manuel SSH)
+
+```bash
+# (1) Cloner le repo sur le VPS sous l'user `thomas` (cohérent avec rclone-vault.service)
+sudo -u thomas git clone --branch master https://github.com/thomasissa-png/Agent-Team.git /home/thomas/Agent-Team
+
+# (2) Vérifier le clone
+sudo -u thomas ls -la /home/thomas/Agent-Team/index.html
+
+# (3) Backup du Caddyfile
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date +%F-%H%M)
+
+# (4) Append le snippet versionné
+echo "" | sudo tee -a /etc/caddy/Caddyfile > /dev/null
+sudo tee -a /etc/caddy/Caddyfile < /home/thomas/ISSA-Capital/deploy/caddy/agents.caddy > /dev/null
+
+# (5) Validate + reload
+sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy && echo "✅ Caddy reloaded"
+```
+
+## Mise à jour automatique
+
+Le cron `0 2 * * * cd /home/thomas/Agent-Team && git pull --quiet origin master` (déjà dans `deploy/crontab.anya`, pris en compte automatiquement par `sync-crons.sh`) tire `master` chaque nuit à 4h Paris. Toute push sur `master` côté GitHub publié sous 24h. Logs : `/home/thomas/agent-team-update.log`.
+
+Pas de redémarrage Caddy nécessaire — `file_server` lit le filesystem à chaque requête, pas de cache process.
+
+## Bascule DNS chez IONOS
+
+Dashboard IONOS → Domaines → `issa-capital.com` → DNS :
+
+1. Ajouter un **A record** : `agents` → `82.165.168.92`, TTL `60` (ou un **CNAME** `agents` → `issa-capital.com` qui héritera du resolve)
+2. Sauvegarder
+
+## Tests post-bascule
+
+```bash
+# Depuis n'importe où (VPS ou ton laptop)
+dig agents.issa-capital.com +short
+# attendu : 82.165.168.92 (ou alias CNAME → IP via résolution récursive)
+
+# Cert + landing
+curl -I https://agents.issa-capital.com
+# attendu : HTTP/2 200, content-type: text/html
+
+# Vérifier que c'est bien notre landing (titre "Gradient Agents")
+curl -s https://agents.issa-capital.com | grep -o '<title>[^<]*</title>'
+# attendu : <title>Gradient Agents — Dashboard</title>
+```
+
+## Mise à jour manuelle (si besoin avant le cron)
+
+```bash
+sudo -u thomas bash -c "cd /home/thomas/Agent-Team && git pull origin master"
+```
+
+Pas de reload Caddy requis.
+
+## Désinstallation
+
+Si on veut revenir à GitHub Pages :
+
+1. DNS IONOS : retirer le A record `agents`.
+2. Caddyfile : retirer le bloc `agents.issa-capital.com { ... }`, reload.
+3. (Optionnel) `rm -rf /home/thomas/Agent-Team` côté VPS.

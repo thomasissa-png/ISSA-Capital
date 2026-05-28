@@ -1,0 +1,28 @@
+# Vhost statique pour la landing page Gradient Agents (S25.1, migration GitHub Pages → VPS).
+#
+# Mécanique :
+#  - Sert /home/thomas/Agent-Team comme contenu statique via Caddy `file_server`.
+#  - Le repo est cloné sur le VPS, mis à jour par un cron `git pull` quotidien
+#    (cf. deploy/crontab.anya). Push GitHub `master` → publié sous 24h.
+#  - Le repo est PUBLIC sur GitHub (thomasissa-png/Agent-Team) → exposer tout
+#    son contenu via Caddy n'ajoute aucun risque de leak.
+#
+# Pourquoi pas un nouveau service systemd :
+#  - C'est juste du HTML/CSS/SVG inline (4372 lignes dans index.html, tout
+#    self-contained, base64 favicon). Aucun process à faire tourner.
+#
+# Caddy obtient automatiquement le cert Let's Encrypt au 1er hit après bascule DNS.
+# Procédure d'install + DNS : voir deploy/caddy/README.md.
+
+agents.issa-capital.com {
+    root * /home/thomas/Agent-Team
+    file_server
+
+    # En-têtes de sécurité standard (cohérent avec issa-capital.com vhost)
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
