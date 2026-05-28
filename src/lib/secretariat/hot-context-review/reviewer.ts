@@ -282,13 +282,16 @@ export async function runReview(
 
   let editable = '';
   let changes: string[] = [];
-  // S26 — Bug prod Thomas 28/05 soir « Unexpected end of JSON input » récurrent :
-  // `JSON.parse` dans `parseReviewOutput` throw quand DeepSeek renvoie du JSON
-  // tronqué (MAX_TOKENS=2000 atteint en plein milieu) ou vide. Lessons #129 S24
-  // exigeait déjà ce pattern (détection troncature + fallback) mais l'avait
-  // appliqué seulement aux call sites ia (polish), pas ici.
-  // Fix : 2 essais avec MAX_TOKENS doublé au 2e — couvre les cas où le LLM
-  // a juste besoin d'un peu plus de marge pour clôturer le JSON.
+  // S26 — Bug prod Thomas 28/05 « Unexpected end of JSON input » récurrent
+  // (2 échecs de suite). Vérifié empiriquement via MCP Drive : hot-context.md
+  // fait ~5870 bytes (~1500 tokens), budget cible frontmatter = ~500 tokens
+  // → le mémo est 3× plus gros que la cible. MAX_TOKENS=2000 (ancien) ne laisse
+  // qu'~500 tokens de marge sur un editable à réécrire de ~1400 tokens + JSON
+  // overhead → saturation systémique. Le retry maxTokens doublé exigé par
+  // Lessons #129 S24 n'était pas appliqué ici.
+  // Fix : 1er essai à 4000 (couvre le cas attendu sans aller-retour) ; 2e
+  // essai à 8000 (max DeepSeek) si le 1er KO. Détection EMPTY_RESPONSE
+  // explicite pour distinguer du JSON tronqué dans les diagnostics.
   const userContent = userParts.join('\n');
   const callOnce = async (maxTokens: number): Promise<string> => {
     const { text } =
@@ -310,19 +313,27 @@ export async function runReview(
             timeoutMs: 90_000,
             responseFormat: 'json',
           });
+    if (!text || text.trim().length === 0) {
+      throw new Error('EMPTY_RESPONSE (LLM returned empty text)');
+    }
     return text;
   };
 
   let succeeded = false;
   let lastErr: unknown = null;
   let lastText = '';
-  for (const [attempt, maxTokens] of [[1, 2000], [2, 4000]] as const) {
+  for (const [attempt, maxTokens] of [[1, 4000], [2, 8000]] as const) {
     try {
       lastText = await callOnce(maxTokens);
       const out = parseReviewOutput(lastText);
       editable = out.editable;
       changes = out.changes;
       succeeded = true;
+      // Log diagnostic sur succès aussi — permet d'observer post-deploy si le
+      // 1er essai (4000) suffit ou si on dépend du retry (8000).
+      console.warn(
+        `[hot-context-review] LLM OK mode=${mode} attempt=${attempt}/2 maxTokens=${maxTokens} textLen=${lastText.length}`,
+      );
       break;
     } catch (err) {
       lastErr = err;

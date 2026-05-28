@@ -161,10 +161,10 @@ describe('runReview — garde-fou sortie invalide', () => {
 });
 
 describe('S26 Bug — retry sur JSON.parse fail (Unexpected end of JSON input)', () => {
-  it('light : 1er essai JSON tronqué → 2e essai avec maxTokens=4000 réussit → écrit', async () => {
+  it('light : 1er essai JSON tronqué → 2e essai avec maxTokens=8000 réussit → écrit', async () => {
     mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
-    // 1er essai : DeepSeek renvoie un JSON tronqué (maxTokens=2000 atteint).
-    // 2e essai : DeepSeek renvoie un JSON complet (maxTokens=4000).
+    // 1er essai : DeepSeek renvoie un JSON tronqué (maxTokens=4000 atteint).
+    // 2e essai : DeepSeek renvoie un JSON complet (maxTokens=8000).
     mockCallLLM
       .mockResolvedValueOnce({ text: '{"editable":"# Hot' }) // tronqué
       .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj-retry'] }) });
@@ -172,9 +172,20 @@ describe('S26 Bug — retry sur JSON.parse fail (Unexpected end of JSON input)',
     expect(r.mode).toBe('light');
     expect(r.written).toBe(true);
     expect(mockCallLLM).toHaveBeenCalledTimes(2);
-    expect(mockCallLLM.mock.calls[0]![0].maxTokens).toBe(2000);
-    expect(mockCallLLM.mock.calls[1]![0].maxTokens).toBe(4000);
+    expect(mockCallLLM.mock.calls[0]![0].maxTokens).toBe(4000);
+    expect(mockCallLLM.mock.calls[1]![0].maxTokens).toBe(8000);
     expect(r.changes).toContain('maj-retry');
+  });
+
+  it('light : LLM renvoie EMPTY_RESPONSE → détecté + retry (couvre cas DeepSeek crash silencieux)', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    mockCallLLM
+      .mockResolvedValueOnce({ text: '   ' }) // chaîne vide (whitespace only)
+      .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['retry-after-empty'] }) });
+    const r = await runReview();
+    expect(r.written).toBe(true);
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+    expect(r.changes).toContain('retry-after-empty');
   });
 
   it('light : 2 essais échouent → message Telegram + reason explicite, pas d écriture', async () => {
