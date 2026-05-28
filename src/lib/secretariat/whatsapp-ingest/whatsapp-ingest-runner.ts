@@ -406,22 +406,20 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       // groupes (pas d'expéditeur unique à transformer en fiche).
       if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net')) {
         try {
-          // S24 nuit — détection homonyme via chatName (cas Maxime côté WhatsApp).
-          let existingMatchHint: WhatsappNoMatchPending['existingMatchHint'] = null;
+          // S24 nuit — détection homonyme via chatName (array jusqu'à 3).
+          let existingMatchHints: WhatsappNoMatchPending['existingMatchHints'] = null;
           if (group.name && group.name.trim().length >= 3) {
             try {
-              const homonyms = matchContacts(contacts, group.name);
-              if (homonyms.length >= 1) {
-                const m = homonyms[0]!;
-                if (m.folderPath && m.filename) {
-                  existingMatchHint = {
-                    displayName: `${m.prenom} ${m.nom}`.trim(),
-                    knownPhones: [m.telephone].filter((p): p is string => Boolean(p)),
-                    folderPath: m.folderPath,
-                    filename: m.filename,
-                  };
-                }
-              }
+              const homonyms = matchContacts(contacts, group.name).slice(0, 3);
+              existingMatchHints = homonyms
+                .filter((m) => m.folderPath && m.filename)
+                .map((m) => ({
+                  displayName: `${m.prenom} ${m.nom}`.trim(),
+                  knownPhones: [m.telephone].filter((p): p is string => Boolean(p)),
+                  folderPath: m.folderPath!,
+                  filename: m.filename!,
+                }));
+              if (existingMatchHints.length === 0) existingMatchHints = null;
             } catch (homErr) {
               console.warn(
                 `[whatsapp-ingest] détection homonymie KO pour "${group.name}" : ${homErr instanceof Error ? homErr.message : String(homErr)}`,
@@ -439,7 +437,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             userContext: null,
             cardMessageId: null,
             createdAt: new Date().toISOString(),
-            existingMatchHint,
+            existingMatchHints,
           };
           await saveWhatsappNoMatch(pending);
           const sent = await sendWhatsappNoMatchCard(pending);

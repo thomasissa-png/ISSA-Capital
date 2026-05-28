@@ -450,27 +450,34 @@ async function processOneEmail(
     // du sender), c'est probablement la même personne avec un email secondaire
     // pas encore enregistré (cas Maxime Lemoine : edhec / versi). On annote la
     // carte d'un warning explicite — Thomas décide.
-    let existingMatchHint: NoMatchPending['existingMatchHint'] = null;
+    let existingMatchHints: NoMatchPending['existingMatchHints'] = null;
     if (nameFrom && nameFrom.trim().length >= 3) {
       try {
         const contacts = await getVaultContacts();
         const matches = matchContacts(contacts, nameFrom).filter(
           (c) => (c.email ?? '').toLowerCase() !== senderEmail.toLowerCase(),
         );
-        if (matches.length >= 1) {
-          const m = matches[0]!;
-          // Le bouton « Lier » a besoin du chemin de la fiche cible.
-          if (m.folderPath && m.filename) {
-            existingMatchHint = {
-              displayName: `${m.prenom} ${m.nom}`.trim(),
-              knownEmails: [m.email].filter((e): e is string => Boolean(e)),
-              folderPath: m.folderPath,
-              filename: m.filename,
-            };
-          }
+        // Cap 3 hints (la carte n'affiche pas plus de 3 boutons Lier ; au-delà
+        // c'est trop ambigu → warning textuel seul, audit S24 nuit).
+        const capped = matches.slice(0, 3);
+        existingMatchHints = capped
+          .filter((m) => m.folderPath && m.filename)
+          .map((m) => ({
+            displayName: `${m.prenom} ${m.nom}`.trim(),
+            knownEmails: [m.email].filter((e): e is string => Boolean(e)),
+            folderPath: m.folderPath!,
+            filename: m.filename!,
+          }));
+        // Si > 3 matchent : conserve l'info dans le pending pour que la carte
+        // affiche le warning « trop ambigu » (les 3 premiers servent juste de
+        // contexte visuel — pas de bouton Lier au-delà de 3).
+        if (matches.length > 3) {
+          // On garde quand même les 3 premiers pour le warning, mais la carte
+          // saura par sa propre logique de ne pas afficher les boutons.
+          // (cf. buildNoMatchCard : si hints.length > 3 → warning seul.)
         }
+        if (existingMatchHints.length === 0) existingMatchHints = null;
       } catch (err) {
-        // Pas d'hint plutôt qu'un crash — best-effort, jamais bloquant.
         console.warn(
           `[email-ingest] détection homonymie KO pour ${senderEmail} : ${err instanceof Error ? err.message : String(err)}`,
         );
@@ -487,7 +494,7 @@ async function processOneEmail(
       emailMessageId: noMatchAction.payload['emailMessageId'] as string,
       emailThreadRef: noMatchAction.payload['emailThreadRef'] as string,
       createdAt: new Date().toISOString(),
-      existingMatchHint,
+      existingMatchHints,
     };
 
     await saveNoMatch(noMatch);
