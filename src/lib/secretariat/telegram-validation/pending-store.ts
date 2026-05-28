@@ -12,6 +12,7 @@
 
 import type { PendingValidation } from './telegram-cards';
 import type { NoMatchPending } from './no-match-card';
+import type { WhatsappNoMatchPending } from './whatsapp-no-match-card';
 import { getAccessToken } from '../drive-upload';
 import { resolvePath } from '../vault-client/drive-resolver';
 import { getOrCreateSubfolder } from '../drive-upload';
@@ -671,6 +672,239 @@ export async function purgeExpiredNoMatch(): Promise<number> {
 }
 
 // ============================================================
+// Store WhatsApp no-match (S24 soir)
+// — pattern identique au no-match email, fichier Drive distinct
+// ============================================================
+
+const WA_NOMATCH_STORE_FILENAME = 'whatsapp-nomatch-pendings.json';
+
+interface WhatsappNoMatchStore {
+  version: string;
+  pendings: Record<string, WhatsappNoMatchPending>;
+}
+
+let currentWaNoMatchLock: Promise<void> = Promise.resolve();
+
+async function withWaNoMatchStoreLock<T>(operation: () => Promise<T>): Promise<T> {
+  let releaseLock: () => void;
+  const newLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  const previousLock = currentWaNoMatchLock;
+  currentWaNoMatchLock = newLock;
+  await previousLock;
+  try {
+    return await operation();
+  } finally {
+    releaseLock!();
+  }
+}
+
+async function findWaNoMatchStoreFileId(
+  accessToken: string,
+  folderId: string,
+): Promise<string | null> {
+  const q = `name='${WA_NOMATCH_STORE_FILENAME}' and '${folderId}' in parents and trashed=false`;
+  const url = `${DRIVE_FILES_API}?q=${encodeURIComponent(q)}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) return null;
+  const data = (await response.json()) as { files?: Array<{ id: string }> };
+  return data.files?.[0]?.id ?? null;
+}
+
+async function readWaNoMatchStore(
+  accessToken: string,
+  fileId: string,
+): Promise<WhatsappNoMatchStore> {
+  const url = `${DRIVE_FILES_API}/${fileId}?alt=media&supportsAllDrives=true`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    console.warn(`[pending-store] lecture wa-nomatch échouée HTTP ${response.status}`);
+    return { version: STORE_VERSION, pendings: {} };
+  }
+  try {
+    return (await response.json()) as WhatsappNoMatchStore;
+  } catch {
+    console.warn('[pending-store] JSON wa-nomatch invalide — reset');
+    return { version: STORE_VERSION, pendings: {} };
+  }
+}
+
+async function writeWaNoMatchStore(
+  accessToken: string,
+  fileId: string,
+  store: WhatsappNoMatchStore,
+): Promise<boolean> {
+  const url = `${DRIVE_UPLOAD_API}/${fileId}?uploadType=media&supportsAllDrives=true`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(store, null, 2),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+  return response.ok;
+}
+
+async function createWaNoMatchStoreFile(
+  accessToken: string,
+  folderId: string,
+  store: WhatsappNoMatchStore,
+): Promise<string | null> {
+  const metadata = JSON.stringify({
+    name: WA_NOMATCH_STORE_FILENAME,
+    parents: [folderId],
+    mimeType: 'application/json',
+  });
+  const boundary = '===issa_wa_nomatch_store===';
+  const body =
+    `--${boundary}\r\n` +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    metadata +
+    '\r\n' +
+    `--${boundary}\r\n` +
+    'Content-Type: application/json\r\n\r\n' +
+    JSON.stringify(store, null, 2) +
+    `\r\n--${boundary}--`;
+  const response = await fetch(
+    `${DRIVE_UPLOAD_API}?uploadType=multipart&fields=id&supportsAllDrives=true`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    },
+  );
+  if (!response.ok) return null;
+  const data = (await response.json()) as { id?: string };
+  return data.id ?? null;
+}
+
+async function loadOrCreateWaNoMatchStore(
+  accessToken: string,
+): Promise<{ store: WhatsappNoMatchStore; fileId: string } | null> {
+  const folderId = await resolveStateFolderId(accessToken);
+  if (!folderId) {
+    console.warn('[pending-store] impossible de résoudre AnyaState pour wa-nomatch');
+    return null;
+  }
+  const existingFileId = await findWaNoMatchStoreFileId(accessToken, folderId);
+  if (existingFileId) {
+    const store = await readWaNoMatchStore(accessToken, existingFileId);
+    return { store, fileId: existingFileId };
+  }
+  const emptyStore: WhatsappNoMatchStore = { version: STORE_VERSION, pendings: {} };
+  const newFileId = await createWaNoMatchStoreFile(accessToken, folderId, emptyStore);
+  if (!newFileId) {
+    console.warn('[pending-store] impossible de créer le fichier wa-nomatch store');
+    return null;
+  }
+  return { store: emptyStore, fileId: newFileId };
+}
+
+/** Sauvegarde un WhatsappNoMatchPending dans le store Drive (purge expirés). */
+export async function saveWhatsappNoMatch(noMatch: WhatsappNoMatchPending): Promise<void> {
+  await withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      console.warn('[pending-store] saveWhatsappNoMatch : pas de token OAuth2');
+      return;
+    }
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return;
+    const { store, fileId } = result;
+
+    const now = Date.now();
+    let purgedCount = 0;
+    for (const [id, p] of Object.entries(store.pendings)) {
+      if (now - new Date(p.createdAt).getTime() > PENDING_TTL_MS) {
+        delete store.pendings[id];
+        purgedCount++;
+      }
+    }
+    if (purgedCount > 0) {
+      console.warn(`[pending-store] purgé ${purgedCount} wa-nomatch entrée(s) expirée(s)`);
+    }
+
+    store.pendings[noMatch.id] = noMatch;
+    const success = await writeWaNoMatchStore(accessToken, fileId, store);
+    if (!success) {
+      console.warn(`[pending-store] écriture échouée pour wa-nomatch ${noMatch.id}`);
+    }
+  });
+}
+
+/** Récupère un WhatsappNoMatchPending par ID. */
+export async function getWhatsappNoMatch(id: string): Promise<WhatsappNoMatchPending | null> {
+  return withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return null;
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return null;
+    return result.store.pendings[id] ?? null;
+  });
+}
+
+/** Cherche un WhatsappNoMatchPending par cardMessageId (utile au reply Telegram, PR B). */
+export async function findWhatsappNoMatchByCardMessageId(
+  messageId: number,
+): Promise<WhatsappNoMatchPending | null> {
+  return withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return null;
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return null;
+    for (const p of Object.values(result.store.pendings)) {
+      if (p.cardMessageId === messageId) return p;
+    }
+    return null;
+  });
+}
+
+/** Met à jour le userContext d'un WhatsappNoMatchPending (utilisé par PR B). */
+export async function updateWhatsappNoMatchUserContext(
+  id: string,
+  userContext: string,
+): Promise<boolean> {
+  return withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return false;
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return false;
+    const { store, fileId } = result;
+    const existing = store.pendings[id];
+    if (!existing) return false;
+    store.pendings[id] = { ...existing, userContext };
+    return writeWaNoMatchStore(accessToken, fileId, store);
+  });
+}
+
+/** Supprime un WhatsappNoMatchPending du store. */
+export async function deleteWhatsappNoMatch(id: string): Promise<void> {
+  await withWaNoMatchStoreLock(async () => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) return;
+    const result = await loadOrCreateWaNoMatchStore(accessToken);
+    if (!result) return;
+    const { store, fileId } = result;
+    if (!(id in store.pendings)) return;
+    delete store.pendings[id];
+    await writeWaNoMatchStore(accessToken, fileId, store);
+  });
+}
+
+// ============================================================
 // Test helpers
 // ============================================================
 
@@ -681,4 +915,5 @@ export async function purgeExpiredNoMatch(): Promise<number> {
 export function _resetLockForTests(): void {
   currentLock = Promise.resolve();
   currentNoMatchLock = Promise.resolve();
+  currentWaNoMatchLock = Promise.resolve();
 }

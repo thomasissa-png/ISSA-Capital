@@ -17,9 +17,22 @@
 import type { ActionProposal } from '../handlers/types';
 import type { PendingValidation } from './telegram-cards';
 import type { NoMatchPending, ContactType } from './no-match-card';
+import type { WhatsappNoMatchPending } from './whatsapp-no-match-card';
 import { VALIDATION_CALLBACK_PREFIX, buildValidationCard, editMessageText, sendSimpleMessage, escapeHtml } from './telegram-cards';
 import { NOMATCH_CALLBACK_PREFIX, buildNoMatchCard } from './no-match-card';
-import { getPending, deletePending, getNoMatch, deleteNoMatch } from './pending-store';
+import {
+  WA_NOMATCH_CALLBACK_PREFIX,
+  buildWhatsappNoMatchCard,
+  parseWhatsappNoMatchCallback,
+} from './whatsapp-no-match-card';
+import {
+  getPending,
+  deletePending,
+  getNoMatch,
+  deleteNoMatch,
+  getWhatsappNoMatch,
+  deleteWhatsappNoMatch,
+} from './pending-store';
 import { answerCallbackQuery } from '../telegram';
 import {
   appendToHistorique,
@@ -616,6 +629,11 @@ export async function handleTelegramCallback(callback: TelegramCallback): Promis
     await answerPromise;
     return;
   }
+  if (callback.data.startsWith(WA_NOMATCH_CALLBACK_PREFIX)) {
+    await handleWhatsappNoMatchDispatch(callback);
+    await answerPromise;
+    return;
+  }
 
   // Parser le callback data (validation principale)
   const parsed = parseCallbackData(callback.data);
@@ -706,6 +724,174 @@ async function handleNoMatchDispatch(callback: TelegramCallback): Promise<void> 
     await sendSimpleMessage(
       callback.chat_id,
       `\u{274C} Erreur lors de la création de fiche : ${err instanceof Error ? err.message : 'inconnue'}`,
+    );
+  }
+}
+
+// ============================================================
+// WhatsApp no-match (S24 soir — symétrie avec le no-match email)
+// ============================================================
+
+/**
+ * Split heuristique `chatName` → `{prenom, nom}` :
+ *  - "Jean Dupont" → prenom "Jean", nom "Dupont"
+ *  - "Karim" seul → prenom "Karim", nom "" (slug = "Karim")
+ *  - "Marc Antoine Gernot" → prenom "Marc", nom "Antoine Gernot"
+ * Best-effort. Thomas peut corriger après création (la fiche est éditable).
+ */
+function splitChatName(chatName: string): { prenom: string; nom: string } {
+  const t = chatName.trim();
+  const ws = t.indexOf(' ');
+  if (ws === -1) return { prenom: t, nom: '' };
+  return { prenom: t.slice(0, ws), nom: t.slice(ws + 1).trim() };
+}
+
+/**
+ * Construit une fiche WhatsApp à la création (depuis le pending no-match).
+ * Pré-remplit téléphone + nom (best-effort), inclut le résumé du LLM dans
+ * « Qui c'est » et le userContext en tête (S24 PR B, si fourni avant le clic).
+ */
+function buildWhatsappFiche(
+  noMatch: WhatsappNoMatchPending,
+  type: ContactType,
+  today: string,
+): { displayName: string; content: string } {
+  const { prenom, nom } = splitChatName(noMatch.chatName);
+  const displayName = nom ? `${prenom} ${nom}` : prenom;
+
+  const sections: string[] = [];
+
+  // Section « Qui c'est » : userContext en priorité (s'il est fourni par
+  // Thomas via reply), sinon le résumé LLM du chat. Si rien : note neutre.
+  const quiCest: string[] = [];
+  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
+    quiCest.push(noMatch.userContext.trim());
+    quiCest.push('');
+  }
+  if (noMatch.summary && noMatch.summary.trim().length > 0) {
+    quiCest.push(`_Premier échange WhatsApp (résumé Anya) :_ ${noMatch.summary.trim()}`);
+  } else if (quiCest.length === 0) {
+    quiCest.push('_Contact ajouté depuis WhatsApp — à compléter._');
+  }
+
+  sections.push('## Qui c\'est', '', quiCest.join('\n'), '');
+  sections.push(
+    '## Historique',
+    '',
+    buildHistoriqueTitle(today, 'Premier contact WhatsApp'),
+    '',
+    `Fiche créée à partir d'un échange WhatsApp${noMatch.chatName ? ` avec « ${noMatch.chatName} »` : ''}.`,
+    '',
+  );
+
+  const frontmatter = [
+    '---',
+    'type: contact',
+    `categorie: ${type}`,
+    'societe: ',
+    'role: ',
+    'email: ',
+    `telephone: ${noMatch.phone ?? ''}`,
+    'rencontre_via: WhatsApp',
+    `date_premier_contact: ${today}`,
+    `date_derniere_interaction: ${today}`,
+    'classification: ',
+    'tags:',
+    `  - ${type}`,
+    '  - whatsapp',
+    '---',
+    '',
+    `# ${displayName}`,
+    '',
+  ].join('\n');
+
+  return { displayName, content: frontmatter + sections.join('\n') };
+}
+
+async function handleWhatsappNoMatchCallback(
+  noMatch: WhatsappNoMatchPending,
+  type: ContactType,
+  callback: TelegramCallback,
+): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  const targetFolder = contactTypeToVaultPath(type);
+
+  const fiche = buildWhatsappFiche(noMatch, type, today);
+  const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
+  const target = `${targetFolder}/${filename}`;
+  const trigger = `whatsapp_nomatch:${type}:${noMatch.id}`;
+
+  const success = await createVaultFile(targetFolder, filename, fiche.content, trigger);
+  if (!success) {
+    console.warn(`[callback-handler] createVaultFile (WhatsApp) échoué pour ${target}`);
+    await sendSimpleMessage(callback.chat_id, `\u{274C} Erreur création fiche : ${target}`);
+    return;
+  }
+
+  await auditAction(
+    'whatsapp_nomatch_create',
+    type,
+    noMatch.id,
+    target,
+    'ok',
+  );
+
+  await deleteWhatsappNoMatch(noMatch.id);
+
+  const { text: originalText } = buildWhatsappNoMatchCard(noMatch);
+  const time = currentTimeHHMM();
+  const ctxNote = noMatch.userContext
+    ? '\n<i>Contexte fourni par toi inclus.</i>'
+    : '';
+  const suffix = `\n\n\u{2705} Fiche créée : ${target} à ${time}${ctxNote}`;
+  await editMessageText(callback.chat_id, callback.message_id, originalText + suffix);
+}
+
+async function handleWhatsappNoMatchSkip(
+  noMatch: WhatsappNoMatchPending,
+  callback: TelegramCallback,
+): Promise<void> {
+  await deleteWhatsappNoMatch(noMatch.id);
+  await auditAction('whatsapp_nomatch_skip', 'pro', noMatch.id, noMatch.chatId, 'ok');
+
+  const { text: originalText } = buildWhatsappNoMatchCard(noMatch);
+  const time = currentTimeHHMM();
+  await editMessageText(
+    callback.chat_id,
+    callback.message_id,
+    `${originalText}\n\n\u{23ED}\u{FE0F} Skip — pas de fiche créée (${time}).`,
+  );
+}
+
+async function handleWhatsappNoMatchDispatch(callback: TelegramCallback): Promise<void> {
+  const parsed = parseWhatsappNoMatchCallback(callback.data);
+  if (!parsed) {
+    console.warn(`[callback-handler] wa_nomatch callback data invalide : ${callback.data}`);
+    return;
+  }
+  const { action, noMatchId } = parsed;
+
+  try {
+    const noMatch = await getWhatsappNoMatch(noMatchId);
+    if (!noMatch) {
+      await sendSimpleMessage(
+        callback.chat_id,
+        '\u{26A0}\u{FE0F} Demande WhatsApp expirée ou introuvable.',
+      );
+      return;
+    }
+    if (action === 'skip') {
+      await handleWhatsappNoMatchSkip(noMatch, callback);
+    } else {
+      await handleWhatsappNoMatchCallback(noMatch, action, callback);
+    }
+  } catch (err) {
+    console.warn(
+      `[callback-handler] erreur wa_nomatch ${action} pour ${noMatchId} : ${err instanceof Error ? err.message : String(err)}`,
+    );
+    await sendSimpleMessage(
+      callback.chat_id,
+      `\u{274C} Erreur création fiche WhatsApp : ${err instanceof Error ? err.message : 'inconnue'}`,
     );
   }
 }

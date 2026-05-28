@@ -21,6 +21,7 @@
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { listTextMessagesSince, type BeeperMessage } from '../beeper-source/beeper-client';
 import { callLLM } from '../llm/client';
 import { sendTelegramMessage } from '../telegram';
@@ -29,6 +30,11 @@ import { findContactByEmail, appendToHistorique } from '../vault-client';
 import { appendProjetHistoriqueLine } from '../calendar-ingest/projet-enricher';
 import { createDraft } from '../gmail-source/gmail-client';
 import { PROJET_CODES, type ProjetCode } from '../triage/types';
+import {
+  saveWhatsappNoMatch,
+  sendWhatsappNoMatchCard,
+  type WhatsappNoMatchPending,
+} from '../telegram-validation';
 
 // Fallback si curseur absent/corrompu : 48 h par défaut (R3 — un « 4 h » trop
 // court saute la matinée si le 1er run de la journée est tardif). Paramétrable.
@@ -111,6 +117,8 @@ export interface WhatsappIngestStats {
   draftsPrepared: number;
   /** notifications Telegram envoyées (todo / action seulement). */
   notified: number;
+  /** cartes Telegram « contact WhatsApp inconnu » envoyées (S24 soir). */
+  noMatchCardsSent: number;
   errors: number;
 }
 
@@ -303,6 +311,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     projetsEnriched: 0,
     draftsPrepared: 0,
     notified: 0,
+    noMatchCardsSent: 0,
     errors: 0,
   };
 
@@ -367,11 +376,13 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       stats.relevantChats++;
 
       // 1a. Contact — priorité au match téléphone (déterministe), sinon email LLM.
+      let enrichedContact = false;
       if (matched?.folderPath && matched.filename) {
         try {
           if (await appendContactLine(matched.folderPath, matched.filename, ex.summary, group.name, `whatsapp-ingest:phone:${phone}`)) {
             stats.contactsEnriched++;
             stats.contactsByPhone++;
+            enrichedContact = true;
           }
         } catch (err) {
           console.warn(`[whatsapp-ingest] enrich contact (phone) échoué : ${err instanceof Error ? err.message : String(err)}`);
@@ -381,9 +392,41 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
           const m = await findContactByEmail(ex.contactEmail);
           if (m && (await appendContactLine(m.folderPath, `${m.name}.md`, ex.summary, group.name, `whatsapp-ingest:email:${ex.contactEmail}`))) {
             stats.contactsEnriched++;
+            enrichedContact = true;
           }
         } catch (err) {
           console.warn(`[whatsapp-ingest] enrich contact (email) échoué : ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
+      // 1c. Aucun match contact + DM pertinent → carte Telegram « contact
+      // WhatsApp inconnu » (S24 soir, symétrie avec le no-match email).
+      // Restreint aux DM (`<phone>@s.whatsapp.net`) — pas de carte pour les
+      // groupes (pas d'expéditeur unique à transformer en fiche).
+      if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net')) {
+        try {
+          const pending: WhatsappNoMatchPending = {
+            id: randomUUID(),
+            chatId: group.chatId,
+            chatName: group.name,
+            phone: phone ?? null,
+            summary: ex.summary,
+            defaultType: 'pro',
+            userContext: null,
+            cardMessageId: null,
+            createdAt: new Date().toISOString(),
+          };
+          await saveWhatsappNoMatch(pending);
+          const sent = await sendWhatsappNoMatchCard(pending);
+          // Re-save avec le messageId pour permettre le reply-pour-contexte (PR B).
+          pending.cardMessageId = sent.messageId;
+          await saveWhatsappNoMatch(pending);
+          stats.noMatchCardsSent++;
+        } catch (err) {
+          stats.errors++;
+          console.warn(
+            `[whatsapp-ingest] envoi carte no-match KO pour "${group.name}" : ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
 
@@ -431,7 +474,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   console.warn(
     `[whatsapp-ingest] terminé — ${stats.newMessages} msg, ${stats.chats} chats, ${stats.relevantChats} pertinents, ` +
       `${stats.contactsEnriched} contacts enrichis (${stats.contactsByPhone} via tél.), ${stats.projetsEnriched} projets enrichis, ` +
-      `${stats.draftsPrepared} brouillons, ${stats.notified} notifiés, ${stats.errors} erreurs`,
+      `${stats.draftsPrepared} brouillons, ${stats.notified} notifiés, ${stats.noMatchCardsSent} cartes no-match, ${stats.errors} erreurs`,
   );
   return stats;
 }
