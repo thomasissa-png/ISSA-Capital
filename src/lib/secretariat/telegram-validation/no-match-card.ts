@@ -37,6 +37,21 @@ export interface NoMatchPending {
   cardMessageId?: number | null;
   /** Texte libre fourni par Thomas via reply Telegram AVANT son clic (S24 soir). Optionnel. */
   userContext?: string | null;
+  /**
+   * S24 nuit — Indice « une fiche existe peut-être déjà au même nom ».
+   * Émis quand `findContactByEmail` ne matche pas l'email entrant mais qu'une
+   * fiche au nom proche existe (homonymie / email secondaire pas dans la fiche).
+   * Sert UNIQUEMENT à l'affichage de la carte (warning), pas à un choix
+   * automatique : Thomas décide.
+   */
+  existingMatchHint?: {
+    displayName: string;
+    knownEmails: string[];
+    /** Chemin du dossier vault de la fiche (ex `07. Contacts/02. Amis`). */
+    folderPath: string;
+    /** Nom de fichier de la fiche (ex `Maxime Lemoine.md`). */
+    filename: string;
+  } | null;
 }
 
 /** Types de contact valides pour la création de fiche */
@@ -83,15 +98,30 @@ export function buildNoMatchCard(noMatch: NoMatchPending): {
 
   // Suggestion triage
   lines.push(`<b>Suggestion triage</b> : ${escapeHtml(noMatch.defaultType)}`);
+
+  // S24 nuit — Warning homonymie : une fiche au même nom existe déjà.
+  // Probable email secondaire absent de la fiche → Thomas peut choisir Skip
+  // puis ajouter l'email à la main, ou créer une nouvelle fiche (faux homonyme).
+  if (noMatch.existingMatchHint) {
+    const known = noMatch.existingMatchHint.knownEmails.join(', ');
+    lines.push('');
+    lines.push(
+      `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(noMatch.existingMatchHint.displayName)}` +
+        (known ? ` (email connu : ${escapeHtml(known)})` : ''),
+    );
+    lines.push(
+      `<i>S'il s'agit de la même personne, Skip cette carte puis ajoute <code>${escapeHtml(noMatch.emailFrom)}</code> à <code>alias_email</code> dans la fiche.</i>`,
+    );
+  }
   lines.push('');
 
-  // Question + astuce contexte (S24 soir)
+  // Question + astuce contexte
   lines.push('Veux-tu créer une fiche pour ce contact ? Choisis le type :');
-  lines.push('<i>Astuce : réponds à ce message AVANT de cliquer pour ajouter du contexte.</i>');
+  lines.push('<i>Astuce : <b>swipe à gauche</b> sur cette carte (mobile) ou clic droit → « Répondre » (desktop) AVANT de cliquer un bouton, pour ajouter du contexte qu\'Anya intégrera à la fiche.</i>');
 
   const text = lines.join('\n');
 
-  // Inline keyboard 3x2 (5 boutons + skip)
+  // Inline keyboard : 5 boutons type + (si homonyme détecté) bouton « Lier ».
   const inlineKeyboard: TelegramKeyboard = [
     [
       { text: '\u{1F4BC} Pro', callback_data: `${NOMATCH_CALLBACK_PREFIX}pro:${noMatch.id}` },
@@ -101,10 +131,20 @@ export function buildNoMatchCard(noMatch: NoMatchPending): {
       { text: '\u{1F465} Amis', callback_data: `${NOMATCH_CALLBACK_PREFIX}amis:${noMatch.id}` },
       { text: '\u{1F4CB} Autres', callback_data: `${NOMATCH_CALLBACK_PREFIX}autres:${noMatch.id}` },
     ],
-    [
-      { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },
-    ],
   ];
+  // S24 nuit — bouton « 🔗 Lier à <nom> » si une fiche au même nom existe.
+  // Au clic, l'email courant est ajouté en `alias_email` à la fiche existante.
+  if (noMatch.existingMatchHint) {
+    inlineKeyboard.push([
+      {
+        text: `\u{1F517} Lier à ${noMatch.existingMatchHint.displayName}`,
+        callback_data: `${NOMATCH_CALLBACK_PREFIX}link:${noMatch.id}`,
+      },
+    ]);
+  }
+  inlineKeyboard.push([
+    { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },
+  ]);
 
   return { text, inlineKeyboard };
 }

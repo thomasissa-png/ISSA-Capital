@@ -35,6 +35,7 @@ import {
   sendWhatsappNoMatchCard,
   type WhatsappNoMatchPending,
 } from '../telegram-validation';
+import { matchContacts } from '../handlers/enrichir';
 
 // Fallback si curseur absent/corrompu : 48 h par défaut (R3 — un « 4 h » trop
 // court saute la matinée si le 1er run de la journée est tardif). Paramétrable.
@@ -405,6 +406,29 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
       // groupes (pas d'expéditeur unique à transformer en fiche).
       if (!enrichedContact && group.chatId.endsWith('@s.whatsapp.net')) {
         try {
+          // S24 nuit — détection homonyme via chatName (cas Maxime côté WhatsApp).
+          let existingMatchHint: WhatsappNoMatchPending['existingMatchHint'] = null;
+          if (group.name && group.name.trim().length >= 3) {
+            try {
+              const homonyms = matchContacts(contacts, group.name);
+              if (homonyms.length >= 1) {
+                const m = homonyms[0]!;
+                if (m.folderPath && m.filename) {
+                  existingMatchHint = {
+                    displayName: `${m.prenom} ${m.nom}`.trim(),
+                    knownPhones: [m.telephone].filter((p): p is string => Boolean(p)),
+                    folderPath: m.folderPath,
+                    filename: m.filename,
+                  };
+                }
+              }
+            } catch (homErr) {
+              console.warn(
+                `[whatsapp-ingest] détection homonymie KO pour "${group.name}" : ${homErr instanceof Error ? homErr.message : String(homErr)}`,
+              );
+            }
+          }
+
           const pending: WhatsappNoMatchPending = {
             id: randomUUID(),
             chatId: group.chatId,
@@ -415,6 +439,7 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
             userContext: null,
             cardMessageId: null,
             createdAt: new Date().toISOString(),
+            existingMatchHint,
           };
           await saveWhatsappNoMatch(pending);
           const sent = await sendWhatsappNoMatchCard(pending);

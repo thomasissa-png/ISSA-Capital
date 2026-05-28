@@ -40,6 +40,17 @@ export interface WhatsappNoMatchPending {
   cardMessageId: number | null;
   /** Timestamp ISO de création */
   createdAt: string;
+  /**
+   * S24 nuit — Indice « une fiche existe peut-être déjà au même nom ».
+   * Permet d'afficher un bouton « 🔗 Lier à <nom> » qui ajoute le téléphone
+   * comme `alias_telephone` à la fiche existante au lieu de créer une nouvelle.
+   */
+  existingMatchHint?: {
+    displayName: string;
+    knownPhones: string[];
+    folderPath: string;
+    filename: string;
+  } | null;
 }
 
 /** Préfixe callback_data pour les boutons no-match WhatsApp */
@@ -81,8 +92,19 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
     : noMatch.summary;
   lines.push(`<i>${escapeHtml(summary)}</i>`);
   lines.push('');
+  // S24 nuit — Warning homonymie côté WhatsApp (cas où une fiche au même nom existe).
+  if (noMatch.existingMatchHint) {
+    const known = noMatch.existingMatchHint.knownPhones.filter(Boolean).join(', ');
+    lines.push('');
+    lines.push(
+      `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(noMatch.existingMatchHint.displayName)}` +
+        (known ? ` (tél connu : ${escapeHtml(known)})` : ''),
+    );
+  }
+
+  lines.push('');
   lines.push('Veux-tu créer une fiche pour ce contact ? Choisis le type :');
-  lines.push('<i>Astuce : réponds à ce message AVANT de cliquer pour ajouter du contexte.</i>');
+  lines.push('<i>Astuce : <b>swipe à gauche</b> sur cette carte (mobile) ou clic droit → « Répondre » (desktop) AVANT de cliquer un bouton, pour ajouter du contexte qu\'Anya intégrera à la fiche.</i>');
 
   const text = lines.join('\n');
 
@@ -95,10 +117,18 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
       { text: '\u{1F465} Amis', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}amis:${noMatch.id}` },
       { text: '\u{1F4CB} Autres', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}autres:${noMatch.id}` },
     ],
-    [
-      { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },
-    ],
   ];
+  if (noMatch.existingMatchHint) {
+    inlineKeyboard.push([
+      {
+        text: `\u{1F517} Lier à ${noMatch.existingMatchHint.displayName}`,
+        callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}link:${noMatch.id}`,
+      },
+    ]);
+  }
+  inlineKeyboard.push([
+    { text: '\u{23ED}\u{FE0F} Skip', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}skip:${noMatch.id}` },
+  ]);
 
   return { text, inlineKeyboard };
 }
@@ -164,7 +194,7 @@ export async function sendWhatsappNoMatchCard(
 // Parsing callback
 // ============================================================
 
-export type WhatsappNoMatchAction = ContactType | 'skip';
+export type WhatsappNoMatchAction = ContactType | 'skip' | 'link';
 
 export interface ParsedWhatsappNoMatchCallback {
   action: WhatsappNoMatchAction;
@@ -184,6 +214,6 @@ export function parseWhatsappNoMatchCallback(
   const action = rest.slice(0, sep) as WhatsappNoMatchAction;
   const noMatchId = rest.slice(sep + 1);
   if (!noMatchId) return null;
-  if (!['pro', 'famille', 'amis', 'autres', 'skip'].includes(action)) return null;
+  if (!['pro', 'famille', 'amis', 'autres', 'skip', 'link'].includes(action)) return null;
   return { action, noMatchId };
 }
