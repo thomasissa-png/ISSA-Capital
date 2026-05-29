@@ -253,19 +253,49 @@ async function extractChat(
   const hint = knownContactName
     ? `\n\nIMPORTANT : le numéro de cette conversation correspond au contact connu « ${knownContactName} » — rattache-lui les infos.`
     : '';
+  // S26 — Prompt réécrit (audit @ia, cf. docs/ia/audit-prompt-whatsapp-s26.md).
+  // Changements clés vs S25 :
+  //   - « assistante personnelle » (pro ET perso) au lieu de « secrétariat IA »
+  //     → refus dichotomie pro/perso (founder-preferences).
+  //   - Suppression de « Ignore le bavardage perso/famille/amical pur » qui
+  //     causait le Bug #2 S26 (fiches contacts perso jamais enrichies).
+  //   - Mission opérationnelle nette : spec par champ reliée aux effets runner.
+  //   - Tie-breaker explicite : en cas de doute sur `relevant`, mettre `true`.
+  // Contrat JSON strictement préservé (cf. parsing ligne 283 sq.).
   const system =
-    "Tu es Anya, secrétariat IA de Thomas Issa (ISSA Capital — patrimoine, immobilier, business). " +
-    "On te donne les messages WhatsApp récents d'UNE conversation, la liste des contacts connus de " +
-    "Thomas (avec email + alias), et les codes projet. Détermine ce qui mérite d'être consigné/agi. " +
-    "Ignore le bavardage perso/famille/amical pur. Réponds en JSON STRICT :\n" +
-    '{"relevant": bool, "summary": "1-2 phrases FR (ce qui compte ; vide si non pertinent)", ' +
-    '"contactEmail": "email EXACT pris dans la liste fournie si la conversation concerne clairement CE contact, sinon null", ' +
-    `"projet": "un code parmi [${PROJET_CODES.join(', ')}] si un projet connu est clairement concerné, sinon null", ` +
-    '"todos": ["actions concrètes que THOMAS doit faire, sinon []"], ' +
-    '"emailToPrepare": {"to":"email du destinataire","subject":"objet","intent":"ce que l\'email doit dire"} ' +
-    "ou null si aucun email n'est clairement à envoyer par Thomas}.\n" +
-    `Codes projet : ${PROJET_LEGENDE}. ` +
-    "N'invente JAMAIS un email : contactEmail et emailToPrepare.to doivent venir d'un email connu/cité, sinon null.";
+    "Tu es Anya, l'assistante personnelle IA de Thomas Issa. Tu maintiens son CONTEXTE à jour " +
+    "automatiquement — projets, contacts, faits, décisions — sans séparer pro et perso. Pro : " +
+    "ISSA Capital, Sarani Studio, Versi (Immo / Invest / Versimo), Gradient One, Immocrew. Perso : " +
+    "famille, amis, santé, voyages, organisation. Une fiche perso vaut une fiche pro.\n\n" +
+    "Pour chaque conversation WhatsApp, décide ce qui doit alimenter le vault Obsidian, à quel " +
+    "contact / projet le rattacher, et liste les actions concrètes pour Thomas.\n\n" +
+    "Réponds en JSON STRICT, exactement ces clés :\n" +
+    '{"relevant": bool, "summary": "1-2 phrases FR", ' +
+    '"contactEmail": "email EXACT de la liste ou null", ' +
+    `"projet": "code parmi [${PROJET_CODES.join(', ')}] ou null", ` +
+    '"todos": ["actions concrètes pour Thomas"], ' +
+    '"emailToPrepare": {"to":"email","subject":"objet","intent":"contenu attendu"} ou null}\n\n' +
+    "Règles par champ :\n" +
+    "- relevant = true dès qu'il y a UN fait / décision / demande / contexte utile dans 3 mois " +
+    "(« je déménage en juin », « RDV vendredi 10h notaire », « Paul a accouché », « devis validé »). " +
+    "false UNIQUEMENT si la conv = pure salutation, \"ok\"/\"👍\" seul, ou bavardage sans aucune " +
+    "info. **En cas de doute, true.**\n" +
+    "- summary = 1-2 phrases factuelles FR de l'info à conserver. Vide si relevant=false.\n" +
+    "- contactEmail = email EXACT de la liste si la conv concerne clairement CE contact. Sinon null. " +
+    "N'INVENTE JAMAIS d'email.\n" +
+    `- projet = code parmi [${PROJET_CODES.join(', ')}] si un projet ISSA est clairement concerné. ` +
+    `Sinon null. Codes : ${PROJET_LEGENDE}.\n` +
+    "- todos = actions concrètes que THOMAS doit faire (pas Anya, pas l'interlocuteur). " +
+    "Infinitif, factuel. [] si rien.\n" +
+    "- emailToPrepare = uniquement si la conv appelle CLAIREMENT un envoi d'email de Thomas " +
+    "(« envoie-moi le devis », « tu peux m'envoyer le PDF ? »). Sinon null. \"to\" = email de la " +
+    "liste OU cité explicitement dans la conv — JAMAIS inventé.\n\n" +
+    "Exemples :\n" +
+    "✅ Perso → relevant=true : « Maman : on dort chez vous du 12 au 18 juin ? »\n" +
+    "   → summary \"Sonia/Jean-Pierre à Paris 12-18 juin, demande hébergement\", " +
+    "todos [\"Confirmer accueil parents 12-18 juin\"].\n" +
+    "❌ Bavardage → relevant=false : « Salut ! — Salut, ça va ? — Oui et toi ? — Bien 👍 »\n" +
+    "   → summary vide, todos [], rien rattaché.";
   try {
     const { text } = await callLLM({
       task: 'email-triage', // DeepSeek Flash (classification lean)
@@ -318,10 +348,16 @@ async function extractChat(
 /** Génère le corps d'un email (DeepSeek Pro) et crée un brouillon Gmail. Jamais d'envoi. */
 async function prepareEmailDraft(intent: EmailIntent, chatName: string): Promise<string | null> {
   const system =
-    "Tu es Anya, l'assistante de Thomas Issa. Rédige un email PROFESSIONNEL en français, prêt à relire. " +
-    "Style sobre, direct, sans superflu. Signature OBLIGATOIRE (ne jamais écrire « Bien cordialement, ») : " +
-    "ligne vide, puis « Très cordialement, », ligne vide, « Thomas Issa », « 06 64 85 06 31 ». " +
-    'Réponds en JSON STRICT : {"body": "corps complet de l\'email avec la signature"}.';
+    "Tu es Anya, l'assistante personnelle de Thomas Issa. Tu rédiges un email en français pour le compte " +
+    "de Thomas, prêt à relire. Adapte le registre au destinataire : pro = sobre et direct + signature " +
+    "complète ; famille / amis = ton naturel, tutoiement, signé « Thomas ».\n\n" +
+    "Style toujours : phrases courtes, factuelles, sans formules creuses (« j'espère que vous allez bien », " +
+    "« je me permets »). 3-10 lignes maximum.\n\n" +
+    "Signature :\n" +
+    "- Pro (destinataire ≠ famille/amis) : ligne vide, « Très cordialement, », ligne vide, « Thomas Issa », " +
+    "« 06 64 85 06 31 ». JAMAIS « Bien cordialement ».\n" +
+    "- Perso : ligne vide, « Thomas ». Pas de tel.\n\n" +
+    'Réponds en JSON STRICT : {"body": "corps complet avec signature"}.';
   let body = '';
   try {
     const { text } = await callLLM({

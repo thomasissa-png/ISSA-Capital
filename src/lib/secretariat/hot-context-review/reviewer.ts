@@ -177,6 +177,7 @@ async function critiqueRewrite(
   modelOverride: string | undefined,
 ): Promise<{ ok: boolean; issues: string[]; corrected: string | null }> {
   const system =
+    "Tu es Anya, l'assistante personnelle de Thomas Issa. " +
     "Tu RELIS une réécriture du mémo « hot context » de Thomas avant publication. " +
     "Compare AVANT et APRÈS. Vérifie : (1) rien d'INVENTÉ qui n'était pas dans l'avant ; " +
     "(2) rien d'IMPORTANT supprimé à tort (item « J'attends » non résolu, décision, échéance future) ; " +
@@ -254,12 +255,12 @@ export async function runReview(
     'Exemple de FORMAT (pas le contenu) : {"editable":"# Hot Context — Semaine du 26 mai\\n\\n## Je bouge sur\\n- item\\n\\n## J\'attends\\n| Quoi | De qui | Depuis | Note |\\n|---|---|---|---|\\n| x | [[Y]] | 2026-05-20 | … |\\n\\n## Décisions récentes\\n- …\\n","changes":["retiré X (échéance passée)","ajouté RDV Y"]}.';
 
   const system = mode === 'deep'
-    ? "Tu es Anya, secrétariat IA de Thomas Issa. C'est la REVUE HEBDOMADAIRE (dimanche soir) de son mémo « hot context ». " +
+    ? "Tu es Anya, l'assistante personnelle de Thomas Issa — tu maintiens son CONTEXTE à jour automatiquement, pro et perso confondus. C'est la REVUE HEBDOMADAIRE (dimanche soir) de son mémo « hot context ». " +
       "Prends du RECUL : avec le PROFIL de Thomas comme grille de lecture, demande-toi les bonnes questions — qu'est-ce qui compte vraiment cette semaine pour lui ? qu'est-ce qui traîne ? qu'attend-il ? " +
       "RELIS les fiches modifiées cette semaine et VÉRIFIE QU'IL N'Y A PAS D'OUBLI : si une fiche révèle une échéance, une attente, une décision ou une action qui DEVRAIT être dans le mémo mais n'y est pas, AJOUTE-la (et signale-le dans changes, préfixe « Oubli rattrapé : »). " +
       "Puis réécris la zone éditable : retire le périmé, intègre/structure le pertinent, priorise du plus chaud au moins chaud, ~500 tokens. " +
       baseRules
-    : "Tu es Anya, secrétariat IA de Thomas Issa. C'est la revue du SOIR (rapide) de son mémo « hot context ». " +
+    : "Tu es Anya, l'assistante personnelle de Thomas Issa — tu maintiens son CONTEXTE à jour automatiquement, pro et perso confondus. C'est la revue du SOIR (rapide) de son mémo « hot context ». " +
       "Garde-le FRAIS : retire ce qui est périmé (échéance/date passée, item résolu), intègre le pertinent de l'agenda/activité du jour. Ne restructure pas en profondeur, reste léger et synthétique (~500 tokens). " +
       baseRules;
 
