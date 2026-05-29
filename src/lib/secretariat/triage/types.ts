@@ -66,8 +66,14 @@ export const triageResultSchema = z.object({
    * certain). Le LLM le remplit SEULEMENT si un projet connu est explicitement
    * en jeu, sinon omet le champ. Alimente l'action `append_projet_historique`
    * (silencieuse). 0 / ambigu → omis.
+   *
+   * S25 (2026-05-29) : `.nullish()` au lieu de `.optional()`. Le LLM (DeepSeek
+   * V4 / Anthropic) renvoie souvent `projet: null` explicitement plutôt que
+   * d'omettre le champ ; `.optional()` rejetait ce `null` (n'accepte que
+   * `undefined`), Zod failait, triage retournait `null` après retry,
+   * `markFailed` silencieux → 0 brouillon créé. Cf. journal 29/05 09:00:07.
    */
-  projet: z.enum(PROJET_CODES).optional(),
+  projet: z.enum(PROJET_CODES).nullish(),
   /**
    * S23 — Filenames des pièces jointes à conserver (jugement anti-clutter du
    * LLM). Seulement les PJ qui enrichissent un sujet suivi (facture, contrat,

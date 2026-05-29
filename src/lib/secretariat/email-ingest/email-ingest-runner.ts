@@ -322,6 +322,13 @@ async function processOneEmail(
   // Triage Haiku
   const triage = await triageEmail(detail, contacts);
   if (!triage) {
+    // S25 (2026-05-29) : log explicite avant markFailed pour visibilité.
+    // Sans ce log, un email qui échoue au triage disparaît silencieusement
+    // (audit JSONL écrit mais pas dans stdout/journalctl). Régression
+    // diagnostiquée 29/05 — schema Zod `projet.optional()` rejetait `null`.
+    console.warn(
+      `[email-ingest] ${source.label} ${messageId} (from=${detail.from.email}) : triage échoué après retry → markFailed`,
+    );
     await source.markFailed(messageId);
     await writeAuditLog({
       ts: new Date().toISOString(),

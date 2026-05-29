@@ -111,7 +111,9 @@ export async function buildCopyAttachmentActions(
   const selected = selectAttachmentsToKeep(email.attachments, triage.attachments_to_keep);
   if (selected.length === 0) return [];
 
-  const destination = await deps.resolveAttachmentDestination(triage.projet, email.from.email);
+  // S25 : `triage.projet` peut être `null` ou `undefined` (cf. types.ts `.nullish()`).
+  // Le resolver attend `string | undefined` — on normalise null → undefined.
+  const destination = await deps.resolveAttachmentDestination(triage.projet ?? undefined, email.from.email);
   if (!destination) {
     // PJ pertinentes mais aucun sujet suivi → on ne classe pas (§6).
     console.warn(
