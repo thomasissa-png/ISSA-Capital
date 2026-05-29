@@ -161,10 +161,11 @@ describe('runReview — garde-fou sortie invalide', () => {
 });
 
 describe('S26 Bug — retry sur JSON.parse fail (Unexpected end of JSON input)', () => {
-  it('light : 1er essai JSON tronqué → 2e essai avec maxTokens=8000 réussit → écrit', async () => {
+  it('light : 1er essai tronqué → 2e essai avec maxTokens=6000 réussit → écrit', async () => {
     mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
-    // 1er essai : DeepSeek renvoie un JSON tronqué (maxTokens=4000 atteint).
-    // 2e essai : DeepSeek renvoie un JSON complet (maxTokens=8000).
+    // 1er essai : sortie tronquée (maxTokens=4000 atteint, parse KO).
+    // 2e essai : sortie complète (maxTokens=6000 — plafond abaissé S26 pour ne pas
+    // pousser la génération DeepSeek en abort ~4,5 min, cf. preuve journal 29/05).
     mockCallLLM
       .mockResolvedValueOnce({ text: '{"editable":"# Hot' }) // tronqué
       .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj-retry'] }) });
@@ -173,8 +174,32 @@ describe('S26 Bug — retry sur JSON.parse fail (Unexpected end of JSON input)',
     expect(r.written).toBe(true);
     expect(mockCallLLM).toHaveBeenCalledTimes(2);
     expect(mockCallLLM.mock.calls[0]![0].maxTokens).toBe(4000);
-    expect(mockCallLLM.mock.calls[1]![0].maxTokens).toBe(8000);
+    expect(mockCallLLM.mock.calls[1]![0].maxTokens).toBe(6000);
     expect(r.changes).toContain('maj-retry');
+  });
+
+  it('light : format DÉLIMITÉ (===EDITABLE===/===CHANGES===) parsé sans JSON → écrit (fix S26)', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    // Nouveau contrat de sortie : markdown brut entre marqueurs, AUCUN échappement JSON
+    // (le mémo contient guillemets, tableaux « | », wikilinks [[...]] et sauts de ligne
+    // qui cassaient l'ancien JSON → « Unterminated string in JSON », bug prod 3 jours).
+    mockCallLLM.mockReset();
+    mockCallLLM.mockResolvedValue({
+      text:
+        '===EDITABLE===\n' +
+        '# Hot Context — Semaine du 26 mai\n\n## Je bouge sur\n- relance "dossier" [[Marc Gernot]]\n\n## J\'attends\n| Quoi | De qui |\n|---|---|\n| devis | [[Y]] |\n' +
+        '\n===CHANGES===\n- retiré item périmé\n- ajouté relance Marc\n',
+    });
+    const r = await runReview();
+    expect(r.mode).toBe('light');
+    expect(r.written).toBe(true);
+    expect(mockCallLLM).toHaveBeenCalledTimes(1); // 1er essai suffit, pas de parse KO
+    expect(r.changes).toContain('retiré item périmé');
+    expect(r.changes).toContain('ajouté relance Marc');
+    // L'editable écrit conserve guillemets/tableaux/wikilinks intacts.
+    const written = mockWriteFile.mock.calls[0]![2] as string;
+    expect(written).toContain('relance "dossier" [[Marc Gernot]]');
+    expect(written).toContain('| devis | [[Y]] |');
   });
 
   it('light : LLM renvoie EMPTY_RESPONSE → détecté + retry (couvre cas DeepSeek crash silencieux)', async () => {

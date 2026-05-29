@@ -150,6 +150,25 @@ function cleanEditable(raw: string): string {
  */
 function parseReviewOutput(raw: string): { editable: string; changes: string[] } {
   const t = (raw ?? '').trim();
+  // Format DÉLIMITÉ (primaire S26) : ===EDITABLE=== … ===CHANGES=== …
+  // Le mémo markdown (sauts de ligne, guillemets, tableaux, [[wikilinks]]) n'a
+  // PAS à être échappé → supprime le « Unterminated string in JSON » récurrent
+  // (bug prod 3 jours : DeepSeek ré-encodait tout le markdown dans une string JSON).
+  const em = t.match(/===\s*EDITABLE\s*===/i);
+  if (em && em.index !== undefined) {
+    const afterEdit = t.slice(em.index + em[0].length);
+    const cm = afterEdit.match(/===\s*CHANGES\s*===/i);
+    const editablePart = cm && cm.index !== undefined ? afterEdit.slice(0, cm.index) : afterEdit;
+    const changesPart = cm && cm.index !== undefined ? afterEdit.slice(cm.index + cm[0].length) : '';
+    return {
+      editable: cleanEditable(editablePart),
+      changes: changesPart
+        .split(/\r?\n/)
+        .map((l) => l.replace(/^\s*[-*]\s*/, '').trim())
+        .filter(Boolean),
+    };
+  }
+  // Fallback JSON (ancien format / compat) — tolère un bloc ```json``` ou du texte autour.
   const block = t.match(/```(?:json)?\s*\r?\n?([\s\S]*?)```/);
   const candidate = block?.[1]?.trim() ?? t.match(/\{[\s\S]*\}/)?.[0] ?? t;
   const parsed = JSON.parse(candidate) as { editable?: string; changes?: string[] };
@@ -271,11 +290,16 @@ export async function runReview(
     "RED LINES : ne JAMAIS inventer (si pas sûr, garde l'existant) ; PRÉSERVE les wikilinks `[[...]]` ; " +
     "garde le format Markdown des sections et le tableau « J'attends » ; mets à jour le titre H1 avec la " +
     "semaine courante ; n'ajoute PAS de section « Maintenance » (gérée à part). " +
-    'Réponds en JSON STRICT, RIEN autour : {"editable": "<zone éditable mise à jour, du titre H1 jusqu\'avant Maintenance>", ' +
-    '"changes": ["liste courte en français des changements"]}. ' +
-    'Le champ "editable" DOIT commencer par "# " (titre H1) et CONTENIR les en-têtes "## " des sections. ' +
-    'N\'inclus JAMAIS de bloc frontmatter (lignes "---" seules). ' +
-    'Exemple de FORMAT (pas le contenu) : {"editable":"# Hot Context — Semaine du 26 mai\\n\\n## Je bouge sur\\n- item\\n\\n## J\'attends\\n| Quoi | De qui | Depuis | Note |\\n|---|---|---|---|\\n| x | [[Y]] | 2026-05-20 | … |\\n\\n## Décisions récentes\\n- …\\n","changes":["retiré X (échéance passée)","ajouté RDV Y"]}.';
+    // Sortie DÉLIMITÉE (pas JSON) : un mémo markdown multilignes ré-encodé dans une
+    // string JSON casse l'échappement (\n, guillemets, tableaux, [[wikilinks]]) → bug
+    // prod « Unterminated string in JSON » 3 jours (S26). Les marqueurs suppriment
+    // tout échappement, donc plus de troncature ni de parse KO.
+    'Réponds EXACTEMENT dans ce format, RIEN avant ni après, SANS JSON ni guillemets d\'enrobage :\n' +
+    '===EDITABLE===\n' +
+    '<zone éditable mise à jour, du titre H1 « # » jusqu\'avant Maintenance — markdown BRUT : vrais sauts de ligne, tableaux et wikilinks [[...]] tels quels>\n' +
+    '===CHANGES===\n' +
+    '- <un changement par ligne, en français>\n' +
+    'La partie sous ===EDITABLE=== DOIT commencer par « # » (titre H1) et contenir les en-têtes « ## » des sections. N\'inclus AUCUN bloc frontmatter (lignes « --- » seules).';
 
   const system = mode === 'deep'
     ? "Tu es Anya, l'assistante personnelle de Thomas Issa — tu maintiens son CONTEXTE à jour automatiquement, pro et perso confondus. C'est la REVUE HEBDOMADAIRE (dimanche soir) de son mémo « hot context ». " +
@@ -306,16 +330,14 @@ export async function runReview(
 
   let editable = '';
   let changes: string[] = [];
-  // S26 — Bug prod Thomas 28/05 « Unexpected end of JSON input » récurrent
-  // (2 échecs de suite). Vérifié empiriquement via MCP Drive : hot-context.md
-  // fait ~5870 bytes (~1500 tokens), budget cible frontmatter = ~500 tokens
-  // → le mémo est 3× plus gros que la cible. MAX_TOKENS=2000 (ancien) ne laisse
-  // qu'~500 tokens de marge sur un editable à réécrire de ~1400 tokens + JSON
-  // overhead → saturation systémique. Le retry maxTokens doublé exigé par
-  // Lessons #129 S24 n'était pas appliqué ici.
-  // Fix : 1er essai à 4000 (couvre le cas attendu sans aller-retour) ; 2e
-  // essai à 8000 (max DeepSeek) si le 1er KO. Détection EMPTY_RESPONSE
-  // explicite pour distinguer du JSON tronqué dans les diagnostics.
+  // S26 — Bug prod 3 jours « Unterminated string in JSON » / « This operation was
+  // aborted » (preuve journal 29/05) : la cause N'EST PAS le plafond de tokens mais
+  // l'ENCODAGE. On forçait le LLM à ré-encoder tout le mémo markdown dans une string
+  // JSON (essai 1 : parse KO sur \n/guillemets/tableaux non échappés ; essai 2 à 8000
+  // tokens : génération + retries internes → abort ~4,5 min). Fix : sortie DÉLIMITÉE
+  // (===EDITABLE===/===CHANGES===, voir baseRules + parseReviewOutput) → zéro
+  // échappement. maxTokens 4000 puis 6000 (marge sans pousser la génération en abort) ;
+  // EMPTY_RESPONSE explicite pour distinguer une réponse vide d'un parse KO.
   const userContent = userParts.join('\n');
   const callOnce = async (maxTokens: number): Promise<string> => {
     const { text } =
@@ -326,16 +348,14 @@ export async function runReview(
             system,
             messages: [{ role: 'user', content: userContent }],
             maxTokens,
-            timeoutMs: 90_000,
-            responseFormat: 'json',
+            timeoutMs: 120_000,
           })
         : await callLLM({
             task: 'hot-context-review-light',
             system,
             messages: [{ role: 'user', content: userContent }],
             maxTokens,
-            timeoutMs: 90_000,
-            responseFormat: 'json',
+            timeoutMs: 120_000,
           });
     if (!text || text.trim().length === 0) {
       throw new Error('EMPTY_RESPONSE (LLM returned empty text)');
@@ -346,7 +366,7 @@ export async function runReview(
   let succeeded = false;
   let lastErr: unknown = null;
   let lastText = '';
-  for (const [attempt, maxTokens] of [[1, 4000], [2, 8000]] as const) {
+  for (const [attempt, maxTokens] of [[1, 4000], [2, 6000]] as const) {
     try {
       lastText = await callOnce(maxTokens);
       const out = parseReviewOutput(lastText);
