@@ -47,6 +47,7 @@ import {
 } from '../telegram-validation';
 import type { NoMatchPending } from '../telegram-validation';
 import { writeAuditLog } from '../vault-client/audit-log';
+import { sendTelegramMessage } from '../telegram';
 import {
   appendToHistorique,
   updateFrontmatter,
@@ -222,6 +223,10 @@ export async function runEmailIngest(): Promise<IngestStats> {
     `[email-ingest] ${sources.length} source(s) active(s) : ${sources.map((s) => s.label).join(', ')}`,
   );
 
+  // Anti-reboucle (S26) : labels des sources dont un email a dépassé le cap
+  // par-email (timeout) et a été sorti de la file ce run → alerte Thomas en fin.
+  const timedOutLabels: string[] = [];
+
   // Traitement des sources EN PARALLÈLE (S23) : chaque boîte (Gmail, Outlook
   // Sarani, Outlook Versi) tourne indépendamment, pour qu'une source lente
   // (Gmail + brouillons) n'affame plus les suivantes. Les emails d'UNE source
@@ -265,15 +270,55 @@ export async function runEmailIngest(): Promise<IngestStats> {
           );
           done++;
         } catch (err) {
+          const emsg = err instanceof Error ? err.message : String(err);
           console.warn(
-            `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${err instanceof Error ? err.message : String(err)}`,
+            `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${emsg}`,
           );
           stats.errors++;
+          // Anti-reboucle (S26) : un email qui dépasse le cap par-email le dépasse
+          // à CHAQUE run (preuve journal 29/05 : mêmes IDs Gmail+Outlook bloqués à
+          // 120 s run après run → ils monopolisent le batch, AUCUN nouvel email
+          // n'est traité). On le sort de la file (markProcessed) et on alerte Thomas
+          // pour traitement manuel, au lieu de re-boucler indéfiniment à vide. Les
+          // autres erreurs (transitoires) restent re-listées (retry au run suivant).
+          if (emsg.includes('timeout')) {
+            try {
+              await source.markProcessed(msg.id);
+            } catch {
+              /* best-effort : si le marquage échoue, l'alerte couvre quand même Thomas */
+            }
+            timedOutLabels.push(source.label);
+          }
         }
       }
       console.warn(`[email-ingest] ${source.label} : ${done}/${batch.length} traité(s) ce run`);
     }),
   );
+
+  // 3bis. Alerte anti-reboucle (S26) : si des emails ont été sortis de la file sur
+  // timeout, prévenir Thomas — sinon mise de côté silencieuse (« Anya ne fait rien »).
+  if (timedOutLabels.length > 0) {
+    const counts = timedOutLabels.reduce<Record<string, number>>((acc, label) => {
+      acc[label] = (acc[label] ?? 0) + 1;
+      return acc;
+    }, {});
+    const lines = Object.entries(counts)
+      .map(([label, n]) => `• ${label} : ${n}`)
+      .join('\n');
+    const capSec = Math.round(PER_EMAIL_TIMEOUT_MS / 1000);
+    const chatIdStr = process.env.TELEGRAM_CHAT_ID_THOMAS;
+    const chatId = chatIdStr ? Number(chatIdStr) : NaN;
+    if (Number.isFinite(chatId)) {
+      await sendTelegramMessage(
+        chatId,
+        `⚠️ Anya — ${timedOutLabels.length} email(s) trop lent(s) (> ${capSec}s) mis de côté pour ne pas bloquer la file. À traiter à la main :\n${lines}`,
+      ).catch(() => {
+        /* best-effort : l'alerte ne doit jamais faire échouer le run */
+      });
+    } else {
+      console.warn('[email-ingest] TELEGRAM_CHAT_ID_THOMAS manquant — alerte timeout non envoyée');
+    }
+  }
 
   // 4. Audit final — ligne récap
   stats.durationMs = Date.now() - startMs;
