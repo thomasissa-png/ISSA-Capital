@@ -30,6 +30,13 @@ vi.mock('../../vault-reader', () => ({
   findProjetFicheByEntite: vi.fn(),
 }));
 
+// S25 — Pending store mocké pour éviter l'appel à getAccessToken depuis
+// la branche "fiche introuvable". Le comportement réel est testé dans
+// cr-writeback-pending.test.ts.
+vi.mock('../cr-writeback-pending', () => ({
+  appendPending: vi.fn(async () => true),
+}));
+
 // ============================================================
 // Imports après mocks
 // ============================================================

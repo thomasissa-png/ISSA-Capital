@@ -48,6 +48,15 @@
 0 5,6 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-morning-brief >> /home/thomas/anya-cron.log 2>&1
 
 # ============================================================
+# CR write-back retry (S25, P0 #1 — reprise secretariat).
+#
+# Rejoue les CR pending (fiche Projet introuvable au premier passage) toutes
+# les 2h. Max 3 tentatives, puis alerte critique Telegram à Thomas + retrait
+# propre du store. Store JSONL persistant sur Drive
+# (_Inbox/AnyaState/cr-writeback-pending.jsonl).
+0 */2 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-cr-writeback-retry >> /home/thomas/anya-cron.log 2>&1
+
+# ============================================================
 # Backup vault (S25) — copie quotidienne du Vault Drive vers le VPS, rétention 90j.
 #
 # Script bash STANDALONE (pas un endpoint HTTP) — appelé directement, sans

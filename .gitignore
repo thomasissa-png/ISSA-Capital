@@ -56,3 +56,6 @@ tests/screenshots/**/actual/
 
 # Gradient Agents update backup (local rollback, never commit)
 .claude/agents/.backup/
+
+# Worktrees éphémères créés par les sous-agents isolés (jamais commit)
+.claude/worktrees/

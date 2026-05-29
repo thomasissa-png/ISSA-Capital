@@ -22,6 +22,7 @@ import { updateFileContent, getAccessToken } from '../drive-upload';
 import { readFileById } from '../vault-client/obsidian-file';
 import { findProjetFicheByEntite } from '../vault-reader';
 import { sendTelegramMessage } from '../telegram';
+import { appendPending } from './cr-writeback-pending';
 
 // ============================================================
 // Constantes
@@ -175,6 +176,24 @@ export async function writeBackCrToFiche(
           `[cr-writeback] échec envoi alerte Telegram : ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+    }
+    // S25 (reprise secrétariat, P0 #1) : EN PLUS de l'alerte Telegram, on
+    // persiste un pending. Un cron (cron-cr-writeback-retry) rejoue toutes
+    // les 2h, max 3 fois. L'échec de persistance ne change PAS le résultat
+    // retourné (l'alerte reste la trace primaire pour Thomas).
+    try {
+      await appendPending({
+        entiteCode: input.entiteCode,
+        crFileId: input.crFileId,
+        crWebViewLink: input.crWebViewLink,
+        crFilename: input.crFilename,
+        crDate: input.crDate,
+        crTitle: input.crTitle,
+      });
+    } catch (err) {
+      console.warn(
+        `[cr-writeback] échec persistance pending : ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     return {
       success: false,
