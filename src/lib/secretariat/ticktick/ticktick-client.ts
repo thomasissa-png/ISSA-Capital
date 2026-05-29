@@ -46,6 +46,9 @@ async function tickTickFetch<T>(
   const url = `${BASE_URL}${path}`;
   const response = await fetch(url, {
     ...options,
+    // S26 hotfix — timeout obligatoire : sans lui, un createTask qui stalle
+    // (réseau TickTick) fige processOneEmail → tout le run email-ingest.
+    signal: options.signal ?? AbortSignal.timeout(30_000),
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',

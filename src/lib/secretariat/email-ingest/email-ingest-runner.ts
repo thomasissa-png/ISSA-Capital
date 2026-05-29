@@ -109,6 +109,27 @@ const AUTO_SPAM_CONFIDENCE_THRESHOLD = 0.9;
  */
 const MAX_EMAILS_PER_SOURCE_PER_RUN = 8;
 
+/**
+ * S26 hotfix — borne dure de traitement d'UN email. Filet de sécurité : aucun
+ * `await` (réseau ou autre) ne doit pouvoir figer tout le run. 120s laisse de la
+ * marge à un brouillon LLM lent (~60s) ; au-delà l'email est abandonné et
+ * re-listé au run suivant. Garde le run sous le timeout cron (900s).
+ */
+const PER_EMAIL_TIMEOUT_MS = 120_000;
+
+/**
+ * Race une promesse contre un timeout. Rejette `timeout …` si `p` ne résout pas
+ * à temps (le timer est toujours nettoyé). NE annule PAS `p` (best-effort) :
+ * l'objectif est que la boucle continue, pas de tuer l'await sous-jacent.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timeout ${ms}ms — ${label}`)), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
 // ============================================================
 // Dispatch handler par catégorie
 // ============================================================
@@ -232,7 +253,16 @@ export async function runEmailIngest(): Promise<IngestStats> {
       let done = 0;
       for (const msg of batch) {
         try {
-          await processOneEmail(source, msg.id, contacts, stats, activeNoMatchEmails);
+          // S26 hotfix — borne dure par email : même si tous les appels réseau
+          // sont censés avoir leur propre timeout, un await non couvert ne doit
+          // JAMAIS pouvoir figer tout le run (cron 900s). Un email qui dépasse
+          // est abandonné (loggé) et on passe au suivant — il re-listera au run
+          // d'après (non marqué traité).
+          await withTimeout(
+            processOneEmail(source, msg.id, contacts, stats, activeNoMatchEmails),
+            PER_EMAIL_TIMEOUT_MS,
+            `${source.label} ${msg.id}`,
+          );
           done++;
         } catch (err) {
           console.warn(
