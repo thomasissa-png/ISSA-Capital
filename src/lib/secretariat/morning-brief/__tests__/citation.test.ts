@@ -130,4 +130,52 @@ describe('pickDailyCitation', () => {
     const res = await pickDailyCitation(1);
     expect(res).toBeNull();
   });
+
+  // S26 — Bug observé prod 29/05 : fiche Jay Abraham commence par
+  // `*[à compléter au fil d'une relecture]*` → fallback prenait cette ligne.
+  it('S26 — fiche commence par un placeholder rédactionnel → skip et prend la ligne suivante', async () => {
+    const ficheAvecPlaceholder = [
+      '# Titre',
+      '',
+      "*[à compléter au fil d'une relecture]*",
+      '',
+      'Voici la vraie première phrase utile du livre.',
+    ].join('\n');
+    mocks.searchDriveFiles.mockResolvedValue([{ id: 'a', name: '[Livre] Alpha.md' }]);
+    mocks.readFileById.mockResolvedValue({ success: true, content: ficheAvecPlaceholder });
+    mocks.callLLM.mockResolvedValue({ text: '' });
+    const res = await pickDailyCitation(1);
+    expect(res).not.toBeNull();
+    expect(res!.text).toBe('Voici la vraie première phrase utile du livre.');
+    expect(res!.text).not.toContain('à compléter');
+  });
+
+  it('S26 — LLM renvoie un placeholder → rejeté, fallback fiche', async () => {
+    const fiche = '# Titre\n\nLa vraie ligne de la fiche est ici.';
+    mocks.searchDriveFiles.mockResolvedValue([{ id: 'a', name: '[Livre] Alpha.md' }]);
+    mocks.readFileById.mockResolvedValue({ success: true, content: fiche });
+    mocks.callLLM.mockResolvedValue({ text: "[à compléter au fil d'une relecture]" });
+    const res = await pickDailyCitation(1);
+    expect(res).not.toBeNull();
+    expect(res!.text).toBe('La vraie ligne de la fiche est ici.');
+  });
+});
+
+describe('isPlaceholder (S26)', () => {
+  // Import dynamique pour éviter pollution mocks au top-level.
+  it('détecte les placeholders rédactionnels typiques', async () => {
+    const { isPlaceholder } = await import('../citation');
+    expect(isPlaceholder("*[à compléter au fil d'une relecture]*")).toBe(true);
+    expect(isPlaceholder('[à remplir]')).toBe(true);
+    expect(isPlaceholder('[TODO: écrire]')).toBe(true);
+    expect(isPlaceholder('[à rédiger]')).toBe(true);
+    expect(isPlaceholder('[XXX]')).toBe(true);
+    expect(isPlaceholder('  *[placeholder]*  ')).toBe(true);
+  });
+
+  it('n\'aspire pas les vraies phrases qui contiennent des crochets de citation', async () => {
+    const { isPlaceholder } = await import('../citation');
+    expect(isPlaceholder('La vraie ligne du livre.')).toBe(false);
+    expect(isPlaceholder('Comme [le souligne Drucker], ...')).toBe(false);
+  });
 });

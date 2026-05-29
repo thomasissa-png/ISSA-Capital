@@ -159,3 +159,58 @@ describe('runReview — garde-fou sortie invalide', () => {
     expect(mockWriteFile).not.toHaveBeenCalled();
   });
 });
+
+describe('S26 Bug — retry sur JSON.parse fail (Unexpected end of JSON input)', () => {
+  it('light : 1er essai JSON tronqué → 2e essai avec maxTokens=8000 réussit → écrit', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    // 1er essai : DeepSeek renvoie un JSON tronqué (maxTokens=4000 atteint).
+    // 2e essai : DeepSeek renvoie un JSON complet (maxTokens=8000).
+    mockCallLLM
+      .mockResolvedValueOnce({ text: '{"editable":"# Hot' }) // tronqué
+      .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj-retry'] }) });
+    const r = await runReview();
+    expect(r.mode).toBe('light');
+    expect(r.written).toBe(true);
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+    expect(mockCallLLM.mock.calls[0]![0].maxTokens).toBe(4000);
+    expect(mockCallLLM.mock.calls[1]![0].maxTokens).toBe(8000);
+    expect(r.changes).toContain('maj-retry');
+  });
+
+  it('light : LLM renvoie EMPTY_RESPONSE → détecté + retry (couvre cas DeepSeek crash silencieux)', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    mockCallLLM
+      .mockResolvedValueOnce({ text: '   ' }) // chaîne vide (whitespace only)
+      .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['retry-after-empty'] }) });
+    const r = await runReview();
+    expect(r.written).toBe(true);
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+    expect(r.changes).toContain('retry-after-empty');
+  });
+
+  it('light : 2 essais échouent → message Telegram + reason explicite, pas d écriture', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-26', isoWeekStr: '2026-W22', weekday: 2, hour: 22 });
+    mockCallLLM.mockResolvedValue({ text: '{"editable":"# tronqué' }); // toujours tronqué
+    const r = await runReview();
+    expect(r.written).toBe(false);
+    expect(r.reason).toContain('LLM échoué (2 essais)');
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+    expect(mockWriteFile).not.toHaveBeenCalled();
+    expect(mockSendTelegram).toHaveBeenCalledTimes(1);
+    const telegramText = mockSendTelegram.mock.calls[0]![1] as string;
+    expect(telegramText).toContain('2 essais');
+  });
+
+  it('deep : 1er essai LLM throw → 2e essai réussit → écrit (couvre symétrie modes)', async () => {
+    mockParisParts.mockReturnValue({ dateStr: '2026-05-31', isoWeekStr: '2026-W22', weekday: 0, hour: 22 });
+    mockCallAnthropic
+      .mockRejectedValueOnce(new Error('DeepSeek-like JSON fail')) // 1er essai échoue
+      .mockResolvedValueOnce({ text: JSON.stringify({ editable: GOOD_EDITABLE, changes: ['maj'] }) }) // 2e essai OK
+      .mockResolvedValueOnce({ text: JSON.stringify({ ok: true, issues: [], corrected: null }) }); // relecture
+    const r = await runReview();
+    expect(r.mode).toBe('deep');
+    expect(r.written).toBe(true);
+    // 2 essais de réécriture + 1 relecture = 3 calls Anthropic
+    expect(mockCallAnthropic).toHaveBeenCalledTimes(3);
+  });
+});

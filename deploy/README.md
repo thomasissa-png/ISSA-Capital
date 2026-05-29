@@ -21,6 +21,9 @@ toutes les 5 min : `git merge main` + `npm install` + `npm run build` +
 | `anya-cron.sh` | Caller d'endpoint (`curl localhost:3000` + `CRON_SECRET`). Versionné, référencé par chemin absolu dans `crontab.anya`. |
 | `sync-crons.sh` | Applicateur : réécrit le bloc managé de la crontab de `thomas`. |
 | `anya-autoupdate.sh` | **Copie de référence** de la boucle de déploiement (NON auto-appliquée — voir plus bas). |
+| `backup-vault.sh` | Snapshot quotidien du vault Drive vers le VPS (cron `0 1 * * *`, rétention 90j, archive différentielle). |
+| `caddy/` | Snippets vhost Caddy (sous-domaines servis par le VPS). Procédure dans `caddy/README.md`. |
+| `systemd/` | Drop-in overrides pour les units systemd (anya, etc.). Procédure dans `systemd/README.md`. |
 
 ## Comment ça marche
 

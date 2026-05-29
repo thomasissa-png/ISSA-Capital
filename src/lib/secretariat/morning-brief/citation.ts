@@ -121,9 +121,10 @@ export async function pickDailyCitation(
           content: `Fiche de lecture du livre « ${book} » :\n\n${body}`,
         },
       ],
-      // 1200 (et non 400) : DeepSeek V4 peut consommer du budget en "réflexion"
-      // → `content` vide à 400 (observé en prod run 7h du 26/05). Marge de sécurité.
-      maxTokens: 1200,
+      // S26 — Bump 1200 → 2000 (cohérent avec hot-context retry S26 — la marge
+      // 1200 est encore trop juste pour des fiches denses : DeepSeek vide
+      // observé 29/05 sur la fiche Jay Abraham).
+      maxTokens: 2000,
       responseFormat: 'text',
     });
     llmText = result.text.trim();
@@ -133,9 +134,10 @@ export async function pickDailyCitation(
     );
   }
 
-  if (llmText) return { text: llmText, book };
+  // S26 — Filtrer les placeholders aussi côté LLM (parfois le LLM les recopie).
+  if (llmText && !isPlaceholder(llmText)) return { text: llmText, book };
 
-  // Fallback : première ligne marquante de la fiche.
+  // Fallback : première ligne marquante de la fiche, en sautant les placeholders.
   const fallback = extractFallbackLine(body);
   if (fallback) {
     console.warn('[morning-citation] LLM vide → fallback extraction fiche');
@@ -144,6 +146,36 @@ export async function pickDailyCitation(
 
   console.warn('[morning-citation] ni LLM ni fallback exploitable — pas de citation');
   return null;
+}
+
+/**
+ * S26 — Détecte si une chaîne est un placeholder rédactionnel non rempli.
+ * Cas observé prod 29/05 : fiche Jay Abraham contient
+ * `*[à compléter au fil d'une relecture]*` en haut, qui passait le filtre
+ * fallback et apparaissait dans le brief comme « citation du jour ».
+ *
+ * Patterns détectés :
+ *  - `[à compléter ...]`, `[à remplir]`, `[TODO]`, `[à rédiger]`, `[XXX]`
+ *  - `_à compléter_`, `*placeholder*` (markdown italic)
+ *  - chaîne contenant uniquement des `[...]` ou `(...)` parenthèses
+ */
+export function isPlaceholder(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t) return true;
+  // Cas explicite : commence et finit par `[` / `]` (avec markdown italic optionnel).
+  const stripped = t.replace(/^[\*_"'«»\s]+|[\*_"'«»\s]+$/g, '');
+  if (/^\[.*\]$/.test(stripped) || /^\(.*\)$/.test(stripped)) return true;
+  // Mots-clés rédactionnels typiques.
+  const placeholderPatterns = [
+    /\[\s*à\s+compl[ée]ter/i,
+    /\[\s*à\s+remplir/i,
+    /\[\s*à\s+r[ée]diger/i,
+    /\[\s*todo/i,
+    /\[\s*xxx/i,
+    /\[\s*placeholder/i,
+    /\[\s*lorem\s+ipsum/i,
+  ];
+  return placeholderPatterns.some((re) => re.test(t));
 }
 
 /**
@@ -160,6 +192,8 @@ export function extractFallbackLine(body: string): string | null {
     line = line.replace(/\*\*/g, '').replace(/^["'«»\s]+|["'«»\s]+$/g, '').trim();
     if (line.length < 15) continue; // trop court (puce vide, mot isolé)
     if (/^\[\[[^\]]+\]\]$/.test(line)) continue; // wikilink seul
+    // S26 — skip les placeholders rédactionnels (bug observé 29/05).
+    if (isPlaceholder(line)) continue;
     return line.length > 220 ? `${line.slice(0, 217).trimEnd()}…` : line;
   }
   return null;

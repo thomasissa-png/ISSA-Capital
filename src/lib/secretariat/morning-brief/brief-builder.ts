@@ -39,9 +39,10 @@ function formatTickTick(section: TickTickSection): string {
   if (section.total === 0) {
     return '📋 Tâches du jour\nRien d’urgent aujourd’hui. 👌';
   }
-  const lines: string[] = [`📋 Tâches du jour (${section.total})`];
+  // S26 verbatim Thomas 29/05 : « enlevons ce système de catégorie TickTick
+  // c'est illisible » → liste à plat, pas de regroupement par projet.
+  const lines: string[] = [`📋 Tâches du jour (${section.total})`, ''];
   for (const group of section.groups) {
-    lines.push(`\n${group.projectName}`);
     for (const t of group.tasks) {
       const flag = t.overdue ? '⚠️ ' : '• ';
       lines.push(`${flag}${t.title}`);
@@ -64,9 +65,9 @@ function frDay(dueIso?: string): string {
 
 function formatUpcoming(section: TickTickSection): string {
   if (section.total === 0) return '';
-  const lines: string[] = [`🔜 À venir (${UPCOMING_DAYS} j)`];
+  // S26 verbatim Thomas 29/05 — pas de regroupement par projet, liste à plat.
+  const lines: string[] = [`🔜 À venir (${UPCOMING_DAYS} j)`, ''];
   for (const group of section.groups) {
-    lines.push(`\n${group.projectName}`);
     for (const t of group.tasks) {
       const day = frDay(t.dueIso);
       lines.push(`• ${t.title}${day ? ` — ${day}` : ''}`);

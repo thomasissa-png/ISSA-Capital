@@ -57,6 +57,7 @@ import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
 import { getNextReference } from '@/lib/secretariat/reference-counter';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
+import { formatPhoneForDisplay } from '@/lib/secretariat/whatsapp-ingest/whatsapp-ingest-runner';
 import { writeBackCrToFiche } from '@/lib/secretariat/handlers/cr-writeback';
 import { writeBackCrToContacts } from '@/lib/secretariat/handlers/cr-contact-writeback';
 import { saveCrToHistory, formatHistoryForPrompt } from '@/lib/secretariat/cr-history';
@@ -953,8 +954,11 @@ async function handleSlashCommand(chatId: number, normalizedText: string): Promi
         }
       }
       for (const p of waPendings) {
+        // S26 H1 — formatage `+33 6 64 85 06 31` au lieu des 9 chiffres bruts
+        // (récidive du Bug #1 que la PR #70 initiale avait raté ici).
+        const phoneFmt = p.phone ? formatPhoneForDisplay(p.phone) : '';
         lines.push(
-          `💬 WhatsApp — ${p.chatName}${p.phone ? ` (${p.phone})` : ''} (${fmtAge(p.createdAt)})`,
+          `💬 WhatsApp — ${p.chatName}${phoneFmt ? ` (${phoneFmt})` : ''} (${fmtAge(p.createdAt)})`,
         );
         const hints = p.existingMatchHints ?? [];
         if (hints.length === 1) {

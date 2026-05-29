@@ -546,6 +546,63 @@ alias_email: [a@b.fr, c@d.fr]
     const noAnchor = '---\ntype: contact\n---\n\n# Test\n';
     expect(addToFrontmatterList(noAnchor, 'alias_email', 'x@y.fr', 'email')).toBe(noAnchor);
   });
+
+  // S26 H2 — Hook de normalisation custom pour dédup par hash (téléphone).
+  describe('normalize hook (S26 H2 — dédup par hash téléphone normalisé)', () => {
+    const FIXTURE_OLD_FORMAT = `---
+type: contact
+email: a@b.fr
+telephone: +33 6 11 22 33 44
+alias_telephone:
+  - 664850631
+---
+
+# Old phone
+`;
+
+    const normalizePhone = (v: string): string => {
+      const digits = v.replace(/\D/g, '');
+      return digits.length >= 6 ? digits.slice(-9) : v.trim().toLowerCase();
+    };
+
+    it('dédup texte (défaut) : "+33 6 64 85 06 31" et "664850631" sont vus comme DIFFÉRENTS → doublon créé', () => {
+      const result = addToFrontmatterList(
+        FIXTURE_OLD_FORMAT,
+        'alias_telephone',
+        '+33 6 64 85 06 31',
+        'telephone',
+      );
+      // Sans hook : les deux formats coexistent (régression S24-S26 si pas de fix).
+      expect(result).toContain('  - 664850631');
+      expect(result).toContain('  - +33 6 64 85 06 31');
+    });
+
+    it('dédup hash (hook normalizePhone) : "+33 6 64 85 06 31" et "664850631" → no-op', () => {
+      const result = addToFrontmatterList(
+        FIXTURE_OLD_FORMAT,
+        'alias_telephone',
+        '+33 6 64 85 06 31',
+        'telephone',
+        normalizePhone,
+      );
+      // Avec hook : doublon détecté → contenu inchangé.
+      expect(result).toBe(FIXTURE_OLD_FORMAT);
+      expect(result).not.toContain('  - +33 6 64 85 06 31');
+    });
+
+    it('dédup hash : nouvelle valeur (téléphone différent) ajoutée normalement', () => {
+      const result = addToFrontmatterList(
+        FIXTURE_OLD_FORMAT,
+        'alias_telephone',
+        '+33 7 99 88 77 66',
+        'telephone',
+        normalizePhone,
+      );
+      expect(result).toContain('  - +33 7 99 88 77 66');
+      // L'ancien reste en place (pas de migration).
+      expect(result).toContain('  - 664850631');
+    });
+  });
 });
 
 // ============================================================

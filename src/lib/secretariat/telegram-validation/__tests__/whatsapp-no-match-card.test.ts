@@ -22,11 +22,13 @@ function makePending(overrides: Partial<WhatsappNoMatchPending> = {}): WhatsappN
 }
 
 describe('buildWhatsappNoMatchCard', () => {
-  it('contient nom de chat, numéro, résumé, et 5 boutons préfixés wa_nomatch:', () => {
+  it('contient nom de chat, numéro formaté +33, résumé, et 5 boutons préfixés wa_nomatch:', () => {
     const { text, inlineKeyboard } = buildWhatsappNoMatchCard(makePending());
     expect(text).toContain('Contact WhatsApp inconnu');
     expect(text).toContain('Marc Gernot');
-    expect(text).toContain('664850631');
+    // S26 Bug #1 — affichage formaté `+33 6 64 85 06 31` au lieu des 9 chiffres bruts.
+    expect(text).toContain('+33 6 64 85 06 31');
+    expect(text).not.toContain('664850631');
     expect(text).toContain('compromis Lot 3');
     expect(text).toContain('AVANT de cliquer');
 
@@ -66,6 +68,38 @@ describe('buildWhatsappNoMatchCard', () => {
     expect(text).not.toContain('<script>');
     expect(text).toContain('&lt;script&gt;');
     expect(text).toContain('&amp;');
+  });
+
+  // S26 I3 — Quand le total réel d'homonymes > 3, la carte doit afficher le
+  // chiffre RÉEL (pas la version tronquée à 3) et NE PAS afficher de bouton Lier.
+  it('S26 I3 : existingMatchHintsTotal=5 (hints capés à 3) → "5 homonymes (top 3)" + pas de bouton Lier', () => {
+    const hints = Array.from({ length: 3 }, (_, i) => ({
+      displayName: `Homonyme ${i + 1}`,
+      knownPhones: [],
+      folderPath: '07. Contacts/03. Pro',
+      filename: `Homonyme ${i + 1}.md`,
+    }));
+    const { text, inlineKeyboard } = buildWhatsappNoMatchCard(
+      makePending({ existingMatchHints: hints, existingMatchHintsTotal: 5 }),
+    );
+    expect(text).toContain('5 homonymes');
+    expect(text).toContain('top 3 affichés');
+    // Pas de bouton Lier quand >3
+    const labels = inlineKeyboard.flat().map((b) => b.text);
+    expect(labels.some((l) => l.includes('Lier à'))).toBe(false);
+  });
+
+  it('S26 I3 : existingMatchHintsTotal=2 (≤3) → "2 homonymes" + boutons Lier affichés', () => {
+    const hints = [
+      { displayName: 'A', knownPhones: [], folderPath: '07. Contacts/03. Pro', filename: 'A.md' },
+      { displayName: 'B', knownPhones: [], folderPath: '07. Contacts/03. Pro', filename: 'B.md' },
+    ];
+    const { text, inlineKeyboard } = buildWhatsappNoMatchCard(
+      makePending({ existingMatchHints: hints, existingMatchHintsTotal: 2 }),
+    );
+    expect(text).toContain('2 homonymes');
+    const labels = inlineKeyboard.flat().map((b) => b.text);
+    expect(labels.filter((l) => l.includes('Lier à'))).toHaveLength(2);
   });
 });
 

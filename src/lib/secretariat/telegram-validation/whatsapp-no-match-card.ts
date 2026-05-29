@@ -16,6 +16,7 @@
 import type { TelegramKeyboard } from './telegram-cards';
 import { escapeHtml } from './telegram-cards';
 import type { ContactType } from './no-match-card';
+import { formatPhoneForDisplay } from '../whatsapp-ingest/whatsapp-ingest-runner';
 
 // ============================================================
 // Types
@@ -51,6 +52,13 @@ export interface WhatsappNoMatchPending {
     folderPath: string;
     filename: string;
   }> | null;
+  /**
+   * S26 I3 — Nombre TOTAL d'homonymes trouvés AVANT le `slice(0, 3)` qui cape
+   * `existingMatchHints`. Permet à la carte d'afficher « X homonymes (top 3
+   * affichés) » quand X > 3, au lieu de la valeur tronquée silencieusement.
+   * Optionnel : si absent, on retombe sur `existingMatchHints.length`.
+   */
+  existingMatchHintsTotal?: number;
 }
 
 /** Préfixe callback_data pour les boutons no-match WhatsApp */
@@ -83,7 +91,7 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
   lines.push('');
   lines.push(`<b>Chat</b> : ${escapeHtml(noMatch.chatName)}`);
   if (noMatch.phone) {
-    lines.push(`<b>Numéro</b> : ${escapeHtml(noMatch.phone)}`);
+    lines.push(`<b>Numéro</b> : ${escapeHtml(formatPhoneForDisplay(noMatch.phone))}`);
   }
   lines.push('');
   // Résumé du LLM — tronqué pour ne pas exploser la carte.
@@ -94,25 +102,33 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
   lines.push('');
   // S24 nuit — Warning homonymie côté WhatsApp + bouton(s) Lier.
   const hints = noMatch.existingMatchHints ?? [];
+  // S26 I3 — `total` réel avant le cap à 3 (sinon on tronquait silencieusement
+  // l'info à l'utilisateur — il voyait « 3 homonymes » alors qu'il y en avait
+  // 5+, et perdait le bouton Lier).
+  const total = noMatch.existingMatchHintsTotal ?? hints.length;
   if (hints.length >= 1) {
     lines.push('');
-    if (hints.length === 1) {
+    if (total === 1) {
       const h = hints[0]!;
       const known = h.knownPhones.filter(Boolean).join(', ');
       lines.push(
         `\u{26A0}\u{FE0F} <b>Une fiche existe déjà au même nom</b> : ${escapeHtml(h.displayName)}` +
           (known ? ` (tél connu : ${escapeHtml(known)})` : ''),
       );
-    } else if (hints.length <= 3) {
-      lines.push(`\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> :`);
+    } else if (total <= 3) {
+      lines.push(`\u{26A0}\u{FE0F} <b>${total} homonymes existent</b> :`);
       for (const h of hints) {
         const known = h.knownPhones.filter(Boolean).join(', ');
         lines.push(`  • ${escapeHtml(h.displayName)}` + (known ? ` — ${escapeHtml(known)}` : ''));
       }
     } else {
       lines.push(
-        `\u{26A0}\u{FE0F} <b>${hints.length} homonymes existent</b> — trop ambigu pour un clic. Skip et lie à la main.`,
+        `\u{26A0}\u{FE0F} <b>${total} homonymes existent</b> (top 3 affichés) — trop ambigu pour un clic. Skip et lie à la main.`,
       );
+      for (const h of hints) {
+        const known = h.knownPhones.filter(Boolean).join(', ');
+        lines.push(`  • ${escapeHtml(h.displayName)}` + (known ? ` — ${escapeHtml(known)}` : ''));
+      }
     }
   }
 
@@ -132,8 +148,11 @@ export function buildWhatsappNoMatchCard(noMatch: WhatsappNoMatchPending): {
       { text: '\u{1F4CB} Autres', callback_data: `${WA_NOMATCH_CALLBACK_PREFIX}autres:${noMatch.id}` },
     ],
   ];
+  // S26 I3 — condition fondée sur le `total` réel (pré-slice) pour ne PAS
+  // afficher des boutons Lier quand >3 homonymes existent (sinon Thomas
+  // pouvait lier au mauvais des 5+ candidats — UX trompeuse).
   const linkable = (noMatch.existingMatchHints ?? []).slice(0, 3);
-  if (linkable.length >= 1 && (noMatch.existingMatchHints?.length ?? 0) <= 3) {
+  if (linkable.length >= 1 && total <= 3) {
     for (let i = 0; i < linkable.length; i++) {
       const h = linkable[i]!;
       inlineKeyboard.push([
