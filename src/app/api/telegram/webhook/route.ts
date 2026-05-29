@@ -1405,9 +1405,19 @@ export async function POST(request: Request): Promise<Response> {
               const who = emailNoMatch.nameFrom
                 ? `${emailNoMatch.nameFrom} (${emailNoMatch.emailFrom})`
                 : emailNoMatch.emailFrom;
+              // S26 — Wording renforcé : « quand tu veux » sonnait optionnel,
+              // Thomas oubliait de cliquer après reply (cas Mélanie Toledano
+              // 28/05 — contexte tapé, jamais cliqué Pro). Reformulation
+              // impérative + emoji visuel direct vers la carte au-dessus.
+              // S26 — Wording renforcé : « quand tu veux » sonnait optionnel,
+              // Thomas oubliait de cliquer après reply (cas Mélanie Toledano
+              // 28/05). Reformulation impérative MAJUSCULES + flèche visuelle.
+              // (sendTelegramMessage n'envoie pas de parse_mode → plain text.)
               await sendTelegramMessage(
                 chatId,
-                `\u{1F4DD} Contexte noté pour ${who}. Clique sur un type de cette carte quand tu veux.`,
+                `\u{1F4DD} Contexte noté pour ${who}.\n\n` +
+                  `\u{26A0}\u{FE0F} POUR CRÉER LA FICHE : clique sur le type ` +
+                  `(Pro / Famille / Amis / Autres) sur la carte ci-dessus \u{2B06}\u{FE0F}`,
               );
               return Response.json({ ok: true });
             }
@@ -1418,7 +1428,9 @@ export async function POST(request: Request): Promise<Response> {
             if (ok) {
               await sendTelegramMessage(
                 chatId,
-                `\u{1F4DD} Contexte noté pour « ${waNoMatch.chatName} ». Clique sur un type de cette carte quand tu veux.`,
+                `\u{1F4DD} Contexte noté pour « ${waNoMatch.chatName} ».\n\n` +
+                  `\u{26A0}\u{FE0F} POUR CRÉER LA FICHE : clique sur le type ` +
+                  `(Pro / Famille / Amis / Autres) sur la carte ci-dessus \u{2B06}\u{FE0F}`,
               );
               return Response.json({ ok: true });
             }
