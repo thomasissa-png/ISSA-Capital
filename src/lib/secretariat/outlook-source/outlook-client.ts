@@ -74,6 +74,12 @@ export async function getAccessToken(box: OutlookBox): Promise<string | null> {
           refresh_token: c.refreshToken,
           scope: SCOPES,
         }),
+        // S26 hotfix — timeout obligatoire : sans lui, une connexion TLS qui
+        // stalle vers login.microsoftonline.com fait pendre getAccessToken à
+        // l'infini → toute la source Outlook → le Promise.all du runner email
+        // → runEmailIngest ne rend jamais la main (cron 900s timeout, aucun
+        // brouillon ni enrichissement). Aligné sur les requêtes Graph (30s).
+        signal: AbortSignal.timeout(GRAPH_TIMEOUT_MS),
       },
     );
     if (!res.ok) {

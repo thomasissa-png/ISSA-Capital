@@ -224,6 +224,10 @@ export async function getAccessToken(forceRefresh = false): Promise<string | nul
         refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
+      // S26 hotfix — timeout obligatoire (cf. outlook-client getAccessToken) :
+      // ce refresh alimente TOUT le vault/audit/pending ; sans timeout, un stall
+      // réseau le fait pendre indéfiniment et gèle les écritures Drive.
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
