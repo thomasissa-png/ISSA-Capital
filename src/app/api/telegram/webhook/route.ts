@@ -54,7 +54,16 @@ import {
   clearActiveWorkflow,
 } from '@/lib/secretariat/conversation-store';
 import type { PhotoAttachment } from '@/lib/secretariat/conversation-store';
-import { getNextReference } from '@/lib/secretariat/reference-counter';
+// Module CR Reunion (P0 #2) : garde-fous deterministes (§6 Workflow v3)
+// et generateur de reference centralise. validateCrPayload est appele
+// AVANT toute generation de PDF/reference pour bloquer un CR non conforme
+// (entite invalide, RBAC, coherence, Art. 39-1, formules — warnings).
+// generateReferenceCR wrappe reference-counter.getNextReference : meme
+// comportement runtime, point d'entree unique pour le webhook.
+import {
+  validateCrPayload as validateCrPayloadDeterministe,
+  generateReference as generateReferenceCR,
+} from '@/lib/secretariat/cr-reunion';
 import { generateCrPdf } from '@/lib/secretariat/pdf-generator';
 import { uploadToDrive } from '@/lib/secretariat/drive-upload';
 import { formatPhoneForDisplay } from '@/lib/secretariat/whatsapp-ingest/whatsapp-ingest-runner';
@@ -2162,8 +2171,31 @@ export async function POST(request: Request): Promise<Response> {
       // --- VALIDER ---
       if (callbackData === 'validate') {
         try {
-          // 1. Générer la référence séquentielle
-          const reference = getNextReference(pendingDraft.cr.entite);
+          // 0. P0 #2 — Garde-fous déterministes (module cr-reunion, §6 Workflow v3).
+          // Bloque la génération PDF/référence si entité incohérente, RBAC violé,
+          // Section 1 sans Art. 39-1, etc. Les formules bannies (§6.4) sont des
+          // warnings non bloquants (loggués). requester non disponible côté
+          // Telegram (chat = Thomas) → on omet le check RBAC, qui par défaut OK.
+          const detValidation = validateCrPayloadDeterministe(pendingDraft.cr);
+          if (!detValidation.ok) {
+            const errMsg = [
+              '❌ CR rejeté par les garde-fous déterministes (§6 Workflow v3) :',
+              ...detValidation.errors.map((e) => `• ${e}`),
+              '',
+              'Corrige le contenu et renvoie la transcription, ou demande à Anya de reformuler.',
+            ].join('\n');
+            await sendTelegramMessage(callbackChatId, errMsg);
+            return Response.json({ ok: true, status: 'rejected_by_validator' });
+          }
+          if (detValidation.warnings.length > 0) {
+            console.warn(
+              '[telegram-webhook] CR validé avec warnings §6.4 :',
+              detValidation.warnings.join(', '),
+            );
+          }
+
+          // 1. Générer la référence séquentielle (via module centralisé cr-reunion)
+          const reference = generateReferenceCR(pendingDraft.cr.entite);
           const dateEtablissement = new Date().toISOString();
 
           // 2. Construire le titre du document

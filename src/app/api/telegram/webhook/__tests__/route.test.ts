@@ -299,8 +299,10 @@ const VALID_CR_DRAFT = {
   etablissement_nom: 'Le Voltaire',
   section_1_objet_art_39_1:
     "Ce déjeuner s'inscrit dans le cadre de la stratégie de diversification " +
-    "immobilière d'ISSA Capital. La rencontre avec Karim Benmoussa vise à évaluer " +
-    'les opportunités du marché parisien.',
+    "immobilière d'ISSA Capital, conformément à l'Art. 39-1 du CGI. " +
+    "Ce format de repas a été retenu pour permettre un échange approfondi " +
+    "avec Karim Benmoussa sur les opportunités du marché parisien " +
+    "(montant : 185,50 € TTC, justificatif disponible sur Tiime).",
   section_2_points_abordes:
     'Les points suivants ont été abordés lors de la réunion : analyse du marché ' +
     'immobilier parisien, étude des opportunités de diversification, évaluation ' +
