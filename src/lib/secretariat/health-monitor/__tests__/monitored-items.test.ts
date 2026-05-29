@@ -64,9 +64,17 @@ describe('monitored-items', () => {
   // Structure du registre
   // ============================================================
 
-  it('exporte 7 items (3 OAuth + 4 Task B)', async () => {
+  it('exporte 8 items (3 OAuth + 4 Task B + 1 quota DeepSeek S25)', async () => {
     const { MONITORED_ITEMS } = await importModule();
-    expect(MONITORED_ITEMS).toHaveLength(7);
+    expect(MONITORED_ITEMS).toHaveLength(8);
+  });
+
+  it('contient deepseek_monthly_quota (item S25 — audit reviewer)', async () => {
+    const { MONITORED_ITEMS } = await importModule();
+    const item = MONITORED_ITEMS.find((i) => i.id === 'deepseek_monthly_quota');
+    expect(item).toBeDefined();
+    expect(item!.category).toBe('quota');
+    expect(typeof item!.getHealthCheck).toBe('function');
   });
 
   it('les 3 premiers items ont la catégorie oauth', async () => {

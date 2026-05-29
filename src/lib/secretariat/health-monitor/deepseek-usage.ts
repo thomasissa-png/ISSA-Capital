@@ -170,6 +170,19 @@ export async function getMonthlyDeepSeekUsageEur(): Promise<number> {
   return store.totalEur;
 }
 
+/**
+ * Retourne le budget mensuel DeepSeek en EUR (env `DEEPSEEK_MONTHLY_BUDGET_EUR`,
+ * défaut 20 €). Le coût DeepSeek est ~10× inférieur à Anthropic ; budget plus bas
+ * légitime — adapter via env si l'usage augmente.
+ *
+ * S25 (2026-05-29) : ajout pour brancher l'item `deepseek_monthly_quota` dans le
+ * health-monitor (audit reviewer 29/05 — angle mort signalé : `deepseek-usage.ts`
+ * existait mais n'alimentait aucun item du monitor).
+ */
+export function getMonthlyDeepSeekBudgetEur(): number {
+  return parseInt(process.env.DEEPSEEK_MONTHLY_BUDGET_EUR ?? '20', 10);
+}
+
 /** Expose le chemin du store (pour les tests) */
 export function getDeepSeekStorePath(): string {
   return USAGE_PATH;

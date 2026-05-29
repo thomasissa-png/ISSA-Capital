@@ -13,6 +13,7 @@ import * as tls from 'tls';
 import type { MonitoredItem } from './types';
 import { getExpiresAt } from './oauth-timestamps';
 import { getMonthlyUsageEur, getMonthlyBudgetEur } from './anthropic-usage';
+import { getMonthlyDeepSeekUsageEur, getMonthlyDeepSeekBudgetEur } from './deepseek-usage';
 
 // ============================================================
 // Items surveillés
@@ -89,6 +90,33 @@ export const MONITORED_ITEMS: MonitoredItem[] = [
     },
     renewalInstructions:
       'Quota Anthropic mensuel atteint. Soit augmenter ANTHROPIC_MONTHLY_BUDGET_EUR dans Replit Secrets, soit attendre le 1er du mois (reset auto).',
+  },
+  {
+    id: 'deepseek_monthly_quota',
+    label: 'Quota DeepSeek mensuel',
+    category: 'quota',
+    thresholdsDays: [],
+    getExpiresAt: async () => null,
+    getHealthCheck: async () => {
+      const used = await getMonthlyDeepSeekUsageEur();
+      const budget = getMonthlyDeepSeekBudgetEur();
+      const ratio = budget > 0 ? used / budget : 0;
+      if (ratio >= 0.95) {
+        return {
+          ok: false,
+          reason: `${used.toFixed(2)}€ / ${budget}€ (${(ratio * 100).toFixed(0)}%) — CRITIQUE`,
+        };
+      }
+      if (ratio >= 0.80) {
+        return {
+          ok: false,
+          reason: `${used.toFixed(2)}€ / ${budget}€ (${(ratio * 100).toFixed(0)}%) — WARN`,
+        };
+      }
+      return { ok: true };
+    },
+    renewalInstructions:
+      'Quota DeepSeek mensuel atteint. Soit augmenter DEEPSEEK_MONTHLY_BUDGET_EUR dans Replit Secrets, soit attendre le 1er du mois (reset auto). DeepSeek = task triage email + brouillon + synthèse contact + hot-context-light.',
   },
   {
     id: 'domain_renewal',

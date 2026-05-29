@@ -21,6 +21,7 @@
 import { updateFileContent, getAccessToken } from '../drive-upload';
 import { readFileById } from '../vault-client/obsidian-file';
 import { findProjetFicheByEntite } from '../vault-reader';
+import { sendTelegramMessage } from '../telegram';
 
 // ============================================================
 // Constantes
@@ -146,10 +147,35 @@ export async function writeBackCrToFiche(
   // Lookup fiche Projet — résolution dynamique via vault-reader (R7)
   const fiche = await findProjetFicheByEntite(input.entiteCode);
   if (!fiche) {
-    // Pattern actuel : skip non-bloquant. Le webhook log un warn mais le CR principal n'est pas affecté.
+    // S25 (2026-05-29) : alerte Telegram explicite à Thomas. Avant : skip
+    // silencieux côté log, le CR write-back vers la fiche Projet disparaissait
+    // sans qu'aucun signal n'arrive à Thomas (audit reviewer 29/05 P0-6).
+    // Le CR principal (PDF Drive) reste préservé — le write-back fiche est
+    // un enrichissement non-bloquant, mais doit être traçable.
     console.warn(
-      `[cr-writeback] fiche Projet non trouvée pour entité ${input.entiteCode} — write-back skip`,
+      `[cr-writeback] fiche Projet non trouvée pour entité ${input.entiteCode} — write-back skip + alerte Telegram`,
     );
+    const chatIdRaw = process.env.TELEGRAM_CHAT_ID_THOMAS;
+    const chatId = chatIdRaw ? parseInt(chatIdRaw, 10) : NaN;
+    if (chatIdRaw && Number.isFinite(chatId)) {
+      try {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ <b>CR write-back fiche Projet introuvable</b>\n\n` +
+            `Entité : <code>${input.entiteCode}</code>\n` +
+            `CR : ${input.crFilename ?? '(sans nom)'}\n` +
+            `Lien : ${input.crWebViewLink}\n\n` +
+            `Le PDF du CR est sauvegardé, mais la ligne d'historique ` +
+            `<code>## Comptes Rendus</code> n'a PAS été ajoutée car aucune fiche Projet ` +
+            `n'a été trouvée pour ce code entité. ` +
+            `Action : créer/renommer la fiche, puis re-trigger le write-back via le webhook.`,
+        );
+      } catch (err) {
+        console.warn(
+          `[cr-writeback] échec envoi alerte Telegram : ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
     return {
       success: false,
       modified: false,
