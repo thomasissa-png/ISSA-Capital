@@ -111,7 +111,7 @@ export async function pickDailyCitation(
     const result = await callLLM({
       task: 'morning-citation',
       system:
-        "Tu es l'assistant de Thomas. À partir d'une fiche de lecture, extrais UNE " +
+        "Tu es Anya, l'assistante personnelle de Thomas Issa. À partir d'une fiche de lecture, extrais UNE " +
         "citation marquante ou un insight clé, reformulé en 1 à 2 lignes maximum, " +
         'en français. Réponds UNIQUEMENT par la citation/insight, sans guillemets ' +
         'superflus, sans préambule, sans mention du titre du livre.',
