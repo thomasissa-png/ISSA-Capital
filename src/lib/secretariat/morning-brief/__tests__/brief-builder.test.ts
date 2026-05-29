@@ -22,6 +22,38 @@ const NOW = new Date('2026-07-15T05:00:00Z'); // 07:00 Paris été
 describe('buildMorningBrief', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  // S26 verbatim Thomas — pas de regroupement par projet (illisible).
+  it('S26 : tâches affichées à plat, sans nom de projet ("Pro" / "Sans projet")', async () => {
+    mocks.collectTickTick.mockResolvedValue({
+      today: {
+        total: 3,
+        groups: [
+          {
+            projectName: 'Important',
+            tasks: [{ title: 'Acheter porte-clé', overdue: true }],
+          },
+          {
+            projectName: 'Sans projet',
+            tasks: [
+              { title: 'Appeler Luc', overdue: true },
+              { title: 'Dîner Xavier', overdue: false },
+            ],
+          },
+        ],
+      },
+      upcoming: { total: 0, groups: [] },
+    });
+    mocks.collectCalendar.mockResolvedValue({ events: [] });
+    mocks.pickDailyCitation.mockResolvedValue(null);
+
+    const { message } = await buildMorningBrief(NOW);
+    expect(message).not.toContain('Important');
+    expect(message).not.toContain('Sans projet');
+    expect(message).toContain('⚠️ Acheter porte-clé');
+    expect(message).toContain('⚠️ Appeler Luc');
+    expect(message).toContain('• Dîner Xavier');
+  });
+
   it('scénario A : 2 tâches + 1 réunion + citation → 3 sections complètes', async () => {
     mocks.collectTickTick.mockResolvedValue({
       today: {
