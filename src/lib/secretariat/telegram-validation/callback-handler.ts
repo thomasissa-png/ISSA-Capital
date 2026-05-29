@@ -90,12 +90,12 @@ import { executeCopyAttachment } from '../email-ingest/attachment-handler';
 import {
   VAULT_PATHS,
   slugifyVaultFilename,
-  buildHistoriqueTitle,
 } from '../handlers/vault-paths';
 import { enrichContact, buildEnrichPreviewLines } from '../contact-enrich';
 import { polishUserContext } from '../contact-enrich/polish-user-context';
 import type { EnrichContactResult } from '../contact-enrich';
 import { formatPhoneForDisplay, normalizePhone } from '../whatsapp-ingest/whatsapp-ingest-runner';
+import { renderFicheContent, type FicheRenderData } from './fiche-renderer';
 
 // ============================================================
 // Types
@@ -527,39 +527,20 @@ function buildStubFiche(
     ? noMatch.nameFrom
     : extractLocalPart(noMatch.emailFrom);
 
-  // S24 soir — contexte fourni par Thomas (reply Telegram avant clic) inséré
-  // en tête de la fiche pour qu'elle ne soit pas vide / hors-contexte.
-  const quiCest: string[] = [];
-  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
-    quiCest.push('## Qui c\'est', '', noMatch.userContext.trim(), '');
-  }
+  // S25 (2026-05-29) : rendu délégué à `fiche-renderer.ts` aligné sur les
+  // templates `Contact pro.md` / `Contact relationnel.md` du vault.
+  const renderData: FicheRenderData = {
+    displayName,
+    email: noMatch.emailFrom,
+    rencontreVia: 'Email',
+    userContext: noMatch.userContext ?? undefined,
+  };
 
-  const content = [
-    '---',
-    'type: contact',
-    `categorie: ${type}`,
-    'societe: ',
-    'role: ',
-    `email: ${noMatch.emailFrom}`,
-    'telephone: ',
-    'rencontre_via: ',
-    `date_premier_contact: ${today}`,
-    `date_derniere_interaction: ${today}`,
-    'classification: ',
-    'tags:',
-    `  - ${type}`,
-    '---',
-    '',
-    `# ${displayName}`,
-    '',
-    ...quiCest,
-    '## Historique',
-    '',
-    buildHistoriqueTitle(today, 'Premier contact email'),
-    '',
-    `Premier email reçu. ${noMatch.emailThreadRef}`,
-    '',
-  ].join('\n');
+  const content = renderFicheContent(type, renderData, {
+    today,
+    historiqueTitle: 'Premier contact email',
+    historiqueContent: `Premier email reçu. ${noMatch.emailThreadRef}`,
+  });
 
   return { displayName, content };
 }
@@ -1005,6 +986,9 @@ function splitChatName(chatName: string): { prenom: string; nom: string } {
  * Construit une fiche WhatsApp à la création (depuis le pending no-match).
  * Pré-remplit téléphone + nom (best-effort), inclut le résumé du LLM dans
  * « Qui c'est » et le userContext en tête (S24 PR B, si fourni avant le clic).
+ *
+ * S25 (2026-05-29) : rendu délégué au helper `fiche-renderer.ts` aligné sur
+ * les templates `Contact pro.md` / `Contact relationnel.md` du vault.
  */
 function buildWhatsappFiche(
   noMatch: WhatsappNoMatchPending,
@@ -1014,53 +998,32 @@ function buildWhatsappFiche(
   const { prenom, nom } = splitChatName(noMatch.chatName);
   const displayName = nom ? `${prenom} ${nom}` : prenom;
 
-  const sections: string[] = [];
+  // Fallback ## Qui c'est : résumé LLM du chat si userContext absent.
+  const fallbackQuiCest =
+    noMatch.summary && noMatch.summary.trim().length > 0
+      ? `_Premier échange WhatsApp (résumé Anya) :_ ${noMatch.summary.trim()}`
+      : '_Contact ajouté depuis WhatsApp — à compléter._';
 
-  // Section « Qui c'est » : userContext en priorité (s'il est fourni par
-  // Thomas via reply), sinon le résumé LLM du chat. Si rien : note neutre.
-  const quiCest: string[] = [];
-  if (noMatch.userContext && noMatch.userContext.trim().length > 0) {
-    quiCest.push(noMatch.userContext.trim());
-    quiCest.push('');
-  }
-  if (noMatch.summary && noMatch.summary.trim().length > 0) {
-    quiCest.push(`_Premier échange WhatsApp (résumé Anya) :_ ${noMatch.summary.trim()}`);
-  } else if (quiCest.length === 0) {
-    quiCest.push('_Contact ajouté depuis WhatsApp — à compléter._');
-  }
+  const renderData: FicheRenderData = {
+    displayName,
+    telephone: formatPhoneForDisplay(noMatch.phone),
+    rencontreVia: 'WhatsApp',
+    userContext: noMatch.userContext ?? undefined,
+    fallbackQuiCest,
+  };
 
-  sections.push('## Qui c\'est', '', quiCest.join('\n'), '');
-  sections.push(
-    '## Historique',
-    '',
-    buildHistoriqueTitle(today, 'Premier contact WhatsApp'),
-    '',
-    `Fiche créée à partir d'un échange WhatsApp${noMatch.chatName ? ` avec « ${noMatch.chatName} »` : ''}.`,
-    '',
-  );
+  const historiqueContent =
+    `Fiche créée à partir d'un échange WhatsApp` +
+    (noMatch.chatName ? ` avec « ${noMatch.chatName} »` : '') +
+    '.';
 
-  const frontmatter = [
-    '---',
-    'type: contact',
-    `categorie: ${type}`,
-    'societe: ',
-    'role: ',
-    'email: ',
-    `telephone: ${formatPhoneForDisplay(noMatch.phone)}`,
-    'rencontre_via: WhatsApp',
-    `date_premier_contact: ${today}`,
-    `date_derniere_interaction: ${today}`,
-    'classification: ',
-    'tags:',
-    `  - ${type}`,
-    '  - whatsapp',
-    '---',
-    '',
-    `# ${displayName}`,
-    '',
-  ].join('\n');
+  const content = renderFicheContent(type, renderData, {
+    today,
+    historiqueTitle: 'Premier contact WhatsApp',
+    historiqueContent,
+  });
 
-  return { displayName, content: frontmatter + sections.join('\n') };
+  return { displayName, content };
 }
 
 async function handleWhatsappNoMatchCallback(

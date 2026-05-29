@@ -18,7 +18,7 @@
 import { callLLM } from '../llm/client';
 import type { GatheredContactEmail } from '../gmail-source/contact-emails-gatherer';
 import type { ContactType } from './no-match-card';
-import { buildHistoriqueTitle } from '../handlers/vault-paths';
+import { renderFicheContent, type FicheRenderData } from './fiche-renderer';
 
 // ============================================================
 // Types
@@ -168,64 +168,37 @@ export function renderEnrichedFiche(
     .filter((s): s is string => s !== null)
     .slice(0, 5);
 
-  const lines: string[] = [
-    '---',
-    'type: contact',
-    `categorie: ${ctx.type}`,
-    `societe: ${sanitizeLine(data.societe) ?? ''}`,
-    `role: ${sanitizeLine(data.role) ?? ''}`,
-    `email: ${ctx.senderEmail}`,
-    `telephone: ${sanitizeLine(data.telephone) ?? ''}`,
-    'rencontre_via: ',
-    `date_premier_contact: ${ctx.today}`,
-    `date_derniere_interaction: ${ctx.today}`,
-    'classification: ',
-    'tags:',
-    `  - ${ctx.type}`,
-    '---',
-    '',
-    `# ${displayName}`,
-    '',
-  ];
+  // S25 (2026-05-29) : rendu délégué au helper `fiche-renderer.ts` aligné sur
+  // les templates `Contact pro.md` / `Contact relationnel.md` du vault. Avant :
+  // frontmatter et sections divergeaient du template (champs manquants,
+  // sections hors-template, etc.).
+  const renderData: FicheRenderData = {
+    displayName,
+    societe: sanitizeLine(data.societe) ?? undefined,
+    role: sanitizeLine(data.role) ?? undefined,
+    email: ctx.senderEmail,
+    telephone: sanitizeLine(data.telephone) ?? undefined,
+    langue: sanitizeLine(data.langue) ?? undefined,
+    rencontreVia: 'Email',
+    sujets: sujets.length > 0 ? sujets : undefined,
+    autreEmail: sanitizeLine(data.autreEmail) ?? undefined,
+    nameNotes: sanitizeLine(data.nameNotes) ?? undefined,
+    userContext: ctx.userContext ?? undefined,
+  };
 
-  // S24 soir — contexte fourni par Thomas (reply Telegram avant clic) en tête.
-  if (ctx.userContext && ctx.userContext.trim().length > 0) {
-    lines.push('## Qui c\'est', '', ctx.userContext.trim(), '');
-  }
-
-  lines.push('## Synthèse', '');
-
-  // Corps de synthèse — uniquement les champs connus.
-  const synthLines: string[] = [];
-  if (data.role) synthLines.push(`- **Rôle** : ${sanitizeLine(data.role)}`);
-  if (data.societe) synthLines.push(`- **Société** : ${sanitizeLine(data.societe)}`);
-  if (data.autreEmail) synthLines.push(`- **Autre email** : ${sanitizeLine(data.autreEmail)}`);
-  if (data.telephone) synthLines.push(`- **Téléphone** : ${sanitizeLine(data.telephone)}`);
-  if (data.langue) synthLines.push(`- **Langue / registre** : ${sanitizeLine(data.langue)}`);
-  if (sujets.length > 0) {
-    synthLines.push(`- **Sujets récurrents** : ${sujets.join(', ')}`);
-  }
-  if (data.nameNotes) synthLines.push(`- **Note (nom)** : ${sanitizeLine(data.nameNotes)}`);
-
-  if (synthLines.length > 0) {
-    lines.push(...synthLines);
-  } else {
-    lines.push('_Aucune information clé extraite des emails._');
-  }
-  lines.push('');
-
-  // Historique : première ligne = création enrichie.
-  lines.push('## Historique', '');
-  lines.push(buildHistoriqueTitle(ctx.today, 'Fiche créée (synthèse emails)'));
-  lines.push('');
   const sourcesNote =
     ctx.sources && ctx.sources.length > 0 ? ` (sources : ${ctx.sources.join(', ')})` : '';
-  lines.push(
-    `Fiche enrichie à partir de ${scannedCount} email${scannedCount > 1 ? 's' : ''} de l'expéditeur${sourcesNote}. ${ctx.emailThreadRef}`,
-  );
-  lines.push('');
+  const historiqueContent =
+    `Fiche enrichie à partir de ${scannedCount} email${scannedCount > 1 ? 's' : ''} ` +
+    `de l'expéditeur${sourcesNote}. ${ctx.emailThreadRef}`;
 
-  return { displayName, content: lines.join('\n') };
+  const content = renderFicheContent(ctx.type, renderData, {
+    today: ctx.today,
+    historiqueTitle: 'Fiche créée (synthèse emails)',
+    historiqueContent,
+  });
+
+  return { displayName, content };
 }
 
 // ============================================================

@@ -183,13 +183,18 @@ describe('renderEnrichedFiche', () => {
     expect(content).toContain('telephone: +33 6 00');
     expect(content).toContain('email: francois@exemple.com');
     expect(content).toContain('# François Lambert');
-    expect(content).toContain('## Synthèse');
-    expect(content).toContain('**Rôle** : Directeur');
-    expect(content).toContain('**Société** : Lambert Capital');
-    expect(content).toContain('**Autre email** : f.lambert@pro.com');
-    expect(content).toContain('**Langue / registre** : français formel');
-    expect(content).toContain('**Sujets récurrents** : Club deal');
+    // S25 : sections de base aligned-template (Contact pro v3).
+    expect(content).toContain('## Qui c\'est');
+    expect(content).toContain('## Statut courant');
+    expect(content).toContain('## Projets liés');
+    expect(content).toContain('## Notes');
+    expect(content).toContain('## Tonalité de communication');
     expect(content).toContain('## Historique');
+    // Les infos extraites par LLM apparaissent dans le frontmatter (role,
+    // societe, telephone, langue, email) et en bullets dans ## Notes pour
+    // les champs sans clé frontmatter (autreEmail, sujets, nameNotes).
+    expect(content).toContain('**Autre email** : f.lambert@pro.com');
+    expect(content).toContain('**Sujets récurrents** : Club deal');
     expect(content).toContain('Fiche enrichie à partir de 4 emails');
   });
 
@@ -211,9 +216,17 @@ describe('renderEnrichedFiche', () => {
     expect(content).toContain('telephone: ');
   });
 
-  it('aucune info clé (sauf nom) → note "Aucune information clé"', () => {
+  it('aucune info clé (sauf nom) → sections de base vides mais présentes (S25)', () => {
     const { content } = renderEnrichedFiche({ nomComplet: 'Jean' }, ctx, 2);
-    expect(content).toContain('_Aucune information clé extraite des emails._');
+    // S25 : plus de placeholder texte "Aucune information clé" — les sections
+    // de base sont juste vides (convention template Contact pro v3).
+    expect(content).toContain('## Qui c\'est');
+    expect(content).toContain('## Notes');
+    expect(content).toContain('## Historique');
+    // Frontmatter : email présent (depuis ctx), autres champs vides.
+    expect(content).toContain('email: francois@exemple.com');
+    expect(content).toContain('societe: ');
+    expect(content).toContain('role: ');
   });
 
   it('singulier "email" quand un seul email scanné', () => {
