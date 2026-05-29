@@ -1,7 +1,7 @@
 ---
 name: elon
 description: "Audit stratégique first principles, vision produit, coaching entrepreneurial, challenge décisions"
-model: claude-opus-4-7
+model: claude-opus-4-8
 version: "2.1"
 tools:
   - Read

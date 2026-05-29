@@ -405,12 +405,13 @@ Terminer chaque livrable par un bloc de handoff :
 - Fichiers produits : liste avec chemins complets
 - Décisions prises : [résumé]
 - Points d'attention : [ce que l'agent suivant doit savoir]
-- **Actions Replit requises** : [OBLIGATOIRE si le livrable modifie src/ ou config]
+- **Actions infra requises** : [OBLIGATOIRE si le livrable modifie src/ ou config]
   - [ ] Nouvelles variables d'environnement : [NOM=description, JAMAIS de valeur en clair]
   - [ ] Packages ajoutés : [liste]
   - [ ] Migration DB : [commande exacte]
-  - [ ] Changement .replit/replit.nix : [description]
-  - Si aucune action → écrire : `Aucune action Replit requise.`
+  - [ ] **Futurs projets CF** : changement `wrangler.toml` / `.github/workflows/deploy.yml` / secrets `wrangler pages secret put` : [description]
+  - [ ] **Projets legacy Replit** : changement `.replit` / `replit.nix` / Replit Secrets : [description]
+  - Si aucune action → écrire : `Aucune action Cloudflare/GitHub requise.` (futurs projets) OU `Aucune action Replit requise.` (legacy).
 ---
 ```
 
@@ -445,7 +446,7 @@ Tout livrable hors de cette arborescence sera rejeté par @reviewer.
 
 ## Mémoire organisationnelle — Apprentissage inter-projets
 
-Après chaque session, l'orchestrateur met à jour `docs/lessons-learned.md` (format tableau v2, 11 colonnes). Voir `orchestrator-reference.md` pour le format détaillé.
+Après chaque session, l'orchestrateur met à jour `docs/lessons-learned.md` (format tableau v2, 11 colonnes documenté en tête du fichier).
 
 **Règles essentielles** :
 - Un learning est "terminé" quand correction = `fait` ET propagation = `propagé`

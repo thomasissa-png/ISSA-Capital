@@ -1,7 +1,7 @@
 ---
 name: agent-factory
 description: "Création d'agents spécialisés sur mesure, paramétrage et validation de conformité framework"
-model: claude-opus-4-7
+model: claude-opus-4-8
 version: "2.0"
 tools:
   - Read
@@ -142,7 +142,7 @@ Construire le fichier `.md` de l'agent en respectant **exactement** cette struct
 ---
 name: [nom-en-kebab-case]
 description: "[description courte pour le menu Claude Code — max 120 caractères]"
-model: [claude-opus-4-7 pour orchestration/code/coordination, claude-sonnet-4-6 pour contenu/stratégie/analyse — voir CLAUDE.md "Stratégie de modèles"]
+model: [claude-opus-4-8 pour orchestration/code/coordination, claude-sonnet-4-6 pour contenu/stratégie/analyse — voir CLAUDE.md "Stratégie de modèles"]
 version: "1.0"
 tools:
   - Read
@@ -283,7 +283,7 @@ Après avoir créé le fichier de l'agent :
 
 2. **Mettre à jour `.claude/agents/orchestrator.md`** — 2 modifications obligatoires :
 
-   **a) Tableau "Mapping agents → subagent_type"** — ajouter une ligne au format exact :
+   **a) Tableau "Mapping agents → subagent_type"** dans `orchestrator.md` — ajouter une ligne au format exact :
    ```
    | @[nom-agent] | `[nom-agent]` |
    ```
@@ -399,7 +399,7 @@ Quand un agent devient obsolète (remplacé par un nouveau, périmètre absorbé
 2. **Lister les agents impactés** : quels agents lisent ses livrables dans leur Calibration ? Quels agents pointent vers lui dans leur Handoff ?
 3. **Migrer les références** : mettre à jour les agents impactés pour pointer vers le remplaçant (ou supprimer la référence si le périmètre est absorbé)
 4. **Retirer de CLAUDE.md** : supprimer la ligne du tableau priorité, de la convention d'appel, et du chemin livrables
-5. **Retirer de orchestrator.md** : supprimer du mapping subagent_type et des descriptions de phase
+5. **Retirer de `orchestrator.md`** (mapping subagent_type) **et `orchestrator.md`** (descriptions de phase si présentes)
 6. **Archiver (pas supprimer)** : renommer le fichier agent en `.claude/agents/_deprecated/[nom-agent].md` — permet de récupérer le contenu si besoin
 7. **Documenter** dans project-context.md : "agent-factory | [DATE] | @[nom-agent] déprécié | Remplacé par @[nouveau] — raison : [justification]"
 
@@ -411,7 +411,7 @@ Les questions génériques s'appliquent. En plus :
 □ Le persona est-il crédible avec des accomplissements concrets et mesurables (pas juste "X ans d'expérience") ?
 □ Les champs critiques de project-context.md sont-ils les bons pour ce domaine ?
 □ La calibration inclut-elle la lecture des livrables de TOUS les agents dont il dépend (amont) ?
-□ L'agent est-il intégré dans CLAUDE.md (tableau priorité + convention d'appel + chemin livrables) ET orchestrator.md (mapping subagent_type) ?
+□ L'agent est-il intégré dans CLAUDE.md (tableau priorité + convention d'appel + chemin livrables), `orchestrator.md` (mapping subagent_type) ET orchestrator.md (descriptions de phase) ?
 □ La section "Sections spécifiques au domaine" est-elle remplie avec des protocoles, formats et conventions métier réels (pas des placeholders génériques) ?
 □ Le handoff mentionne-t-il les interactions validées (agents amont consultés, agents aval à informer) ?
 

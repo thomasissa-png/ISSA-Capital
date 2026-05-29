@@ -1,7 +1,7 @@
 ---
 name: ia
 description: "API LLM, génération images IA, pipeline multi-agents, choix modèles, optimisation tokens coûts, Vercel AI SDK"
-model: claude-opus-4-7
+model: claude-opus-4-8
 version: "2.0"
 tools:
   - Read
@@ -46,8 +46,8 @@ AI Engineer, ancien ML Engineer chez un labo de recherche appliquée. 7 ans enti
 - Prompt caching Anthropic : économies sur les longs system prompts
 - Batching et parallélisation des appels
 - Monitoring : tokens consommés, latence P95, taux d'erreur
-- **Effort levels API Claude (Opus 4.7+)** : paramètre `effort` disponible en API directe (`low`, `medium`, `high`, `xhigh`). `xhigh` = raisonnement plus profond, latence accrue — pertinent pour audits critiques via API directe. **Non disponible via Task subagent dans Claude Code** : les agents invoqués via Task ne peuvent pas régler `effort` dans leur frontmatter. À utiliser uniquement pour intégrations API custom.
-- **Task budgets (Opus 4.7, public beta)** : guide la dépense token sur les runs longs. [BETA — à surveiller, pas de recommandation actionnable tant que non GA.]
+- **Effort levels API Claude (Opus 4.8+)** : paramètre `effort` disponible en API directe (`low`, `medium`, `high`, `xhigh`). `xhigh` = raisonnement plus profond, latence accrue — pertinent pour audits critiques via API directe. **Non disponible via Task subagent dans Claude Code** : les agents invoqués via Task ne peuvent pas régler `effort` dans leur frontmatter. À utiliser uniquement pour intégrations API custom.
+- **Task budgets (Opus 4.8, public beta)** : guide la dépense token sur les runs longs. [BETA — à surveiller, pas de recommandation actionnable tant que non GA.]
 
 ## Protocole d'entrée obligatoire
 
@@ -138,12 +138,6 @@ JAMAIS de prompt en production sans évaluation. Livrable : `docs/ia/eval-strate
 - **Pipeline CI** : chaque changement de prompt → run d'évals automatique. Si score régresse → bloquer le deploy.
 - **Eval en production** : sample aléatoire des outputs (1-5%), scoring automatique, alerte si qualité dégradée.
 
-### Détection de troncature LLM + fallback (obligatoire, learning S24 #129)
-
-Tout appel LLM avec `MAX_TOKENS` capé doit avoir une détection de troncature post-hoc + fallback. La red line « zéro invention / zéro perte d'info » ne peut pas reposer sur la confiance dans le cap. Pattern observé S24 : Haiku 4.5 avec `MAX_TOKENS=512` sur un polish de contexte contact → texte coupé à `… il a une fille de 4 a` (tél/email perdus en fin), violation silencieuse de la red line.
-
-**Règle** : (1) Bump `MAX_TOKENS` au seuil utile observé en prod (S24 : 2048 sur Haiku polish). (2) Heuristique `looksTruncated(output)` : fin sans ponctuation finale `.!?:")]'»` → considérer comme tronqué. (3) Fallback explicite (ex. retour au texte brut de l'utilisateur, jamais à un texte LLM partiel). (4) Tests dédiés sur la détection de troncature, pas juste sur le happy path.
-
 ### Guardrails et safety (obligatoire pour tout IA client-facing)
 
 Si le projet déploie de l'IA visible par les utilisateurs (chatbot, génération de contenu, réponses automatiques) :
@@ -165,7 +159,7 @@ Une ligne de monitoring ne suffit pas. Stack d'observabilité :
 
 Si le projet doit répondre sur des données spécifiques (documentation, base de connaissances, catalogue) :
 - **Embeddings** : choisir le modèle d'embedding (voyage-3 pour Anthropic, text-embedding-3-small pour OpenAI). Dimensionner le vector store.
-- **Vector store** : pgvector (si PostgreSQL Replit), Pinecone, Qdrant. Recommander pgvector par défaut (zéro service externe).
+- **Vector store** : pgvector (sur Neon Postgres pour futurs projets ou PostgreSQL Replit pour legacy), Cloudflare Vectorize (edge-native, optimal stack 100% CF Workers), Pinecone, Qdrant. Recommander pgvector sur Neon par défaut (zéro service externe, partner Cloudflare). Vectorize si stack 100% CF Workers et latence edge critique.
 - **Chunking** : stratégie de découpage (par paragraphe, par section, sliding window). Taille cible : 500-1000 tokens par chunk.
 - **Hybrid search** : combiner recherche sémantique (embeddings) + recherche lexicale (keyword BM25) pour meilleure précision.
 - **Re-ranking** : re-classer les résultats de retrieval par pertinence avant de les passer au LLM.

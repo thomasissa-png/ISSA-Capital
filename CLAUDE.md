@@ -1,8 +1,12 @@
 <!-- GRADIENT-AGENTS-START -->
-# Gradient Agents — 7 commandements
+# Gradient Agents — 8 commandements
 
 Chaque ligne de ce fichier coûte des tokens sur CHAQUE agent. Ne contient QUE les règles universelles.
 Détails, gates, protocoles : voir `_base-agent-protocol.md`. Référence gates : voir `_gates.md`.
+
+## 0. Brief-first absolu
+
+Première ligne de toute réponse = `Brief compris : <reformulation 1 ligne>` + `Plan : <3 puces max>`. AUCUNE lecture (Read/Grep/Glob/Task) avant ces 2 lignes. Si défaut évident (`founder-preferences.md`), trancher — ne pas demander A/B/C.
 
 ## 1. Contexte obligatoire
 
@@ -58,12 +62,11 @@ Pour toute règle/learning ajouté en fin de session, une obsolète doit être s
 4. Handoff structuré obligatoire en fin de livrable
 5. Mettre à jour l'historique des interventions après chaque livrable
 6. Respecter les règles anti-timeout (commandement 3)
-7. Objectif qualité : 100% gates PASS (32 gates G1-G32, voir `_gates.md`)
+7. Objectif qualité : 100% gates PASS (9 gates G1/G3/G5/G7/G12/G13/G15/G17 + G_PROOF bloquant, voir `_gates.md`)
 8. UTF-8 dans le code (é, è, à — jamais `\u00E9`)
 9. Zéro mention de concurrent par nom dans les livrables client-facing
-10. Actions Replit dans `REPLIT_ACTIONS.md` si modification code/config
-11. Emails client-facing = brouillons obligatoires (jamais envoi direct)
-12. Après tout renommage global (repo, branche par défaut, domaine, nom de projet), Grep l'ancien nom dans tous les fichiers et remplacer
+10. Emails client-facing = brouillons obligatoires (jamais envoi direct)
+11. Après tout renommage global (repo, branche par défaut, domaine, nom de projet), Grep l'ancien nom dans tous les fichiers et remplacer
 
 ## Routage agents
 
@@ -88,20 +91,19 @@ Pour toute règle/learning ajouté en fin de session, une obsolète doit être s
 | Juridique | @legal |
 | Review qualité | @reviewer |
 | Audit stratégique | @elon |
-| Proxy fondateur | @moi |
 | Créer un agent | @agent-factory |
 
 Agents dans `.claude/agents/`. Multi-domaine → @orchestrator. Tâche ciblée → agent directement.
 
 ## Modèles
 
-- **Opus** : orchestrator, agent-factory, reviewer, elon, fullstack, ia, qa, infrastructure, moi
+- **Opus** : orchestrator, agent-factory, reviewer, elon, fullstack, ia, qa, infrastructure
 - **Sonnet** : copywriter, creative-strategy, data-analyst, design, geo, growth, legal, product-manager, seo, social, ux
 
 ## Références
 
 - Protocoles communs, conventions de chemin, mémoire organisationnelle : `_base-agent-protocol.md`
-- Gates binaires G1-G32 + GP/GC + verdicts : `_gates.md`
+- Gates binaires 9 gates + G_PROOF + verdicts : `_gates.md`
 - Protocole de test du framework : `_base-agent-protocol.md` section "Test du framework"
 - Préférences fondateur : `docs/founder-preferences.md`
 - Historique des sessions : `CHANGELOG.md`
