@@ -164,7 +164,7 @@ describe('renderEnrichedFiche', () => {
     emailThreadRef: '(cf. thread Gmail msg-1)',
   };
 
-  it('rend une fiche complète avec tous les champs connus', () => {
+  it('rend une fiche complète avec tous les champs connus', async () => {
     const data: ContactFicheData = {
       nomComplet: 'François Lambert',
       role: 'Directeur',
@@ -174,7 +174,7 @@ describe('renderEnrichedFiche', () => {
       autreEmail: 'f.lambert@pro.com',
       langue: 'français formel',
     };
-    const { displayName, content } = renderEnrichedFiche(data, ctx, 4);
+    const { displayName, content } = await renderEnrichedFiche(data, ctx, 4);
 
     expect(displayName).toBe('François Lambert');
     expect(content).toContain('categorie: pro');
@@ -198,26 +198,26 @@ describe('renderEnrichedFiche', () => {
     expect(content).toContain('Fiche enrichie à partir de 4 emails');
   });
 
-  it('priorité du nom : nomComplet > nameFrom > local-part', () => {
-    const r1 = renderEnrichedFiche({ nomComplet: 'Jean Synth' }, ctx, 1);
+  it('priorité du nom : nomComplet > nameFrom > local-part', async () => {
+    const r1 = await renderEnrichedFiche({ nomComplet: 'Jean Synth' }, ctx, 1);
     expect(r1.displayName).toBe('Jean Synth');
 
-    const r2 = renderEnrichedFiche({ societe: 'X' }, ctx, 1);
+    const r2 = await renderEnrichedFiche({ societe: 'X' }, ctx, 1);
     expect(r2.displayName).toBe('François Lambert'); // nameFrom
 
-    const r3 = renderEnrichedFiche({ societe: 'X' }, { ...ctx, nameFrom: null }, 1);
+    const r3 = await renderEnrichedFiche({ societe: 'X' }, { ...ctx, nameFrom: null }, 1);
     expect(r3.displayName).toBe('Francois'); // local-part de l'email
   });
 
-  it('champs inconnus → frontmatter laissé vide (pas d invention)', () => {
-    const { content } = renderEnrichedFiche({ societe: 'ACME' }, ctx, 1);
+  it('champs inconnus → frontmatter laissé vide (pas d invention)', async () => {
+    const { content } = await renderEnrichedFiche({ societe: 'ACME' }, ctx, 1);
     expect(content).toContain('societe: ACME');
     expect(content).toContain('role: ');
     expect(content).toContain('telephone: ');
   });
 
-  it('aucune info clé (sauf nom) → sections de base vides mais présentes (S25)', () => {
-    const { content } = renderEnrichedFiche({ nomComplet: 'Jean' }, ctx, 2);
+  it('aucune info clé (sauf nom) → sections de base vides mais présentes (S25)', async () => {
+    const { content } = await renderEnrichedFiche({ nomComplet: 'Jean' }, ctx, 2);
     // S25 : plus de placeholder texte "Aucune information clé" — les sections
     // de base sont juste vides (convention template Contact pro v3).
     expect(content).toContain('## Qui c\'est');
@@ -229,14 +229,14 @@ describe('renderEnrichedFiche', () => {
     expect(content).toContain('role: ');
   });
 
-  it('singulier "email" quand un seul email scanné', () => {
-    const { content } = renderEnrichedFiche({ societe: 'X' }, ctx, 1);
+  it('singulier "email" quand un seul email scanné', async () => {
+    const { content } = await renderEnrichedFiche({ societe: 'X' }, ctx, 1);
     expect(content).toContain("Fiche enrichie à partir de 1 email de l'expéditeur.");
     expect(content).not.toContain('1 emails');
   });
 
-  it('valeur multi-lignes nettoyée (pas de retour ligne dans le YAML)', () => {
-    const { content } = renderEnrichedFiche({ societe: 'ACME\nInc.' }, ctx, 1);
+  it('valeur multi-lignes nettoyée (pas de retour ligne dans le YAML)', async () => {
+    const { content } = await renderEnrichedFiche({ societe: 'ACME\nInc.' }, ctx, 1);
     expect(content).toContain('societe: ACME Inc.');
     // Le frontmatter ne doit pas contenir de saut de ligne parasite dans la valeur.
     expect(content).not.toContain('societe: ACME\nInc.');

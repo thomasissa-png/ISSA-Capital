@@ -518,11 +518,11 @@ function extractLocalPart(email: string): string {
  * Utilisé si l'enrichissement (scan boîte + synthèse LLM) échoue ou ne trouve
  * rien : on ne bloque JAMAIS la création de fiche.
  */
-function buildStubFiche(
+async function buildStubFiche(
   noMatch: NoMatchPending,
   type: ContactType,
   today: string,
-): { displayName: string; content: string } {
+): Promise<{ displayName: string; content: string }> {
   const displayName = noMatch.nameFrom
     ? noMatch.nameFrom
     : extractLocalPart(noMatch.emailFrom);
@@ -536,7 +536,7 @@ function buildStubFiche(
     userContext: noMatch.userContext ?? undefined,
   };
 
-  const content = renderFicheContent(type, renderData, {
+  const content = await renderFicheContent(type, renderData, {
     today,
     historiqueTitle: 'Premier contact email',
     historiqueContent: `Premier email reçu. ${noMatch.emailThreadRef}`,
@@ -597,7 +597,7 @@ async function handleNoMatchCallback(
 
   // Enrichissement (await complet — pas de fire-and-forget) avec fallback stub.
   const enriched = await buildEnrichedFiche(workingNoMatch, type, today);
-  const fiche = enriched ?? buildStubFiche(workingNoMatch, type, today);
+  const fiche = enriched ?? (await buildStubFiche(workingNoMatch, type, today));
   const enrichedUsed = enriched !== null;
 
   const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
@@ -990,11 +990,11 @@ function splitChatName(chatName: string): { prenom: string; nom: string } {
  * S25 (2026-05-29) : rendu délégué au helper `fiche-renderer.ts` aligné sur
  * les templates `Contact pro.md` / `Contact relationnel.md` du vault.
  */
-function buildWhatsappFiche(
+async function buildWhatsappFiche(
   noMatch: WhatsappNoMatchPending,
   type: ContactType,
   today: string,
-): { displayName: string; content: string } {
+): Promise<{ displayName: string; content: string }> {
   const { prenom, nom } = splitChatName(noMatch.chatName);
   const displayName = nom ? `${prenom} ${nom}` : prenom;
 
@@ -1017,7 +1017,7 @@ function buildWhatsappFiche(
     (noMatch.chatName ? ` avec « ${noMatch.chatName} »` : '') +
     '.';
 
-  const content = renderFicheContent(type, renderData, {
+  const content = await renderFicheContent(type, renderData, {
     today,
     historiqueTitle: 'Premier contact WhatsApp',
     historiqueContent,
@@ -1045,7 +1045,7 @@ async function handleWhatsappNoMatchCallback(
     workingNoMatch = { ...noMatch, userContext: polished };
   }
 
-  const fiche = buildWhatsappFiche(workingNoMatch, type, today);
+  const fiche = await buildWhatsappFiche(workingNoMatch, type, today);
   const filename = `${slugifyVaultFilename(fiche.displayName)}.md`;
   const target = `${targetFolder}/${filename}`;
   const trigger = `whatsapp_nomatch:${type}:${noMatch.id}`;

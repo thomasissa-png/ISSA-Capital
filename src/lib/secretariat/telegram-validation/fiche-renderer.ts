@@ -5,18 +5,21 @@
  *  - `Templates/Contact pro.md`        — type='pro'         (RBAC, entites_visibles)
  *  - `Templates/Contact relationnel.md` — type='famille'|'amis'|'autres'
  *
- * Anya ne lit pas les templates au runtime (hardcodé ici). Toute évolution
- * STRUCTURELLE des templates côté vault DOIT être propagée ici par une PR.
+ * S25 (2026-05-29) P1 #3 : la STRUCTURE (ordre des clés frontmatter et des
+ * sections H2) est lue au RUNTIME via `templates/template-loader.ts` (cache
+ * 1h + fallback hardcodé). Ce fichier ne porte plus que la logique de VALEUR
+ * par clé/section. Une clé ou un titre inconnu de ce fichier sort vide (jamais
+ * de placeholder — Cmd #2). Rendu nominal bit-pour-bit identique à l'historique
+ * tant que les templates vault matchent le fallback.
  *
  * Couvre les 2 chemins de création de fiche :
  *  - `contact-fiche-synth.ts:renderEnrichedFiche` (email → no-match)
- *  - `callback-handler.ts:buildWhatsappFiche`    (WhatsApp → no-match)
- *
- * S25 (2026-05-29) : création initiale. Avant : rendu hardcodé divergent
- * dans chaque caller, drift avec templates documenté mais jamais corrigé.
+ *  - `callback-handler.ts:buildWhatsappFiche`     (WhatsApp → no-match)
+ *  - `callback-handler.ts:buildStubFiche`         (fallback email → no-match)
  */
 
 import type { ContactType } from './no-match-card';
+import { loadTemplate, type TemplateName } from '../templates/template-loader';
 
 // ============================================================
 // Types publics
@@ -69,211 +72,174 @@ export interface FicheRenderContext {
 
 /**
  * Rend une fiche contact complète (frontmatter + corps markdown), alignée sur
- * le template du vault correspondant au type.
+ * le template du vault correspondant au type. Lit la STRUCTURE depuis Drive au
+ * runtime (cache 1h, fallback hardcodé).
  *
  * @param type    Catégorie de contact (pilote le choix de template).
  * @param data    Données factuelles connues (zéro invention côté appelant).
  * @param ctx     Contexte de création (date, première entrée d'historique).
  * @returns       Contenu Markdown complet, prêt à être écrit dans le vault.
  */
-export function renderFicheContent(
+export async function renderFicheContent(
+  type: ContactType,
+  data: FicheRenderData,
+  ctx: FicheRenderContext,
+): Promise<string> {
+  const templateName: TemplateName = type === 'pro' ? 'Contact pro' : 'Contact relationnel';
+  const structure = await loadTemplate(templateName);
+
+  const frontmatter = buildFrontmatter(structure.frontmatterKeys, type, data, ctx);
+  const body = buildBody(structure.sections, type, data, ctx);
+
+  return frontmatter + body;
+}
+
+// ============================================================
+// Frontmatter — assemblage piloté par la structure
+// ============================================================
+
+function buildFrontmatter(
+  keys: string[],
   type: ContactType,
   data: FicheRenderData,
   ctx: FicheRenderContext,
 ): string {
-  if (type === 'pro') {
-    return buildProFrontmatter(data, ctx) + buildProSections(data, ctx);
+  const lines: string[] = ['---'];
+  for (const key of keys) {
+    lines.push(...renderFrontmatterValue(key, type, data, ctx));
   }
-  return buildRelationalFrontmatter(type, data, ctx) + buildRelationalSections(data, ctx);
-}
-
-// ============================================================
-// Helpers — frontmatter
-// ============================================================
-
-/**
- * Aligne la valeur `categorie` côté frontmatter sur le template du vault
- * (singulier, sans accent). Le `ContactType` côté code reste pluriel pour
- * compat historique des callbacks Telegram.
- */
-function categorieFor(type: ContactType): string {
-  switch (type) {
-    case 'pro':
-      return 'pro';
-    case 'famille':
-      return 'famille';
-    case 'amis':
-      return 'ami';
-    case 'autres':
-      return 'autre';
-  }
-}
-
-/** Tag aligné sur `categorie` (singulier). */
-function tagFor(type: ContactType): string {
-  return categorieFor(type);
-}
-
-/**
- * Frontmatter aligné sur `Templates/Contact pro.md` v3 :
- *   type / categorie / sous_categorie / societe / role / email / telephone /
- *   langue / rencontre_via / date_premier_contact / date_derniere_interaction /
- *   canal_préféré / fréquence_échanges / entites_visibles / classification / tags
- *
- * Convention template : champs vides = clé présente sans valeur (Anya remplit
- * au fil de l'eau via `updateLastInteraction` etc.).
- */
-function buildProFrontmatter(data: FicheRenderData, ctx: FicheRenderContext): string {
-  const langue = data.langue ?? 'fr';
-  return [
-    '---',
-    'type: contact',
-    'categorie: pro',
-    'sous_categorie: ',
-    `societe: ${data.societe ?? ''}`,
-    `role: ${data.role ?? ''}`,
-    `email: ${data.email ?? ''}`,
-    `telephone: ${data.telephone ?? ''}`,
-    `langue: ${langue}`,
-    `rencontre_via: ${data.rencontreVia ?? ''}`,
-    `date_premier_contact: ${ctx.today}`,
-    `date_derniere_interaction: ${ctx.today}`,
-    'canal_préféré: ',
-    'fréquence_échanges: ',
-    'entites_visibles: []',
-    'classification: ',
-    'tags:',
-    `  - ${tagFor('pro')}`,
-    '---',
-    '',
-    `# ${data.displayName}`,
-    '',
-  ].join('\n');
-}
-
-/**
- * Frontmatter aligné sur `Templates/Contact relationnel.md` (famille/amis/autres) :
- *   type / categorie / sous_categorie / date_naissance / date_anniversaire /
- *   lieu_residence / adresse / telephone / email / langue / rencontre_via /
- *   date_derniere_interaction / canal_préféré / fréquence_échanges / tags
- *
- * Pas de `societe`/`role`/`classification`/`entites_visibles` (perso).
- * Pas de `date_premier_contact` non plus (template relationnel l'omet).
- */
-function buildRelationalFrontmatter(
-  type: ContactType,
-  data: FicheRenderData,
-  ctx: FicheRenderContext,
-): string {
-  const langue = data.langue ?? 'fr';
-  return [
-    '---',
-    'type: contact',
-    `categorie: ${categorieFor(type)}`,
-    'sous_categorie: ',
-    'date_naissance: ',
-    'date_anniversaire: ',
-    'lieu_residence: ',
-    'adresse: ',
-    `telephone: ${data.telephone ?? ''}`,
-    `email: ${data.email ?? ''}`,
-    `langue: ${langue}`,
-    `rencontre_via: ${data.rencontreVia ?? ''}`,
-    `date_derniere_interaction: ${ctx.today}`,
-    'canal_préféré: ',
-    'fréquence_échanges: ',
-    'tags:',
-    `  - ${tagFor(type)}`,
-    '---',
-    '',
-    `# ${data.displayName}`,
-    '',
-  ].join('\n');
-}
-
-// ============================================================
-// Helpers — sections markdown
-// ============================================================
-
-/**
- * Sections markdown alignées sur `Contact pro.md` v3 :
- *   ## Qui c'est → ## Statut courant → ## Projets liés → ## Notes →
- *   ## Tonalité de communication → ## Historique
- *
- * Toutes TOUJOURS présentes, même vides (convention template :
- * « Sections de base : TOUJOURS présentes. Les fiches évoluent. »).
- */
-function buildProSections(data: FicheRenderData, ctx: FicheRenderContext): string {
-  const lines: string[] = [];
-
-  // ## Qui c'est — userContext si fourni, sinon vide (Thomas remplira)
-  lines.push("## Qui c'est", '');
-  if (data.userContext && data.userContext.trim().length > 0) {
-    lines.push(data.userContext.trim());
-  }
-  lines.push('');
-
-  // ## Statut courant — toujours présente, à remplir par Thomas
-  lines.push('## Statut courant', '');
-
-  // ## Projets liés — toujours présente
-  lines.push('## Projets liés', '');
-
-  // ## Notes — alimentée par les sujets/extras extraits par LLM (si dispo)
-  lines.push('## Notes', '');
-  const notes = buildNotesBullets(data);
-  if (notes.length > 0) {
-    lines.push(...notes);
-    lines.push('');
-  }
-
-  // ## Tonalité de communication — toujours présente, structurée
-  lines.push(...buildTonaliteSection(data));
-
-  // ## Historique — première entrée
-  lines.push(...buildHistoriqueSection(ctx));
-
+  lines.push('---', '', `# ${data.displayName}`, '');
   return lines.join('\n');
 }
 
 /**
- * Sections markdown alignées sur `Contact relationnel.md` :
- *   ## Qui c'est → ## Famille / Liens → ## Notes →
- *   ## Tonalité de communication → ## Historique
- *
- * Pas de `## Statut courant` (template perso simplifié).
- * Pas de `## Projets liés` en section de base (optionnelle).
+ * Rend la (ou les) ligne(s) YAML pour une clé donnée. Clé inconnue → `key: `.
+ * Le rendu spécial `tags` retourne 2 lignes (bloc multi-ligne). `entites_visibles`
+ * renvoie `[]` côté pro.
  */
-function buildRelationalSections(data: FicheRenderData, ctx: FicheRenderContext): string {
-  const lines: string[] = [];
+function renderFrontmatterValue(
+  key: string,
+  type: ContactType,
+  data: FicheRenderData,
+  ctx: FicheRenderContext,
+): string[] {
+  const langue = data.langue ?? 'fr';
 
-  // ## Qui c'est
-  lines.push("## Qui c'est", '');
+  switch (key) {
+    case 'type':
+      return ['type: contact'];
+    case 'categorie':
+      return [`categorie: ${categorieFor(type)}`];
+    case 'societe':
+      return [`societe: ${data.societe ?? ''}`];
+    case 'role':
+      return [`role: ${data.role ?? ''}`];
+    case 'email':
+      return [`email: ${data.email ?? ''}`];
+    case 'telephone':
+      return [`telephone: ${data.telephone ?? ''}`];
+    case 'langue':
+      return [`langue: ${langue}`];
+    case 'rencontre_via':
+      return [`rencontre_via: ${data.rencontreVia ?? ''}`];
+    case 'date_premier_contact':
+      return [`date_premier_contact: ${ctx.today}`];
+    case 'date_derniere_interaction':
+      return [`date_derniere_interaction: ${ctx.today}`];
+    case 'entites_visibles':
+      return ['entites_visibles: []'];
+    case 'tags':
+      return ['tags:', `  - ${tagFor(type)}`];
+    // Clés présentes dans les templates mais laissées vides à la création
+    // (Anya les remplit au fil de l'eau). Pas d'invention ici.
+    case 'sous_categorie':
+    case 'canal_préféré':
+    case 'fréquence_échanges':
+    case 'classification':
+    case 'date_naissance':
+    case 'date_anniversaire':
+    case 'lieu_residence':
+    case 'adresse':
+      return [`${key}: `];
+    default:
+      // Clé inconnue (ajoutée au template sans support code) → ligne vide pour
+      // ne pas casser le YAML ni inventer. Le drift sera visible côté Obsidian
+      // et corrigé dans une PR future.
+      return [`${key}: `];
+  }
+}
+
+// ============================================================
+// Corps — assemblage piloté par la structure
+// ============================================================
+
+function buildBody(
+  sections: string[],
+  type: ContactType,
+  data: FicheRenderData,
+  ctx: FicheRenderContext,
+): string {
+  const lines: string[] = [];
+  for (const heading of sections) {
+    lines.push(...renderSectionContent(heading, type, data, ctx));
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Rend une section complète (titre `## ...` + contenu). Section inconnue →
+ * `## Titre` suivi d'une ligne vide (présence garantie, pas de placeholder).
+ */
+function renderSectionContent(
+  heading: string,
+  type: ContactType,
+  data: FicheRenderData,
+  ctx: FicheRenderContext,
+): string[] {
+  switch (heading) {
+    case "Qui c'est":
+      return buildQuiCestSection(type, data);
+    case 'Statut courant':
+      return ['## Statut courant', ''];
+    case 'Projets liés':
+      return ['## Projets liés', ''];
+    case 'Famille / Liens':
+      return ['## Famille / Liens', ''];
+    case 'Notes':
+      return buildNotesSection(data);
+    case 'Tonalité de communication':
+      return buildTonaliteSection(data);
+    case 'Historique':
+      return buildHistoriqueSection(ctx);
+    default:
+      return [`## ${heading}`, ''];
+  }
+}
+
+// ============================================================
+// Helpers — sections
+// ============================================================
+
+function buildQuiCestSection(type: ContactType, data: FicheRenderData): string[] {
+  const lines: string[] = ["## Qui c'est", ''];
   if (data.userContext && data.userContext.trim().length > 0) {
     lines.push(data.userContext.trim());
-  } else if (data.fallbackQuiCest && data.fallbackQuiCest.trim().length > 0) {
+  } else if (type !== 'pro' && data.fallbackQuiCest && data.fallbackQuiCest.trim().length > 0) {
+    // fallbackQuiCest n'a de sens que côté relationnel (cas WhatsApp).
     lines.push(data.fallbackQuiCest.trim());
   }
   lines.push('');
+  return lines;
+}
 
-  // ## Famille / Liens — toujours présente
-  lines.push('## Famille / Liens', '');
-
-  // ## Notes — sujets / autres infos
-  lines.push('## Notes', '');
+function buildNotesSection(data: FicheRenderData): string[] {
+  const lines: string[] = ['## Notes', ''];
   const notes = buildNotesBullets(data);
   if (notes.length > 0) {
     lines.push(...notes);
     lines.push('');
   }
-
-  // ## Tonalité de communication — toujours présente
-  lines.push(...buildTonaliteSection(data));
-
-  // ## Historique
-  lines.push(...buildHistoriqueSection(ctx));
-
-  return lines.join('\n');
+  return lines;
 }
 
 /**
@@ -344,4 +310,31 @@ function buildHistoriqueSection(ctx: FicheRenderContext): string[] {
     ctx.historiqueContent,
     '',
   ];
+}
+
+// ============================================================
+// Helpers — frontmatter
+// ============================================================
+
+/**
+ * Aligne la valeur `categorie` côté frontmatter sur le template du vault
+ * (singulier, sans accent). Le `ContactType` côté code reste pluriel pour
+ * compat historique des callbacks Telegram.
+ */
+function categorieFor(type: ContactType): string {
+  switch (type) {
+    case 'pro':
+      return 'pro';
+    case 'famille':
+      return 'famille';
+    case 'amis':
+      return 'ami';
+    case 'autres':
+      return 'autre';
+  }
+}
+
+/** Tag aligné sur `categorie` (singulier). */
+function tagFor(type: ContactType): string {
+  return categorieFor(type);
 }

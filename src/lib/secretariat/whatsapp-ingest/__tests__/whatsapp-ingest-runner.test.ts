@@ -86,7 +86,11 @@ vi.mock('../../telegram-validation', () => ({
 }));
 
 // fs : curseur — lecture échoue (null) → premier run ; écriture OK.
+// S25 — `existsSync` mocké aussi : depuis P1 #3 (template-loader), la chaîne
+// d'import du runner traverse fiche-renderer → template-loader → drive-resolver
+// → oauth-timestamps qui appelle `existsSync('/home/runner')` au top-level.
 vi.mock('node:fs', () => ({
+  existsSync: vi.fn(() => false),
   promises: {
     readFile: vi.fn().mockRejectedValue(new Error('no cursor')),
     writeFile: vi.fn().mockResolvedValue(undefined),

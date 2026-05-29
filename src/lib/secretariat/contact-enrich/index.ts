@@ -94,7 +94,7 @@ export async function enrichContact(
     if (!data.societe && domainSociete) data.societe = domainSociete;
 
     // 6. Rendu de la fiche.
-    const rendered = renderEnrichedFiche(
+    const rendered = await renderEnrichedFiche(
       data,
       {
         senderEmail: input.email,

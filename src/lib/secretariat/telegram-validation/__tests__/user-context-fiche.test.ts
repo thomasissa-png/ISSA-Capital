@@ -30,8 +30,8 @@ const CTX_BASE = {
 };
 
 describe('renderEnrichedFiche — userContext (S24 soir + S25)', () => {
-  it('userContext fourni → texte inséré dans la section « Qui c\'est »', () => {
-    const { content } = renderEnrichedFiche(
+  it('userContext fourni → texte inséré dans la section « Qui c\'est »', async () => {
+    const { content } = await renderEnrichedFiche(
       DATA,
       { ...CTX_BASE, userContext: 'Martin pilote la GAPD Sarani — premier interlo juridique.' },
       3,
@@ -45,16 +45,16 @@ describe('renderEnrichedFiche — userContext (S24 soir + S25)', () => {
     expect(idxStatut).toBeGreaterThan(idxQui);
   });
 
-  it('userContext null → section « Qui c\'est » présente mais vide (template)', () => {
-    const { content } = renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: null }, 3);
+  it('userContext null → section « Qui c\'est » présente mais vide (template)', async () => {
+    const { content } = await renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: null }, 3);
     // S25 : section TOUJOURS présente (convention template). Vérifier qu'aucun
     // userContext n'a fuité dans le contenu.
     expect(content).toContain('## Qui c\'est');
     expect(content).not.toContain('Martin pilote');
   });
 
-  it('userContext vide / whitespace → section « Qui c\'est » vide', () => {
-    const { content } = renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: '   ' }, 3);
+  it('userContext vide / whitespace → section « Qui c\'est » vide', async () => {
+    const { content } = await renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: '   ' }, 3);
     expect(content).toContain('## Qui c\'est');
     // Pas de contenu textuel non-trivial après « Qui c'est » avant la section suivante.
     const between = content
@@ -64,21 +64,21 @@ describe('renderEnrichedFiche — userContext (S24 soir + S25)', () => {
     expect(between.length).toBe(0);
   });
 
-  it('userContext omis (rétro-compat) → section « Qui c\'est » présente mais vide', () => {
-    const { content } = renderEnrichedFiche(DATA, CTX_BASE, 3);
+  it('userContext omis (rétro-compat) → section « Qui c\'est » présente mais vide', async () => {
+    const { content } = await renderEnrichedFiche(DATA, CTX_BASE, 3);
     expect(content).toContain('## Qui c\'est');
     expect(content).toContain('## Statut courant');
   });
 
-  it('contexte multi-lignes préservé', () => {
+  it('contexte multi-lignes préservé', async () => {
     const ctx = 'Avocat Sarani.\nIntervient sur GAPD + séquestres.\nLui parler en formel.';
-    const { content } = renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: ctx }, 3);
+    const { content } = await renderEnrichedFiche(DATA, { ...CTX_BASE, userContext: ctx }, 3);
     expect(content).toContain('GAPD + séquestres');
     expect(content).toContain('formel');
   });
 
-  it('S25 : toutes les sections de base du template Contact pro sont présentes', () => {
-    const { content } = renderEnrichedFiche(DATA, CTX_BASE, 3);
+  it('S25 : toutes les sections de base du template Contact pro sont présentes', async () => {
+    const { content } = await renderEnrichedFiche(DATA, CTX_BASE, 3);
     // Convention template : sections de base TOUJOURS présentes (même vides).
     expect(content).toContain('## Qui c\'est');
     expect(content).toContain('## Statut courant');
@@ -88,8 +88,8 @@ describe('renderEnrichedFiche — userContext (S24 soir + S25)', () => {
     expect(content).toContain('## Historique');
   });
 
-  it('S25 : frontmatter aligné Contact pro.md v3', () => {
-    const { content } = renderEnrichedFiche(DATA, CTX_BASE, 3);
+  it('S25 : frontmatter aligné Contact pro.md v3', async () => {
+    const { content } = await renderEnrichedFiche(DATA, CTX_BASE, 3);
     expect(content).toContain('type: contact');
     expect(content).toContain('categorie: pro');
     expect(content).toContain('sous_categorie:');

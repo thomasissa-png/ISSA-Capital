@@ -142,7 +142,7 @@ export async function synthesizeContactFiche(
  * @param ctx Contexte de création (email, nom, type, date, ref thread).
  * @param scannedCount Nombre d'emails scannés (pour la note d'historique).
  */
-export function renderEnrichedFiche(
+export async function renderEnrichedFiche(
   data: ContactFicheData,
   ctx: {
     senderEmail: string;
@@ -156,7 +156,7 @@ export function renderEnrichedFiche(
     userContext?: string | null;
   },
   scannedCount: number,
-): { displayName: string; content: string } {
+): Promise<{ displayName: string; content: string }> {
   // Nom d'affichage : priorité au nom synthétisé, puis header From, puis local-part.
   const displayName =
     sanitizeLine(data.nomComplet) ??
@@ -192,7 +192,7 @@ export function renderEnrichedFiche(
     `Fiche enrichie à partir de ${scannedCount} email${scannedCount > 1 ? 's' : ''} ` +
     `de l'expéditeur${sourcesNote}. ${ctx.emailThreadRef}`;
 
-  const content = renderFicheContent(ctx.type, renderData, {
+  const content = await renderFicheContent(ctx.type, renderData, {
     today: ctx.today,
     historiqueTitle: 'Fiche créée (synthèse emails)',
     historiqueContent,
