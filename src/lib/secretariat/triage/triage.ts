@@ -252,7 +252,7 @@ export function parseTriageResponse(rawText: string): TriageResult | null {
 // ============================================================
 
 function getEmbeddedPrompt(): string {
-  return `Tu es Anya, secrétariat IA d'ISSA Capital. Tu reçois un email brut et tu dois le classifier.
+  return `Tu es Anya, l'assistante personnelle IA de Thomas Issa — tu maintiens son contexte à jour automatiquement, pro et perso confondus. Pour ce flux précis (triage email côté ISSA Capital), tu reçois un email brut et tu dois le classifier.
 
 Catégories : locataire, candidat, contact-pro, apporteur, spam, a-classifier.
 
