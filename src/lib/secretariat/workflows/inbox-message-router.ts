@@ -226,6 +226,21 @@ export async function transcribeWithWhisper(
     return { success: true, text: json.text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    // S25 (2026-05-29) : détection AbortError (timeout 120s atteint). Avant : le
+    // vocal long se transcribait silencieusement en partie et l'utilisateur ne
+    // savait pas qu'un bout manquait. Désormais message d'erreur explicite.
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.warn(
+        `[whisper] transcription timeout (>120s) — vocal probablement > ~10 min. ` +
+          `Recommander à Thomas de redécouper le vocal en plusieurs morceaux.`,
+      );
+      return {
+        success: false,
+        error:
+          'Transcription timeout (>120s). Le vocal est probablement trop long (>10 min). ' +
+          'Redécoupe-le en plusieurs morceaux ou écris-le en texte.',
+      };
+    }
     return { success: false, error: msg };
   } finally {
     clearTimeout(timer);
