@@ -43,6 +43,7 @@ import {
 import {
   saveNoMatch,
   sendNoMatchCard,
+  listActiveNoMatch,
 } from '../telegram-validation';
 import type { NoMatchPending } from '../telegram-validation';
 import { writeAuditLog } from '../vault-client/audit-log';
@@ -83,6 +84,11 @@ export interface IngestStats {
   draftsFailed: number;
   /** S23 — cartes de création de contact envoyées (no-match, seule carte conservée) */
   contactCardsSent: number;
+  /** S26 — cartes no-match évitées car un pending est déjà actif pour
+   *  ce `emailFrom` (TTL 7j). Symétrique du fix WhatsApp `chatsSkippedAlreadyPending`
+   *  PR #70. Cas Mélanie Toledano 29/05 : 1er pending non cliqué = 2e email
+   *  → 2e carte. À éviter (spam Telegram). */
+  contactCardsSkippedAlreadyPending: number;
   errors: number;
   durationMs: number;
 }
@@ -157,6 +163,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
     draftsSkippedNotAddressed: 0,
     draftsFailed: 0,
     contactCardsSent: 0,
+    contactCardsSkippedAlreadyPending: 0,
     errors: 0,
     durationMs: 0,
   };
@@ -168,6 +175,23 @@ export async function runEmailIngest(): Promise<IngestStats> {
   } catch {
     console.warn('[email-ingest] erreur chargement contacts — run avec liste vide');
     contacts = [];
+  }
+
+  // S26 — Anti-spam carte no-match (symétrique PR #70 WhatsApp). Cause Mélanie
+  // Toledano 29/05 : 1er pending non cliqué (28/05 13:05) + 2e email (29/05 7:02)
+  // → 2e carte envoyée. À éviter (spam Telegram). On charge la liste des
+  // pendings actifs UNE FOIS par run et on construit un Set normalisé pour
+  // skipper toute carte sur un emailFrom déjà en attente côté Thomas.
+  const activeNoMatchEmails = new Set<string>();
+  try {
+    const activePendings = await listActiveNoMatch();
+    for (const p of activePendings) {
+      if (p.emailFrom) activeNoMatchEmails.add(p.emailFrom.toLowerCase().trim());
+    }
+  } catch (err) {
+    console.warn(
+      `[email-ingest] lecture pendings KO (dédup carte dégradée) : ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   // 2. Pour chaque source active (Gmail + boîtes Outlook configurées), lister
@@ -208,7 +232,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
       let done = 0;
       for (const msg of batch) {
         try {
-          await processOneEmail(source, msg.id, contacts, stats);
+          await processOneEmail(source, msg.id, contacts, stats, activeNoMatchEmails);
           done++;
         } catch (err) {
           console.warn(
@@ -241,7 +265,11 @@ export async function runEmailIngest(): Promise<IngestStats> {
     `drafts=${stats.draftsCreated}créés/${stats.draftsSkipped}skip/` +
     `${stats.draftsSkippedAlreadyReplied}déjà-répondu/` +
     `${stats.draftsSkippedNotAddressed}en-copie/${stats.draftsFailed}err, ` +
-    `cartes-contact=${stats.contactCardsSent}, erreurs=${stats.errors}`,
+    `cartes-contact=${stats.contactCardsSent}` +
+    (stats.contactCardsSkippedAlreadyPending > 0
+      ? `/+${stats.contactCardsSkippedAlreadyPending}skip-pending`
+      : '') +
+    `, erreurs=${stats.errors}`,
   );
 
   return stats;
@@ -256,6 +284,13 @@ async function processOneEmail(
   messageId: string,
   contacts: KnownContact[],
   stats: IngestStats,
+  /**
+   * S26 — Set des `emailFrom` (normalisés lowercase trim) qui ont déjà un
+   * pending no-match actif (TTL 7j). Évite d'envoyer une 2e carte si Thomas
+   * a déjà reçu une carte pour ce contact mais n'a pas encore cliqué.
+   * Cas Mélanie Toledano. Mute après envoi pour anti-spam intra-run.
+   */
+  activeNoMatchEmails: Set<string>,
 ): Promise<void> {
   // Fetch detail
   const detail = await source.fetchDetail(messageId);
@@ -441,7 +476,22 @@ async function processOneEmail(
   }
 
   // (d) CONTACT INCONNU → carte de création de contact (la SEULE carte conservée).
-  if (noMatchAction) {
+  // S26 — Anti-spam : si une carte est déjà active pour cet expéditeur (TTL 7j,
+  // Thomas pas encore cliqué), on saute toute la création de carte. Le reste du
+  // pipeline (TickTick si action requise, etc.) continue normalement. Cas
+  // Mélanie Toledano 29/05 : 1er pending non cliqué + 2e email = 2e carte évitée.
+  const senderNormalized = noMatchAction
+    ? ((noMatchAction.payload['emailFrom'] as string) || '').toLowerCase().trim()
+    : '';
+  const alreadyPendingForSender =
+    senderNormalized.length > 0 && activeNoMatchEmails.has(senderNormalized);
+  if (noMatchAction && alreadyPendingForSender) {
+    stats.contactCardsSkippedAlreadyPending++;
+    console.warn(
+      `[email-ingest] carte no-match skippée (pending actif TTL 7j) pour ${senderNormalized}`,
+    );
+  }
+  if (noMatchAction && !alreadyPendingForSender) {
     const senderEmail = noMatchAction.payload['emailFrom'] as string;
     const nameFrom = (noMatchAction.payload['nameFrom'] as string | null) ?? null;
 
@@ -517,6 +567,9 @@ async function processOneEmail(
     // moyen de la retrouver côté Thomas — pollution inutile du store).
     if (cardSent) {
       await saveNoMatch(noMatch);
+      // S26 — Anti-spam intra-run : si plusieurs emails du même expéditeur sont
+      // dans le batch (ou un autre source en parallèle), n'envoie qu'une carte.
+      if (senderNormalized) activeNoMatchEmails.add(senderNormalized);
     }
   }
 

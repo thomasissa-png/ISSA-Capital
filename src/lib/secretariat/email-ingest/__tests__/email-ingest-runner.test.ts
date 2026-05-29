@@ -83,12 +83,15 @@ const mockSavePending = vi.fn().mockResolvedValue(undefined);
 const mockSendValidationCard = vi.fn().mockResolvedValue({ messageId: 123 });
 const mockSaveNoMatch = vi.fn().mockResolvedValue(undefined);
 const mockSendNoMatchCard = vi.fn().mockResolvedValue({ messageId: 456 });
+// S26 — anti-spam : par défaut aucun pending actif → carte envoyée normalement.
+const mockListActiveNoMatch = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../telegram-validation', () => ({
   savePending: (...args: unknown[]) => mockSavePending(...args),
   sendValidationCard: (...args: unknown[]) => mockSendValidationCard(...args),
   saveNoMatch: (...args: unknown[]) => mockSaveNoMatch(...args),
   sendNoMatchCard: (...args: unknown[]) => mockSendNoMatchCard(...args),
+  listActiveNoMatch: (...args: unknown[]) => mockListActiveNoMatch(...args),
 }));
 
 const mockWriteAuditLog = vi.fn().mockResolvedValue(true);
