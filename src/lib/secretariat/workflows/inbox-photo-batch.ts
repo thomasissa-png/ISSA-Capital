@@ -11,7 +11,10 @@
  *
  * Flow :
  *   1. Photo reçue en inbox → startOrExtendBatch()
- *   2. Fenêtre de groupement 8s (reset à chaque nouvelle photo)
+ *   2. Fenêtre de groupement 5s (reset à chaque nouvelle photo)
+ *      — S25 (2026-05-29) : aligné sur la constante `GROUPING_WINDOW_MS` (5_000).
+ *        Auparavant : docstring disait 8s, code disait 5s → drift code/doc même
+ *        fichier, signalé par l'audit reviewer.
  *   3. Fenêtre fermée → message Telegram "quelle date ?"
  *   4. Thomas répond → handleDateReply() → upload batch → nettoyage
  *   5. Timeout 5 min sans réponse → auto-apply aujourd'hui

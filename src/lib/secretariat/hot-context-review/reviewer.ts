@@ -161,9 +161,32 @@ function parseReviewOutput(raw: string): { editable: string; changes: string[] }
   };
 }
 
-/** Garde-fou déterministe : la zone produite est plausible. */
-function editableIsValid(e: string): boolean {
-  return e.length > 40 && e.includes('## ') && !e.includes('\n---\n');
+/**
+ * Garde-fou déterministe : la zone produite est plausible.
+ *
+ * S25 (2026-05-29) : ajout assertion conditionnelle de préservation de la
+ * section critique `## J'attends`. Si l'original (`before`) avait cette
+ * section et sa table markdown, le réécrit DOIT les conserver. Avant : la
+ * consigne vivait dans le prompt LLM seulement → le LLM pouvait supprimer la
+ * table sans déclencher d'alerte (sub-agent audit reviewer 29/05).
+ *
+ * @param e       Zone éditable réécrite par le LLM.
+ * @param before  Zone éditable d'origine (optionnel — si fourni, garde-fou
+ *                conditionnel sur les sections critiques qu'elle contenait).
+ */
+function editableIsValid(e: string, before?: string): boolean {
+  if (e.length <= 40) return false;
+  if (!e.includes('## ')) return false;
+  if (e.includes('\n---\n')) return false;
+  // Garde-fou conditionnel : si l'original avait `## J'attends`, le réécrit
+  // doit le conserver (table de suivi critique pour Thomas).
+  if (before && before.includes("## J'attends")) {
+    if (!e.includes("## J'attends")) return false;
+    // La section doit contenir une table markdown (séparateur `|---|`).
+    const attendsBlock = e.split("## J'attends")[1]?.split(/^## /m)[0] ?? '';
+    if (!/\|\s*-+\s*\|/.test(attendsBlock)) return false;
+  }
+  return true;
 }
 
 /**
@@ -350,7 +373,7 @@ export async function runReview(
     return { proceeded: true, written: false, mode, changes: [], reason: `LLM échoué (2 essais) : ${msg}` };
   }
 
-  if (!editableIsValid(editable)) {
+  if (!editableIsValid(editable, editableRegion)) {
     // Log diagnostique (sans le contenu intégral) pour comprendre POURQUOI la
     // sortie est rejetée (longueur, sections manquantes…) — surtout côté DeepSeek.
     console.warn(
@@ -364,7 +387,7 @@ export async function runReview(
   if (mode === 'deep') {
     const critique = await critiqueRewrite(editableRegion, editable, 'sonnet', modelOverride);
     if (!critique.ok) {
-      if (critique.corrected && editableIsValid(critique.corrected)) {
+      if (critique.corrected && editableIsValid(critique.corrected, editableRegion)) {
         editable = critique.corrected;
         changes.push(`🔁 Relecture : corrigé (${critique.issues.slice(0, 3).join(' ; ') || 'ajustements'})`);
       } else {

@@ -191,8 +191,13 @@ export async function transcribeWithWhisper(
   };
   const ext = extMap[audioMimeType] ?? 'ogg';
 
+  // S25 (2026-05-29) : timeout remonté de 30s à 120s. Précédemment, les vocaux
+  // > ~2 min étaient tronqués silencieusement (Whisper s'exécute à ~50× temps
+  // réel ; 30s = plafond ~25 min audio mais latence réseau + retry → 2 min en
+  // pratique). 120s couvre les vocaux longs CR de réunion sans coupure.
+  // Sub-agent audit reviewer 29/05.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30_000);
+  const timer = setTimeout(() => controller.abort(), 120_000);
 
   try {
     const buffer = Buffer.from(audioBase64, 'base64');
