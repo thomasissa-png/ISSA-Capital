@@ -263,7 +263,7 @@ describe('composeDraft', () => {
     expect(systemText).toContain('Tutoiement');
   });
 
-  it('charge la tonalité depuis la fiche Thomas Issa.md si disponible', async () => {
+  it('charge la tonalité depuis voice-preferences.md si disponible', async () => {
     mockReadVaultFile.mockResolvedValue({
       success: true,
       content: '---\nnom: Issa\n---\n\n## Tonalité\n\nTon direct et bienveillant. Pas de blabla.\n\n## Autre section\n\nAutre contenu.',
@@ -281,7 +281,7 @@ describe('composeDraft', () => {
     expect(systemText).toContain('Ton direct et bienveillant');
   });
 
-  it('utilise le fallback tonalité si fiche Thomas indisponible', async () => {
+  it('utilise le fallback tonalité si voice-preferences.md indisponible', async () => {
     mockReadVaultFile.mockResolvedValue({ success: false });
     mockCreateDraft.mockResolvedValue({
       success: true,

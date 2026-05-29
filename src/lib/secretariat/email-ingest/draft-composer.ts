@@ -6,16 +6,19 @@
  *
  * Pipeline :
  *   1. Lire la fiche contact (vault-reader TTL 1h) → tu/vous + registre
- *   2. Charger la tonalité Thomas (fiche Thomas Issa.md → section Tonalité)
- *   3. Appeler le LLM (task email-draft) pour rédiger le brouillon
+ *   2. Charger la tonalité Thomas (00. Me/01. Profil/voice-preferences.md, contenu complet sans frontmatter)
+ *   3. Appeler le LLM (task email-draft, DeepSeek V4 Pro) pour rédiger le brouillon
  *   4. Garde « corps non vide » : si le LLM rend < 40 caractères → échec, pas de brouillon
  *   5. Créer le draft via Gmail API (drafts.create), rattaché au fil (threadId + In-Reply-To)
  *
  * Modèle LLM : routé via task 'email-draft' (rédaction texte, pas extraction JSON).
- * Fallback tonalité : vouvoiement, ton professionnel chaleureux,
- *   courte signature « Thomas Issa ».
+ * Fallback tonalité : DEFAULT_TONALITY hardcodé, aligné sur voice-preferences.md
+ *   (mode dégradé si vault inaccessible — préserve le style Thomas).
  *
  * Spec: docs/session-memo-s15.md §5B + docs/orchestration-plan-s23-email-workflow.md.
+ * S25 (2026-05-29) : la fiche `07. Contacts/02. Famille/Thomas Issa.md` n'a jamais
+ *   existé — bascule vers `00. Me/01. Profil/voice-preferences.md` (source réelle
+ *   du style Thomas). DEFAULT_TONALITY remonté à la hauteur du vault.
  */
 
 import type { EmailMessage } from '../gmail-source/types';
@@ -47,17 +50,55 @@ const MIN_DRAFT_BODY_LENGTH = 40;
 /** Catégories qui ne génèrent PAS de brouillon */
 const SKIP_CATEGORIES = new Set(['spam', 'candidat']);
 
-/** Chemin vault de la fiche Thomas Issa */
-const THOMAS_FICHE_FOLDER = '07. Contacts/02. Famille';
-const THOMAS_FICHE_FILENAME = 'Thomas Issa.md';
+/**
+ * Chemin vault de la fiche de préférences de communication de Thomas.
+ * S25 (2026-05-29) : l'ancienne réf `07. Contacts/02. Famille/Thomas Issa.md`
+ * était un chemin fantôme — la fiche n'a jamais existé. La vraie source de
+ * tonalité est `00. Me/01. Profil/voice-preferences.md`, dont le contenu ENTIER
+ * (sans le frontmatter) constitue la tonalité Thomas. La fiche `Thomas Issa.md`
+ * du même dossier ne contient que parcours + projets, pas de section Tonalité.
+ */
+const TONALITY_FOLDER = '00. Me/01. Profil';
+const TONALITY_FILENAME = 'voice-preferences.md';
 
 /**
- * Fallback tonalité si fiche Thomas indisponible.
- * ⚠️ La fiche `07. Contacts/02. Famille/Thomas Issa.md` n'existe pas → ce
- * fallback EST la tonalité réelle d'Anya en prod. Aligné sur la skill vault
- * `draft-email` v6 (red line 3 — signature).
+ * Cap soft de longueur pour le bloc tonalité injecté dans le system prompt.
+ * 12000 caractères ≈ 3000 tokens — au-delà, on tronque + warn (un fichier de
+ * tonalité qui explose finirait par cannibaliser le budget tokens du brouillon).
  */
-const DEFAULT_TONALITY = `Vouvoiement par défaut (sauf tutoiement connu). Ton direct, phrases courtes. Pas de formules creuses ("j'espère que vous allez bien", "je me permets de", "n'hésitez pas à").
+const MAX_TONALITY_CHARS = 12_000;
+
+/**
+ * Fallback tonalité si vault inaccessible (mode dégradé).
+ * S25 (2026-05-29) : remonté à la hauteur de `voice-preferences.md` pour que le
+ * style Thomas survive même si le vault est down. Aligné sur la skill vault
+ * `draft-email` v8 (registre + signature + anti-bullshit).
+ */
+const DEFAULT_TONALITY = `**Principe premier : Simplicité > Démonstration > Élégance.** Thomas ne veut pas impressionner — il veut exister.
+
+## Ton de voix
+Direct, exigeant, sans bullshit. Affirmations, pas justifications.
+
+### Ce qui marche
+- **Phrases courtes, factuelles.** "Trois fondateurs. Quarante ans de terrain." — pas "Nous avons l'honneur de..."
+- **Affirmation sans justification.** "Nous investissons sur 30 ans." — pas "...car nous croyons que..."
+- **Le factuel prime sur le narratif.** Chiffres et résultats, pas adjectifs.
+- **Sobriété.** Premium par la substance, pas par le vocabulaire.
+- **Honnêteté sur les limites.** "Je n'ai pas cette info" > inventer.
+
+### Ce qui est banni
+- **Remplissage défensif.** "Nous ne sommes pas un fonds...", "Ce n'est pas un consultant classique..." → JAMAIS.
+- **Jargon abstrait.** "Synergie", "écosystème dynamique", "solution holistique" → INTERDIT.
+- **Bullshit marketing.** "Leader du marché", "solution innovante", "partenaire de confiance" → BANNI.
+- **Antithèses en série.** "On décide. Pas un calendrier de fonds." → anti-pattern.
+- **Emojis** dans les livrables professionnels.
+- **Le "trop littéraire/pompeux".**
+
+### Registre
+Vouvoiement systématique par défaut. En réponse à un email reçu où l'expéditeur tutoie Thomas ("tu", "ton", "te", "Salut Thomas", signature prénom seul), aligner sur son ton → tutoyer dans le brouillon. Le caractère pro/non pro est INDÉPENDANT du registre.
+
+## Règle zéro-invention
+Si un fait manque (chiffre, nom, date, montant), poser un marqueur \`[À COMPLÉTER : la question]\`. JAMAIS d'invention ni de placeholder flou.
 
 ## Signature (règle stricte)
 Une ligne vide précède TOUJOURS la signature.
@@ -214,8 +255,8 @@ export function shouldComposeDraft(category: string): boolean {
  *
  * 1. Cherche la fiche contact dans le vault (via vault-reader cache TTL 1h)
  * 2. Extrait le champ tu/vous du frontmatter
- * 3. Charge la section Tonalité de la fiche Thomas Issa.md
- * 4. Si fiche Thomas indisponible → fallback hardcodé
+ * 3. Charge la tonalité Thomas depuis voice-preferences.md (contenu complet)
+ * 4. Si voice-preferences.md indisponible → fallback hardcodé
  */
 async function loadTonalityContext(
   senderEmail: string,
@@ -253,29 +294,40 @@ async function loadTonalityContext(
     );
   }
 
-  // 2. Charger la tonalité depuis la fiche Thomas
-  const instructions = await loadThomasTonality();
+  // 2. Charger la tonalité depuis voice-preferences.md
+  const instructions = await loadVoiceTonality();
 
   return { register, instructions, contactName };
 }
 
 /**
- * Charge la section Tonalité de la fiche Thomas Issa.md.
- * Fallback : instructions hardcodées si fiche indisponible.
+ * Charge la tonalité Thomas depuis `00. Me/01. Profil/voice-preferences.md`.
+ * Le contenu ENTIER du fichier (sans le frontmatter YAML) est la tonalité —
+ * on ne cherche pas de section spécifique, le fichier est dédié à ça.
+ * Fallback : `DEFAULT_TONALITY` hardcodé si vault indisponible (mode dégradé).
+ * S25 (2026-05-29) : ancienne réf `Thomas Issa.md` était un chemin fantôme.
  */
-async function loadThomasTonality(): Promise<string> {
+async function loadVoiceTonality(): Promise<string> {
   try {
-    const result = await readVaultFile(THOMAS_FICHE_FOLDER, THOMAS_FICHE_FILENAME);
+    const result = await readVaultFile(TONALITY_FOLDER, TONALITY_FILENAME);
     if (result.success && result.content) {
-      // Extraire la section ## Tonalité
-      const tonalitySection = extractSection(result.content, 'Tonalité');
-      if (tonalitySection && tonalitySection.trim().length > 20) {
-        return tonalitySection.trim();
+      const parsed = parseObsidianFile(result.content);
+      const body = parsed.body?.trim() ?? '';
+      if (body.length > 20) {
+        // Cap soft : si jamais le fichier dépasse 3000 tokens (~12000 chars),
+        // on tronque + warn pour préserver le budget tokens du brouillon.
+        if (body.length > MAX_TONALITY_CHARS) {
+          console.warn(
+            `[draft-composer] tonalité tronquée (${body.length} > ${MAX_TONALITY_CHARS} chars)`,
+          );
+          return body.slice(0, MAX_TONALITY_CHARS);
+        }
+        return body;
       }
     }
   } catch (err) {
     console.warn(
-      `[draft-composer] fiche Thomas Issa.md indisponible : ${err instanceof Error ? err.message : String(err)}`,
+      `[draft-composer] fiche ${TONALITY_FILENAME} indisponible : ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
@@ -283,36 +335,12 @@ async function loadThomasTonality(): Promise<string> {
   return DEFAULT_TONALITY;
 }
 
-/**
- * Extrait le contenu d'une section ## d'un fichier Markdown.
- * Retourne le contenu entre le heading et le prochain heading de même niveau ou supérieur.
- */
-function extractSection(content: string, sectionName: string): string | null {
-  const lines = content.split('\n');
-  let capturing = false;
-  const captured: string[] = [];
-
-  for (const line of lines) {
-    if (capturing) {
-      // Arrêter si on atteint un heading de niveau 2 ou supérieur
-      if (/^##\s/.test(line)) {
-        break;
-      }
-      captured.push(line);
-    } else if (line.match(new RegExp(`^##\\s+${sectionName}\\s*$`, 'i'))) {
-      capturing = true;
-    }
-  }
-
-  return captured.length > 0 ? captured.join('\n') : null;
-}
-
 // ============================================================
 // Génération du brouillon via Sonnet
 // ============================================================
 
 /**
- * Appelle Sonnet 4 pour rédiger le corps du brouillon.
+ * Appelle le LLM (DeepSeek V4 Pro via task 'email-draft') pour rédiger le corps du brouillon.
  */
 async function generateDraftBody(
   email: EmailMessage,
@@ -359,7 +387,7 @@ async function generateDraftBody(
  *  - Si `skillCtx` fourni (SKILL.md vault chargé) : le markdown vault forme
  *    le préambule (identité + red lines + arbre décision + critères qualité),
  *    et on ajoute en SUFFIXE le contexte dynamique runtime (registre tu/vous,
- *    tonalité Thomas extraite de la fiche `Thomas Issa.md`).
+ *    tonalité Thomas extraite de `voice-preferences.md`).
  *  - Si `skillCtx` null (vault ET fallback repo down) : fallback hardcodé
  *    historique (préserve la résilience en mode dégradé).
  *
