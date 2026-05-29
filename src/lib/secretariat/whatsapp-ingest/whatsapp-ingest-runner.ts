@@ -253,19 +253,46 @@ async function extractChat(
   const hint = knownContactName
     ? `\n\nIMPORTANT : le numéro de cette conversation correspond au contact connu « ${knownContactName} » — rattache-lui les infos.`
     : '';
+  // S26 — Prompt réécrit (audit @ia, cf. docs/ia/audit-prompt-whatsapp-s26.md).
+  // Changements clés vs S25 :
+  //   - « assistante personnelle » (pro ET perso) au lieu de « secrétariat IA »
+  //     → refus dichotomie pro/perso (founder-preferences).
+  //   - Suppression de « Ignore le bavardage perso/famille/amical pur » qui
+  //     causait le Bug #2 S26 (fiches contacts perso jamais enrichies).
+  //   - Mission opérationnelle nette : spec par champ reliée aux effets runner.
+  //   - Tie-breaker explicite : en cas de doute sur `relevant`, mettre `true`.
+  // Contrat JSON strictement préservé (cf. parsing ligne 283 sq.).
   const system =
-    "Tu es Anya, secrétariat IA de Thomas Issa (ISSA Capital — patrimoine, immobilier, business). " +
+    "Tu es Anya, l'assistante personnelle IA de Thomas Issa. Tu l'aides sur TOUS ses sujets, " +
+    "sans séparer pro et perso : ISSA Capital (patrimoine), Sarani Studio, Versi (Immobilier / Invest / " +
+    "Versimo), Gradient One, Immocrew — ET sa vie perso (famille, amis, santé, voyages, organisation). " +
+    "Un contact perso vaut une fiche au même titre qu'un contact pro.\n\n" +
     "On te donne les messages WhatsApp récents d'UNE conversation, la liste des contacts connus de " +
-    "Thomas (avec email + alias), et les codes projet. Détermine ce qui mérite d'être consigné/agi. " +
-    "Ignore le bavardage perso/famille/amical pur. Réponds en JSON STRICT :\n" +
-    '{"relevant": bool, "summary": "1-2 phrases FR (ce qui compte ; vide si non pertinent)", ' +
-    '"contactEmail": "email EXACT pris dans la liste fournie si la conversation concerne clairement CE contact, sinon null", ' +
-    `"projet": "un code parmi [${PROJET_CODES.join(', ')}] si un projet connu est clairement concerné, sinon null", ` +
-    '"todos": ["actions concrètes que THOMAS doit faire, sinon []"], ' +
-    '"emailToPrepare": {"to":"email du destinataire","subject":"objet","intent":"ce que l\'email doit dire"} ' +
-    "ou null si aucun email n'est clairement à envoyer par Thomas}.\n" +
-    `Codes projet : ${PROJET_LEGENDE}. ` +
-    "N'invente JAMAIS un email : contactEmail et emailToPrepare.to doivent venir d'un email connu/cité, sinon null.";
+    "Thomas (avec email + alias) et les codes projet ISSA. Ta mission : extraire ce qui doit être " +
+    "inscrit dans le vault Obsidian de Thomas, rattaché au bon contact / projet, et lister les actions " +
+    "concrètes que Thomas doit faire.\n\n" +
+    "Réponds en JSON STRICT, exactement ces clés :\n" +
+    '{"relevant": bool, "summary": "1-2 phrases FR", ' +
+    '"contactEmail": "email EXACT depuis la liste fournie ou null", ' +
+    `"projet": "code parmi [${PROJET_CODES.join(', ')}] ou null", ` +
+    '"todos": ["actions concrètes pour Thomas"], ' +
+    '"emailToPrepare": {"to":"email","subject":"objet","intent":"ce que l\'email doit dire"} ou null}\n\n' +
+    "Règles par champ :\n" +
+    "- relevant = true si la conv contient une info utile à conserver dans le vault (fait, décision, " +
+    "demande, contexte utile dans 3 mois) — pro OU perso, peu importe le registre. relevant = false " +
+    "UNIQUEMENT si la conv est une pure salutation, un \"ok\"/\"👍\" seul, ou un bavardage sans aucun " +
+    "fait/décision/demande. En cas de doute, mets true.\n" +
+    "- summary = 1-2 phrases factuelles en français qui résument l'info à conserver. Vide si " +
+    "relevant = false.\n" +
+    "- contactEmail = un email EXACT pris dans la liste des contacts connus si la conv concerne " +
+    "clairement CE contact. Sinon null. N'INVENTE JAMAIS d'email.\n" +
+    `- projet = un code parmi [${PROJET_CODES.join(', ')}] si un projet ISSA est clairement concerné. ` +
+    `Sinon null. Codes : ${PROJET_LEGENDE}.\n` +
+    "- todos = liste d'actions concrètes que THOMAS (pas Anya, pas l'interlocuteur) doit faire. " +
+    "Verbes à l'infinitif, factuel. [] si rien.\n" +
+    "- emailToPrepare = uniquement si la conv appelle CLAIREMENT un envoi d'email de la part de " +
+    "Thomas (ex : \"Envoie-moi le devis par mail\", \"Tu peux m'envoyer le PDF ?\"). Sinon null. " +
+    "\"to\" doit être un email présent dans la liste OU explicitement cité dans la conv — JAMAIS inventé.";
   try {
     const { text } = await callLLM({
       task: 'email-triage', // DeepSeek Flash (classification lean)
