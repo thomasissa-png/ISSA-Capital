@@ -160,14 +160,16 @@ export async function writeBackCrToFiche(
     const chatId = chatIdRaw ? parseInt(chatIdRaw, 10) : NaN;
     if (chatIdRaw && Number.isFinite(chatId)) {
       try {
+        // P1-A (review S25) : texte brut, pas de tags HTML. sendTelegramMessage
+        // n'envoie pas de parse_mode → les <b>/<code> s'affichaient en littéral.
         await sendTelegramMessage(
           chatId,
-          `⚠️ <b>CR write-back fiche Projet introuvable</b>\n\n` +
-            `Entité : <code>${input.entiteCode}</code>\n` +
+          `⚠️ CR write-back fiche Projet introuvable\n\n` +
+            `Entité : ${input.entiteCode}\n` +
             `CR : ${input.crFilename ?? '(sans nom)'}\n` +
             `Lien : ${input.crWebViewLink}\n\n` +
             `Le PDF du CR est sauvegardé, mais la ligne d'historique ` +
-            `<code>## Comptes Rendus</code> n'a PAS été ajoutée car aucune fiche Projet ` +
+            `"## Comptes Rendus" n'a PAS été ajoutée car aucune fiche Projet ` +
             `n'a été trouvée pour ce code entité. ` +
             `Action : créer/renommer la fiche, puis re-trigger le write-back via le webhook.`,
         );

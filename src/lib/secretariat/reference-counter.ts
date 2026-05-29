@@ -15,9 +15,30 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Entite } from './types';
 
-// Répertoire persistant Replit (/home/runner/) — survit aux redéploiements
-// Fallback sur /tmp si /home/runner/ n'existe pas
-const COUNTER_DIR = existsSync('/home/runner') ? '/home/runner/issa-data' : '/tmp/issa-secretariat';
+// Répertoire persistant du compteur de références (registre fiscal — doit
+// survivre aux redéploiements/reboots, sinon la numérotation reset à 0001 et
+// collisionne avec des CR existants → risque Art. 39-1 CGI).
+//
+// P1-B (review S25) : l'ancien chemin `/home/runner/issa-data` (héritage Replit)
+// n'existe pas sur le VPS Anya → on tombait sur `/tmp/issa-secretariat`, effacé
+// à chaque reboot. Ordre de préférence :
+//   1. CR_COUNTER_DIR (override explicite, prioritaire),
+//   2. /home/thomas/issa-data (VPS Anya — persistant),
+//   3. /home/runner/issa-data (legacy Replit, si jamais présent),
+//   4. /tmp/issa-secretariat (CI / tests — éphémère, acceptable hors prod).
+//
+// ⚠️ SUIVI (fix définitif, P1) : dériver le prochain numéro du MAX(ref) réel
+// dans le vault par (entité, année) au boot, plutôt que d'un fichier local —
+// le vault est la SOT (R1). Ce fichier reste un cache d'accélération.
+function resolveCounterDir(): string {
+  const override = process.env.CR_COUNTER_DIR;
+  if (override) return override;
+  if (existsSync('/home/thomas')) return '/home/thomas/issa-data';
+  if (existsSync('/home/runner')) return '/home/runner/issa-data';
+  return '/tmp/issa-secretariat';
+}
+
+const COUNTER_DIR = resolveCounterDir();
 const COUNTER_PATH = resolve(COUNTER_DIR, 'cr-counter.json');
 
 type CounterData = Record<string, number>;
