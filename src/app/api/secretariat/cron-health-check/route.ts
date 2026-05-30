@@ -18,9 +18,15 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { runHealthCheck } from '@/lib/secretariat/health-monitor/health-monitor';
 import { shouldNotify, markNotified } from '@/lib/secretariat/health-monitor/dedup-store';
 import { sendHealthAlertCard } from '@/lib/secretariat/telegram-validation/health-card';
+import { parisParts } from '@/lib/secretariat/hot-context-staleness/staleness';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Heure cible EN HEURE DE PARIS (DST-safe via parisParts, S26 — « pas de
+// décalage été/hiver »). Le cron tire à 6h ET 7h UTC (= 8h Paris été/hiver) ;
+// l'endpoint ne procède qu'à 8h Paris. `?force=1` ignore la fenêtre.
+const TARGET_PARIS_HOUR = 8;
 
 // ============================================================
 // GET handler
@@ -62,6 +68,15 @@ export async function GET(req: NextRequest): Promise<Response> {
       { ok: false, error: 'TELEGRAM_CHAT_ID_THOMAS manquant' },
       { status: 500 },
     );
+  }
+
+  // Garde-fou heure de Paris (8h). Le cron tire à 6h+7h UTC (couvre été+hiver) ;
+  // une seule occurrence procède réellement → 1 run/jour à 8h Paris, zéro décalage.
+  const force = req.nextUrl.searchParams.get('force') === '1';
+  const { hour } = parisParts();
+  if (!force && hour !== TARGET_PARIS_HOUR) {
+    console.warn(`[cron-health-check] hors fenêtre (Paris ${hour}h) — skip (cible ${TARGET_PARIS_HOUR}h)`);
+    return NextResponse.json({ ok: true, skipped: true, reason: `hors heure cible (Paris ${hour}h)` });
   }
 
   console.warn('[cron-health-check] déclenchement health check quotidien');

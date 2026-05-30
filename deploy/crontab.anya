@@ -18,7 +18,9 @@
 0 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-email-ingest 900 >> /home/thomas/anya-cron.log 2>&1
 1,16,31,46 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/calendar-ingest/cron >> /home/thomas/anya-cron.log 2>&1
 */15 * * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/ticktick/cron-poll >> /home/thomas/anya-cron.log 2>&1
-0 8 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1
+# health-check : quotidien à 8h HEURE DE PARIS (S26, zéro décalage été/hiver).
+# Tire à 6h+7h UTC ; l'endpoint a un garde-fou Paris (ne procède qu'à 8h Paris).
+0 6,7 * * * /home/thomas/ISSA-Capital/deploy/anya-cron.sh /api/secretariat/cron-health-check >> /home/thomas/anya-cron.log 2>&1
 # whatsapp-ingest (Beeper) : 5×/jour à 8h, 12h, 16h, 20h, minuit HEURE DE PARIS
 # (décision Thomas S26). DST-safe SANS dépendre de CRON_TZ, même pattern que le
 # brief du matin : on tire à (H-2) ET (H-1) UTC pour chaque heure cible (couvre
@@ -62,15 +64,19 @@
 # les versions remplacées (snapshot différentiel). Rotation > 90 jours auto.
 # Vault ~2 Go → backup total ~2.5 Go (≈ 1% du disque VPS 232 Go).
 #
-# Horaire : 1h UTC = 3h Paris (creux total, pas en conflit avec brief 7h / ingests).
+# Horaire : 3h HEURE DE PARIS (S26, zéro décalage été/hiver), creux total.
+# Script bash standalone (pas d'endpoint) → garde-fou inline `TZ=Europe/Paris` :
+# tire à 1h+2h UTC (= 3h Paris été/hiver) mais ne s'exécute QUE si Paris = 3h.
+# Indépendant de CRON_TZ (le `date` lit TZ de son env, supporté partout).
 # Restauration : voir docs/dev-decisions.md (« Backup vault »).
-0 1 * * * /home/thomas/ISSA-Capital/deploy/backup-vault.sh >> /home/thomas/vault-backup.log 2>&1
+0 1,2 * * * [ "$(TZ=Europe/Paris date +\%H)" = "03" ] && /home/thomas/ISSA-Capital/deploy/backup-vault.sh >> /home/thomas/vault-backup.log 2>&1
 
 # ============================================================
 # Mise à jour quotidienne du repo Agent-Team (S25.1, site statique sur VPS).
 #
 # Récupère les push GitHub `master` de thomasissa-png/Agent-Team et publie
 # la nouvelle version sur agents.issa-capital.com (Caddy serve le clone local).
-# Tourne à 2h UTC = 4h Paris (après backup vault 3h, avant brief 7h).
-# Logs : /home/thomas/agent-team-update.log.
-0 2 * * * cd /home/thomas/Agent-Team && /usr/bin/git pull --quiet origin master >> /home/thomas/agent-team-update.log 2>&1
+# Tourne à 4h HEURE DE PARIS (S26, zéro décalage été/hiver ; après backup 3h,
+# avant brief 7h). Garde-fou inline `TZ=Europe/Paris` : tire à 2h+3h UTC mais
+# ne s'exécute QUE si Paris = 4h. Logs : /home/thomas/agent-team-update.log.
+0 2,3 * * * [ "$(TZ=Europe/Paris date +\%H)" = "04" ] && cd /home/thomas/Agent-Team && /usr/bin/git pull --quiet origin master >> /home/thomas/agent-team-update.log 2>&1
