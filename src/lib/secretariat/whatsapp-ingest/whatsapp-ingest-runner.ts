@@ -280,7 +280,12 @@ async function extractChat(
     "(« je déménage en juin », « RDV vendredi 10h notaire », « Paul a accouché », « devis validé »). " +
     "false UNIQUEMENT si la conv = pure salutation, \"ok\"/\"👍\" seul, ou bavardage sans aucune " +
     "info. **En cas de doute, true.**\n" +
-    "- summary = 1-2 phrases factuelles FR de l'info à conserver. Vide si relevant=false.\n" +
+    "- summary = 1-2 phrases factuelles FR de l'info à conserver. Vide si relevant=false. " +
+    "PERSPECTIVE (impératif) : les messages viennent de l'INTERLOCUTEUR (le contact), PAS de " +
+    "Thomas. Une action décrite à la 1re personne (« I just finished a call », « je t'envoie le " +
+    "devis », « j'ai validé X ») est faite par l'INTERLOCUTEUR, JAMAIS par Thomas. N'attribue à " +
+    "Thomas que ce qui le désigne explicitement (« tu », « Thomas », « peux-tu »). Nomme " +
+    "l'interlocuteur dans le résumé (« Ameena a eu un appel… »), jamais « Thomas a eu un appel ».\n" +
     "- contactEmail = email EXACT de la liste si la conv concerne clairement CE contact. Sinon null. " +
     "N'INVENTE JAMAIS d'email.\n" +
     `- projet = code parmi [${PROJET_CODES.join(', ')}] si un projet ISSA est clairement concerné. ` +
@@ -294,6 +299,10 @@ async function extractChat(
     "✅ Perso → relevant=true : « Maman : on dort chez vous du 12 au 18 juin ? »\n" +
     "   → summary \"Sonia/Jean-Pierre à Paris 12-18 juin, demande hébergement\", " +
     "todos [\"Confirmer accueil parents 12-18 juin\"].\n" +
+    "✅ Perspective → « Just finished a call with Alizé for Checkout.com, new test project » " +
+    "(écrit par Ameena) → summary \"Ameena a eu un appel avec Alizé (Checkout.com), nouveau test " +
+    "project avec potentiel de retainer\" — surtout PAS « Thomas a eu un appel ». " +
+    "todos [\"Suivre l'opportunité retainer Checkout.com avec Ameena\"].\n" +
     "❌ Bavardage → relevant=false : « Salut ! — Salut, ça va ? — Oui et toi ? — Bien 👍 »\n" +
     "   → summary vide, todos [], rien rattaché.";
   try {
@@ -303,7 +312,7 @@ async function extractChat(
       messages: [
         {
           role: 'user',
-          content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages :\n${snippet}${hint}`,
+          content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages ci-dessous = écrits par l'interlocuteur « ${chatName} » (PAS par Thomas) :\n${snippet}${hint}`,
         },
       ],
       maxTokens: 600,
