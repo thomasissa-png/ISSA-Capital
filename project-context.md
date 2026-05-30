@@ -315,7 +315,7 @@ Les mémos S5-S11 ont été archivés dans `docs/project-context-archive.md`. Le
 6. **Reviewer P1 email** (R13, reviewer agent lancé → GO) : match timeout EXACT (P1-B) + alerte honnête (P1-A atténué).
 7. **Beeper garde les messages de Thomas** (dialogue complet + attribution) — adresse l'hypothèse « isSender trop strict » du Bug WhatsApp #2 ci-dessous.
 
-**Déféré S27** : (a) **AbortController** propagé = vraie annulation des emails > cap (supprime doublons fantômes + lost-update write-lock) ; (b) Bug WhatsApp #1 **formatPhoneForDisplay +33** PAS fait ; (c) hardening P2 reviewer (audit `no-fiche`, rename `contacts` shadow, `critiqueRewrite`→délimité) ; (d) PR #67 rebase ; (e) `TimeoutStopSec=30s` anya.service ; (f) cleanup Replit ; (g) OAuth Google prod.
+**Déféré S27** : (a) **AbortController** propagé = vraie annulation des emails > cap (supprime doublons fantômes + lost-update write-lock) ; (b) hardening P2 reviewer (audit `no-fiche`, rename `contacts` shadow, `critiqueRewrite`→délimité) ; (c) PR #67 rebase ; (d) `TimeoutStopSec=30s` anya.service ; (e) cleanup Replit ; (f) OAuth Google prod. **(Bug WhatsApp #1 « +33 » = DÉJÀ corrigé en S26 : `formatPhoneForDisplay` robuste + testé, appliqué carte + fiche + dédup hash 9-chiffres.)**
 
 **À valider en réel** : revue hot-context 22h Paris ; volume fiches WhatsApp sur prochains runs ; deadlock sur 1er email à historiser. **lessons-learned.md = 74/80L** (archival/fusion dû S27).
 
