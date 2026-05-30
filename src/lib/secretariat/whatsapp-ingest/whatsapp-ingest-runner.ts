@@ -305,53 +305,70 @@ async function extractChat(
     "todos [\"Suivre l'opportunité retainer Checkout.com avec Ameena\"].\n" +
     "❌ Bavardage → relevant=false : « Salut ! — Salut, ça va ? — Oui et toi ? — Bien 👍 »\n" +
     "   → summary vide, todos [], rien rattaché.";
-  try {
-    const { text } = await callLLM({
-      task: 'email-triage', // DeepSeek Flash (classification lean)
-      system,
-      messages: [
-        {
-          role: 'user',
-          content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages ci-dessous = écrits par l'interlocuteur « ${chatName} » (PAS par Thomas) :\n${snippet}${hint}`,
-        },
-      ],
-      maxTokens: 600,
-      timeoutMs: 30_000,
-      responseFormat: 'json',
-    });
-    const p = JSON.parse(text || '{}') as Partial<ChatExtraction> & {
-      emailToPrepare?: Partial<EmailIntent> | null;
-    };
-    const projet =
-      typeof p.projet === 'string' && (PROJET_CODES as readonly string[]).includes(p.projet)
-        ? (p.projet as ProjetCode)
-        : null;
-    const contactEmail =
-      typeof p.contactEmail === 'string' && p.contactEmail.includes('@')
-        ? p.contactEmail.toLowerCase().trim()
-        : null;
-    let emailToPrepare: EmailIntent | null = null;
-    if (p.emailToPrepare && typeof p.emailToPrepare.to === 'string' && p.emailToPrepare.to.includes('@')) {
-      emailToPrepare = {
-        to: p.emailToPrepare.to.trim(),
-        subject: String(p.emailToPrepare.subject ?? '').trim() || '(sans objet)',
-        intent: String(p.emailToPrepare.intent ?? '').trim(),
+  // Robustesse JSON (leçon hot-context S26) : parse tolérant (fences / extraction
+  // du bloc {...}) + 1 retry à maxTokens supérieur. Sans ça, un message long
+  // tronque le JSON (« Unexpected end of JSON input ») et le contact est
+  // silencieusement droppé à CHAQUE run (cas observé : Joséphine Barret).
+  let p:
+    | (Partial<ChatExtraction> & { emailToPrepare?: Partial<EmailIntent> | null })
+    | null = null;
+  for (const maxTokens of [800, 1400]) {
+    try {
+      const { text } = await callLLM({
+        task: 'email-triage', // DeepSeek Flash (classification lean)
+        system,
+        messages: [
+          {
+            role: 'user',
+            content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages ci-dessous = écrits par l'interlocuteur « ${chatName} » (PAS par Thomas) :\n${snippet}${hint}`,
+          },
+        ],
+        maxTokens,
+        timeoutMs: 30_000,
+        responseFormat: 'json',
+      });
+      const t = (text ?? '').trim();
+      if (!t) throw new Error('réponse LLM vide');
+      const block = t.match(/```(?:json)?\s*\r?\n?([\s\S]*?)```/);
+      const candidate = block?.[1]?.trim() ?? t.match(/\{[\s\S]*\}/)?.[0] ?? t;
+      p = JSON.parse(candidate) as Partial<ChatExtraction> & {
+        emailToPrepare?: Partial<EmailIntent> | null;
       };
+      break;
+    } catch (err) {
+      console.warn(
+        `[whatsapp-ingest] extraction "${chatName}" essai maxTokens=${maxTokens} KO : ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
-    return {
-      relevant: Boolean(p.relevant),
-      summary: String(p.summary ?? '').trim(),
-      contactEmail,
-      projet,
-      todos: Array.isArray(p.todos) ? p.todos.map((t) => String(t).trim()).filter((t) => t.length > 0) : [],
-      emailToPrepare,
-    };
-  } catch (err) {
-    console.warn(
-      `[whatsapp-ingest] extraction "${chatName}" échouée : ${err instanceof Error ? err.message : String(err)}`,
-    );
+  }
+  if (!p) {
+    console.warn(`[whatsapp-ingest] extraction "${chatName}" échouée après 2 essais`);
     return { ...empty, extractFailed: true };
   }
+  const projet =
+    typeof p.projet === 'string' && (PROJET_CODES as readonly string[]).includes(p.projet)
+      ? (p.projet as ProjetCode)
+      : null;
+  const contactEmail =
+    typeof p.contactEmail === 'string' && p.contactEmail.includes('@')
+      ? p.contactEmail.toLowerCase().trim()
+      : null;
+  let emailToPrepare: EmailIntent | null = null;
+  if (p.emailToPrepare && typeof p.emailToPrepare.to === 'string' && p.emailToPrepare.to.includes('@')) {
+    emailToPrepare = {
+      to: p.emailToPrepare.to.trim(),
+      subject: String(p.emailToPrepare.subject ?? '').trim() || '(sans objet)',
+      intent: String(p.emailToPrepare.intent ?? '').trim(),
+    };
+  }
+  return {
+    relevant: Boolean(p.relevant),
+    summary: String(p.summary ?? '').trim(),
+    contactEmail,
+    projet,
+    todos: Array.isArray(p.todos) ? p.todos.map((t) => String(t).trim()).filter((t) => t.length > 0) : [],
+    emailToPrepare,
+  };
 }
 
 /** Génère le corps d'un email (DeepSeek Pro) et crée un brouillon Gmail. Jamais d'envoi. */
