@@ -281,11 +281,11 @@ async function extractChat(
     "false UNIQUEMENT si la conv = pure salutation, \"ok\"/\"👍\" seul, ou bavardage sans aucune " +
     "info. **En cas de doute, true.**\n" +
     "- summary = 1-2 phrases factuelles FR de l'info à conserver. Vide si relevant=false. " +
-    "PERSPECTIVE (impératif) : les messages viennent de l'INTERLOCUTEUR (le contact), PAS de " +
-    "Thomas. Une action décrite à la 1re personne (« I just finished a call », « je t'envoie le " +
-    "devis », « j'ai validé X ») est faite par l'INTERLOCUTEUR, JAMAIS par Thomas. N'attribue à " +
-    "Thomas que ce qui le désigne explicitement (« tu », « Thomas », « peux-tu »). Nomme " +
-    "l'interlocuteur dans le résumé (« Ameena a eu un appel… »), jamais « Thomas a eu un appel ».\n" +
+    "PERSPECTIVE (impératif) : le dialogue est ÉTIQUETÉ PAR AUTEUR. Les lignes préfixées " +
+    "« Thomas : » sont de Thomas ; toutes les autres viennent de l'INTERLOCUTEUR. Une action à la " +
+    "1re personne dans une ligne de l'interlocuteur (« I just finished a call », « je t'envoie le " +
+    "devis ») est faite par l'INTERLOCUTEUR — n'attribue à Thomas QUE les lignes « Thomas : ». " +
+    "Nomme l'interlocuteur dans le résumé (« Ameena a eu un appel… »), jamais « Thomas a eu un appel ».\n" +
     "- contactEmail = email EXACT de la liste si la conv concerne clairement CE contact. Sinon null. " +
     "N'INVENTE JAMAIS d'email.\n" +
     `- projet = code parmi [${PROJET_CODES.join(', ')}] si un projet ISSA est clairement concerné. ` +
@@ -299,9 +299,9 @@ async function extractChat(
     "✅ Perso → relevant=true : « Maman : on dort chez vous du 12 au 18 juin ? »\n" +
     "   → summary \"Sonia/Jean-Pierre à Paris 12-18 juin, demande hébergement\", " +
     "todos [\"Confirmer accueil parents 12-18 juin\"].\n" +
-    "✅ Perspective → « Just finished a call with Alizé for Checkout.com, new test project » " +
-    "(écrit par Ameena) → summary \"Ameena a eu un appel avec Alizé (Checkout.com), nouveau test " +
-    "project avec potentiel de retainer\" — surtout PAS « Thomas a eu un appel ». " +
+    "✅ Perspective → ligne « Ameena : Just finished a call with Alizé for Checkout.com, new test " +
+    "project » → summary \"Ameena a eu un appel avec Alizé (Checkout.com), nouveau test project " +
+    "avec potentiel de retainer\" — surtout PAS « Thomas a eu un appel ». " +
     "todos [\"Suivre l'opportunité retainer Checkout.com avec Ameena\"].\n" +
     "❌ Bavardage → relevant=false : « Salut ! — Salut, ça va ? — Oui et toi ? — Bien 👍 »\n" +
     "   → summary vide, todos [], rien rattaché.";
@@ -320,7 +320,7 @@ async function extractChat(
         messages: [
           {
             role: 'user',
-            content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nMessages ci-dessous = écrits par l'interlocuteur « ${chatName} » (PAS par Thomas) :\n${snippet}${hint}`,
+            content: `Conversation : ${chatName}\n\nContacts connus :\n${contactsList}\n\nDialogue ci-dessous, ÉTIQUETÉ par auteur (« Thomas : » = Thomas ; sinon = l'interlocuteur) :\n${snippet}${hint}`,
           },
         ],
         maxTokens,
@@ -528,13 +528,30 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
     let chatProjet: string | null = null;
     let chatDraft = false;
     try {
+      // S26 — On ignore les chats où SEUL Thomas a écrit (aucun message entrant) :
+      // rien à ingérer, et ça éviterait une carte/enrichissement parasite. Les
+      // messages de Thomas sont gardés UNIQUEMENT comme contexte du fil (cf. plus
+      // bas le snippet étiqueté) dès qu'il y a ≥ 1 message entrant.
+      const hasIncoming = group.msgs.some((m) => !m.isSender);
+      if (!hasIncoming) {
+        cardOutcome = 'skip:matched';
+        continue;
+      }
+
       // Match téléphone déterministe (DM uniquement) AVANT l'extraction.
       const phone = chatPhone(group.chatId);
       const matched = phone ? byPhone.get(phone) : undefined;
 
+      // Snippet ÉTIQUETÉ : Anya voit le DIALOGUE complet (« Thomas : … » vs
+      // « ‹contact› : … ») → contexte ET attribution correcte (qui dit quoi).
+      const counterpartyLabel = matched ? contactDisplayName(matched) : group.name;
+      const labeledMessages = group.msgs.map(
+        (m) => `${m.isSender ? 'Thomas' : counterpartyLabel} : ${m.text}`,
+      );
+
       const ex = await extractChat(
         group.name,
-        group.msgs.map((m) => m.text),
+        labeledMessages,
         contacts,
         matched ? contactDisplayName(matched) : null,
       );

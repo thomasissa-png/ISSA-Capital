@@ -137,6 +137,34 @@ describe('runWhatsappIngest — V2', () => {
     expect(mockSendTelegram).not.toHaveBeenCalled();
   });
 
+  it('S26 — chat où SEUL Thomas a écrit (aucun entrant) → ignoré (pas d’extraction ni de carte)', async () => {
+    mockListMessages.mockResolvedValue([
+      msg({ chatId: '33611112222@s.whatsapp.net', isSender: true, text: 'Je relance Paul demain' }),
+    ]);
+    await runWhatsappIngest();
+    const extractionCalled = mockCallLLM.mock.calls.some(
+      (c) => (c[0] as { task: string }).task === 'email-triage',
+    );
+    expect(extractionCalled).toBe(false);
+    expect(mockSendWhatsappNoMatchCard).not.toHaveBeenCalled();
+  });
+
+  it('S26 — dialogue ÉTIQUETÉ : les messages de Thomas sont transmis au LLM (« Thomas : … »)', async () => {
+    mockListMessages.mockResolvedValue([
+      msg({ chatId: '33633334444@s.whatsapp.net', isSender: false, text: 'Just finished a call with Alizé' }),
+      msg({ chatId: '33633334444@s.whatsapp.net', isSender: true, text: 'Super, on en parle demain' }),
+    ]);
+    nextExtraction = { relevant: true, summary: 'Ameena a eu un appel', todos: [] };
+    await runWhatsappIngest();
+    const extractionCall = mockCallLLM.mock.calls.find(
+      (c) => (c[0] as { task: string }).task === 'email-triage',
+    );
+    expect(extractionCall).toBeDefined();
+    const content = (extractionCall![0] as { messages: { content: string }[] }).messages[0].content;
+    expect(content).toContain('Thomas : Super, on en parle demain'); // côté Thomas étiqueté
+    expect(content).toContain('Just finished a call with Alizé'); // côté interlocuteur conservé
+  });
+
   it('lecture Beeper échouée → curseur PRÉSERVÉ (pas d’avance) + erreur comptée', async () => {
     const { promises } = await import('node:fs');
     mockListMessages.mockRejectedValue(

@@ -250,16 +250,12 @@ export async function listTextMessagesSince(
   // total agrégé. Permet de discriminer « curseur cassé » (raw=0) d'une
   // « exclusion BEEPER_EXCLUDE trop large » (raw>0, kept=0, exclus>0) ou d'un
   // « volume isSender élevé » (Thomas répond beaucoup, peu de messages reçus).
-  let droppedIsSender = 0;
+  let keptFromThomas = 0;
   let droppedEmpty = 0;
   let droppedExcluded = 0;
   const excludedChatNamesSeen = new Set<string>();
   const kept: BeeperMessage[] = [];
   for (const m of mapped) {
-    if (m.isSender) {
-      droppedIsSender++;
-      continue;
-    }
     if (m.text.length === 0) {
       droppedEmpty++;
       continue;
@@ -269,14 +265,19 @@ export async function listTextMessagesSince(
       excludedChatNamesSeen.add(m.chatName);
       continue;
     }
+    // S26 — On GARDE les messages de Thomas (isSender) : ils donnent à Anya le FIL
+    // COMPLET (contexte + attribution correcte). Étiquetés « Thomas : » en aval
+    // (whatsapp-ingest) ; le runner ignore les chats où Thomas est seul (pas
+    // d'entrant). Avant : droppés → Anya ne voyait qu'un côté du dialogue.
+    if (m.isSender) keptFromThomas++;
     kept.push(m);
   }
   const maxTs = mapped.reduce((m, x) => Math.max(m, x.timestamp), 0);
   const excludedSample = [...excludedChatNamesSeen].slice(0, 5).join(' | ') || '∅';
   console.warn(
     `[beeper] listTextMessagesSince(since=${Math.round(Number(sinceTimestamp))}) : ` +
-      `${mapped.length} ligne(s) SQL → kept ${kept.length} | dropped: isSender=${droppedIsSender} ` +
-      `vide=${droppedEmpty} exclus(BEEPER_EXCLUDE)=${droppedExcluded} (chats: ${excludedSample}) | ` +
+      `${mapped.length} ligne(s) SQL → kept ${kept.length} (dont ${keptFromThomas} de Thomas) | ` +
+      `dropped: vide=${droppedEmpty} exclus(BEEPER_EXCLUDE)=${droppedExcluded} (chats: ${excludedSample}) | ` +
       `maxTs=${maxTs}, now=${Date.now()}`,
   );
   return kept;
