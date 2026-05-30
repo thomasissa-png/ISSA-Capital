@@ -157,10 +157,11 @@ describe('runWhatsappIngest — V2', () => {
     nextExtraction = { relevant: true, summary: 'Ameena a eu un appel', todos: [] };
     await runWhatsappIngest();
     const extractionCall = mockCallLLM.mock.calls.find(
-      (c) => (c[0] as { task: string }).task === 'email-triage',
+      (c) => (c[0] as { task?: string }).task === 'email-triage',
     );
     expect(extractionCall).toBeDefined();
-    const content = (extractionCall![0] as { messages: { content: string }[] }).messages[0].content;
+    const firstArg = extractionCall?.[0] as unknown as { messages?: { content: string }[] };
+    const content = firstArg?.messages?.[0]?.content ?? '';
     expect(content).toContain('Thomas : Super, on en parle demain'); // côté Thomas étiqueté
     expect(content).toContain('Just finished a call with Alizé'); // côté interlocuteur conservé
   });
