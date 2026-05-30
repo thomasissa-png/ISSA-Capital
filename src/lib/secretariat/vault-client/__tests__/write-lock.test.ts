@@ -5,7 +5,7 @@
  * (pas de corruption), et que des opérations sur des paths différents
  * s'exécutent en parallèle.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   withWriteLock,
   getActiveWriteLockCount,
@@ -115,6 +115,27 @@ describe('withWriteLock', () => {
       return 'recovered';
     });
     expect(result).toBe('recovered');
+  });
+
+  it('borne une opération bloquée et libère le path (filet anti-poison S26)', async () => {
+    // Régression du deadlock ré-entrant : une op qui ne se résout JAMAIS (await
+    // interne non borné, ré-entrance sur le même path) ne doit pas geler le path
+    // à vie. Elle est rejetée après OP_TIMEOUT_MS → la gate est libérée → l'op
+    // suivante sur le même path passe.
+    vi.useFakeTimers();
+    try {
+      const stuck = withWriteLock('poison/path', () => new Promise<string>(() => {}));
+      // catch immédiat pour éviter un unhandled rejection avant l'assertion
+      const stuckAssert = expect(stuck).rejects.toThrow(/write-lock/);
+      await vi.advanceTimersByTimeAsync(61_000);
+      await stuckAssert;
+
+      // Le path n'est plus poisonné : une nouvelle op s'exécute normalement.
+      const ok = await withWriteLock('poison/path', async () => 'ok');
+      expect(ok).toBe('ok');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sérialise 3 opérations consécutives', async () => {

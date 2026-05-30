@@ -14,7 +14,7 @@
 import { getAccessToken } from '../drive-upload';
 import * as paths from './vault-paths';
 import { listMarkdownFiles } from './drive-resolver';
-import { readFile, readFileById, writeFile, createFile } from './obsidian-file';
+import { readFile, readFileById, writeFileUnlocked, createFile } from './obsidian-file';
 import {
   parseObsidianFile,
   patchFrontmatterField,
@@ -198,8 +198,10 @@ export async function appendToHistorique(
       }
     }
 
-    // Écrire la fiche mise à jour
-    const writeResult = await writeFile(folderPath, filename, updatedContent);
+    // Écrire la fiche mise à jour — writeFileUnlocked : on détient DÉJÀ le lock
+    // sur ce path (withWriteLock ci-dessus). Utiliser writeFile re-verrouillerait
+    // le même path → deadlock ré-entrant → hang 120 s (bug prod S26).
+    const writeResult = await writeFileUnlocked(folderPath, filename, updatedContent);
     if (!writeResult.success) {
       await writeAuditLog({
         ...auditEntry,
@@ -260,8 +262,9 @@ export async function updateFrontmatter(
       updatedContent = patchFrontmatterField(updatedContent, key, value);
     }
 
-    // Écrire la fiche mise à jour
-    const writeResult = await writeFile(
+    // Écrire la fiche mise à jour — writeFileUnlocked : lock déjà tenu sur ce path
+    // (cf. appendToHistorique). writeFile re-verrouillerait → deadlock ré-entrant.
+    const writeResult = await writeFileUnlocked(
       options.folderPath,
       options.filename,
       updatedContent,

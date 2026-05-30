@@ -138,29 +138,44 @@ export async function writeFile(
   content: string,
 ): Promise<WriteFileResult> {
   const lockPath = `${folderPath}/${filename}`;
+  return withWriteLock(lockPath, () => writeFileUnlocked(folderPath, filename, content));
+}
 
-  return withWriteLock(lockPath, async () => {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      return {
-        success: false,
-        error: 'Drive désactivé — credentials OAuth2 manquants',
-      };
-    }
+/**
+ * Écrit un fichier SANS prendre le write-lock.
+ *
+ * À utiliser UNIQUEMENT par un appelant qui détient DÉJÀ le write-lock sur le
+ * MÊME path. Sinon : `writeFile` re-verrouille le path → `await currentQueue`
+ * attend la gate que l'appelant tient encore → DEADLOCK ré-entrant → hang 120 s
+ * (cap par-email), bug prod S26 (appendToHistorique/updateFrontmatter qui
+ * appelaient `writeFile` en étant déjà sous lock). Modèle suivi par
+ * `hot-context/applier` (résout le fileId + writeFileById sous lock).
+ */
+export async function writeFileUnlocked(
+  folderPath: string,
+  filename: string,
+  content: string,
+): Promise<WriteFileResult> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return {
+      success: false,
+      error: 'Drive désactivé — credentials OAuth2 manquants',
+    };
+  }
 
-    // Résoudre le fileId
-    const resolveResult = await resolveFilePath(folderPath, filename);
-    if (!resolveResult.success || !resolveResult.fileId) {
-      return {
-        success: false,
-        error:
-          resolveResult.error ??
-          `Fichier "${filename}" non trouvé dans "${folderPath}"`,
-      };
-    }
+  // Résoudre le fileId
+  const resolveResult = await resolveFilePath(folderPath, filename);
+  if (!resolveResult.success || !resolveResult.fileId) {
+    return {
+      success: false,
+      error:
+        resolveResult.error ??
+        `Fichier "${filename}" non trouvé dans "${folderPath}"`,
+    };
+  }
 
-    return writeFileById(accessToken, resolveResult.fileId, content);
-  });
+  return writeFileById(accessToken, resolveResult.fileId, content);
 }
 
 /**

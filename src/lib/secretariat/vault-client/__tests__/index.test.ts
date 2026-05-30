@@ -45,6 +45,7 @@ vi.mock('../obsidian-file', async () => {
     readFile: vi.fn(),
     readFileById: vi.fn(),
     writeFile: vi.fn(),
+    writeFileUnlocked: vi.fn(),
     writeFileById: vi.fn(),
     createFile: vi.fn(),
   };
@@ -67,7 +68,7 @@ vi.mock('../audit-log', () => ({
 
 // Import mocked modules
 import { listMarkdownFiles } from '../drive-resolver';
-import { readFile, readFileById, writeFile } from '../obsidian-file';
+import { readFile, readFileById, writeFileUnlocked } from '../obsidian-file';
 
 // ============================================================
 // Setup
@@ -281,7 +282,7 @@ describe('appendToHistorique', () => {
     });
 
     let writtenContent = '';
-    vi.mocked(writeFile).mockImplementationOnce(async (_folder, _file, content) => {
+    vi.mocked(writeFileUnlocked).mockImplementationOnce(async (_folder, _file, content) => {
       writtenContent = content;
       return { success: true, fileId: 'kenan-id' };
     });
@@ -339,7 +340,7 @@ Quelques notes.
     });
 
     let writtenContent = '';
-    vi.mocked(writeFile).mockImplementationOnce(async (_f, _n, content) => {
+    vi.mocked(writeFileUnlocked).mockImplementationOnce(async (_f, _n, content) => {
       writtenContent = content;
       return { success: true, fileId: 'test-id' };
     });
@@ -392,7 +393,7 @@ describe('updateFrontmatter', () => {
     });
 
     let writtenContent = '';
-    vi.mocked(writeFile).mockImplementationOnce(async (_f, _n, content) => {
+    vi.mocked(writeFileUnlocked).mockImplementationOnce(async (_f, _n, content) => {
       writtenContent = content;
       return { success: true, fileId: 'martin-id' };
     });
@@ -420,7 +421,7 @@ describe('updateFrontmatter', () => {
     });
 
     let writtenContent = '';
-    vi.mocked(writeFile).mockImplementationOnce(async (_f, _n, content) => {
+    vi.mocked(writeFileUnlocked).mockImplementationOnce(async (_f, _n, content) => {
       writtenContent = content;
       return { success: true, fileId: 'martin-id' };
     });
@@ -466,7 +467,7 @@ describe('conflict resolution', () => {
         fileId: 'kenan-id',
       });
 
-    vi.mocked(writeFile)
+    vi.mocked(writeFileUnlocked)
       .mockImplementationOnce(async (_f, _n, _content) => {
         writeOrder.push('write1');
         return { success: true, fileId: 'kenan-id' };
