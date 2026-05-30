@@ -283,6 +283,22 @@ export async function listTextMessagesSince(
   return kept;
 }
 
+/**
+ * Timestamp (ms epoch) du message texte le PLUS RÉCENT de `index.db`, tous chats
+ * confondus (Thomas inclus). Sert au health-monitor : si ce timestamp est vieux
+ * de plusieurs heures alors que Thomas reçoit des messages, le bridge Beeper est
+ * décroché (il n'écrit plus dans index.db). Retourne null si lecture KO ou DB vide.
+ */
+export async function getLastMessageTimestamp(): Promise<number | null> {
+  const r = await runSqliteJson(
+    indexDbPath(),
+    `SELECT MAX(timestamp) AS maxTs FROM mx_room_messages WHERE type='TEXT' AND isDeleted=0;`,
+  );
+  if (!r.ok) return null;
+  const v = Number(r.rows?.[0]?.maxTs ?? 0);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 export interface BeeperHealth {
   ok: boolean;
   totalMessages?: number;

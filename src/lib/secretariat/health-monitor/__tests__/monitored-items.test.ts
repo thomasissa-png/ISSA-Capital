@@ -64,9 +64,16 @@ describe('monitored-items', () => {
   // Structure du registre
   // ============================================================
 
-  it('exporte 8 items (3 OAuth + 4 Task B + 1 quota DeepSeek S25)', async () => {
+  it('exporte 9 items (3 OAuth + 4 Task B + 1 quota DeepSeek S25 + 1 pont Beeper S26)', async () => {
     const { MONITORED_ITEMS } = await importModule();
-    expect(MONITORED_ITEMS).toHaveLength(8);
+    expect(MONITORED_ITEMS).toHaveLength(9);
+  });
+
+  it('contient beeper_bridge_freshness (item S26 — détection pont décroché)', async () => {
+    const { MONITORED_ITEMS } = await importModule();
+    const item = MONITORED_ITEMS.find((i) => i.id === 'beeper_bridge_freshness');
+    expect(item).toBeDefined();
+    expect(item?.getHealthCheck).toBeDefined();
   });
 
   it('contient deepseek_monthly_quota (item S25 — audit reviewer)', async () => {

@@ -14,6 +14,7 @@ import type { MonitoredItem } from './types';
 import { getExpiresAt } from './oauth-timestamps';
 import { getMonthlyUsageEur, getMonthlyBudgetEur } from './anthropic-usage';
 import { getMonthlyDeepSeekUsageEur, getMonthlyDeepSeekBudgetEur } from './deepseek-usage';
+import { getLastMessageTimestamp } from '../beeper-source/beeper-client';
 
 // ============================================================
 // Items surveillés
@@ -117,6 +118,16 @@ export const MONITORED_ITEMS: MonitoredItem[] = [
     },
     renewalInstructions:
       'Quota DeepSeek mensuel atteint. Soit augmenter DEEPSEEK_MONTHLY_BUDGET_EUR dans Replit Secrets, soit attendre le 1er du mois (reset auto). DeepSeek = task triage email + brouillon + synthèse contact + hot-context-light.',
+  },
+  {
+    id: 'beeper_bridge_freshness',
+    label: 'Pont Beeper (WhatsApp)',
+    category: 'token',
+    thresholdsDays: [],
+    getExpiresAt: async () => null,
+    getHealthCheck: async () => checkBeeperFreshness(),
+    renewalInstructions:
+      'Le pont Beeper ne reçoit plus de nouveaux messages WhatsApp (index.db figé) → le lien WhatsApp a probablement décroché. En SSH sur le VPS : `beeper targets logs` puis `beeper targets restart` ; si le lien est tombé, re-scanner le QR via `beeper accounts add` (cf. deploy/beeper-server-setup.md). Anya lit correctement — c\'est la source en amont qui est gelée.',
   },
   {
     id: 'domain_renewal',
@@ -234,6 +245,44 @@ async function checkTelegramBot(): Promise<{ ok: boolean; reason?: string }> {
 
     return { ok: true };
   }
+}
+
+// ============================================================
+// Helper — Pont Beeper (WhatsApp) : fraîcheur de index.db
+// ============================================================
+
+/** Au-delà de ce délai sans nouveau message WhatsApp, on alerte (bridge décroché). */
+const BEEPER_STALE_HOURS = 12;
+
+/**
+ * Vérifie que le pont Beeper alimente encore `index.db`. Si le dernier message
+ * WhatsApp date de plus de BEEPER_STALE_HOURS, le bridge est probablement
+ * décroché (lien WhatsApp expiré / process bloqué) → alerte. Pas de faux positif
+ * « réseau » à craindre : on lit un fichier local, pas une API distante.
+ *
+ * Limite assumée : une vraie absence de messages > 12 h (nuit calme, peu d'activité)
+ * déclencherait l'alerte. Acceptable — Thomas reçoit beaucoup de messages ; le
+ * coût d'une fausse alerte occasionnelle << celui d'un bridge muet non détecté.
+ */
+async function checkBeeperFreshness(): Promise<{ ok: boolean; reason?: string }> {
+  let lastTs: number | null;
+  try {
+    lastTs = await getLastMessageTimestamp();
+  } catch (err) {
+    return { ok: false, reason: `lecture index.db impossible : ${err instanceof Error ? err.message : String(err)}` };
+  }
+  if (lastTs === null) {
+    return { ok: false, reason: 'index.db illisible ou vide — pont Beeper à vérifier' };
+  }
+  const ageHours = (Date.now() - lastTs) / 3_600_000;
+  if (ageHours > BEEPER_STALE_HOURS) {
+    const ageStr = ageHours >= 48 ? `${Math.floor(ageHours / 24)} j` : `${Math.floor(ageHours)} h`;
+    return {
+      ok: false,
+      reason: `dernier message WhatsApp il y a ${ageStr} (> ${BEEPER_STALE_HOURS} h) — pont Beeper décroché ?`,
+    };
+  }
+  return { ok: true };
 }
 
 // ============================================================

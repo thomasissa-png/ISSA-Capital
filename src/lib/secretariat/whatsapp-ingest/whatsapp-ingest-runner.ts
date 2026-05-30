@@ -22,7 +22,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { listTextMessagesSince, type BeeperMessage } from '../beeper-source/beeper-client';
+import { listTextMessagesSince, getLastMessageTimestamp, type BeeperMessage } from '../beeper-source/beeper-client';
 import { callLLM } from '../llm/client';
 import { sendTelegramMessage } from '../telegram';
 import { getVaultContacts, type VaultContact } from '../vault-contacts';
@@ -66,6 +66,51 @@ async function writeCursor(ts: number): Promise<void> {
     await fs.writeFile(cursorFile(), JSON.stringify({ ts }), 'utf-8');
   } catch (err) {
     console.warn(`[whatsapp-ingest] écriture curseur échouée : ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// Pont Beeper décroché : seuil d'alerte (h) + anti-spam (1 alerte / 24 h).
+const BEEPER_STALE_ALERT_HOURS = 12;
+const BEEPER_STALE_ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+function beeperStaleStateFile(): string {
+  return process.env.BEEPER_STALE_STATE_FILE
+    ?? path.join(process.env.HOME ?? '/home/thomas', '.anya-beeper-stale.json');
+}
+
+/**
+ * Si la base Beeper n'a pas reçu de nouveau message depuis > BEEPER_STALE_ALERT_HOURS,
+ * le pont est probablement décroché → alerte Thomas (Telegram), au plus 1×/24 h.
+ * Best-effort : toute erreur ici ne doit jamais faire échouer le run.
+ */
+async function maybeAlertBeeperStale(): Promise<void> {
+  try {
+    const lastTs = await getLastMessageTimestamp();
+    if (lastTs === null) return; // lecture KO déjà gérée ailleurs ; pas de double alerte
+    const ageH = (Date.now() - lastTs) / 3_600_000;
+    if (ageH <= BEEPER_STALE_ALERT_HOURS) return;
+
+    // Anti-spam : pas plus d'une alerte par 24 h.
+    let lastAlert = 0;
+    try {
+      lastAlert = Number((JSON.parse(await fs.readFile(beeperStaleStateFile(), 'utf-8')) as { ts?: number }).ts) || 0;
+    } catch {
+      /* pas d'état → première alerte */
+    }
+    if (Date.now() - lastAlert < BEEPER_STALE_ALERT_COOLDOWN_MS) return;
+
+    const ageStr = ageH >= 48 ? `${Math.floor(ageH / 24)} j` : `${Math.floor(ageH)} h`;
+    const sent = await notifyThomas(
+      `⚠️ Pont Beeper (WhatsApp) — aucun nouveau message en base depuis ${ageStr}.\n` +
+        `Le lien WhatsApp a probablement décroché : Anya ne voit plus tes messages.\n` +
+        `Sur le VPS : \`beeper targets restart\` (puis \`beeper targets logs\`) ; ` +
+        `si le lien est tombé, re-scanner le QR (\`beeper accounts add\`).`,
+    );
+    if (sent) {
+      await fs.writeFile(beeperStaleStateFile(), JSON.stringify({ ts: Date.now() }), 'utf-8').catch(() => {});
+      console.warn(`[whatsapp-ingest] ALERTE pont Beeper décroché (dernier message il y a ${ageStr})`);
+    }
+  } catch (err) {
+    console.warn(`[whatsapp-ingest] check fraîcheur Beeper échoué : ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -484,6 +529,10 @@ export async function runWhatsappIngest(): Promise<WhatsappIngestStats> {
   if (messages.length === 0) {
     await writeCursor(nowTs);
     console.warn('[whatsapp-ingest] aucun nouveau message');
+    // Garde-fou pont Beeper (S26) : 0 message peut être normal (calme) OU signaler
+    // un bridge décroché (index.db figé). On distingue via l'âge du DERNIER message
+    // en base : si > BEEPER_STALE_ALERT_HOURS, on alerte Thomas (anti-spam 24 h).
+    await maybeAlertBeeperStale();
     return stats;
   }
 
