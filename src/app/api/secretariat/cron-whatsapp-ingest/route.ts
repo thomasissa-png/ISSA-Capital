@@ -34,6 +34,18 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
 
   console.warn('[cron-whatsapp-ingest] déclenchement');
+
+  // Garde-fou heures de Paris (8h/12h/16h/20h/minuit). Le cron tire plusieurs
+  // fois (UTC été+hiver) mais une seule occurrence par heure cible procède.
+  const force = req.nextUrl.searchParams.get('force') === '1';
+  const { hour } = parisParts();
+  if (!force && !TARGET_PARIS_HOURS.includes(hour)) {
+    console.warn(
+      `[cron-whatsapp-ingest] hors fenêtre (Paris ${hour}h) — skip (cibles : ${TARGET_PARIS_HOURS.join('h, ')}h)`,
+    );
+    return NextResponse.json({ ok: true, skipped: true, reason: `hors heures cibles (Paris ${hour}h)` });
+  }
+
   try {
     const stats = await runWhatsappIngest();
     return NextResponse.json({ ok: true, stats });
