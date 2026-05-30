@@ -11,9 +11,16 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { runWhatsappIngest } from '@/lib/secretariat/whatsapp-ingest/whatsapp-ingest-runner';
+import { parisParts } from '@/lib/secretariat/hot-context-staleness/staleness';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Heures cibles EN HEURE DE PARIS (DST-safe via parisParts) : 8h, 12h, 16h, 20h,
+// minuit (décision Thomas S26). Le cron tire à plusieurs heures UTC couvrant
+// été+hiver ; l'endpoint ne procède qu'à ces heures Paris (les autres = skip).
+// ?force=1 ignore la fenêtre (test manuel).
+const TARGET_PARIS_HOURS = [0, 8, 12, 16, 20];
 
 export async function GET(req: NextRequest): Promise<Response> {
   const expected = process.env.CRON_SECRET;
