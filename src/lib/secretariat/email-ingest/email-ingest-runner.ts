@@ -275,13 +275,14 @@ export async function runEmailIngest(): Promise<IngestStats> {
             `[email-ingest] erreur inattendue sur ${source.label} message ${msg.id} : ${emsg}`,
           );
           stats.errors++;
-          // Anti-reboucle (S26) : un email qui dépasse le cap par-email le dépasse
-          // à CHAQUE run (preuve journal 29/05 : mêmes IDs Gmail+Outlook bloqués à
-          // 120 s run après run → ils monopolisent le batch, AUCUN nouvel email
-          // n'est traité). On le sort de la file (markProcessed) et on alerte Thomas
-          // pour traitement manuel, au lieu de re-boucler indéfiniment à vide. Les
-          // autres erreurs (transitoires) restent re-listées (retry au run suivant).
-          if (emsg.includes('timeout')) {
+          // Anti-reboucle (S26) : un email qui dépasse le CAP PAR-EMAIL (120 s) le
+          // dépasse à chaque run (preuve journal 29/05) → il monopolise le batch.
+          // On le sort de la file (markProcessed) pour ne pas re-boucler à vide.
+          // P1-B (reviewer S26) : matcher EXACTEMENT la signature du cap par-email
+          // (`timeout 120000ms — …` produite par withTimeout), JAMAIS un
+          // `includes('timeout')` large — sinon un timeout INTERNE (LLM triage,
+          // Drive, API) sortirait un email qui n'a pas fini son triage → perdu.
+          if (emsg.startsWith(`timeout ${PER_EMAIL_TIMEOUT_MS}ms`)) {
             try {
               await source.markProcessed(msg.id);
             } catch {
@@ -311,7 +312,7 @@ export async function runEmailIngest(): Promise<IngestStats> {
     if (Number.isFinite(chatId)) {
       await sendTelegramMessage(
         chatId,
-        `⚠️ Anya — ${timedOutLabels.length} email(s) trop lent(s) (> ${capSec}s) mis de côté pour ne pas bloquer la file. À traiter à la main :\n${lines}`,
+        `⚠️ Anya — ${timedOutLabels.length} email(s) ont dépassé ${capSec}s et ont été retirés de la file (pour ne pas la bloquer). Ils ont peut-être quand même abouti en arrière-plan (brouillon créé) — vérifie tes brouillons ; sinon à traiter à la main :\n${lines}`,
       ).catch(() => {
         /* best-effort : l'alerte ne doit jamais faire échouer le run */
       });
